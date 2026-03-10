@@ -18,7 +18,8 @@ export default function MealPreferenceControls({
   className?: string;
   compact?: boolean;
 }) {
-  const { data: session } = useSession();
+  const sessionState = useSession();
+  const session = sessionState?.data;
   const profileKey = getProfileKey(session?.user?.id);
   const isFavorite = useMealFeedback((state) => state.profiles[profileKey]?.favorites.includes(itemId) ?? false);
   const rating = useMealFeedback((state) => state.profiles[profileKey]?.ratings[itemId] ?? 0);
