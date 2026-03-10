@@ -72,6 +72,18 @@ export type CatalogVendorRecord = VendorBase & {
   items: CatalogSectionItem[];
 };
 
+export type FallbackVendorCard = {
+  id: string;
+  name: string;
+  slug: string;
+  cover: string;
+  badge: string | null;
+  rating: number;
+  cuisines: string[];
+  distanceKm: number;
+  baseEtaMin: number;
+};
+
 const vendorIndex: VendorBase[] = [
   {
     id: "vendor-hello-tomato",
@@ -136,6 +148,53 @@ const vendorIndex: VendorBase[] = [
     image: "/vendors/vegan.jpg",
     phone: "+27 72 390 8919",
     address: "Klipfontein View, Midrand",
+  },
+];
+
+const fallbackVendorCards: FallbackVendorCard[] = [
+  {
+    id: "v1",
+    name: "Hello Tomato",
+    slug: "hello-tomato",
+    cover: "/vendors/grill.jpg",
+    badge: "Popular",
+    rating: 4.7,
+    cuisines: ["Burgers", "Grill"],
+    distanceKm: 2.5,
+    baseEtaMin: 14,
+  },
+  {
+    id: "v2",
+    name: "Bento",
+    slug: "bento",
+    cover: "/vendors/sushi.jpg",
+    badge: null,
+    rating: 4.6,
+    cuisines: ["Sushi", "Asian"],
+    distanceKm: 3.2,
+    baseEtaMin: 16,
+  },
+  {
+    id: "v3",
+    name: "Spice Route",
+    slug: "spice-route",
+    cover: "/vendors/curry.jpg",
+    badge: "Halaal",
+    rating: 4.5,
+    cuisines: ["Curry", "Indian"],
+    distanceKm: 4.1,
+    baseEtaMin: 18,
+  },
+  {
+    id: "v4",
+    name: "Kasie Market",
+    slug: "kasie-market",
+    cover: "/vendors/vegan.jpg",
+    badge: "Essentials",
+    rating: 4.4,
+    cuisines: ["Groceries", "Essentials"],
+    distanceKm: 2.8,
+    baseEtaMin: 15,
   },
 ];
 
@@ -360,6 +419,10 @@ export function getFallbackSearchSources() {
       },
     })),
   };
+}
+
+export function getFallbackVendorCards() {
+  return fallbackVendorCards;
 }
 
 export function getFallbackCategoryProducts(category: TownshipCategory) {

@@ -7,38 +7,14 @@ import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import StructuredData from "@/components/StructuredData";
-import { getFallbackVendorProfile } from "@/lib/catalog-fallback";
-import { prisma } from "@/lib/db";
-import { withQueryTimeout } from "@/lib/query-timeout";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
+import { getVendorBySlug as getVendorProfile } from "@/server/queries";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-const getVendorBySlug = cache(async (slug: string) =>
-  {
-    const vendorQuery = prisma.vendor.findFirst({
-      where: { slug, isActive: true, status: "ACTIVE" },
-      include: {
-        products: {
-          where: { inStock: true },
-          orderBy: { updatedAt: "desc" },
-          take: 80,
-        },
-        specials: {
-          where: { endsAt: { gte: new Date() } },
-          orderBy: { startsAt: "asc" },
-          take: 4,
-        },
-      },
-    });
-
-    type VendorRecord = Awaited<typeof vendorQuery>;
-
-    return withQueryTimeout(vendorQuery, getFallbackVendorProfile(slug) as unknown as VendorRecord);
-  }
-);
+const getVendorBySlug = cache(async (slug: string) => getVendorProfile(slug));
 
 function normalizeCuisine(value: unknown) {
   if (Array.isArray(value)) {

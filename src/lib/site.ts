@@ -1,4 +1,5 @@
-const DEFAULT_SITE_URL = "http://localhost:3000";
+const DEFAULT_PRODUCTION_SITE_URL = "https://lethela.vercel.app";
+const DEFAULT_SITE_URL = process.env.NODE_ENV === "production" ? DEFAULT_PRODUCTION_SITE_URL : "http://localhost:3000";
 
 function normalizeSiteUrl(input?: string | null) {
   const value = (input || "").trim();

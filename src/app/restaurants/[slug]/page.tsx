@@ -8,10 +8,11 @@ import TopBar from "@/components/TopBar";
 import { formatZAR } from "@/lib/format";
 import { getVendorBySlug } from "@/server/queries";
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 export default async function RestaurantPage({ params }: Props) {
-  const vendor = await getVendorBySlug(params.slug);
+  const { slug } = await params;
+  const vendor = await getVendorBySlug(slug);
   if (!vendor) return notFound();
 
   const cuisine = Array.isArray(vendor.cuisine) ? vendor.cuisine : [];
@@ -36,7 +37,7 @@ export default async function RestaurantPage({ params }: Props) {
               <span>-</span>
               <span>{vendor.halaal ? "Halaal" : "Non-halaal"}</span>
               <span>-</span>
-              <span>Delivery {formatZAR(vendor.deliveryFee)}</span>
+              <span>Delivery {formatZAR(1000)} per item</span>
               <span>-</span>
               <span>
                 ETA {vendor.etaMins}-{vendor.etaMins + 10} min

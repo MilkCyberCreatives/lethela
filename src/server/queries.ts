@@ -8,6 +8,16 @@ export async function getVendorBySlug(slug: string) {
   const vendorQuery = prisma.vendor.findUnique({
       where: { slug },
       include: {
+        products: {
+          where: { inStock: true },
+          orderBy: { updatedAt: "desc" },
+          take: 80,
+        },
+        specials: {
+          where: { endsAt: { gte: new Date() } },
+          orderBy: { startsAt: "asc" },
+          take: 4,
+        },
         sections: {
           orderBy: { sortOrder: "asc" },
           include: { items: { where: { draft: false }, orderBy: { name: "asc" } } },
@@ -56,5 +66,7 @@ export async function getVendorBySlug(slug: string) {
     ...vendor,
     cuisine,
     sections,
+    products: vendor.products ?? [],
+    specials: vendor.specials ?? [],
   };
 }
