@@ -1,0 +1,243 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  role         String   @default("USER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships  VendorMember[]
+  orders       Order[]
+  ownedVendors Vendor[]       @relation("VendorOwner")
+}
+
+model Vendor {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  email       String?  @unique
+  phone       String?
+  address     String?
+  suburb      String?
+  city        String?
+  province    String?
+  latitude    Float?
+  longitude   Float?
+  isActive    Boolean  @default(true)
+  status      String   @default("ACTIVE")
+  ownerId     String?
+  kycIdUrl    String?
+  kycProofUrl String?
+  cuisine     String   @default("[]")
+  rating      Float    @default(4.4)
+  deliveryFee Int      @default(1500)
+  etaMins     Int      @default(30)
+  halaal      Boolean  @default(false)
+  image       String?
+
+  owner       User?    @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  products    Product[]
+  orders      Order[]
+  hours       OperatingHour[]
+  specials    Special[]
+  members     VendorMember[]
+  sections    MenuSection[]
+  items       Item[]
+  upsells     ProductUpsell[]
+  lateFlags   LateOrderFlag[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, updatedAt])
+  @@index([suburb])
+}
+
+model VendorMember {
+  id        String   @id @default(cuid())
+  vendorId  String
+  userId    String
+  role      String   @default("OWNER")
+  createdAt DateTime @default(now())
+
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, userId])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  vendorId    String
+  name        String
+  slug        String
+  description String?
+  priceCents  Int
+  image       String?
+  isAlcohol   Boolean  @default(false)
+  abv         Float?
+  inStock     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  specials    Special[]
+  orderItems  OrderItem[]
+  baseFor     ProductUpsell[] @relation("BaseProduct")
+  upsellFor   ProductUpsell[] @relation("UpsellProduct")
+
+  @@unique([vendorId, slug])
+  @@index([vendorId, updatedAt])
+  @@index([name])
+}
+
+model MenuSection {
+  id        String   @id @default(cuid())
+  vendorId  String
+  title     String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  items     Item[]
+
+  @@unique([vendorId, title])
+  @@index([vendorId, sortOrder])
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  vendorId    String
+  sectionId   String
+  name        String
+  description String?
+  priceCents  Int
+  tags        String   @default("[]")
+  image       String?
+  draft       Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vendor      Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  section     MenuSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, sectionId])
+}
+
+model OperatingHour {
+  id        String   @id @default(cuid())
+  vendorId  String
+  day       Int
+  openMin   Int
+  closeMin  Int
+  closed    Boolean  @default(false)
+
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, day])
+  @@index([vendorId])
+}
+
+model Order {
+  id               String   @id @default(cuid())
+  publicId         String   @unique @default(cuid())
+  vendorId         String
+  userId           String?
+  status           String   @default("PLACED")
+  paymentStatus    String   @default("PENDING")
+  ozowReference    String?  @unique
+  ozowTxnId        String?
+  customerLat      Float?
+  customerLng      Float?
+  distanceKm       Float?
+  subtotalCents    Int      @default(0)
+  deliveryFeeCents Int      @default(0)
+  totalCents       Int      @default(0)
+  amountCents      Int      @default(0)
+  itemsJson        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  vendor           Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items            OrderItem[]
+  lateFlags        LateOrderFlag[]
+
+  @@index([vendorId, createdAt])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  productId  String?
+  qty        Int
+  priceCents Int
+
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Special {
+  id          String   @id @default(cuid())
+  vendorId    String
+  productId   String?
+  title       String
+  description String?
+  discountPct Int
+  startsAt    DateTime
+  endsAt      DateTime
+  draft       Boolean  @default(false)
+
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId, startsAt])
+  @@index([endsAt])
+}
+
+model ProductUpsell {
+  id             String  @id @default(cuid())
+  vendorId       String
+  baseProductId  String
+  upsellProductId String
+  blurb          String?
+
+  vendor         Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  baseProduct    Product @relation("BaseProduct", fields: [baseProductId], references: [id], onDelete: Cascade)
+  upsellProduct  Product @relation("UpsellProduct", fields: [upsellProductId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, baseProductId, upsellProductId])
+  @@index([vendorId])
+}
+
+model LateOrderFlag {
+  id          String   @id @default(cuid())
+  vendorId    String
+  orderId     String
+  orderPublic String   @unique
+  etaMinutes  Int
+  createdAt   DateTime @default(now())
+  resolved    Boolean  @default(false)
+  aiMessage   String?
+
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@index([orderId])
+}

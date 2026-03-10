@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lethela
 
-## Getting Started
+AI-supported delivery platform for food, groceries, and township-first commerce in South Africa.
 
-First, run the development server:
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Required environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` to `.env.local` and fill values you need.
 
-## Learn More
+Core:
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `DATABASE_URL`
 
-To learn more about Next.js, take a look at the following resources:
+SEO + marketing:
+- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`
+- `NEXT_PUBLIC_BING_SITE_VERIFICATION`
+- `NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION`
+- `NEXT_PUBLIC_GA4_ID` (optional)
+- `NEXT_PUBLIC_GTM_ID` (optional; preferred over GA4 direct script)
+- `NEXT_PUBLIC_META_PIXEL_ID` (optional)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## SEO / AEO / GEO stack included
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Canonical metadata + Open Graph + Twitter cards
+- Dynamic `robots.txt` via `src/app/robots.ts`
+- Dynamic `sitemap.xml` via `src/app/sitemap.ts` (includes active vendor pages)
+- JSON-LD schema:
+  - `Organization`
+  - `WebSite` + `SearchAction`
+  - `FoodDeliveryService`
+- `FAQPage` (home/about/faq content)
+- vendor `FoodEstablishment` + menu `ItemList`
+- Internal search page at `/search`
+- GEO helper file at `/llms.txt` via `src/app/llms.txt/route.ts`
+- Google Merchant feed at `/feeds/google-merchant.xml`
 
-## Deploy on Vercel
+## Connect Google and marketing systems
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Deploy with `NEXT_PUBLIC_SITE_URL` set to your live domain.
+2. In Google Search Console:
+   - add your domain property,
+   - set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`,
+   - submit `https://<your-domain>/sitemap.xml`.
+3. In Bing Webmaster Tools:
+   - set `NEXT_PUBLIC_BING_SITE_VERIFICATION`,
+   - submit the same sitemap URL.
+4. For GA4/GTM:
+   - set `NEXT_PUBLIC_GTM_ID` (recommended) or `NEXT_PUBLIC_GA4_ID`.
+5. For Meta Pixel:
+   - set `NEXT_PUBLIC_META_PIXEL_ID`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Quality checks
+
+```bash
+npx tsc --noEmit --incremental false
+npx eslint src
+```

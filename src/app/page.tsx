@@ -1,103 +1,130 @@
-import Image from "next/image";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import MainHeader from "@/components/MainHeader";
+import Hero from "@/components/Hero";
+import SmartBanner from "@/components/SmartBanner";
+import FeaturedCarousel from "@/components/FeaturedCarousel";
+import CategoryCarousel from "@/components/CategoryCarousel";
+import VendorGrid from "@/components/VendorGrid";
+import ProductsGrid from "@/components/ProductsGrid";
+import RecommendationsGrid from "@/components/RecommendationsGrid";
+import Footer from "@/components/Footer";
+import ScrollReveal from "@/components/ScrollReveal";
+import FloatingWidgets from "@/components/FloatingWidgets";
+import StructuredData from "@/components/StructuredData";
+import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
+import { getHomeProducts, getHomeRecommendations, getHomeVendors } from "@/lib/home-data";
 
-export default function Home() {
+export const metadata: Metadata = {
+  title: "Food, Grocery and Township Delivery",
+  description:
+    "Order kota, chips, burgers, alcohol and groceries with Lethela. Fast local delivery for township and city communities.",
+  alternates: {
+    canonical: "/",
+  },
+};
+
+export const revalidate = 180;
+
+const homeFaqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What can I order on Lethela?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "You can order township favourites like kota, chips, burgers, alcohol and groceries from approved local vendors.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Does Lethela support vendor onboarding?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Vendors can apply online and are approved by admin before their stores go live.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I track my order in real time?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Lethela supports realtime order status updates and rider location tracking.",
+      },
+    },
+  ],
+};
+
+const homeWebPageSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: `${SITE_NAME} Home`,
+  url: absoluteUrl("/"),
+  isPartOf: { "@id": `${SITE_URL}/#website` },
+  about: ["Food delivery", "Grocery delivery", "Township delivery"],
+};
+
+export default async function HomePage() {
+  const address = "Klipfontein View, Midrand 1685";
+  const [recommendations, products, vendors] = await Promise.all([
+    getHomeRecommendations(address),
+    getHomeProducts(address, 24),
+    getHomeVendors(address, 18),
+  ]);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="min-h-screen bg-lethela-secondary text-white">
+      <StructuredData data={homeFaqSchema} />
+      <StructuredData data={homeWebPageSchema} />
+      <MainHeader />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      <Hero />
+
+      <ScrollReveal delay={40}>
+        <SmartBanner />
+      </ScrollReveal>
+
+      <ScrollReveal delay={80}>
+        <section className="container py-10">
+          <FeaturedCarousel
+            title="Hungry? Choose from top restaurants near you"
+            items={[
+              { name: "Hello Tomato", img: "/vendors/grill.jpg", cta: "/vendors/hello-tomato" },
+              { name: "Bento", img: "/vendors/sushi.jpg", cta: "/vendors/bento" },
+              { name: "Afrikoa", img: "/vendors/curry.jpg", cta: "/vendors/spice-route" },
+              { name: "Cinnabon", img: "/vendors/vegan.jpg", cta: "/vendors/bottle-co" },
+              { name: "Romans Pizza", img: "/vendors/burgers.jpg", cta: "/vendors/romans-pizza" },
+            ]}
+            autoMs={4000}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </section>
+      </ScrollReveal>
+
+      <ScrollReveal delay={120}>
+        <section className="container py-10">
+          <CategoryCarousel />
+        </section>
+      </ScrollReveal>
+
+      <ScrollReveal delay={140}>
+        <RecommendationsGrid suburb={address} initialCards={recommendations} />
+      </ScrollReveal>
+
+      <ScrollReveal delay={160}>
+        <Suspense fallback={<section className="container py-10 text-white/70">Loading products...</section>}>
+          <ProductsGrid suburb={address} initialItems={products} />
+        </Suspense>
+      </ScrollReveal>
+
+      <ScrollReveal delay={190}>
+        <VendorGrid suburb={address} initialVendors={vendors} />
+      </ScrollReveal>
+
+      <Footer />
+
+      <FloatingWidgets />
+    </main>
   );
 }
