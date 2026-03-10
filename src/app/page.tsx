@@ -67,7 +67,7 @@ const homeWebPageSchema = {
 };
 
 export default async function HomePage() {
-  const address = "Klipfontein View, Midrand 1685";
+  const address = "Klipfontein View";
   const [recommendations, products, vendors] = await Promise.all([
     getHomeRecommendations(address),
     getHomeProducts(address, 24),
@@ -93,9 +93,9 @@ export default async function HomePage() {
             items={[
               { name: "Hello Tomato", img: "/vendors/grill.jpg", cta: "/vendors/hello-tomato" },
               { name: "Bento", img: "/vendors/sushi.jpg", cta: "/vendors/bento" },
-              { name: "Afrikoa", img: "/vendors/curry.jpg", cta: "/vendors/spice-route" },
-              { name: "Cinnabon", img: "/vendors/vegan.jpg", cta: "/vendors/bottle-co" },
-              { name: "Romans Pizza", img: "/vendors/burgers.jpg", cta: "/vendors/romans-pizza" },
+              { name: "Spice Route", img: "/vendors/curry.jpg", cta: "/vendors/spice-route" },
+              { name: "Hello Tomato Combos", img: "/vendors/burgers.jpg", cta: "/vendors/hello-tomato" },
+              { name: "Bento Favourites", img: "/vendors/vegan.jpg", cta: "/vendors/bento" },
             ]}
             autoMs={4000}
           />

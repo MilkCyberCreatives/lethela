@@ -23,6 +23,7 @@ type RecommendationCard = {
 };
 
 const HOME_QUERY_TIMEOUT_MS = 2500;
+const LIVE_VENDOR_SLUGS = new Set(["hello-tomato", "bento", "spice-route"]);
 
 function timeoutFallback<T>(ms: number, fallback: T): Promise<T> {
   return new Promise((resolve) => {
@@ -52,12 +53,19 @@ function vendorCover(hasAlcohol: boolean) {
   return hasAlcohol ? "/vendors/vegan.jpg" : "/vendors/grill.jpg";
 }
 
+function normalizeSuburb(suburb: string | null) {
+  if (!suburb) return null;
+  const [firstPart] = suburb.split(",");
+  return firstPart?.trim() || suburb.trim();
+}
+
 export async function getHomeRecommendations(suburb: string | null): Promise<RecommendationCard[]> {
   const result = await withTimeout<Awaited<ReturnType<typeof aiRecommend>>>(() => aiRecommend(suburb), { ok: true, results: [] });
-  return result.results;
+  return result.results.filter((item) => (item.slug ? LIVE_VENDOR_SLUGS.has(item.slug) : true));
 }
 
 export async function getHomeProducts(suburb: string | null, take = 24): Promise<ProductLite[]> {
+  const normalizedSuburb = normalizeSuburb(suburb);
   const rows = await withTimeout(
     () =>
       prisma.product.findMany({
@@ -66,7 +74,7 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
         vendor: {
           isActive: true,
           status: "ACTIVE",
-          ...(suburb ? { suburb: { contains: suburb } } : {}),
+          ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
         },
       },
       select: {
@@ -144,12 +152,12 @@ function fallbackVendors(hour: number): Vendor[] {
     },
     {
       id: "v4",
-      name: "Romans Pizza",
-      slug: "romans-pizza",
-      cover: "/vendors/burgers.jpg",
-      badge: null,
-      rating: 4.1,
-      cuisines: ["Pizza"],
+      name: "Spice Route",
+      slug: "spice-route",
+      cover: "/vendors/curry.jpg",
+      badge: "Local favourite",
+      rating: 4.5,
+      cuisines: ["Curry", "Indian"],
       distanceKm: 3.8,
       baseEtaMin: 17,
     },
@@ -163,13 +171,14 @@ function fallbackVendors(hour: number): Vendor[] {
 
 export async function getHomeVendors(suburb: string | null, take = 18): Promise<Vendor[]> {
   const hour = new Date().getHours();
+  const normalizedSuburb = normalizeSuburb(suburb);
   const dbVendors = await withTimeout(
     () =>
       prisma.vendor.findMany({
       where: {
         isActive: true,
         status: "ACTIVE",
-        ...(suburb ? { suburb: { contains: suburb } } : {}),
+        ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
       },
       select: {
         id: true,
