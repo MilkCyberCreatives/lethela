@@ -28,9 +28,9 @@ export async function getVendorBySlug(slug: string) {
 
   type VendorRecord = Awaited<typeof vendorQuery>;
 
-  const vendor = await withQueryTimeout(vendorQuery, fallback as unknown as VendorRecord);
+  const vendor = await withQueryTimeout<VendorRecord | null>(vendorQuery, null);
 
-  if (!vendor) return null;
+  if (!vendor) return fallback;
 
   const cuisine = Array.isArray(vendor.cuisine)
     ? vendor.cuisine
