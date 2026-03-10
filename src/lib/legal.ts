@@ -37,11 +37,15 @@ export function getFooterSocialLinks() {
   const instagram = process.env.NEXT_PUBLIC_INSTAGRAM_URL?.trim();
   const tiktok = process.env.NEXT_PUBLIC_TIKTOK_URL?.trim();
   const x = process.env.NEXT_PUBLIC_X_URL?.trim();
+  const youtube = process.env.NEXT_PUBLIC_YOUTUBE_URL?.trim();
+  const linkedin = process.env.NEXT_PUBLIC_LINKEDIN_URL?.trim();
 
   if (facebook) links.push({ label: "Facebook", href: facebook, key: "facebook" });
   if (instagram) links.push({ label: "Instagram", href: instagram, key: "instagram" });
   if (tiktok) links.push({ label: "TikTok", href: tiktok, key: "tiktok" });
   if (x) links.push({ label: "X", href: x, key: "x" });
+  if (youtube) links.push({ label: "YouTube", href: youtube, key: "youtube" });
+  if (linkedin) links.push({ label: "LinkedIn", href: linkedin, key: "linkedin" });
 
   return links;
 }
