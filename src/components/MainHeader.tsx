@@ -14,6 +14,8 @@ export default function MainHeader() {
   const session = sessionState?.data;
   const status = sessionState?.status ?? "unauthenticated";
   const user = session?.user;
+  const userImage =
+    user && "image" in user && typeof user.image === "string" && user.image.trim().length > 0 ? user.image : null;
   const initials = (user?.name || user?.email || "U")
     .split(" ")
     .map((part) => part[0])
@@ -52,9 +54,9 @@ export default function MainHeader() {
             <div className="flex items-center gap-3">
               <Link href="/profile" className="flex items-center gap-2 rounded-full border border-black/10 px-3 py-2 hover:border-lethela-primary">
                 <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-lethela-primary/10 text-xs font-semibold text-lethela-primary">
-                  {user.image ? (
+                  {userImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={user.image} alt={user.name || user.email || "Profile"} className="h-full w-full object-cover" />
+                    <img src={userImage} alt={user.name || user.email || "Profile"} className="h-full w-full object-cover" />
                   ) : (
                     initials
                   )}
