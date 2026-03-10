@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { cosine, embed } from "@/lib/embeddings";
 import { getFallbackSearchSources } from "@/lib/catalog-fallback";
+import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { withQueryTimeout, withTimeoutOrThrow } from "@/lib/query-timeout";
 
 export type SearchHit = {
@@ -58,39 +59,43 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
 
   const tokens = tokenize(query);
   const fallbackSources = getFallbackSearchSources();
+  const fallbackVendorRows = fallbackSources.vendors as any;
+  const fallbackProductRows = fallbackSources.products as any;
 
-  const searchSourcesQuery = Promise.all([
-    prisma.vendor.findMany({
-      where: { isActive: true, status: "ACTIVE" },
-      take: 60,
-      orderBy: { updatedAt: "desc" },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        suburb: true,
-        city: true,
-      },
-    }),
-    prisma.product.findMany({
-      take: 240,
-      orderBy: { updatedAt: "desc" },
-      include: {
-        vendor: {
+  const searchSourcesQuery = shouldPreferCatalogFallback()
+    ? Promise.resolve([fallbackVendorRows, fallbackProductRows] as const)
+    : Promise.all([
+        prisma.vendor.findMany({
+          where: { isActive: true, status: "ACTIVE" },
+          take: 60,
+          orderBy: { updatedAt: "desc" },
           select: {
-            name: true,
+            id: true,
             slug: true,
+            name: true,
+            suburb: true,
+            city: true,
           },
-        },
-      },
-    }),
-  ]);
+        }),
+        prisma.product.findMany({
+          take: 240,
+          orderBy: { updatedAt: "desc" },
+          include: {
+            vendor: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        }),
+      ]);
 
   type SearchSources = Awaited<typeof searchSourcesQuery>;
 
   const [vendors, products] = await withQueryTimeout(searchSourcesQuery, [
-    fallbackSources.vendors as unknown as SearchSources[0],
-    fallbackSources.products as unknown as SearchSources[1],
+    fallbackVendorRows as SearchSources[0],
+    fallbackProductRows as SearchSources[1],
   ]);
 
   type Row = {

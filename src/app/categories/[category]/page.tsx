@@ -6,6 +6,7 @@ import ProductCard from "@/components/ProductCard";
 import StructuredData from "@/components/StructuredData";
 import { prisma } from "@/lib/db";
 import { getFallbackCategoryProducts } from "@/lib/catalog-fallback";
+import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import {
   categoryToSlug,
@@ -49,35 +50,37 @@ export default async function CategoryPage({ params }: PageProps) {
   const resolvedCategory = slugToCategory(category);
   if (!resolvedCategory) return notFound();
 
-  const dbItems = await withQueryTimeout(
-    prisma.product.findMany({
-      where: {
-        inStock: true,
-        vendor: {
-          isActive: true,
-          status: "ACTIVE",
-        },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 120,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        priceCents: true,
-        image: true,
-        isAlcohol: true,
-        vendor: {
+  const dbItems = shouldPreferCatalogFallback()
+    ? []
+    : await withQueryTimeout(
+        prisma.product.findMany({
+          where: {
+            inStock: true,
+            vendor: {
+              isActive: true,
+              status: "ACTIVE",
+            },
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 120,
           select: {
             id: true,
             name: true,
-            slug: true,
+            description: true,
+            priceCents: true,
+            image: true,
+            isAlcohol: true,
+            vendor: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
           },
-        },
-      },
-    }),
-    []
-  );
+        }),
+        []
+      );
 
   const items =
     dbItems.length > 0

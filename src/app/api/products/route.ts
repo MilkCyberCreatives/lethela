@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getFallbackProducts } from "@/lib/catalog-fallback";
+import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { inferProductCategory } from "@/lib/categories";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
@@ -36,30 +37,32 @@ export async function GET(req: Request) {
     };
   }
 
-  const dbItems = await withQueryTimeout(
-    prisma.product.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        priceCents: true,
-        image: true,
-        isAlcohol: true,
-        vendor: {
+  const dbItems = shouldPreferCatalogFallback()
+    ? []
+    : await withQueryTimeout(
+        prisma.product.findMany({
+          where,
           select: {
             id: true,
             name: true,
-            slug: true,
-            deliveryFee: true,
+            description: true,
+            priceCents: true,
+            image: true,
+            isAlcohol: true,
+            vendor: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                deliveryFee: true,
+              },
+            },
           },
-        },
-      },
-      take,
-      orderBy: { updatedAt: "desc" },
-    }),
-    []
-  );
+          take,
+          orderBy: { updatedAt: "desc" },
+        }),
+        []
+      );
 
   const items =
     dbItems.length > 0

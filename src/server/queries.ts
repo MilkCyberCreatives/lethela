@@ -1,10 +1,15 @@
 // /src/server/queries.ts
 import { prisma } from "@/server/db";
 import { getFallbackVendorProfile, type CatalogSection } from "@/lib/catalog-fallback";
+import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
 export async function getVendorBySlug(slug: string) {
   const fallback = getFallbackVendorProfile(slug);
+  if (fallback && shouldPreferCatalogFallback()) {
+    return fallback;
+  }
+
   const vendorQuery = prisma.vendor.findUnique({
       where: { slug },
       include: {

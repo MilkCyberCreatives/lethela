@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { aiPredictETA, aiRecommend, aiRerankVendors } from "@/lib/ai";
 import { inferProductCategory } from "@/lib/categories";
+import { getFallbackProducts, getFallbackVendorCards } from "@/lib/catalog-fallback";
+import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import type { ProductLite } from "@/components/ProductCard";
 import type { Vendor } from "@/types";
 
@@ -65,6 +67,10 @@ export async function getHomeRecommendations(suburb: string | null): Promise<Rec
 }
 
 export async function getHomeProducts(suburb: string | null, take = 24): Promise<ProductLite[]> {
+  if (shouldPreferCatalogFallback()) {
+    return getFallbackProducts().slice(0, Math.min(60, Math.max(6, take)));
+  }
+
   const normalizedSuburb = normalizeSuburb(suburb);
   const rows = await withTimeout(
     () =>
@@ -116,54 +122,7 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
 }
 
 function fallbackVendors(hour: number): Vendor[] {
-  const fallback = [
-    {
-      id: "v1",
-      name: "Hello Tomato",
-      slug: "hello-tomato",
-      cover: "/vendors/grill.jpg",
-      badge: "Popular",
-      rating: 4.7,
-      cuisines: ["Burgers", "Grill"],
-      distanceKm: 2.5,
-      baseEtaMin: 14,
-    },
-    {
-      id: "v2",
-      name: "Bento",
-      slug: "bento",
-      cover: "/vendors/sushi.jpg",
-      badge: null,
-      rating: 4.6,
-      cuisines: ["Sushi", "Asian"],
-      distanceKm: 3.2,
-      baseEtaMin: 16,
-    },
-    {
-      id: "v3",
-      name: "Spice Route",
-      slug: "spice-route",
-      cover: "/vendors/curry.jpg",
-      badge: "Halaal",
-      rating: 4.5,
-      cuisines: ["Curry", "Indian"],
-      distanceKm: 4.1,
-      baseEtaMin: 18,
-    },
-    {
-      id: "v4",
-      name: "Spice Route",
-      slug: "spice-route",
-      cover: "/vendors/curry.jpg",
-      badge: "Local favourite",
-      rating: 4.5,
-      cuisines: ["Curry", "Indian"],
-      distanceKm: 3.8,
-      baseEtaMin: 17,
-    },
-  ];
-
-  return fallback.map((vendor) => {
+  return getFallbackVendorCards().map((vendor) => {
     const etaBase = aiPredictETA(vendor.distanceKm, vendor.baseEtaMin, hour);
     return { ...vendor, eta: `${etaBase}-${etaBase + 5} min` };
   });
@@ -171,6 +130,10 @@ function fallbackVendors(hour: number): Vendor[] {
 
 export async function getHomeVendors(suburb: string | null, take = 18): Promise<Vendor[]> {
   const hour = new Date().getHours();
+  if (shouldPreferCatalogFallback()) {
+    return fallbackVendors(hour).slice(0, Math.min(60, Math.max(6, take)));
+  }
+
   const normalizedSuburb = normalizeSuburb(suburb);
   const dbVendors = await withTimeout(
     () =>
