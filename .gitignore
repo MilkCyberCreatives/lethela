@@ -28,3 +28,5 @@ out
 prisma/dev.db
 prisma/dev.db-journal
 prisma/dev-copy.db
+
+.vercel
