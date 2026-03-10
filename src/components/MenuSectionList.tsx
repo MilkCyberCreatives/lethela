@@ -1,6 +1,7 @@
 // /components/MenuSectionList.tsx
 "use client";
 
+import MealPreferenceControls from "@/components/MealPreferenceControls";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/store/cart";
@@ -48,6 +49,9 @@ export default function MenuSectionList({
                   <div className="font-medium">{it.name}</div>
                   {it.description && <div className="mt-1 text-sm text-white/70">{it.description}</div>}
                   <div className="mt-1 text-sm text-white/80">{formatZAR(it.priceCents)}</div>
+                  <div className="mt-3">
+                    <MealPreferenceControls itemId={it.id} />
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button

@@ -1,5 +1,6 @@
 "use client";
 
+import MealPreferenceControls from "@/components/MealPreferenceControls";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
 import { useUIStore } from "@/store/ui";
@@ -43,6 +44,11 @@ export default function ProductCard({ p }: { p: ProductLite }) {
         </div>
 
         {p.description ? <p className="mt-2 line-clamp-2 text-xs text-white/70">{p.description}</p> : null}
+
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="text-[11px] text-white/55">Save or rate this meal</span>
+          <MealPreferenceControls itemId={p.id} compact />
+        </div>
 
         <div className="mt-3">
           <Button
