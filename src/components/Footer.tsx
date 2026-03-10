@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { Facebook, Instagram, MessageCircle, Music2, ShieldCheck, Wallet } from "lucide-react";
+import { FOOTER_PAYMENT_METHODS, getFooterSocialLinks, LEGAL_SERVICE_AREA, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export default function Footer() {
   const whatsappLink = `https://wa.me/${getOrderWhatsAppPhone()}`;
+  const socialLinks = getFooterSocialLinks();
 
   return (
     <footer className="mt-auto border-t border-white/10 bg-lethela-secondary">
@@ -15,7 +18,7 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.2fr,0.8fr,0.8fr,1fr]">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.2fr,0.75fr,0.75fr,0.9fr,1fr]">
           <div className="surface-panel-muted p-5">
             <h3 className="text-xl font-bold text-white">Lethela</h3>
             <p className="mt-3 text-sm leading-6 text-white/70">
@@ -36,6 +39,24 @@ export default function Footer() {
               >
                 Order on WhatsApp
               </a>
+            </div>
+
+            <div className="mt-5">
+              <div className="text-xs uppercase tracking-[0.18em] text-white/45">Social</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {socialLinks.map((item) => (
+                  <a
+                    key={item.key}
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={item.label}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] text-white/80 transition-colors hover:border-white/25 hover:text-white"
+                  >
+                    <SocialIcon socialKey={item.key} />
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -97,9 +118,41 @@ export default function Footer() {
           </div>
 
           <div>
+            <h4 className="font-semibold text-white">Legal</h4>
+            <ul className="mt-3 space-y-2 text-sm text-white/80">
+              <li>
+                <Link href="/privacy-policy" className="transition-colors hover:text-white">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="transition-colors hover:text-white">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link href="/popia" className="transition-colors hover:text-white">
+                  POPIA Notice
+                </Link>
+              </li>
+              <li>
+                <Link href="/paia-manual" className="transition-colors hover:text-white">
+                  PAIA Access Guide
+                </Link>
+              </li>
+              <li>
+                <Link href="/refund-policy" className="transition-colors hover:text-white">
+                  Refunds &amp; Cancellations
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
             <h4 className="font-semibold text-white">Contact</h4>
             <ul className="mt-3 space-y-2 text-sm text-white/80">
-              <li>Serving: Klipfontein View, Midrand 1685</li>
+              <li>Serving: {LEGAL_SERVICE_AREA}</li>
+              {LEGAL_SUPPORT_EMAIL ? <li>Email: {LEGAL_SUPPORT_EMAIL}</li> : null}
               <li>
                 <a
                   href={whatsappLink}
@@ -117,9 +170,55 @@ export default function Footer() {
           </div>
         </div>
 
+        <div className="mt-8 grid gap-4 md:grid-cols-[1.1fr,1.9fr]">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+              <ShieldCheck className="h-4 w-4 text-lethela-primary" />
+              Trust and privacy
+            </div>
+            <p className="mt-3 text-sm leading-6 text-white/70">
+              Lethela links platform use to privacy, POPIA handling, customer support, and South African website terms so
+              customers, vendors and riders can find the right policy quickly.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+              <Wallet className="h-4 w-4 text-lethela-primary" />
+              Payment methods
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {FOOTER_PAYMENT_METHODS.map((method) => (
+                <div key={method.label} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                  <div className="text-sm font-semibold text-white">{method.label}</div>
+                  <div className="mt-1 text-xs text-white/62">{method.caption}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="mt-10 border-t border-white/10 pt-6 text-xs text-white/60">
-          <div className="overflow-x-auto">
-            <p className="flex min-w-max items-center justify-center gap-1 whitespace-nowrap text-center sm:justify-start sm:text-left">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-white/58">
+              <Link href="/privacy-policy" className="transition-colors hover:text-white">
+                Privacy
+              </Link>
+              <Link href="/terms" className="transition-colors hover:text-white">
+                Terms
+              </Link>
+              <Link href="/popia" className="transition-colors hover:text-white">
+                POPIA
+              </Link>
+              <Link href="/paia-manual" className="transition-colors hover:text-white">
+                PAIA
+              </Link>
+              <Link href="/refund-policy" className="transition-colors hover:text-white">
+                Refunds
+              </Link>
+            </div>
+            <div className="overflow-x-auto">
+              <p className="flex min-w-max items-center justify-center gap-1 whitespace-nowrap text-center sm:justify-start sm:text-left">
               <span>&copy; {new Date().getFullYear()} Lethela. All rights reserved. Developed by</span>
               <a
                 href="https://milkcybercreatives.co.za/"
@@ -130,10 +229,19 @@ export default function Footer() {
                 Milk Cyber Creatives
               </a>
               <span>.</span>
-            </p>
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </footer>
   );
+}
+
+function SocialIcon({ socialKey }: { socialKey: string }) {
+  if (socialKey === "facebook") return <Facebook className="h-4 w-4" />;
+  if (socialKey === "instagram") return <Instagram className="h-4 w-4" />;
+  if (socialKey === "tiktok") return <Music2 className="h-4 w-4" />;
+  if (socialKey === "x") return <span className="text-xs font-semibold">X</span>;
+  return <MessageCircle className="h-4 w-4" />;
 }
