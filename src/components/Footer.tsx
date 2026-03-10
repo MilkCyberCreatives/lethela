@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Facebook, Instagram, MessageCircle, Music2, ShieldCheck, Wallet } from "lucide-react";
+import { Facebook, Instagram, MessageCircle, Music2 } from "lucide-react";
 import { FOOTER_PAYMENT_METHODS, getFooterSocialLinks, LEGAL_SERVICE_AREA, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
@@ -18,7 +18,7 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.2fr,0.75fr,0.75fr,0.9fr,1fr]">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.25fr,0.8fr,0.8fr,1fr]">
           <div className="surface-panel-muted p-5">
             <h3 className="text-xl font-bold text-white">Lethela</h3>
             <p className="mt-3 text-sm leading-6 text-white/70">
@@ -115,6 +115,20 @@ export default function Footer() {
                 </Link>
               </li>
             </ul>
+
+            <div className="mt-6">
+              <h4 className="font-semibold text-white">Payments</h4>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {FOOTER_PAYMENT_METHODS.map((method) => (
+                  <span
+                    key={method.label}
+                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/68"
+                  >
+                    {method.label}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div>
@@ -167,34 +181,6 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-[1.1fr,1.9fr]">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-white">
-              <ShieldCheck className="h-4 w-4 text-lethela-primary" />
-              Trust and privacy
-            </div>
-            <p className="mt-3 text-sm leading-6 text-white/70">
-              Lethela links platform use to privacy, POPIA handling, customer support, and South African website terms so
-              customers, vendors and riders can find the right policy quickly.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-white">
-              <Wallet className="h-4 w-4 text-lethela-primary" />
-              Payment methods
-            </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {FOOTER_PAYMENT_METHODS.map((method) => (
-                <div key={method.label} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-                  <div className="text-sm font-semibold text-white">{method.label}</div>
-                  <div className="mt-1 text-xs text-white/62">{method.caption}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
