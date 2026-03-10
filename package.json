@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky",
+    "prepare": "node .husky/install.mjs",
     "lint-staged": "lint-staged",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
