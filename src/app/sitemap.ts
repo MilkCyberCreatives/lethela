@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
+import { getFallbackVendorCards } from "@/lib/catalog-fallback";
+import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { SITE_URL } from "@/lib/site";
 import { TOWNSHIP_CATEGORIES, categoryToSlug } from "@/lib/categories";
 
@@ -65,21 +67,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.65,
   }));
 
-  const vendorRows = await prisma.vendor
-    .findMany({
-      where: { isActive: true, status: "ACTIVE" },
-      select: { slug: true, updatedAt: true },
-      orderBy: { updatedAt: "desc" },
-      take: 5000,
-    })
-    .catch(() => []);
+  const vendorRows = shouldPreferCatalogFallback()
+    ? []
+    : await prisma.vendor
+        .findMany({
+          where: { isActive: true, status: "ACTIVE" },
+          select: { slug: true, updatedAt: true },
+          orderBy: { updatedAt: "desc" },
+          take: 5000,
+        })
+        .catch(() => []);
 
-  const vendorRoutes: MetadataRoute.Sitemap = vendorRows.map((vendor) => ({
-    url: `${SITE_URL}/vendors/${vendor.slug}`,
-    lastModified: vendor.updatedAt,
-    changeFrequency: "daily",
-    priority: 0.9,
-  }));
+  const vendorRoutes: MetadataRoute.Sitemap =
+    vendorRows.length > 0
+      ? vendorRows.map((vendor) => ({
+          url: `${SITE_URL}/vendors/${vendor.slug}`,
+          lastModified: vendor.updatedAt,
+          changeFrequency: "daily",
+          priority: 0.9,
+        }))
+      : getFallbackVendorCards().map((vendor) => ({
+          url: `${SITE_URL}/vendors/${vendor.slug}`,
+          lastModified: now,
+          changeFrequency: "daily",
+          priority: 0.9,
+        }));
 
   return [...staticRoutes, ...categoryRoutes, ...vendorRoutes];
 }

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getFallbackProducts } from "@/lib/catalog-fallback";
+import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 
 export const revalidate = 900;
@@ -20,27 +22,41 @@ function imageUrl(value: string | null) {
 }
 
 export async function GET() {
-  const products = await prisma.product
-    .findMany({
-      where: {
-        inStock: true,
-        vendor: {
-          isActive: true,
-          status: "ACTIVE",
-        },
-      },
-      include: {
-        vendor: {
-          select: {
-            name: true,
-            slug: true,
+  const dbProducts = shouldPreferCatalogFallback()
+    ? []
+    : await prisma.product
+        .findMany({
+          where: {
+            inStock: true,
+            vendor: {
+              isActive: true,
+              status: "ACTIVE",
+            },
           },
-        },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 5000,
-    })
-    .catch(() => []);
+          include: {
+            vendor: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 5000,
+        })
+        .catch(() => []);
+
+  const products =
+    dbProducts.length > 0
+      ? dbProducts
+      : getFallbackProducts().slice(0, 5000).map((product) => ({
+          ...product,
+          inStock: true,
+          vendor: {
+            name: product.vendor.name,
+            slug: product.vendor.slug,
+          },
+        }));
 
   const itemsXml = products
     .map((product) => {

@@ -225,7 +225,7 @@ export default function AIChatWidget() {
       <button
         onClick={() => setOpen((value) => !value)}
         aria-label="Open AI assistant"
-        className="fixed bottom-24 right-5 z-[81] flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-lethela-primary hover:opacity-95"
+        className="fixed bottom-5 right-4 z-[81] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-lethela-primary hover:opacity-95 md:bottom-24 md:right-5 md:h-14 md:w-14"
       >
         <svg viewBox="0 0 24 24" className="h-7 w-7 text-white" fill="currentColor" aria-hidden>
           <path d="M12 2a5 5 0 0 1 5 5h3a1 1 0 1 1 0 2h-1.06A8 8 0 1 1 5 17H3a1 1 0 1 1 0-2h3a5 5 0 0 1 6-13Z" />
@@ -233,7 +233,7 @@ export default function AIChatWidget() {
       </button>
 
       {open ? (
-        <div className="fixed bottom-24 right-5 z-[82] w-[90vw] max-w-sm rounded-2xl border border-white/10 bg-lethela-secondary">
+        <div className="fixed inset-x-3 bottom-20 z-[82] rounded-2xl border border-white/10 bg-lethela-secondary md:inset-x-auto md:bottom-24 md:right-5 md:w-[90vw] md:max-w-sm">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div className="font-semibold">Lethela Assistant</div>
             <a href={whatsappLink} target="_blank" rel="noreferrer" className="text-xs underline">

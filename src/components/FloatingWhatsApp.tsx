@@ -8,7 +8,7 @@ export default function FloatingWhatsApp() {
       target="_blank"
       rel="noreferrer"
       aria-label="Message Lethela on WhatsApp"
-      className="fixed bottom-5 right-5 z-[80] flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-lethela-primary hover:opacity-95"
+      className="fixed bottom-5 left-4 z-[80] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-lethela-primary hover:opacity-95 md:left-auto md:right-5 md:h-14 md:w-14"
     >
       {/* WhatsApp icon — white for contrast */}
       <svg viewBox="0 0 24 24" className="w-7 h-7 text-white" fill="currentColor" aria-hidden>

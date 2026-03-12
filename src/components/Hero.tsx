@@ -45,6 +45,7 @@ export default function Hero() {
   const [open, setOpen] = useState(false);
   const acRef = useRef<HTMLDivElement>(null);
   const blurTimeout = useRef<any>(null);
+  const suggestionCache = useRef<Map<string, Suggestion[]>>(new Map());
 
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
@@ -67,14 +68,23 @@ export default function Hero() {
   };
 
   useEffect(() => {
+    const text = q.trim();
+    if (text.length < 2) {
+      setSuggests([]);
+      setOpen(false);
+      return;
+    }
+
+    const cacheKey = text.toLowerCase();
+    const cached = suggestionCache.current.get(cacheKey);
+    if (cached) {
+      setSuggests(cached);
+      setOpen(cached.length > 0);
+      return;
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(async () => {
-      const text = q.trim();
-      if (!text) {
-        setSuggests([]);
-        return;
-      }
-
       try {
         const response = await fetch("/api/ai/semantic-search", {
           method: "POST",
@@ -83,12 +93,14 @@ export default function Hero() {
           signal: controller.signal,
         });
         const json = await response.json();
-        setSuggests(json?.results || []);
-        setOpen(true);
+        const results = Array.isArray(json?.results) ? json.results : [];
+        suggestionCache.current.set(cacheKey, results);
+        setSuggests(results);
+        setOpen(results.length > 0);
       } catch {
         // ignore
       }
-    }, 220);
+    }, 320);
 
     return () => {
       clearTimeout(timeoutId);
