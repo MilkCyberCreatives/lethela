@@ -32,6 +32,7 @@ export default function MainHeader() {
             alt="Lethela - Siyashesha"
             width={170}
             height={40}
+            className="h-auto w-[132px] md:w-[170px]"
             priority
           />
         </Link>
