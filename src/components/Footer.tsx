@@ -20,8 +20,8 @@ export default function Footer() {
 
   return (
     <footer className="mt-auto border-t border-white/10 bg-lethela-secondary">
-      <div className="container py-10">
-        <div className="mb-6 flex flex-wrap gap-2">
+      <div className="container py-8 md:py-9">
+        <div className="mb-5 flex flex-wrap gap-2">
           {["Township favourites", "Groceries", "Fast support", "WhatsApp checkout"].map((item) => (
             <span key={item} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white/68 transition-colors hover:bg-white/[0.08]">
               {item}
@@ -29,8 +29,8 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="grid gap-x-6 gap-y-8 md:grid-cols-2 xl:grid-cols-[1.3fr,0.85fr,0.95fr,1fr]">
-          <div className="surface-panel-muted p-5">
+        <div className="grid items-start gap-x-6 gap-y-7 md:grid-cols-2 xl:grid-cols-[1.2fr,0.8fr,0.9fr,1fr]">
+          <div className="surface-panel-muted self-start p-5">
             <h3 className="text-xl font-bold text-white">Lethela</h3>
             <p className="mt-3 text-sm leading-6 text-white/70">
               Siyashesha. A cleaner, faster way to order food, groceries and township favourites from local vendors.
@@ -90,7 +90,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div>
+          <div className="self-start">
             <h4 className="font-semibold text-white">Explore</h4>
             <ul className="mt-3 space-y-2 text-sm text-white/80">
               <li>
@@ -126,7 +126,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div>
+          <div className="self-start space-y-5">
             <h4 className="font-semibold text-white">Business</h4>
             <ul className="mt-3 space-y-2 text-sm text-white/80">
               <li>
@@ -146,7 +146,7 @@ export default function Footer() {
               </li>
             </ul>
 
-            <div className="mt-5">
+            <div>
               <h4 className="font-semibold text-white">Payments</h4>
               <div className="mt-3 flex flex-wrap gap-2">
                 {FOOTER_PAYMENT_METHODS.map((method) => (
@@ -161,7 +161,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div>
+          <div className="self-start space-y-5">
             <h4 className="font-semibold text-white">Legal & Contact</h4>
             <ul className="mt-3 space-y-2 text-sm text-white/80">
               <li>
@@ -191,7 +191,7 @@ export default function Footer() {
               </li>
             </ul>
 
-            <div className="mt-5 border-t border-white/10 pt-5">
+            <div className="border-t border-white/10 pt-5">
               <h4 className="font-semibold text-white">Contact</h4>
               <ul className="mt-3 space-y-2 text-sm text-white/80">
                 <li>Serving: {LEGAL_SERVICE_AREA}</li>
@@ -214,8 +214,8 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 border-t border-white/10 pt-5 text-xs text-white/60">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="mt-6 border-t border-white/10 pt-4 text-xs text-white/60">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-x-4 gap-y-2 text-white/58">
               <Link href="/privacy-policy" className="transition-colors hover:text-white">
                 Privacy
@@ -233,8 +233,8 @@ export default function Footer() {
                 Refunds
               </Link>
             </div>
-            <div className="overflow-x-auto">
-              <p className="flex min-w-max items-center justify-center gap-1 whitespace-nowrap text-center sm:justify-start sm:text-left">
+            <div className="md:text-right">
+              <p className="flex flex-wrap items-center justify-start gap-x-1 gap-y-1 text-left md:justify-end">
                 <span>&copy; {new Date().getFullYear()} Lethela. All rights reserved. Developed by</span>
                 <a
                   href="https://milkcybercreatives.co.za/"
