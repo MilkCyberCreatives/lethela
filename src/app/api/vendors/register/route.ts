@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { compare, hash } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { notifyAdminsOfVendorApplication } from "@/lib/admin-notifications";
 import { attachVendorSession } from "@/lib/vendor-session";
 
 const RegisterVendorSchema = z.object({
@@ -17,7 +18,7 @@ const RegisterVendorSchema = z.object({
   cuisine: z.array(z.string().trim().min(2).max(40)).min(1).max(8).default([]),
   halaal: z.boolean().optional().default(false),
   etaMins: z.number().int().min(10).max(120).default(30),
-  deliveryFeeCents: z.number().int().min(0).max(20_000).default(1500),
+  deliveryFeeCents: z.number().int().min(0).max(20_000).default(1000),
   kycIdUrl: z.string().url().optional().nullable(),
   kycProofUrl: z.string().url().optional().nullable(),
   latitude: z.number().min(-90).max(90).optional(),
@@ -31,6 +32,11 @@ function slugify(input: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
+}
+
+function isApprovedVendor(status: string | null | undefined, isActive: boolean) {
+  const normalizedStatus = String(status || "").toUpperCase();
+  return isActive && (normalizedStatus === "ACTIVE" || normalizedStatus === "APPROVED" || normalizedStatus === "");
 }
 
 async function ensureUniqueSlug(baseName: string) {
@@ -78,7 +84,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     vendor,
-    pending: vendor.status !== "ACTIVE" || !vendor.isActive,
+    pending: !isApprovedVendor(vendor.status, vendor.isActive),
   });
 }
 
@@ -101,7 +107,7 @@ export async function POST(req: Request) {
         : Number(raw.etaMins),
     deliveryFeeCents:
       raw?.deliveryFeeCents === undefined || raw?.deliveryFeeCents === null || raw?.deliveryFeeCents === ""
-        ? 1500
+        ? 1000
         : Number(raw.deliveryFeeCents),
     kycIdUrl: raw?.kycIdUrl ? String(raw.kycIdUrl).trim() : null,
     kycProofUrl: raw?.kycProofUrl ? String(raw.kycProofUrl).trim() : null,
@@ -194,7 +200,8 @@ export async function POST(req: Request) {
   }
 
   const existingStatus = String(existingByEmail?.status || "").toUpperCase();
-  if (existingByEmail && existingByEmail.isActive && (existingStatus === "ACTIVE" || existingStatus === "APPROVED" || existingStatus === "")) {
+  const shouldNotifyAdmins = !existingByEmail || existingStatus !== "PENDING";
+  if (existingByEmail && isApprovedVendor(existingStatus, existingByEmail.isActive)) {
     await prisma.vendorMember.upsert({
       where: {
         vendorId_userId: {
@@ -302,6 +309,18 @@ export async function POST(req: Request) {
       role: "OWNER",
     },
   });
+
+  if (shouldNotifyAdmins) {
+    await notifyAdminsOfVendorApplication({
+      id: vendor.id,
+      name: payload.name,
+      slug: vendor.slug,
+      email: payload.email,
+      phone: payload.phone,
+      suburb: payload.suburb,
+      city: payload.city,
+    });
+  }
 
   const response = NextResponse.json({
     ok: true,

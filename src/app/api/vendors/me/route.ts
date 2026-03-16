@@ -19,6 +19,7 @@ const VendorProfileSchema = z.object({
   kycProofUrl: z.string().url().nullable().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
+  isActive: z.boolean().optional().default(true),
 });
 
 export async function GET() {
@@ -70,6 +71,7 @@ export async function PATCH(req: Request) {
       image: body?.image ? String(body.image).trim() : null,
       kycIdUrl: body?.kycIdUrl ? String(body.kycIdUrl).trim() : null,
       kycProofUrl: body?.kycProofUrl ? String(body.kycProofUrl).trim() : null,
+      isActive: body?.isActive === undefined ? true : Boolean(body.isActive),
       latitude:
         body?.latitude === undefined || body?.latitude === null || body?.latitude === ""
           ? null
@@ -104,6 +106,7 @@ export async function PATCH(req: Request) {
         image: parsed.data.image || null,
         kycIdUrl: parsed.data.kycIdUrl || null,
         kycProofUrl: parsed.data.kycProofUrl || null,
+        isActive: parsed.data.isActive,
         latitude: parsed.data.latitude ?? null,
         longitude: parsed.data.longitude ?? null,
       },

@@ -40,6 +40,14 @@ export default function AdminVendorsPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [channels, setChannels] = useState<{
+    email: { enabled: boolean; recipients: number };
+    whatsapp: { enabled: boolean; recipients: number };
+    push: { enabled: boolean };
+  } | null>(null);
+  const [pushPermission, setPushPermission] = useState<string>(
+    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported"
+  );
 
   const headers = useMemo(
     () => (adminKey.trim() ? { "x-admin-key": adminKey.trim() } : undefined),
@@ -50,15 +58,26 @@ export default function AdminVendorsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/admin/vendors?status=${status}`, {
-        method: "GET",
-        headers,
-        cache: "no-store",
-      });
-      const json = await response.json();
-      if (!response.ok || !json.ok) throw new Error(json.error || "Failed to load applications.");
-      setItems(json.items ?? []);
-      setPendingCount(Number(json.pendingCount ?? 0));
+      const [vendorsResponse, notificationsResponse] = await Promise.all([
+        fetch(`/api/admin/vendors?status=${status}`, {
+          method: "GET",
+          headers,
+          cache: "no-store",
+        }),
+        fetch("/api/admin/notifications", {
+          method: "GET",
+          headers,
+          cache: "no-store",
+        }),
+      ]);
+      const [vendorsJson, notificationsJson] = await Promise.all([vendorsResponse.json(), notificationsResponse.json()]);
+      if (!vendorsResponse.ok || !vendorsJson.ok) throw new Error(vendorsJson.error || "Failed to load applications.");
+      if (!notificationsResponse.ok || !notificationsJson.ok) {
+        throw new Error(notificationsJson.error || "Failed to load notification settings.");
+      }
+      setItems(vendorsJson.items ?? []);
+      setPendingCount(Number(notificationsJson.pendingCount ?? vendorsJson.pendingCount ?? 0));
+      setChannels(notificationsJson.channels ?? null);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to load applications."));
       setItems([]);
@@ -66,6 +85,22 @@ export default function AdminVendorsPage() {
       setLoading(false);
     }
   }, [headers, status]);
+
+  async function enableBrowserAlerts() {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setNotice("Browser notifications are not supported on this device.");
+      setPushPermission("unsupported");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setPushPermission(permission);
+    setNotice(
+      permission === "granted"
+        ? "Browser push notifications enabled for admin alerts."
+        : "Browser push notifications were not enabled."
+    );
+  }
 
   useEffect(() => {
     void load();
@@ -107,6 +142,43 @@ export default function AdminVendorsPage() {
         </p>
 
         <div className="mt-6 grid gap-4 rounded-2xl border border-white/15 bg-white/5 p-5">
+          <div className="grid gap-3 rounded-xl border border-white/10 bg-black/10 p-4 md:grid-cols-[1.3fr,0.7fr]">
+            <div>
+              <div className="text-sm font-semibold text-white">Where admin notifications go</div>
+              <p className="mt-1 text-xs text-white/70">
+                New vendor applications now raise an in-app admin alert, optional browser push, optional email, and
+                optional WhatsApp notification when those channels are configured.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/75">
+                <span className="rounded-full border border-white/15 px-3 py-1">
+                  In-app alert: always on
+                </span>
+                <span className="rounded-full border border-white/15 px-3 py-1">
+                  Browser push: {pushPermission}
+                </span>
+                <span className="rounded-full border border-white/15 px-3 py-1">
+                  Email: {channels?.email.enabled ? `${channels.email.recipients} recipient(s)` : "not configured"}
+                </span>
+                <span className="rounded-full border border-white/15 px-3 py-1">
+                  WhatsApp: {channels?.whatsapp.enabled ? `${channels.whatsapp.recipients} recipient(s)` : "not configured"}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col justify-between gap-3">
+              <div className="rounded-lg border border-white/10 px-3 py-3 text-xs text-white/70">
+                Header alert badge links back here and updates in real time when Pusher is configured.
+              </div>
+              <Button
+                variant="outline"
+                className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                onClick={enableBrowserAlerts}
+                disabled={pushPermission === "granted"}
+              >
+                {pushPermission === "granted" ? "Browser alerts enabled" : "Enable browser alerts"}
+              </Button>
+            </div>
+          </div>
+
           <div className="grid gap-3 md:grid-cols-[1fr,180px,auto] md:items-end">
             <div>
               <label className="mb-1 block text-xs text-white/70">Admin key (optional)</label>

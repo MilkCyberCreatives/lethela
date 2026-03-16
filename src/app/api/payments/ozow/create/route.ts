@@ -4,6 +4,7 @@ import { prisma } from "@/server/db";
 import { auth } from "@/auth";
 import { buildOzowRedirectUrl } from "@/lib/ozow";
 import { geocodeSuburb } from "@/lib/geo";
+import { quoteDelivery } from "@/lib/pricing";
 import { z } from "zod";
 import { withSentryRoute } from "@/server/withSentryRoute";
 
@@ -46,7 +47,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
   }
-  const { vendorId, vendorSlug, destinationSuburb, items, subtotalCents, deliveryCents } = parsed.data;
+  const { vendorId, vendorSlug, destinationSuburb, items, subtotalCents, deliveryCents, totalCents: requestedTotalCents } = parsed.data;
   if (items.length === 0) {
     return NextResponse.json({ ok: false, error: "Cart is empty." }, { status: 400 });
   }
@@ -56,7 +57,16 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
 
   const vendor = await prisma.vendor.findFirst({
     where: { id: vendorId, isActive: true, status: "ACTIVE" },
-    select: { id: true, slug: true, deliveryFee: true },
+    select: {
+      id: true,
+      slug: true,
+      deliveryFee: true,
+      latitude: true,
+      longitude: true,
+      address: true,
+      suburb: true,
+      city: true,
+    },
   });
   if (!vendor) {
     return NextResponse.json({ ok: false, error: "Vendor is unavailable." }, { status: 400 });
@@ -95,10 +105,19 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   });
 
   const calcSubtotal = normalizedItems.reduce((sum, item) => sum + item.priceCents * item.qty, 0);
-  const resolvedDeliveryCents = Number.isFinite(vendor.deliveryFee) ? Math.max(0, vendor.deliveryFee) : deliveryCents;
+  const deliveryQuote = await quoteDelivery({
+    vendor,
+    destinationSuburb,
+    baseFeeCents: vendor.deliveryFee,
+  });
+  const resolvedDeliveryCents = deliveryQuote.deliveryCents;
   const totalCents = calcSubtotal + resolvedDeliveryCents;
 
-  if (Math.abs(calcSubtotal - subtotalCents) > 5) {
+  if (
+    Math.abs(calcSubtotal - subtotalCents) > 5 ||
+    Math.abs(resolvedDeliveryCents - deliveryCents) > 5 ||
+    Math.abs(totalCents - requestedTotalCents) > 5
+  ) {
     return NextResponse.json(
       {
         ok: false,

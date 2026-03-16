@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import DashCard from "./DashCard";
 
 type ProductOption = { id: string; name: string };
@@ -12,6 +13,7 @@ type Special = {
   discountPct: number;
   startsAt: string;
   endsAt: string;
+  draft: boolean;
   product: ProductOption | null;
 };
 
@@ -22,6 +24,7 @@ type SpecialFormState = {
   productId: string;
   startsAt: string;
   endsAt: string;
+  draft: boolean;
 };
 
 const emptyForm: SpecialFormState = {
@@ -31,6 +34,7 @@ const emptyForm: SpecialFormState = {
   productId: "",
   startsAt: "",
   endsAt: "",
+  draft: false,
 };
 
 function specialToForm(special: Special): SpecialFormState {
@@ -41,6 +45,7 @@ function specialToForm(special: Special): SpecialFormState {
     productId: special.product?.id || "",
     startsAt: special.startsAt.slice(0, 16),
     endsAt: special.endsAt.slice(0, 16),
+    draft: special.draft,
   };
 }
 
@@ -64,6 +69,7 @@ function makeQuickWindow(hoursFromNow: number, durationHours: number) {
 }
 
 export default function SpecialsManager() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [specials, setSpecials] = useState<Special[]>([]);
   const [form, setForm] = useState<SpecialFormState>(emptyForm);
@@ -101,6 +107,19 @@ export default function SpecialsManager() {
     });
   }, []);
 
+  useEffect(() => {
+    const action = searchParams?.get("action");
+    if (action !== "create" || editingId) return;
+
+    const quickWindow = makeQuickWindow(1, 4);
+    setForm((current) => ({
+      ...current,
+      startsAt: current.startsAt || quickWindow.startsAt,
+      endsAt: current.endsAt || quickWindow.endsAt,
+    }));
+    setStatus("Create a special below. Quick start times have been filled in for you.");
+  }, [editingId, searchParams]);
+
   async function save() {
     setBusy(true);
     setStatus(null);
@@ -108,6 +127,7 @@ export default function SpecialsManager() {
       const payload = {
         ...form,
         discountPct: Number(form.discountPct),
+        draft: Boolean(form.draft),
       };
       const endpoint = editingId ? `/api/vendors/specials/${editingId}` : "/api/vendors/specials";
       const method = editingId ? "PATCH" : "POST";
@@ -159,12 +179,13 @@ export default function SpecialsManager() {
       live: specials.filter((special) => getSpecialPhase(special) === "Live").length,
       upcoming: specials.filter((special) => getSpecialPhase(special) === "Upcoming").length,
       expired: specials.filter((special) => getSpecialPhase(special) === "Expired").length,
+      drafts: specials.filter((special) => special.draft).length,
     };
   }, [specials]);
 
   return (
     <DashCard title={editingId ? "Edit Special" : "Specials / Promotions"}>
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
           <div className="text-xs uppercase tracking-[0.12em] text-white/60">Live</div>
           <div className="mt-2 text-xl font-semibold">{summary.live}</div>
@@ -176,6 +197,10 @@ export default function SpecialsManager() {
         <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
           <div className="text-xs uppercase tracking-[0.12em] text-white/60">Expired</div>
           <div className="mt-2 text-xl font-semibold">{summary.expired}</div>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+          <div className="text-xs uppercase tracking-[0.12em] text-white/60">Drafts</div>
+          <div className="mt-2 text-xl font-semibold">{summary.drafts}</div>
         </div>
       </div>
 
@@ -199,6 +224,38 @@ export default function SpecialsManager() {
           className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
         >
           Quick: tomorrow promo
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const quickWindow = makeQuickWindow(2, 2);
+            setForm((current) => ({
+              ...current,
+              title: current.title || "Lunch rush special",
+              description: current.description || "Boost midday orders with a limited-time deal.",
+              discountPct: current.discountPct || 10,
+              ...quickWindow,
+            }));
+          }}
+          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+        >
+          Quick: lunch rush
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const quickWindow = makeQuickWindow(48, 8);
+            setForm((current) => ({
+              ...current,
+              title: current.title || "Weekend feature",
+              description: current.description || "Highlight one strong seller over the weekend.",
+              discountPct: current.discountPct || 15,
+              ...quickWindow,
+            }));
+          }}
+          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+        >
+          Quick: weekend feature
         </button>
         <button
           type="button"
@@ -258,6 +315,14 @@ export default function SpecialsManager() {
           value={form.description}
           onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
         />
+        <label className="inline-flex items-center gap-2 text-sm text-white/85 md:col-span-2">
+          <input
+            type="checkbox"
+            checked={form.draft}
+            onChange={(event) => setForm((current) => ({ ...current, draft: event.target.checked }))}
+          />
+          Save as draft until I am ready to publish it
+        </label>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -294,6 +359,9 @@ export default function SpecialsManager() {
                   {special.title} <span className="text-white/70">({special.discountPct}% off)</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs">
+                  <span className="rounded-full border border-white/20 px-2 py-1">
+                    {special.draft ? "Draft" : "Published"}
+                  </span>
                   <span className="rounded-full border border-white/20 px-2 py-1">{phase}</span>
                   <button
                     type="button"

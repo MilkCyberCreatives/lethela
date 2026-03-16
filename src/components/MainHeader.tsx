@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import AdminAlertsLink from "@/components/AdminAlertsLink";
 import { Button } from "@/components/ui/button";
 import CartButton from "@/components/CartButton";
 import CartDrawer from "@/components/CartDrawer";
@@ -53,6 +54,7 @@ export default function MainHeader() {
           <CartButton />
           {status === "authenticated" && user ? (
             <div className="flex items-center gap-3">
+              {user.role === "ADMIN" ? <AdminAlertsLink /> : null}
               <Link href="/profile" className="flex items-center gap-2 rounded-full border border-black/10 px-3 py-2 hover:border-lethela-primary">
                 <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-lethela-primary/10 text-xs font-semibold text-lethela-primary">
                   {userImage ? (
@@ -108,6 +110,11 @@ export default function MainHeader() {
                 </Link>
                 {status === "authenticated" && user ? (
                   <>
+                    {user.role === "ADMIN" ? (
+                      <Link href="/admin" className="hover:underline">
+                        Admin
+                      </Link>
+                    ) : null}
                     <Link href="/profile" className="hover:underline">
                       Profile
                     </Link>

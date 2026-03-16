@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Facebook, Instagram, Linkedin, MessageCircle, Music2, Youtube } from "lucide-react";
+import { Banknote, Facebook, Instagram, Landmark, Linkedin, MessageCircle, Music2, ShieldCheck, Youtube } from "lucide-react";
 import { FOOTER_PAYMENT_METHODS, getFooterSocialLinks, LEGAL_SERVICE_AREA, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
@@ -12,6 +12,13 @@ const POPULAR_SOCIALS = [
   { key: "youtube", label: "YouTube" },
   { key: "linkedin", label: "LinkedIn" },
 ] as const;
+
+function PaymentMethodIcon({ label }: { label: string }) {
+  if (label === "Ozow") return <ShieldCheck className="h-3.5 w-3.5" aria-hidden />;
+  if (label === "Instant EFT") return <Landmark className="h-3.5 w-3.5" aria-hidden />;
+  if (label === "WhatsApp Order") return <MessageCircle className="h-3.5 w-3.5" aria-hidden />;
+  return <Banknote className="h-3.5 w-3.5" aria-hidden />;
+}
 
 export default function Footer() {
   const whatsappLink = `https://wa.me/${getOrderWhatsAppPhone()}`;
@@ -152,8 +159,9 @@ export default function Footer() {
                 {FOOTER_PAYMENT_METHODS.map((method) => (
                   <span
                     key={method.label}
-                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/68"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/68"
                   >
+                    <PaymentMethodIcon label={method.label} />
                     {method.label}
                   </span>
                 ))}

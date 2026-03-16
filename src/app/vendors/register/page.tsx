@@ -7,7 +7,7 @@ import VendorSignupForm from "@/components/VendorSignupForm";
 export const metadata: Metadata = {
   title: "Become a Vendor",
   description:
-    "Apply to become a Lethela vendor. Submit your business details, menu readiness and compliance documents for admin approval.",
+    "Apply to become a Lethela vendor. Submit your business details and menu readiness for admin approval.",
   alternates: {
     canonical: "/vendors/register",
   },
@@ -20,7 +20,7 @@ const STEPS = [
   },
   {
     title: "Admin review",
-    text: "We validate store information, compliance docs, and area coverage.",
+    text: "We validate store information, area coverage, and onboarding details.",
   },
   {
     title: "Go live fast",
@@ -32,7 +32,7 @@ const CHECKLIST = [
   "Business name, phone, and operating address",
   "Delivery fee and average prep ETA defaults",
   "Cuisine categories for search discovery",
-  "Optional compliance links (ID and proof of address)",
+  "Owner ID and proof of address shared on WhatsApp after registration",
 ];
 
 export default function VendorRegisterPage() {

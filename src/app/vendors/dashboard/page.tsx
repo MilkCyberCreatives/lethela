@@ -23,6 +23,18 @@ const MenuManager = dynamic(() => import("@/components/dashboard/MenuManager"), 
 const SalesCharts = dynamic(() => import("@/components/dashboard/SalesCharts"), {
   loading: () => <DashboardPanelSkeleton lines={6} />,
 });
+const PayoutsPanel = dynamic(() => import("@/components/dashboard/PayoutsPanel"), {
+  loading: () => <DashboardPanelSkeleton lines={6} />,
+});
+const NotificationsPanel = dynamic(() => import("@/components/dashboard/NotificationsPanel"), {
+  loading: () => <DashboardPanelSkeleton lines={5} />,
+});
+const FeedbackPanel = dynamic(() => import("@/components/dashboard/FeedbackPanel"), {
+  loading: () => <DashboardPanelSkeleton lines={5} />,
+});
+const TeamManager = dynamic(() => import("@/components/dashboard/TeamManager"), {
+  loading: () => <DashboardPanelSkeleton lines={5} />,
+});
 const OperatingHours = dynamic(() => import("@/components/dashboard/OperatingHours"), {
   loading: () => <DashboardPanelSkeleton lines={4} />,
 });
@@ -45,6 +57,10 @@ type DashboardTab =
   | "analytics"
   | "orders"
   | "menu"
+  | "payouts"
+  | "operations"
+  | "experience"
+  | "team"
   | "profile"
   | "hours"
   | "specials"
@@ -56,6 +72,10 @@ const tabs: Array<{ tab: DashboardTab; label: string; hint: string }> = [
   { tab: "analytics", label: "Analytics", hint: "Sales and trends" },
   { tab: "orders", label: "Orders", hint: "Live operations" },
   { tab: "menu", label: "Menu", hint: "Public menu, products and imports" },
+  { tab: "payouts", label: "Payouts", hint: "Settlements and cash flow" },
+  { tab: "operations", label: "Operations", hint: "Notifications and issues" },
+  { tab: "experience", label: "Feedback", hint: "Ratings and service signals" },
+  { tab: "team", label: "Team", hint: "Staff and permissions" },
   { tab: "profile", label: "Profile", hint: "Store settings" },
   { tab: "hours", label: "Hours", hint: "Trading schedule" },
   { tab: "specials", label: "Specials", hint: "Promotions" },
@@ -74,6 +94,12 @@ function money(cents: number) {
   return `R${(cents / 100).toFixed(2)}`;
 }
 
+function countsTowardRevenue(paymentStatus: string, orderStatus: string) {
+  const payment = String(paymentStatus || "").toUpperCase();
+  const status = String(orderStatus || "").toUpperCase();
+  return payment !== "FAILED" && payment !== "CANCELLED" && status !== "CANCELED";
+}
+
 function DashboardPanelSkeleton({ lines = 4 }: { lines?: number }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -89,7 +115,7 @@ function DashboardPanelSkeleton({ lines = 4 }: { lines?: number }) {
 
 function SupportCard() {
   return (
-    <div className="rounded-2xl border border-lethela-primary/20 bg-[linear-gradient(180deg,rgba(181,0,27,0.12),rgba(8,11,39,0.96))] p-5 shadow-[0_14px_36px_rgba(181,0,27,0.12)]">
+    <div className="rounded-2xl border border-lethela-primary/20 bg-[#141b43] p-5">
       <div className="mb-2 text-sm font-semibold text-white">Support</div>
       <p className="text-sm text-white/80">
         Need help? Message Lethela on WhatsApp:{" "}
@@ -194,7 +220,7 @@ export default async function VendorDashboardPage({
     prisma.special.findMany({
       where: { vendorId },
       orderBy: { startsAt: "asc" },
-      select: { title: true, startsAt: true, endsAt: true },
+      select: { title: true, startsAt: true, endsAt: true, draft: true },
     }),
     prisma.lateOrderFlag.findMany({
       where: { vendorId, resolved: false },
@@ -211,10 +237,16 @@ export default async function VendorDashboardPage({
     Boolean(vendor?._count.hours),
   ];
   const progressPct = Math.round((progressChecks.filter(Boolean).length / progressChecks.length) * 100);
-  const revenue30 = orders.reduce((sum, order) => sum + order.totalCents, 0);
+  const revenue30 = orders.reduce(
+    (sum, order) =>
+      countsTowardRevenue(order.paymentStatus, order.status) ? sum + order.totalCents : sum,
+    0
+  );
   const ordersToday = orders.filter((order) => new Date(order.createdAt) >= today).length;
   const pendingPayments = orders.filter((order) => String(order.paymentStatus).toUpperCase() === "PENDING").length;
   const inStock = products.filter((product) => product.inStock).length;
+  const publishedSpecials = specials.filter((item) => !item.draft).length;
+  const unresolvedLateCount = lateFlags.length;
   const topProducts = Object.entries(
     orders.flatMap((order) => order.items).reduce<Record<string, number>>((acc, item) => {
       const key = item.product?.name || "Unknown item";
@@ -251,11 +283,13 @@ export default async function VendorDashboardPage({
                 <span className="rounded-full border border-white/20 px-3 py-1">{vendor?.status || "PENDING"}</span>
                 <span className="rounded-full border border-white/20 px-3 py-1">{vendorRole || "STAFF"}</span>
                 <span className="rounded-full border border-white/20 px-3 py-1">{progressPct}% ready</span>
+                <span className="rounded-full border border-white/20 px-3 py-1">{vendor?.isActive ? "Store live" : "Store paused"}</span>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {vendorSlug ? <Link href={`/vendors/${vendorSlug}`} className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">View public profile</Link> : null}
               <Link href="/vendors/dashboard?tab=menu" className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Manage menu</Link>
+              <Link href="/vendors/dashboard?tab=specials&action=create" className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Create special</Link>
               <Link href="/vendors/dashboard?tab=orders" className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Open orders</Link>
             </div>
           </div>
@@ -266,9 +300,11 @@ export default async function VendorDashboardPage({
           <MetricCard label="Orders today" value={String(ordersToday)} hint="Live activity" />
           <MetricCard label="Products live" value={`${inStock}/${products.length || 0}`} hint="In stock now" />
           <MetricCard label="Open days" value={`${hours.length}/7`} hint="Trading schedule" />
+          <MetricCard label="Specials live" value={String(publishedSpecials)} hint="Published promos" />
+          <MetricCard label="Late flags" value={String(unresolvedLateCount)} hint="Needs follow-up" />
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-3">
           <InfoCard title="Important right now">
             {issues.length > 0 ? issues.slice(0, 3).map((issue) => (
               <div key={issue} className="rounded-lg border border-amber-200/20 bg-amber-300/10 px-3 py-2 text-sm text-amber-50">{issue}</div>
@@ -282,18 +318,24 @@ export default async function VendorDashboardPage({
               </div>
             )) : <div className="rounded-lg border border-white/10 bg-black/10 px-3 py-2 text-sm text-white/60">Sales data appears here once orders start coming in.</div>}
           </InfoCard>
+          <InfoCard title="Launch readiness">
+            <MiniStat label="Profile completion" value={`${progressPct}%`} />
+            <MiniStat label="Menu sections" value={String(vendor?._count.sections ?? 0)} />
+            <MiniStat label="Menu items" value={String(vendor?._count.items ?? 0)} />
+            <MiniStat label="Store status" value={vendor?.isActive ? "Accepting orders" : "Paused"} />
+          </InfoCard>
         </div>
       </div>
 
       <div className="grid content-start gap-4">
-        <InfoCard title="Store overview">
-          <MiniStat label="Products" value={String(vendor?._count.products ?? 0)} />
-          <MiniStat label="Menu items" value={String(vendor?._count.items ?? 0)} />
-          <MiniStat label="Sections" value={String(vendor?._count.sections ?? 0)} />
-          <MiniStat label="Orders" value={String(vendor?._count.orders ?? 0)} />
-          <MiniStat label="Specials" value={String(vendor?._count.specials ?? 0)} />
-          <MiniStat label="Pending payments" value={String(pendingPayments)} />
-        </InfoCard>
+          <InfoCard title="Store overview">
+            <MiniStat label="Products" value={String(vendor?._count.products ?? 0)} />
+            <MiniStat label="Menu items" value={String(vendor?._count.items ?? 0)} />
+            <MiniStat label="Sections" value={String(vendor?._count.sections ?? 0)} />
+            <MiniStat label="Orders" value={String(vendor?._count.orders ?? 0)} />
+            <MiniStat label="Specials" value={String(vendor?._count.specials ?? 0)} />
+            <MiniStat label="Pending payments" value={String(pendingPayments)} />
+          </InfoCard>
         <InfoCard title="Next promo">
           <div className="rounded-lg border border-white/10 px-3 py-3 text-sm">
             <div className="font-semibold">{nextPromo ? nextPromo.title : "No upcoming promo"}</div>
@@ -315,6 +357,12 @@ export default async function VendorDashboardPage({
             ))}
           </InfoCard>
         ) : null}
+        <InfoCard title="Trading week">
+          <MiniStat label="Open days set" value={`${hours.length} / 7`} />
+          <MiniStat label="Products in stock" value={`${inStock} / ${products.length || 0}`} />
+          <MiniStat label="Pending payments" value={String(pendingPayments)} />
+          <MiniStat label="Active specials" value={String(publishedSpecials)} />
+        </InfoCard>
       </div>
     </div>
   );
@@ -333,6 +381,22 @@ export default async function VendorDashboardPage({
     case "menu":
       title = "Menu";
       content = <div className="grid gap-4"><MenuManager /><ProductsManager /><BulkImportProducts /></div>;
+      break;
+    case "payouts":
+      title = "Payouts";
+      content = <PayoutsPanel />;
+      break;
+    case "operations":
+      title = "Operations";
+      content = <NotificationsPanel />;
+      break;
+    case "experience":
+      title = "Feedback";
+      content = <FeedbackPanel />;
+      break;
+    case "team":
+      title = "Team";
+      content = <TeamManager />;
       break;
     case "profile":
       title = "Profile";
@@ -361,10 +425,9 @@ export default async function VendorDashboardPage({
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
       <MainHeader />
-      <section className="container relative py-6 lg:h-[calc(100vh-88px)]">
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,rgba(181,0,27,0.16),transparent_60%)]" />
-        <div className="grid h-full gap-6 lg:grid-cols-[250px,1fr]">
-          <aside className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(18,24,70,0.92),rgba(8,11,39,0.98))] p-4 shadow-[0_18px_42px_rgba(2,6,23,0.2)] lg:h-full">
+      <section className="relative w-full px-4 py-6 sm:px-6 lg:h-[calc(100vh-88px)] lg:px-8 xl:px-10">
+        <div className="grid h-full gap-6 lg:grid-cols-[270px,minmax(0,1fr)]">
+          <aside className="rounded-2xl border border-white/10 bg-[#0f1637] p-4 lg:h-full">
             <div className="border-b border-white/10 pb-4">
               <p className="text-xs uppercase tracking-[0.14em] text-white/55">Dashboard</p>
               <h2 className="mt-2 text-lg font-semibold">{vendor?.name || "Vendor"}</h2>
@@ -375,10 +438,10 @@ export default async function VendorDashboardPage({
                 <Link
                   key={item.tab}
                   href={`/vendors/dashboard?tab=${item.tab}`}
-                  className={`rounded-xl border px-3 py-3 transition-[background-color,border-color,transform,box-shadow] duration-200 ${activeTab === item.tab ? "border-lethela-primary/70 bg-[linear-gradient(135deg,rgba(181,0,27,0.18),rgba(181,0,27,0.06))] shadow-[0_12px_24px_rgba(181,0,27,0.14)]" : "border-white/10 bg-black/10 hover:border-lethela-primary/50 hover:bg-white/10 hover:shadow-[0_10px_24px_rgba(2,6,23,0.16)]"}`}
+                  className={`rounded-xl border px-3 py-3 transition-colors duration-200 ${activeTab === item.tab ? "border-lethela-primary/70 bg-lethela-primary/12" : "border-white/10 bg-black/10 hover:border-lethela-primary/50 hover:bg-white/10"}`}
                 >
                   <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <span className={`h-2 w-2 rounded-full ${activeTab === item.tab ? "bg-lethela-primary shadow-[0_0_14px_rgba(181,0,27,0.55)]" : "bg-white/25"}`} />
+                    <span className={`h-2 w-2 rounded-full ${activeTab === item.tab ? "bg-lethela-primary" : "bg-white/25"}`} />
                     {item.label}
                   </div>
                   <div className="mt-1 text-xs text-white/55">{item.hint}</div>
@@ -387,7 +450,7 @@ export default async function VendorDashboardPage({
             </nav>
           </aside>
 
-          <div className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(10,13,37,0.92),rgba(6,8,22,0.98))] p-4 shadow-[0_18px_42px_rgba(2,6,23,0.2)] lg:h-full lg:overflow-hidden">
+          <div className="rounded-2xl border border-white/10 bg-[#0b112a] p-4 lg:h-full lg:overflow-hidden">
             <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.14em] text-lethela-primary/85">Current view</p>
@@ -407,7 +470,7 @@ export default async function VendorDashboardPage({
 
 function MetricCard({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <div className="rounded-2xl border border-lethela-primary/15 bg-[linear-gradient(180deg,rgba(181,0,27,0.12),rgba(255,255,255,0.04))] p-4 shadow-[0_12px_28px_rgba(181,0,27,0.08)]">
+    <div className="rounded-2xl border border-lethela-primary/20 bg-[#141b43] p-4">
       <p className="text-xs uppercase tracking-[0.12em] text-lethela-primary/85">{label}</p>
       <p className="mt-2 text-2xl font-semibold">{value}</p>
       <p className="mt-1 text-xs text-white/60">{hint}</p>
@@ -417,9 +480,9 @@ function MetricCard({ label, value, hint }: { label: string; value: string; hint
 
 function InfoCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-5 shadow-[0_14px_32px_rgba(2,6,23,0.18)]">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
       <div className="mb-4 flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.12em] text-white/82">
-        <span className="h-2.5 w-2.5 rounded-full bg-lethela-primary shadow-[0_0_16px_rgba(181,0,27,0.5)]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-lethela-primary" />
         {title}
       </div>
       <div className="space-y-2">{children}</div>

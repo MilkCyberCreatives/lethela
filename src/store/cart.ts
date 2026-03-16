@@ -23,7 +23,10 @@ type CartState = {
   clear: () => void;
   subtotal: () => number;
   count: () => number;
+  deliveryTotal: () => number;
 };
+
+export const DELIVERY_FEE_PER_ITEM_CENTS = 1000;
 
 export const useCart = create<CartState>()(
   persist(
@@ -32,18 +35,22 @@ export const useCart = create<CartState>()(
       vendorLockedTo: null,
       add: (item, qty = 1) => {
         const st = get();
-        // One-vendor-only rule (simplifies delivery fees)
-        if (st.vendorLockedTo && st.vendorLockedTo !== item.vendorId) {
-          // reset cart for a new vendor
-          set({ items: [], vendorLockedTo: null });
-        }
-        const existing = st.items.find((i) => i.itemId === item.itemId);
+        // Keep checkout scoped to one vendor by replacing the cart when the vendor changes.
+        const nextItemsBase =
+          st.vendorLockedTo && st.vendorLockedTo !== item.vendorId ? [] : st.items;
+        const existing = nextItemsBase.find((i) => i.itemId === item.itemId);
         if (existing) {
-          existing.qty += qty;
-          set({ items: [...st.items] });
+          set({
+            items: nextItemsBase.map((cartItem) =>
+              cartItem.itemId === item.itemId
+                ? { ...cartItem, qty: cartItem.qty + qty }
+                : cartItem
+            ),
+            vendorLockedTo: item.vendorId,
+          });
         } else {
           set({
-            items: [...st.items, { ...item, qty }],
+            items: [...nextItemsBase, { ...item, qty }],
             vendorLockedTo: item.vendorId,
           });
         }
@@ -78,6 +85,7 @@ export const useCart = create<CartState>()(
       clear: () => set({ items: [], vendorLockedTo: null }),
       subtotal: () => get().items.reduce((sum, i) => sum + i.priceCents * i.qty, 0),
       count: () => get().items.reduce((sum, i) => sum + i.qty, 0),
+      deliveryTotal: () => get().items.reduce((sum, i) => sum + i.qty * DELIVERY_FEE_PER_ITEM_CENTS, 0),
     }),
     {
       name: "lethela_cart",

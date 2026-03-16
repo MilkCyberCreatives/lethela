@@ -3,6 +3,19 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
 
+function dayKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isFailedPayment(paymentStatus: string, orderStatus: string) {
+  const payment = String(paymentStatus || "").toUpperCase();
+  const status = String(orderStatus || "").toUpperCase();
+  return payment === "FAILED" || payment === "CANCELLED" || status === "CANCELED";
+}
+
 export async function GET() {
   try {
     const { vendorId } = await requireVendor("STAFF");
@@ -46,7 +59,7 @@ export async function GET() {
     for (let i = 0; i < 30; i++) {
       const d = new Date(since);
       d.setDate(since.getDate() + i);
-      const key = d.toISOString().slice(0, 10);
+      const key = dayKey(d);
       days[key] = {
         date: key,
         orders: 0,
@@ -81,19 +94,24 @@ export async function GET() {
     };
 
     for (const o of orders) {
-      const key = o.createdAt.toISOString().slice(0, 10);
+      const key = dayKey(new Date(o.createdAt));
       if (!days[key]) continue;
       days[key].orders += 1;
-      days[key].revenueCents += o.totalCents;
-      days[key].subtotalCents += o.subtotalCents;
-      days[key].deliveryFeeCents += o.deliveryFeeCents;
 
       const payment = String(o.paymentStatus || "").toUpperCase();
+      const failed = isFailedPayment(o.paymentStatus, o.status);
+
+      if (!failed) {
+        days[key].revenueCents += o.totalCents;
+        days[key].subtotalCents += o.subtotalCents;
+        days[key].deliveryFeeCents += o.deliveryFeeCents;
+      }
+
       if (payment === "PAID" || payment === "SUCCESS") {
         days[key].paidRevenueCents += o.totalCents;
         paymentSummary.paidOrders += 1;
         paymentSummary.paidRevenueCents += o.totalCents;
-      } else if (payment === "FAILED" || payment === "CANCELLED") {
+      } else if (failed) {
         paymentSummary.failedOrders += 1;
         paymentSummary.failedRevenueCents += o.totalCents;
       } else {
@@ -103,7 +121,7 @@ export async function GET() {
       }
 
       const weekday = o.createdAt.toLocaleDateString("en-US", { weekday: "short" });
-      if (weekdayMap[weekday]) {
+      if (weekdayMap[weekday] && !failed) {
         weekdayMap[weekday].orders += 1;
         weekdayMap[weekday].revenueCents += o.totalCents;
       }
@@ -136,9 +154,12 @@ export async function GET() {
       recentOrders,
     });
   } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to load analytics.";
+    const isAuthError =
+      /vendor|sign in|membership|approval|role|access/i.test(message);
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Auth error" },
-      { status: 401 }
+      { ok: false, error: message },
+      { status: isAuthError ? 401 : 500 }
     );
   }
 }

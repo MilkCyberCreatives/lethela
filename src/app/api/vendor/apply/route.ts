@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/server/db";
 import { auth } from "@/auth";
+import { notifyAdminsOfVendorApplication } from "@/lib/admin-notifications";
 import { withSentryRoute } from "@/server/withSentryRoute";
 
 const BodySchema = z.object({
@@ -44,6 +45,13 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       kycProofUrl
     },
     select: { id: true, slug: true, status: true }
+  });
+
+  await notifyAdminsOfVendorApplication({
+    id: vendor.id,
+    name,
+    slug: vendor.slug,
+    suburb,
   });
 
   // Optionally elevate the user role to VENDOR (admin approval later).

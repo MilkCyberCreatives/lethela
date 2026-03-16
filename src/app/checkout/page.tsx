@@ -3,10 +3,11 @@
 
 import { useCart } from "@/store/cart";
 import { formatZAR } from "@/lib/format";
+import { DEFAULT_DELIVERY_FEE_CENTS, EXTRA_DELIVERY_FEE_PER_KM_CENTS, INCLUDED_DELIVERY_RADIUS_KM } from "@/lib/pricing";
 import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function readCookie(name: string) {
   if (typeof document === "undefined") return null;
@@ -22,8 +23,64 @@ export default function CheckoutPage() {
   const [destinationSuburb, setDestinationSuburb] = useState(
     () => readCookie("lethela_suburb") || "Klipfontein View, Midrand"
   );
+  const [deliveryQuote, setDeliveryQuote] = useState({
+    baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
+    deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
+    distanceKm: null as number | null,
+    includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
+    extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
+  });
+  const [quoteLoading, setQuoteLoading] = useState(false);
 
-  const deliveryFee = items.length > 0 ? Math.max(0, Number(items[0]?.deliveryFeeCents ?? 1500)) : 0;
+  useEffect(() => {
+    const vendorId = items[0]?.vendorId;
+    if (!vendorId) {
+      setDeliveryQuote({
+        baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
+        deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
+        distanceKm: null,
+        includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
+        extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    const destination = destinationSuburb.trim() || "Klipfontein View, Midrand";
+    const timeoutId = window.setTimeout(async () => {
+      setQuoteLoading(true);
+      try {
+        const response = await fetch(
+          `/api/checkout/delivery-quote?vendorId=${encodeURIComponent(vendorId)}&destinationSuburb=${encodeURIComponent(destination)}`,
+          { cache: "no-store", signal: controller.signal }
+        );
+        const json = await response.json();
+        if (!response.ok || !json.ok) {
+          return;
+        }
+        setDeliveryQuote({
+          baseFeeCents: Number(json.baseFeeCents ?? DEFAULT_DELIVERY_FEE_CENTS),
+          deliveryCents: Number(json.deliveryCents ?? DEFAULT_DELIVERY_FEE_CENTS),
+          distanceKm: typeof json.distanceKm === "number" ? json.distanceKm : null,
+          includedRadiusKm: Number(json.includedRadiusKm ?? INCLUDED_DELIVERY_RADIUS_KM),
+          extraPerKmCents: Number(json.extraPerKmCents ?? EXTRA_DELIVERY_FEE_PER_KM_CENTS),
+        });
+      } catch (quoteError: unknown) {
+        if (quoteError instanceof Error && quoteError.name === "AbortError") {
+          return;
+        }
+      } finally {
+        setQuoteLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [destinationSuburb, items]);
+
+  const deliveryFee = deliveryQuote.deliveryCents;
   const total = subtotal + deliveryFee;
   const whatsappLink = useMemo(
     () =>
@@ -133,9 +190,17 @@ export default function CheckoutPage() {
               <span>{formatZAR(subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Delivery</span>
+              <span>
+                Delivery
+                {deliveryQuote.distanceKm != null ? ` (${deliveryQuote.distanceKm.toFixed(2)} km from store)` : ""}
+              </span>
               <span>{formatZAR(deliveryFee)}</span>
             </div>
+            <p className="text-xs text-white/60">
+              {quoteLoading
+                ? "Refreshing delivery quote..."
+                : `${formatZAR(deliveryQuote.baseFeeCents)} within ${deliveryQuote.includedRadiusKm} km, then ${formatZAR(deliveryQuote.extraPerKmCents)} for each extra km.`}
+            </p>
             <div className="flex justify-between text-base font-semibold">
               <span>Total</span>
               <span>{formatZAR(total)}</span>

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
+import { DEFAULT_DELIVERY_FEE_CENTS, EXTRA_DELIVERY_FEE_PER_KM_CENTS, INCLUDED_DELIVERY_RADIUS_KM } from "@/lib/pricing";
 import { useUIStore } from "@/store/ui";
 import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
 
@@ -22,7 +24,64 @@ export default function CartDrawer() {
   const remove = useCart((state) => state.remove);
   const clear = useCart((state) => state.clear);
   const subtotal = useCart((state) => state.subtotal());
-  const delivery = items.length > 0 ? Math.max(0, Number(items[0]?.deliveryFeeCents ?? 1500)) : 0;
+  const [deliveryQuote, setDeliveryQuote] = useState({
+    baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
+    deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
+    distanceKm: null as number | null,
+    includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
+    extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
+  });
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const destinationSuburb = readCookie("lethela_suburb") || "Klipfontein View, Midrand";
+
+  useEffect(() => {
+    const vendorId = items[0]?.vendorId;
+    if (!vendorId) {
+      setDeliveryQuote({
+        baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
+        deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
+        distanceKm: null,
+        includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
+        extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      setQuoteLoading(true);
+      try {
+        const response = await fetch(
+          `/api/checkout/delivery-quote?vendorId=${encodeURIComponent(vendorId)}&destinationSuburb=${encodeURIComponent(destinationSuburb)}`,
+          { cache: "no-store", signal: controller.signal }
+        );
+        const json = await response.json();
+        if (!response.ok || !json.ok) {
+          return;
+        }
+        setDeliveryQuote({
+          baseFeeCents: Number(json.baseFeeCents ?? DEFAULT_DELIVERY_FEE_CENTS),
+          deliveryCents: Number(json.deliveryCents ?? DEFAULT_DELIVERY_FEE_CENTS),
+          distanceKm: typeof json.distanceKm === "number" ? json.distanceKm : null,
+          includedRadiusKm: Number(json.includedRadiusKm ?? INCLUDED_DELIVERY_RADIUS_KM),
+          extraPerKmCents: Number(json.extraPerKmCents ?? EXTRA_DELIVERY_FEE_PER_KM_CENTS),
+        });
+      } catch (quoteError: unknown) {
+        if (quoteError instanceof Error && quoteError.name === "AbortError") {
+          return;
+        }
+      } finally {
+        setQuoteLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [destinationSuburb, items]);
+
+  const delivery = deliveryQuote.deliveryCents;
   const total = subtotal + delivery;
   const whatsappLink = buildWhatsAppOrderLink({
     items: items.map((item) => ({
@@ -33,7 +92,7 @@ export default function CartDrawer() {
     subtotalCents: subtotal,
     deliveryCents: delivery,
     totalCents: total,
-    destinationSuburb: readCookie("lethela_suburb"),
+    destinationSuburb,
     vendorSlug: items[0]?.vendorSlug || null,
   });
 
@@ -106,8 +165,16 @@ export default function CartDrawer() {
               <span>R {(subtotal / 100).toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-white/80">
-              <span>Delivery</span>
+              <span>
+                Delivery
+                {deliveryQuote.distanceKm != null ? ` (${deliveryQuote.distanceKm.toFixed(2)} km)` : ""}
+              </span>
               <span>R {(delivery / 100).toFixed(2)}</span>
+            </div>
+            <div className="text-xs text-white/55">
+              {quoteLoading
+                ? "Refreshing delivery quote..."
+                : `R ${(deliveryQuote.baseFeeCents / 100).toFixed(2)} within ${deliveryQuote.includedRadiusKm} km, then R ${(deliveryQuote.extraPerKmCents / 100).toFixed(2)} per extra km.`}
             </div>
             <div className="flex items-center justify-between font-semibold">
               <span>Total</span>

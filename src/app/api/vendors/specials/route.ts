@@ -11,6 +11,7 @@ const SpecialInputSchema = z
     startsAt: z.string().trim().min(1),
     endsAt: z.string().trim().min(1),
     productId: z.string().trim().min(1).nullable().optional(),
+    draft: z.boolean().optional().default(false),
   })
   .refine((value) => new Date(value.endsAt).getTime() > new Date(value.startsAt).getTime(), {
     message: "End date must be later than start date.",
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
       discountPct: Number(body?.discountPct),
       description: body?.description ? String(body.description).trim() : null,
       productId: body?.productId ? String(body.productId).trim() : null,
+      draft: Boolean(body?.draft),
     });
 
     if (!parsed.success) {
@@ -85,6 +87,7 @@ export async function POST(req: Request) {
         discountPct: parsed.data.discountPct,
         startsAt: new Date(parsed.data.startsAt),
         endsAt: new Date(parsed.data.endsAt),
+        draft: parsed.data.draft,
       },
       include: {
         product: {

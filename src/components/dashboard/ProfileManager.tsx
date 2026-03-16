@@ -42,6 +42,7 @@ type ProfileFormState = {
   deliveryFee: string;
   etaMins: string;
   halaal: boolean;
+  isActive: boolean;
   image: string;
   kycIdUrl: string;
   kycProofUrl: string;
@@ -76,6 +77,7 @@ function buildFormState(vendor: VendorProfile): ProfileFormState {
     deliveryFee: String(Math.round(vendor.deliveryFee / 100)),
     etaMins: String(vendor.etaMins),
     halaal: vendor.halaal,
+    isActive: vendor.isActive,
     image: vendor.image || "",
     kycIdUrl: vendor.kycIdUrl || "",
     kycProofUrl: vendor.kycProofUrl || "",
@@ -168,6 +170,7 @@ export default function ProfileManager() {
           deliveryFee: Math.max(0, Number(form.deliveryFee || "0")) * 100,
           etaMins: Number(form.etaMins),
           halaal: form.halaal,
+          isActive: form.isActive,
           image: form.image || null,
           kycIdUrl: form.kycIdUrl || null,
           kycProofUrl: form.kycProofUrl || null,
@@ -212,7 +215,7 @@ export default function ProfileManager() {
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-white/45">
-                    No store image yet
+                    No store logo yet
                   </div>
                 )}
               </div>
@@ -229,6 +232,9 @@ export default function ProfileManager() {
                     Halaal
                   </span>
                 ) : null}
+                <span className="rounded-full border border-white/15 px-3 py-1">
+                  {form.isActive ? "Accepting orders" : "Store paused"}
+                </span>
               </div>
 
               <div className="mt-4">
@@ -367,7 +373,7 @@ export default function ProfileManager() {
               />
               <input
                 className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Image URL"
+                placeholder="Store logo URL"
                 value={form.image}
                 onChange={(event) =>
                   setForm((current) =>
@@ -407,6 +413,18 @@ export default function ProfileManager() {
                 />
                 Halaal friendly menu
               </label>
+              <label className="inline-flex items-center gap-2 text-sm text-white/85">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, isActive: event.target.checked } : current
+                    )
+                  }
+                />
+                Accept new orders
+              </label>
             </div>
           </div>
 
@@ -425,7 +443,7 @@ export default function ProfileManager() {
                   setForm((current) =>
                     current ? { ...current, image: url } : current
                   );
-                  setStatus("Store image uploaded.");
+                  setStatus("Store logo uploaded.");
                 } catch (error: unknown) {
                   setStatus(
                     error instanceof Error ? error.message : "Image upload failed."
@@ -438,7 +456,7 @@ export default function ProfileManager() {
               onClick={() => fileRef.current?.click()}
               className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
             >
-              Upload store image
+              Upload store logo
             </button>
             <button
               type="button"

@@ -20,6 +20,7 @@ declare module "next-auth" {
       role: AppRole;
       email: string;
       name?: string | null;
+      image?: string | null;
     };
   }
 
@@ -28,6 +29,7 @@ declare module "next-auth" {
     role?: AppRole;
     email?: string;
     name?: string | null;
+    image?: string | null;
   }
 }
 
@@ -37,6 +39,7 @@ declare module "next-auth/jwt" {
     role?: AppRole;
     email?: string;
     name?: string | null;
+    image?: string | null;
   }
 }
 
@@ -70,6 +73,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name ?? null,
+          image: user.image ?? null,
           role: user.role,
         };
       },
@@ -82,6 +86,7 @@ export const authOptions: NextAuthOptions = {
         token.role = isAppRole(user.role) ? user.role : "USER";
         token.email = user.email ?? token.email ?? "";
         token.name = user.name ?? null;
+        token.image = user.image ?? null;
       }
       return token;
     },
@@ -91,6 +96,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role ?? "USER";
         session.user.email = token.email ?? session.user.email ?? "";
         session.user.name = token.name ?? session.user.name ?? null;
+        session.user.image = token.image ?? session.user.image ?? null;
       }
       return session;
     },

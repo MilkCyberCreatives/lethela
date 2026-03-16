@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk } from "next/font/google";
 import MarketingScripts from "@/components/MarketingScripts";
+import Providers from "@/components/Providers";
 import StructuredData from "@/components/StructuredData";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 import "./globals.css";
@@ -161,7 +162,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${spaceGrotesk.className} min-h-dvh bg-lethela-secondary text-white`}>
         <StructuredData data={globalSchema} />
         <MarketingScripts />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

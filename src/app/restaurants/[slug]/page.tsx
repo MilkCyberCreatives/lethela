@@ -37,7 +37,7 @@ export default async function RestaurantPage({ params }: Props) {
               <span>-</span>
               <span>{vendor.halaal ? "Halaal" : "Non-halaal"}</span>
               <span>-</span>
-              <span>Delivery {formatZAR(1000)} per item</span>
+              <span>Delivery from {formatZAR(vendor.deliveryFee)} within 1 km</span>
               <span>-</span>
               <span>
                 ETA {vendor.etaMins}-{vendor.etaMins + 10} min

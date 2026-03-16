@@ -305,7 +305,7 @@ export default function MenuManager() {
 
   return (
     <DashCard title="Public Menu Manager">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-lethela-primary/15 bg-[linear-gradient(135deg,rgba(181,0,27,0.14),rgba(255,255,255,0.04))] px-4 py-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-lethela-primary/20 bg-[#141b43] px-4 py-4">
         <div>
           <div className="text-sm font-semibold text-white">This controls the customer-facing menu.</div>
           <p className="mt-1 text-xs text-white/70">

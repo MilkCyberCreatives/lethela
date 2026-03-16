@@ -31,6 +31,11 @@ function toCuisineList(value: string) {
     .slice(0, 8);
 }
 
+function isApprovedVendor(status: string, isActive: boolean) {
+  const normalizedStatus = String(status || "").toUpperCase();
+  return isActive && (normalizedStatus === "ACTIVE" || normalizedStatus === "APPROVED" || normalizedStatus === "");
+}
+
 export default function VendorSignupForm() {
   const [form, setForm] = useState({
     name: "",
@@ -43,11 +48,9 @@ export default function VendorSignupForm() {
     city: "Midrand",
     province: "Gauteng",
     cuisineInput: "Burgers, Grill",
-    deliveryFeeCents: "1500",
+    deliveryFeeCents: "10",
     etaMins: "30",
     halaal: false,
-    kycIdUrl: "",
-    kycProofUrl: "",
     latitude: "",
     longitude: "",
     agreeToReview: false,
@@ -60,8 +63,8 @@ export default function VendorSignupForm() {
 
   const approvalState = useMemo(() => {
     if (!vendor) return null;
-    if (vendor.status === "ACTIVE" && vendor.isActive) return "approved";
-    if (vendor.status === "REJECTED") return "rejected";
+    if (isApprovedVendor(vendor.status, vendor.isActive)) return "approved";
+    if (String(vendor.status || "").toUpperCase() === "REJECTED") return "rejected";
     return "pending";
   }, [vendor]);
 
@@ -118,11 +121,9 @@ export default function VendorSignupForm() {
           city: form.city,
           province: form.province,
           cuisine: toCuisineList(form.cuisineInput),
-          deliveryFeeCents: Number(form.deliveryFeeCents),
+          deliveryFeeCents: Math.max(0, Number(form.deliveryFeeCents || "0")) * 100,
           etaMins: Number(form.etaMins),
           halaal: form.halaal,
-          kycIdUrl: form.kycIdUrl || undefined,
-          kycProofUrl: form.kycProofUrl || undefined,
           latitude: form.latitude ? Number(form.latitude) : undefined,
           longitude: form.longitude ? Number(form.longitude) : undefined,
         }),
@@ -148,7 +149,7 @@ export default function VendorSignupForm() {
         <div>
           <h2 className="text-xl font-semibold">Vendor Application</h2>
           <p className="mt-1 text-sm text-white/70">
-            Fill in profile, operations, and compliance details once. Admin approval unlocks your dashboard.
+            Fill in your profile and operations details once. Admin approval unlocks your dashboard.
           </p>
           <p className="mt-2 text-xs text-white/60">
             Already applied or already approved?{" "}
@@ -254,9 +255,9 @@ export default function VendorSignupForm() {
               className="rounded bg-white px-3 py-2 text-black"
               type="number"
               min={0}
-              max={20000}
-              step={100}
-              placeholder="Default delivery fee cents*"
+              max={200}
+              step={1}
+              placeholder="Default delivery fee (R)*"
               required
               value={form.deliveryFeeCents}
               onChange={(event) => setForm((state) => ({ ...state, deliveryFeeCents: event.target.value }))}
@@ -296,21 +297,10 @@ export default function VendorSignupForm() {
 
         <section className="rounded-xl border border-white/10 p-4">
           <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Compliance</h3>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <input
-              className="rounded bg-white px-3 py-2 text-black"
-              type="url"
-              placeholder="Owner ID document URL"
-              value={form.kycIdUrl}
-              onChange={(event) => setForm((state) => ({ ...state, kycIdUrl: event.target.value }))}
-            />
-            <input
-              className="rounded bg-white px-3 py-2 text-black"
-              type="url"
-              placeholder="Proof of address URL"
-              value={form.kycProofUrl}
-              onChange={(event) => setForm((state) => ({ ...state, kycProofUrl: event.target.value }))}
-            />
+          <div className="mt-3 grid gap-3">
+            <p className="text-sm text-white/75">
+              Owner ID and proof of address will be requested manually on WhatsApp after registration.
+            </p>
             <label className="md:col-span-2 inline-flex items-center gap-2 text-sm text-white/80">
               <input
                 type="checkbox"
