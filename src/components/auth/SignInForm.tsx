@@ -11,11 +11,15 @@ export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const params = useSearchParams();
-  const callbackUrl = params?.get("callbackUrl") ?? "/";
+  const rawCallbackUrl = params?.get("callbackUrl") ?? "/";
+  const callbackUrl =
+    rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//") ? rawCallbackUrl : "/";
 
   const submit = async () => {
+    setError(null);
     setSubmitting(true);
     const res = await signIn("credentials", {
       redirect: false,
@@ -26,7 +30,7 @@ export default function SignInForm() {
     if (res?.ok) {
       router.push(callbackUrl);
     } else {
-      alert(res?.error ?? "Sign in failed");
+      setError(res?.error ?? "Sign in failed");
     }
   };
 
@@ -56,6 +60,7 @@ export default function SignInForm() {
         <Button onClick={submit} disabled={submitting} className="bg-lethela-primary">
           {submitting ? "Signing in..." : "Sign in"}
         </Button>
+        {error ? <p className="text-sm text-red-200">{error}</p> : null}
         <p className="text-sm text-white/70">
           No account?{" "}
           <Link href="/signup" className="underline">

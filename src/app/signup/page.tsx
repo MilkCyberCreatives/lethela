@@ -12,11 +12,13 @@ export default function SignUpPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"USER" | "VENDOR" | "RIDER" | "ADMIN">("USER");
+  const [role, setRole] = useState<"USER" | "VENDOR" | "RIDER">("USER");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const submit = async () => {
+    setError(null);
     setSubmitting(true);
     const res = await fetch("/api/auth/register", {
       method: "POST",
@@ -26,10 +28,9 @@ export default function SignUpPage() {
     setSubmitting(false);
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      alert(data?.error ?? "Registration failed");
+      setError(data?.error ?? "Registration failed");
       return;
     }
-    alert("Account created. Please sign in.");
     router.push("/signin");
   };
 
@@ -70,13 +71,13 @@ export default function SignUpPage() {
               <option value="USER">User</option>
               <option value="VENDOR">Vendor</option>
               <option value="RIDER">Rider</option>
-              <option value="ADMIN">Admin</option>
             </select>
           </div>
 
           <Button onClick={submit} disabled={submitting} className="bg-lethela-primary">
             {submitting ? "Creating..." : "Create account"}
           </Button>
+          {error ? <p className="text-sm text-red-200">{error}</p> : null}
 
           <p className="text-sm text-white/70">
             Have an account?{" "}

@@ -2,9 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MapPin, Navigation, Mic, Search } from "lucide-react";
+import { formatZAR } from "@/lib/format";
+import LocationPicker from "@/components/LocationPicker";
+import { persistPreferredSuburb } from "@/lib/location-preference";
 
 type Suggestion = {
   id: string;
@@ -14,6 +18,23 @@ type Suggestion = {
   slug?: string | null;
   vendorName?: string | null;
   score: number;
+};
+
+type SearchResult = {
+  id: string;
+  kind: "vendor" | "product";
+  title: string;
+  subtitle?: string;
+  image?: string | null;
+  slug?: string | null;
+  vendor?: string | null;
+  priceCents?: number;
+};
+
+type SearchResponse = {
+  ok?: boolean;
+  results?: SearchResult[];
+  error?: string;
 };
 
 type SpeechRecognitionEventLike = {
@@ -37,9 +58,11 @@ declare global {
 }
 
 export default function Hero() {
+  const router = useRouter();
   const [q, setQ] = useState("");
-  const [resp, setResp] = useState<any>(null);
+  const [resp, setResp] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searchNotice, setSearchNotice] = useState<string | null>(null);
 
   const [suggests, setSuggests] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -49,8 +72,12 @@ export default function Hero() {
 
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationNotice, setLocationNotice] = useState<string | null>(null);
 
   const runSearch = async () => {
+    setSearchNotice(null);
     setLoading(true);
     try {
       const response = await fetch("/api/ai/search", {
@@ -137,17 +164,63 @@ export default function Hero() {
 
   const startListening = () => {
     if (!recRef.current) {
-      alert("Voice search not supported on this browser.");
+      setSearchNotice("Voice search is not supported on this browser.");
       return;
     }
 
     try {
+      setSearchNotice(null);
       setListening(true);
       recRef.current.start();
     } catch {
       setListening(false);
     }
   };
+
+  function applyLocation(suburb: string) {
+    const savedSuburb = persistPreferredSuburb(suburb);
+    if (!savedSuburb) return;
+    setLocationNotice(`Showing options for ${savedSuburb}.`);
+    setShowLocationPicker(false);
+    router.refresh();
+  }
+
+  async function handleUseCurrentLocation() {
+    if (!("geolocation" in navigator)) {
+      setLocationNotice("Location services are not available on this device. Enter your area instead.");
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationNotice(null);
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000,
+        });
+      });
+
+      const response = await fetch(
+        `/api/maps/reverse-geocode?lat=${position.coords.latitude}&lng=${position.coords.longitude}`,
+        { cache: "no-store" }
+      );
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json?.ok || !json?.suburb) {
+        setLocationNotice("We could not detect your area. Enter your suburb manually instead.");
+        return;
+      }
+
+      const nextArea = [json.suburb, json.city].filter(Boolean).join(", ");
+      applyLocation(nextArea);
+    } catch {
+      setLocationNotice("Location permission was denied or unavailable. Enter your suburb manually instead.");
+    } finally {
+      setLocationLoading(false);
+    }
+  }
 
   return (
     <section className="relative overflow-hidden">
@@ -256,23 +329,68 @@ export default function Hero() {
             </form>
 
             <div className="flex items-center gap-2 text-xs text-white/70">
-              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 px-3 h-8" type="button">
+              <Button
+                variant="outline"
+                className="h-8 border-white/30 px-3 text-white hover:bg-white/10"
+                type="button"
+                onClick={() => {
+                  setLocationNotice(null);
+                  setShowLocationPicker((value) => !value);
+                }}
+              >
                 <MapPin className="h-3.5 w-3.5 mr-2" />
                 Enter address
               </Button>
-              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 px-3 h-8" type="button">
+              <Button
+                variant="outline"
+                className="h-8 border-white/30 px-3 text-white hover:bg-white/10"
+                type="button"
+                onClick={() => void handleUseCurrentLocation()}
+                disabled={locationLoading}
+              >
                 <Navigation className="h-3.5 w-3.5 mr-2" />
-                Use my location
+                {locationLoading ? "Locating..." : "Use my location"}
               </Button>
             </div>
+            {showLocationPicker ? (
+              <LocationPicker onSaved={(savedSuburb) => setLocationNotice(`Showing options for ${savedSuburb}.`)} />
+            ) : null}
+            {locationNotice ? <p className="text-xs text-white/70">{locationNotice}</p> : null}
           </div>
 
+          {searchNotice ? <p className="mt-4 text-sm text-white/70">{searchNotice}</p> : null}
           {resp ? (
-            <div className="mt-6 rounded-xl border border-white/10 bg-lethela-secondary p-4 text-sm shadow-lg shadow-black/20">
-              <div className="text-white/85 font-medium">AI results:</div>
-              <pre className="mt-2 max-h-56 overflow-auto text-xs text-white/85">
-                {JSON.stringify(resp, null, 2)}
-              </pre>
+            <div className="mt-6 rounded-xl border border-white/10 bg-lethela-secondary p-4 text-sm">
+              <div className="text-white/85 font-medium">Search results</div>
+              {resp.ok && Array.isArray(resp.results) && resp.results.length > 0 ? (
+                <div className="mt-3 grid gap-3">
+                  {resp.results.slice(0, 4).map((result) => {
+                    const href = result.slug ? `/vendors/${result.slug}` : "/search";
+                    return (
+                      <Link
+                        key={`${result.kind}-${result.id}`}
+                        href={href}
+                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 transition-colors hover:border-white/20"
+                      >
+                        <div className="text-sm font-medium text-white">{result.title}</div>
+                        <div className="mt-1 text-xs text-white/70">
+                          {result.subtitle || result.vendor || (result.kind === "vendor" ? "Vendor" : "Product")}
+                        </div>
+                        {typeof result.priceCents === "number" ? (
+                          <div className="mt-2 text-xs font-medium text-white/85">{formatZAR(result.priceCents)}</div>
+                        ) : null}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-white/75">{resp.error || "No matching options found yet."}</p>
+              )}
+              {resp.ok ? (
+                <Link href={`/search?q=${encodeURIComponent(q)}`} className="mt-3 inline-flex text-xs underline">
+                  View full results
+                </Link>
+              ) : null}
             </div>
           ) : null}
         </div>

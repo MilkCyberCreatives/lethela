@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
 import FloatingWidgets from "@/components/FloatingWidgets";
 import StructuredData from "@/components/StructuredData";
+import { getDisplaySuburb } from "@/lib/location";
 import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 import { getHomeProducts, getHomeRecommendations, getHomeVendors } from "@/lib/home-data";
 
@@ -67,7 +68,7 @@ const homeWebPageSchema = {
 };
 
 export default async function HomePage() {
-  const address = "Klipfontein View";
+  const address = await getDisplaySuburb();
   const [recommendations, products, vendors] = await Promise.all([
     getHomeRecommendations(address),
     getHomeProducts(address, 24),

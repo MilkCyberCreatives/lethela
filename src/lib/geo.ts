@@ -1,15 +1,22 @@
 export type LatLng = { lat: number; lng: number };
 
-const FALLBACK_SUBURB_POINTS: Record<string, LatLng> = {
-  "klipfontein view": { lat: -25.9581, lng: 28.1452 },
-  midrand: { lat: -25.9992, lng: 28.1263 },
-  tembisa: { lat: -25.9967, lng: 28.2268 },
-  alexandra: { lat: -26.1037, lng: 28.0978 },
-  soweto: { lat: -26.2485, lng: 27.854 },
-  katlehong: { lat: -26.338, lng: 28.1637 },
-  vosloorus: { lat: -26.3523, lng: 28.1479 },
-  soshanguve: { lat: -25.5345, lng: 28.097 },
+type KnownArea = {
+  key: string;
+  label: string;
+  city: string;
+  point: LatLng;
 };
+
+const FALLBACK_AREAS: KnownArea[] = [
+  { key: "klipfontein view", label: "Klipfontein View", city: "Midrand", point: { lat: -25.9581, lng: 28.1452 } },
+  { key: "midrand", label: "Midrand", city: "Midrand", point: { lat: -25.9992, lng: 28.1263 } },
+  { key: "tembisa", label: "Tembisa", city: "Tembisa", point: { lat: -25.9967, lng: 28.2268 } },
+  { key: "alexandra", label: "Alexandra", city: "Johannesburg", point: { lat: -26.1037, lng: 28.0978 } },
+  { key: "soweto", label: "Soweto", city: "Johannesburg", point: { lat: -26.2485, lng: 27.854 } },
+  { key: "katlehong", label: "Katlehong", city: "Katlehong", point: { lat: -26.338, lng: 28.1637 } },
+  { key: "vosloorus", label: "Vosloorus", city: "Vosloorus", point: { lat: -26.3523, lng: 28.1479 } },
+  { key: "soshanguve", label: "Soshanguve", city: "Soshanguve", point: { lat: -25.5345, lng: 28.097 } },
+];
 
 function normalize(value: string) {
   return value.toLowerCase().trim();
@@ -50,11 +57,60 @@ export async function geocodeSuburb(query: string): Promise<LatLng | null> {
     }
   }
 
-  const direct = FALLBACK_SUBURB_POINTS[clean];
-  if (direct) return direct;
+  const direct = FALLBACK_AREAS.find((area) => area.key === clean);
+  if (direct) return direct.point;
 
-  const matched = Object.entries(FALLBACK_SUBURB_POINTS).find(([key]) => clean.includes(key));
-  return matched ? matched[1] : FALLBACK_SUBURB_POINTS["klipfontein view"];
+  const matched = FALLBACK_AREAS.find((area) => clean.includes(area.key));
+  return matched ? matched.point : FALLBACK_AREAS[0].point;
+}
+
+export async function reverseGeocodePoint(point: LatLng) {
+  const googleKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (googleKey) {
+    try {
+      const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+      url.searchParams.set("latlng", `${point.lat},${point.lng}`);
+      url.searchParams.set("key", googleKey);
+
+      const response = await fetch(url.toString(), { cache: "no-store" });
+      const json = await response.json();
+      const components = json?.results?.[0]?.address_components;
+      if (Array.isArray(components)) {
+        const suburbComponent = components.find((component: { long_name?: string; types?: string[] }) => {
+          const types = Array.isArray(component.types) ? component.types : [];
+          return ["sublocality", "sublocality_level_1", "locality", "neighborhood"].some((type) => types.includes(type));
+        });
+        const cityComponent = components.find((component: { long_name?: string; types?: string[] }) => {
+          const types = Array.isArray(component.types) ? component.types : [];
+          return ["locality", "administrative_area_level_2"].some((type) => types.includes(type));
+        });
+        const suburb = suburbComponent?.long_name?.trim();
+        const city = cityComponent?.long_name?.trim() || suburb || "Midrand";
+        if (suburb) {
+          return { suburb, city };
+        }
+      }
+    } catch {
+      // fallback below
+    }
+  }
+
+  const nearest = FALLBACK_AREAS.reduce((best, area) => {
+    const distance = haversineKm(point.lat, point.lng, area.point.lat, area.point.lng);
+    if (!best || distance < best.distance) {
+      return { area, distance };
+    }
+    return best;
+  }, null as { area: KnownArea; distance: number } | null);
+
+  if (!nearest) {
+    return { suburb: "Klipfontein View", city: "Midrand" };
+  }
+
+  return {
+    suburb: nearest.area.label,
+    city: nearest.area.city,
+  };
 }
 
 export async function distanceMatrixETA(origin: LatLng, dest: LatLng) {

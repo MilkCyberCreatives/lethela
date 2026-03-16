@@ -37,6 +37,10 @@ export async function getVendorBySlug(slug: string) {
 
   if (!vendor) return fallback;
 
+  const status = String(vendor.status || "").toUpperCase();
+  const isPublicVendor = vendor.isActive && (status === "ACTIVE" || status === "APPROVED" || status === "");
+  if (!isPublicVendor) return null;
+
   const cuisine = Array.isArray(vendor.cuisine)
     ? vendor.cuisine
     : (() => {
