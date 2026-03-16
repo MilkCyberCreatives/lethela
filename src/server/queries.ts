@@ -27,6 +27,9 @@ export async function getVendorBySlug(slug: string) {
           orderBy: { sortOrder: "asc" },
           include: { items: { where: { draft: false }, orderBy: { name: "asc" } } },
         },
+        hours: {
+          orderBy: { day: "asc" },
+        },
         items: true,
       },
     });
@@ -75,6 +78,7 @@ export async function getVendorBySlug(slug: string) {
     ...vendor,
     cuisine,
     sections,
+    hours: vendor.hours ?? [],
     products: vendor.products ?? [],
     specials: vendor.specials ?? [],
   };

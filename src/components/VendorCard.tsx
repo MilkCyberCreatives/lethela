@@ -7,7 +7,11 @@ import { recordVendorClick } from "@/lib/tracking";
 
 export default function VendorCard({ v }: { v: Vendor }) {
   return (
-    <Link href={`/vendors/${v.slug}`} onClick={() => recordVendorClick(v.id)} className="group overflow-hidden rounded-2xl border border-white/10 bg-lethela-secondary transition">
+    <Link
+      href={`/vendors/${v.slug}`}
+      onClick={() => recordVendorClick(v.id)}
+      className="group overflow-hidden rounded-2xl border border-white/10 bg-lethela-secondary transition"
+    >
       <div className="relative aspect-[16/10]">
         <Image src={v.cover} alt={v.name} fill sizes="(min-width:1024px) 33vw, 50vw" className="object-cover" priority={false} />
         {v.badge ? (
@@ -30,7 +34,7 @@ export default function VendorCard({ v }: { v: Vendor }) {
 
         <div className="mt-3 flex items-center justify-between text-sm">
           <span className="rounded-md bg-white/10 px-2 py-1">{v.eta}</span>
-          <span className="text-white/80">View menu →</span>
+          <span className="text-white/80">View menu {"->"}</span>
         </div>
       </div>
     </Link>
