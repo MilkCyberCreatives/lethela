@@ -31,7 +31,7 @@ export default function SignInForm() {
   };
 
   return (
-    <main className="container max-w-md py-10">
+    <>
       <h1 className="text-2xl font-bold">Sign in</h1>
       <div className="mt-6 space-y-3">
         <Input
@@ -48,6 +48,11 @@ export default function SignInForm() {
           onChange={(e) => setPassword(e.target.value)}
           className="bg-white text-black"
         />
+        <p className="text-sm text-white/70">
+          <Link href="/forgot-password" className="underline">
+            Forgot password?
+          </Link>
+        </p>
         <Button onClick={submit} disabled={submitting} className="bg-lethela-primary">
           {submitting ? "Signing in..." : "Sign in"}
         </Button>
@@ -58,6 +63,6 @@ export default function SignInForm() {
           </Link>
         </p>
       </div>
-    </main>
+    </>
   );
 }

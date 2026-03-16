@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PageShell from "@/components/PageShell";
 
 type SearchParams = Promise<{ ref?: string }> | { ref?: string };
 
@@ -6,7 +7,7 @@ export default async function CancelPage({ searchParams }: { searchParams: Searc
   const { ref } = await Promise.resolve(searchParams);
 
   return (
-    <main className="container py-10">
+    <PageShell contentClassName="max-w-2xl">
       <h1 className="text-2xl font-bold text-yellow-400">Payment cancelled</h1>
       <p className="mt-2 text-white/80">
         Your order was not completed. Reference: <span className="font-semibold">{ref ?? "N/A"}</span>
@@ -16,6 +17,6 @@ export default async function CancelPage({ searchParams }: { searchParams: Searc
           Return to checkout
         </Link>
       </div>
-    </main>
+    </PageShell>
   );
 }

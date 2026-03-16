@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Footer from "@/components/Footer";
+import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
 
 const STAGES = ["PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELED"] as const;
@@ -66,28 +68,32 @@ export default function RiderOrderPage({ params }: { params: { ref: string } }) 
   }, []);
 
   return (
-    <main className="container py-10">
-      <h1 className="text-2xl font-bold">Rider console</h1>
-      <p className="mt-1 text-white/70">
-        Order ref: <span className="font-mono">{ref}</span>
-      </p>
+    <div className="min-h-screen bg-lethela-secondary text-white">
+      <MainHeader />
+      <main className="container py-10 md:py-14">
+        <h1 className="text-2xl font-bold">Rider console</h1>
+        <p className="mt-1 text-white/70">
+          Order ref: <span className="font-mono">{ref}</span>
+        </p>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {STAGES.map((stage) => (
-          <Button key={stage} className="bg-lethela-primary" disabled={sending} onClick={() => updateStatus(stage)}>
-            {stage.replaceAll("_", " ")}
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {STAGES.map((stage) => (
+            <Button key={stage} className="bg-lethela-primary" disabled={sending} onClick={() => updateStatus(stage)}>
+              {stage.replaceAll("_", " ")}
+            </Button>
+          ))}
+        </div>
+
+        <div className="mt-8 flex gap-3">
+          <Button className="bg-lethela-primary" onClick={startShare}>
+            Start sharing location
           </Button>
-        ))}
-      </div>
-
-      <div className="mt-8 flex gap-3">
-        <Button className="bg-lethela-primary" onClick={startShare}>
-          Start sharing location
-        </Button>
-        <Button variant="outline" className="border-white/20" onClick={stopShare}>
-          Stop
-        </Button>
-      </div>
-    </main>
+          <Button variant="outline" className="border-white/20" onClick={stopShare}>
+            Stop
+          </Button>
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 }

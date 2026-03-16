@@ -110,7 +110,7 @@ export default function CheckoutSuccessContent({ refId, isSandbox }: Props) {
             : "We could not load this order reference.";
 
   return (
-    <main className="container py-10">
+    <>
       <h1 className={`text-2xl font-bold ${titleClass}`}>{title}</h1>
       <p className="mt-2 text-white/80">
         {message} Reference: <span className="font-semibold">{refId ?? "N/A"}</span>
@@ -139,6 +139,6 @@ export default function CheckoutSuccessContent({ refId, isSandbox }: Props) {
             ? "Sandbox mode is enabled for this Ozow payment flow."
             : "You can follow live order updates from the tracking page."}
       </p>
-    </main>
+    </>
   );
 }

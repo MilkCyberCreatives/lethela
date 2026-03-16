@@ -8,18 +8,24 @@ type Params = { params: Promise<{ ref: string }> };
 export async function GET(_req: NextRequest, { params }: Params) {
   const { ref } = await params;
   const cleanRef = String(ref || "").trim();
+  const normalizedRef = cleanRef.toUpperCase().replace(/\s+/g, "-").replace(/-+/g, "-");
   if (!cleanRef) {
     return NextResponse.json({ ok: false, error: "Order reference is required." }, { status: 400 });
   }
 
-  if (isDemoOrderRef(cleanRef)) {
+  if (isDemoOrderRef(normalizedRef)) {
     return NextResponse.json({ ok: true, order: getDemoOrderDetails() });
   }
 
   const order = await withQueryTimeout(
     prisma.order.findFirst({
       where: {
-        OR: [{ ozowReference: cleanRef }, { publicId: cleanRef }, { publicId: cleanRef.toUpperCase() }],
+        OR: [
+          { ozowReference: cleanRef },
+          { ozowReference: normalizedRef },
+          { publicId: cleanRef },
+          { publicId: normalizedRef },
+        ],
       },
       select: {
         publicId: true,

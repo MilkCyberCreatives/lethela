@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Banknote, Facebook, Instagram, Landmark, Linkedin, MessageCircle, Music2, ShieldCheck, Youtube } from "lucide-react";
 import { FOOTER_PAYMENT_METHODS, getFooterSocialLinks, LEGAL_SERVICE_AREA, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";

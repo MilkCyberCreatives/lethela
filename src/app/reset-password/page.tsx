@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import PageShell from "@/components/PageShell";
-import SignInForm from "@/components/auth/SignInForm";
+import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 
-export default function SignInPage() {
+export default function ResetPasswordPage() {
   return (
     <PageShell contentClassName="max-w-md">
       <Suspense fallback={<div>Loading...</div>}>
-        <SignInForm />
+        <ResetPasswordForm />
       </Suspense>
     </PageShell>
   );

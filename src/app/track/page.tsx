@@ -2,6 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
+import { prisma } from "@/lib/db";
+import { isDemoOrderRef } from "@/lib/demo-order";
+import { withQueryTimeout } from "@/lib/query-timeout";
 
 type SearchParams = Promise<{ ref?: string | string[] }> | { ref?: string | string[] };
 
@@ -18,10 +21,32 @@ function parseRef(value: string | string[] | undefined) {
   return String(value || "").trim();
 }
 
+function normalizeRef(value: string | string[] | undefined) {
+  return parseRef(value).toUpperCase().replace(/\s+/g, "-").replace(/-+/g, "-");
+}
+
 export default async function TrackOrderPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await Promise.resolve(searchParams);
-  const ref = parseRef(params.ref);
-  const clean = ref.toUpperCase();
+  const clean = normalizeRef(params.ref);
+  const isDemo = clean ? isDemoOrderRef(clean) : false;
+  const order = clean
+    ? await withQueryTimeout(
+        prisma.order.findFirst({
+          where: {
+            OR: [{ publicId: clean }, { ozowReference: clean }],
+          },
+          select: {
+            publicId: true,
+            ozowReference: true,
+          },
+        }),
+        null
+      )
+    : null;
+  const resolvedRef = order ? order.ozowReference || order.publicId : isDemo ? clean : null;
+  const resolvedHref = resolvedRef ? `/orders/${encodeURIComponent(resolvedRef)}` : "/track";
+  const hasLookup = Boolean(clean);
+  const found = Boolean(resolvedRef);
 
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
@@ -47,16 +72,27 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
           </button>
         </form>
 
-        {clean ? (
+        {hasLookup && found ? (
           <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">
             <p className="text-sm text-white/80">
-              Reference found: <span className="font-mono">{clean}</span>
+              Reference found: <span className="font-mono">{resolvedRef}</span>
             </p>
             <div className="mt-3">
-              <Link href={`/orders/${encodeURIComponent(clean)}`} className="underline">
+              <Link href={resolvedHref} className="underline">
                 Open live tracking
               </Link>
             </div>
+          </div>
+        ) : null}
+
+        {hasLookup && !found ? (
+          <div className="mt-6 rounded-xl border border-red-300/30 bg-red-300/10 p-4">
+            <p className="text-sm text-red-100">
+              We could not find an order for <span className="font-mono">{clean}</span>.
+            </p>
+            <p className="mt-2 text-xs text-red-50/80">
+              Check the reference and try again. It should look like <span className="font-semibold">LET-12345</span>.
+            </p>
           </div>
         ) : null}
       </section>
