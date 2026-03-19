@@ -51,17 +51,23 @@ export function deliveryFeeZAR(distanceKm?: number | null, baseFeeCents?: number
 export async function quoteDelivery({
   vendor,
   destinationSuburb,
+  destinationPoint: explicitDestinationPoint,
   baseFeeCents,
 }: {
   vendor: DeliveryVendorLocation;
   destinationSuburb?: string | null;
+  destinationPoint?: LatLng | null;
   baseFeeCents?: number | null;
 }) {
   const normalizedBaseFeeCents = normalizeBaseFeeCents(baseFeeCents);
   const destinationQuery = destinationSuburb?.trim() || "";
   const [originPoint, destinationPoint] = await Promise.all([
     resolveVendorPoint(vendor),
-    destinationQuery ? geocodeSuburb(destinationQuery) : Promise.resolve(null),
+    explicitDestinationPoint
+      ? Promise.resolve(explicitDestinationPoint)
+      : destinationQuery
+        ? geocodeSuburb(destinationQuery)
+        : Promise.resolve(null),
   ]);
 
   const distanceKm =

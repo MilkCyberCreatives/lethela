@@ -27,7 +27,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: Sear
 
   return (
     <PageShell contentClassName="max-w-2xl">
-      <CheckoutSuccessContent refId={cleanRef} isSandbox={process.env.OZOW_IS_TEST !== "false"} />
+      <CheckoutSuccessContent refId={cleanRef} isSandbox={process.env.OZOW_IS_TEST === "true"} />
     </PageShell>
   );
 }

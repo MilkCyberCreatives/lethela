@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import MainHeader from "@/components/MainHeader";
 import { requireVendor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 const InsightsCard = dynamic(() => import("@/components/dashboard/InsightsCard"), {
   loading: () => <DashboardPanelSkeleton lines={4} />,
@@ -114,12 +115,13 @@ function DashboardPanelSkeleton({ lines = 4 }: { lines?: number }) {
 }
 
 function SupportCard() {
+  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
   return (
     <div className="rounded-2xl border border-lethela-primary/20 bg-[#141b43] p-5">
       <div className="mb-2 text-sm font-semibold text-white">Support</div>
       <p className="text-sm text-white/80">
         Need help? Message Lethela on WhatsApp:{" "}
-        <a className="underline" href="https://wa.me/27723908919" target="_blank" rel="noreferrer">
+        <a className="underline" href={whatsappHref} target="_blank" rel="noreferrer">
           +27 72 390 8919
         </a>
       </p>

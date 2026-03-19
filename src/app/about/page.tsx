@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
 import StructuredData from "@/components/StructuredData";
+import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export const metadata: Metadata = {
   title: "About Lethela",
@@ -44,6 +45,7 @@ const aboutFaqSchema = {
 };
 
 export default function AboutPage() {
+  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
       <StructuredData data={aboutFaqSchema} />
@@ -72,7 +74,7 @@ export default function AboutPage() {
 
           <div className="mt-8 text-xs text-white/60">
             Need help or want to partner with us? Message Lethela on WhatsApp:{" "}
-            <a className="underline" href="https://wa.me/27723908919" target="_blank" rel="noreferrer">
+            <a className="underline" href={whatsappHref} target="_blank" rel="noreferrer">
               +27 72 390 8919
             </a>
           </div>

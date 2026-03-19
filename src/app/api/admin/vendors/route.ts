@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
           status: rawStatus,
         };
 
-  const [items, pendingCount] = await Promise.all([
+  const [items, pendingCount, activeCount, rejectedCount, totalCount] = await Promise.all([
     prisma.vendor.findMany({
       where,
       orderBy: [{ updatedAt: "desc" }],
@@ -32,17 +32,40 @@ export async function GET(req: NextRequest) {
         slug: true,
         email: true,
         phone: true,
+        address: true,
         suburb: true,
         city: true,
+        province: true,
         status: true,
         isActive: true,
+        ownerId: true,
+        kycIdUrl: true,
+        kycProofUrl: true,
+        cuisine: true,
+        deliveryFee: true,
+        halaal: true,
+        image: true,
         createdAt: true,
         updatedAt: true,
       },
       take: 200,
     }),
     prisma.vendor.count({ where: { status: "PENDING" } }),
+    prisma.vendor.count({ where: { status: "ACTIVE" } }),
+    prisma.vendor.count({ where: { status: "REJECTED" } }),
+    prisma.vendor.count(),
   ]);
 
-  return NextResponse.json({ ok: true, authMode: guard.mode, pendingCount, items });
+  return NextResponse.json({
+    ok: true,
+    authMode: guard.mode,
+    pendingCount,
+    counts: {
+      pending: pendingCount,
+      active: activeCount,
+      rejected: rejectedCount,
+      total: totalCount,
+    },
+    items,
+  });
 }

@@ -97,7 +97,7 @@ export default function FeaturedCarousel({ title, items, className, autoMs = 400
                 height={240}
                 className="h-44 w-full object-cover"
                 sizes="(min-width:1024px) 30vw, 75vw"
-                priority={index < 2}
+                priority={index === 0}
               />
             </div>
             <div className="flex items-center justify-between gap-4 p-4">
@@ -105,12 +105,18 @@ export default function FeaturedCarousel({ title, items, className, autoMs = 400
                 <h3 className="truncate font-semibold">{item.name}</h3>
                 <p className="truncate text-xs text-white/70">{item.sub || "Open now • Delivery available"}</p>
               </div>
-              <a
-                href={item.cta || "#"}
-                className="inline-flex shrink-0 items-center rounded-lg bg-lethela-primary px-3 py-1 text-xs font-semibold text-white hover:opacity-90"
-              >
-                Order now
-              </a>
+              {item.cta ? (
+                <a
+                  href={item.cta}
+                  className="inline-flex shrink-0 items-center rounded-lg bg-lethela-primary px-3 py-1 text-xs font-semibold text-white hover:opacity-90"
+                >
+                  Order now
+                </a>
+              ) : (
+                <span className="inline-flex shrink-0 items-center rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/68">
+                  Featured
+                </span>
+              )}
             </div>
           </article>
         ))}
@@ -144,7 +150,10 @@ export default function FeaturedCarousel({ title, items, className, autoMs = 400
           <button
             key={index}
             onClick={() => scrollToIndex(index)}
-            className={["h-2.5 w-2.5 rounded-full transition", index === active ? "bg-white" : "bg-white/30 hover:bg-white/60"].join(" ")}
+            className={[
+              "h-2.5 w-2.5 rounded-full transition",
+              index === active ? "bg-white" : "bg-white/30 hover:bg-white/60",
+            ].join(" ")}
             aria-label={`Go to slide ${index + 1}`}
             aria-current={index === active}
           />

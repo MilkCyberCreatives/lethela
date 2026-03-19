@@ -1,3 +1,4 @@
+import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 /**
  * Central AI utilities with graceful fallbacks:
  * - If OPENAI_API_KEY is set, we call OpenAI (chat + moderation).
@@ -5,11 +6,10 @@
  */
 export type AIMessage = { role: "user" | "assistant" | "system"; content: string };
 import { supportFaq } from "@/lib/business-context";
+import type { VisitorProfile } from "@/lib/visitor-profile";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const WHATSAPP_SUPPORT = process.env.NEXT_PUBLIC_WHATSAPP_ORDER_PHONE
-  ? `https://wa.me/${String(process.env.NEXT_PUBLIC_WHATSAPP_ORDER_PHONE).replace(/\D/g, "")}`
-  : "https://wa.me/27723908919";
+const WHATSAPP_SUPPORT = `https://wa.me/${getOrderWhatsAppPhone()}`;
 
 /* ---------------- Chat ---------------- */
 
@@ -180,7 +180,66 @@ export async function aiSearch(q: string): Promise<AIResult> {
 
 /* ---------------- AI Recommendations ---------------- */
 
-export async function aiRecommend(suburb: string | null): Promise<AIResult> {
+async function openAIRecommend(
+  base: AIResult["results"],
+  suburb: string | null,
+  profile: VisitorProfile
+): Promise<AIResult["results"] | null> {
+  if (!OPENAI_API_KEY || profile.eventCount === 0) return null;
+
+  const prompt = [
+    "Rank these delivery recommendations for a returning visitor.",
+    `Area: ${suburb || profile.preferredArea || "unknown"}`,
+    `Favorite vendors: ${profile.favoriteVendorSlugs.join(", ") || "none"}`,
+    `Top keywords: ${Object.keys(profile.keywordScores).join(", ") || "none"}`,
+    `Recent queries: ${profile.recentQueries.join(" | ") || "none"}`,
+    "Return strict JSON as an array of slugs in the best order.",
+    JSON.stringify(base.map((item) => ({ slug: item.slug, title: item.title, subtitle: item.subtitle }))),
+  ].join("\n");
+
+  try {
+    const response = await openAIChat([
+      { role: "system", content: "You rank food delivery recommendations. Return JSON only." },
+      { role: "user", content: prompt },
+    ]);
+    const ordered = JSON.parse(response) as string[];
+    if (!Array.isArray(ordered) || ordered.length === 0) return null;
+
+    const rankBySlug = new Map<string, number>();
+    ordered.forEach((slug, index) => rankBySlug.set(String(slug), index));
+
+    return [...base].sort((left, right) => {
+      const leftRank = rankBySlug.get(String(left.slug)) ?? 999;
+      const rightRank = rankBySlug.get(String(right.slug)) ?? 999;
+      return leftRank - rightRank;
+    });
+  } catch {
+    return null;
+  }
+}
+
+function heuristicRecommend(base: AIResult["results"], profile: VisitorProfile | null) {
+  if (!profile || profile.eventCount === 0) return base;
+
+  const keywordEntries = Object.entries(profile.keywordScores);
+  return [...base].sort((left, right) => {
+    const score = (item: AIResult["results"][number]) => {
+      let value = 0;
+      if (item.slug && profile.favoriteVendorSlugs.includes(item.slug)) {
+        value += 12 - profile.favoriteVendorSlugs.indexOf(item.slug);
+      }
+      const haystack = `${item.title} ${item.subtitle || ""} ${item.vendor || ""}`.toLowerCase();
+      for (const [keyword, weight] of keywordEntries) {
+        if (haystack.includes(keyword)) value += weight;
+      }
+      return value;
+    };
+
+    return score(right) - score(left);
+  });
+}
+
+export async function aiRecommend(suburb: string | null, profile: VisitorProfile | null = null): Promise<AIResult> {
   const nearMidrand = suburb?.toLowerCase().includes("midrand");
   const base: AIResult["results"] = [
     {
@@ -220,7 +279,8 @@ export async function aiRecommend(suburb: string | null): Promise<AIResult> {
     },
   ];
   const prioritized = nearMidrand ? [base[1], base[0], base[2], base[3], base[4]] : base;
-  return { ok: true, results: prioritized };
+  const aiRanked = profile ? await openAIRecommend(prioritized, suburb, profile) : null;
+  return { ok: true, results: aiRanked || heuristicRecommend(prioritized, profile) };
 }
 
 /* ---------------- Vendor reranking ---------------- */

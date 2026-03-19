@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { getAdminNotificationChannelStatus } from "@/lib/admin-notifications";
+import { countRiderApplications } from "@/lib/rider-applications";
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdminRequest(req);
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
 
-  const [pendingCount, latestPending] = await Promise.all([
+  const [pendingCount, latestPending, riderPendingCount, riderUnderReviewCount] = await Promise.all([
     prisma.vendor.count({ where: { status: "PENDING" } }),
     prisma.vendor.findMany({
       where: { status: "PENDING" },
@@ -25,11 +26,16 @@ export async function GET(req: NextRequest) {
         updatedAt: true,
       },
     }),
+    countRiderApplications("PENDING"),
+    countRiderApplications("UNDER_REVIEW"),
   ]);
 
   return NextResponse.json({
     ok: true,
     pendingCount,
+    riderPendingCount,
+    riderUnderReviewCount,
+    totalPendingApprovals: pendingCount + riderPendingCount + riderUnderReviewCount,
     latestPending,
     channels: getAdminNotificationChannelStatus(),
   });

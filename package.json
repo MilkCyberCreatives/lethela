@@ -10,6 +10,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "test": "node --import tsx --test tests/**/*.test.ts",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
@@ -45,6 +46,7 @@
     "react-dom": "19.0.0",
     "recharts": "^3.3.0",
     "tailwind-merge": "2.5.2",
+    "web-push": "^3.6.7",
     "zod": "3.23.8",
     "zustand": "^5.0.8"
   },
@@ -52,6 +54,7 @@
     "@types/node": "20.16.11",
     "@types/react": "19.0.1",
     "@types/react-dom": "19.0.1",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "10.4.20",
     "eslint": "^9.37.0",
     "eslint-config-next": "^15.5.12",

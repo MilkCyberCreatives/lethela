@@ -81,7 +81,16 @@ export default async function HomePage() {
       <StructuredData data={homeWebPageSchema} />
       <MainHeader />
 
-      <Hero />
+      <Hero
+        initialArea={address}
+        initialNearbyVendors={vendors.slice(0, 3).map((vendor) => ({
+          id: vendor.id,
+          name: vendor.name,
+          slug: vendor.slug,
+          cuisines: vendor.cuisines,
+          eta: vendor.eta,
+        }))}
+      />
 
       <ScrollReveal delay={40}>
         <SmartBanner />

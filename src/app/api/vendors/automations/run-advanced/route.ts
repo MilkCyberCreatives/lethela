@@ -142,6 +142,20 @@ async function runPromoHeatmap(vendorId: string) {
   const start = new Date(now.getTime() + 2 * 60 * 60 * 1000);
   const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
 
+  const existingDraft = await prisma.special.findFirst({
+    where: {
+      vendorId,
+      draft: true,
+      title: "Slow-day Boost",
+      endsAt: { gte: now },
+    },
+    select: { id: true },
+  });
+
+  if (existingDraft) {
+    return `Promo heatmap: an existing slow-day promo draft is already waiting for review for weekday ${worstDay}.`;
+  }
+
   await prisma.special.create({
     data: {
       vendorId,

@@ -1,44 +1,46 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type FeaturedVendor = {
-  id: string;
+  slug: string;
   name: string;
   tagline: string;
   img: string;
-  cta?: string;
+  ctaLabel?: string;
 };
 
 const FEATURED_VENDORS: FeaturedVendor[] = [
   {
-    id: "hello-tomato",
+    slug: "hello-tomato",
     name: "Hello Tomato",
-    tagline: "Open now | Delivery available",
+    tagline: "Open now / Delivery available",
     img: "/vendors/grill.jpg",
-    cta: "Order now",
+    ctaLabel: "Order now",
   },
   {
-    id: "bento",
+    slug: "bento",
     name: "Bento",
-    tagline: "Open now | Delivery available",
+    tagline: "Open now / Delivery available",
     img: "/vendors/sushi.jpg",
-    cta: "Order now",
+    ctaLabel: "Order now",
   },
   {
-    id: "afrikaa",
-    name: "Afrikoa",
-    tagline: "Open now | Delivery available",
+    slug: "spice-route",
+    name: "Spice Route",
+    tagline: "Open now / Delivery available",
     img: "/vendors/curry.jpg",
-    cta: "Order now",
+    ctaLabel: "Order now",
   },
   {
-    id: "cinnabon",
-    name: "Cinnabon",
-    tagline: "Open now | Delivery available",
+    slug: "bento",
+    name: "Bento Favourites",
+    tagline: "Fresh picks / Fast local delivery",
     img: "/vendors/vegan.jpg",
-    cta: "Order now",
+    ctaLabel: "View menu",
   },
 ];
 
@@ -80,13 +82,13 @@ export default function VendorCarousel() {
 
       <div ref={trackRef} className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pr-4 md:pr-8">
         {FEATURED_VENDORS.map((vendor) => (
-          <div
-            key={vendor.id}
+          <Link
+            key={vendor.slug}
+            href={`/vendors/${vendor.slug}`}
             className="w-[320px] shrink-0 snap-start overflow-hidden rounded-xl border border-white/10 bg-[#0E1236] text-white transition-transform duration-200 hover:-translate-y-1 hover:border-lethela-primary/60 md:w-[360px]"
           >
-            <div className="h-[160px] w-full overflow-hidden bg-black/30">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={vendor.img} alt={vendor.name} className="h-full w-full object-cover" />
+            <div className="relative h-[160px] w-full overflow-hidden bg-black/30">
+              <Image src={vendor.img} alt={vendor.name} fill sizes="(min-width: 768px) 360px, 320px" className="object-cover" />
             </div>
 
             <div className="flex flex-col gap-3 p-4">
@@ -94,12 +96,12 @@ export default function VendorCarousel() {
               <div className="text-xs text-white/70">{vendor.tagline}</div>
 
               <div className="flex justify-end">
-                <button className="rounded-md bg-lethela-primary px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">
-                  {vendor.cta ?? "Order now"}
-                </button>
+                <span className="rounded-md bg-lethela-primary px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">
+                  {vendor.ctaLabel ?? "View vendor"}
+                </span>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 

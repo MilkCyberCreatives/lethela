@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import MainHeader from "@/components/MainHeader";
 import UserProfileForm from "@/components/profile/UserProfileForm";
 import { auth } from "@/auth";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata({
+  title: "Profile",
+  description: "Manage your Lethela account profile.",
+  path: "/profile",
+});
 
 export default async function ProfilePage() {
   const session = await auth();

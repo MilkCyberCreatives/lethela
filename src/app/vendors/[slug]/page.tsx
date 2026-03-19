@@ -10,6 +10,7 @@ import ProductCard from "@/components/ProductCard";
 import StructuredData from "@/components/StructuredData";
 import { formatZAR } from "@/lib/format";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
+import { buildPageMetadata } from "@/lib/seo";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 import { getVendorBySlug as getVendorProfile } from "@/server/queries";
 
@@ -95,17 +96,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? `${vendor.name} on ${SITE_NAME}. Order fast delivery in ${location}.`
     : `${vendor.name} on ${SITE_NAME}. Order fast delivery from local favourites.`;
 
-  return {
+  const metadata = buildPageMetadata({
     title: vendor.name,
     description,
-    alternates: {
-      canonical: `/vendors/${vendor.slug}`,
-    },
+    path: `/vendors/${vendor.slug}`,
+    image: imageUrl,
+  });
+
+  return {
+    ...metadata,
     openGraph: {
-      type: "website",
+      ...metadata.openGraph,
       title: `${vendor.name} | ${SITE_NAME}`,
-      description,
       url: absoluteUrl(`/vendors/${vendor.slug}`),
+      images: [absoluteUrl(imageUrl)],
+    },
+    twitter: {
+      ...metadata.twitter,
+      title: `${vendor.name} | ${SITE_NAME}`,
       images: [absoluteUrl(imageUrl)],
     },
   };

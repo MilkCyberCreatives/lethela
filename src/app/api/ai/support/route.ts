@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cosine, embed } from "@/lib/embeddings";
 import { supportFaq, type SupportFaqItem } from "@/lib/business-context";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 type SupportSource = {
   q: string;
@@ -80,6 +81,19 @@ function composeAnswer(top: SupportSource[]) {
 }
 
 export async function POST(req: Request) {
+  const limited = checkRateLimit({
+    key: "ai-support",
+    limit: 15,
+    windowMs: 60_000,
+    headers: req.headers,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many support requests. Try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
+  }
+
   const { q } = (await req.json().catch(() => ({ q: "" }))) as { q?: string };
   const query = String(q || "").trim().slice(0, 500);
   if (!query) {

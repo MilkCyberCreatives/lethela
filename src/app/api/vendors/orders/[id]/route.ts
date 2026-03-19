@@ -35,7 +35,16 @@ export async function PATCH(req: Request, { params }: Params) {
 
     const updated = await prisma.order.update({
       where: { id: order.id },
-      data: { status: parsed.data.status },
+      data: {
+        status: parsed.data.status,
+        ...(parsed.data.status === "DELIVERED" || parsed.data.status === "CANCELED"
+          ? {
+              riderLat: null,
+              riderLng: null,
+              riderSpeed: null,
+            }
+          : {}),
+      },
     });
 
     try {

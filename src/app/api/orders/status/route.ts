@@ -1,17 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getDemoOrderSummary, isDemoOrderRef } from "@/lib/demo-order";
+import { buildTrackingSnapshot, getTrackingEta } from "@/lib/order-tracking";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
 export const dynamic = "force-dynamic";
-
-const statusEta: Record<string, string> = {
-  PLACED: "35-45 min",
-  PREPARING: "25-35 min",
-  OUT_FOR_DELIVERY: "8-15 min",
-  DELIVERED: "Delivered",
-  CANCELED: "Canceled",
-};
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -31,7 +24,7 @@ export async function GET(req: Request) {
       },
       include: {
         vendor: {
-          select: { name: true },
+          select: { name: true, latitude: true, longitude: true },
         },
       },
     }),
@@ -42,13 +35,31 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
   }
 
+  const tracking = buildTrackingSnapshot({
+    status: order.status,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    riderLocatedAt: order.riderLocatedAt,
+    vendor:
+      order.vendor?.latitude != null && order.vendor?.longitude != null
+        ? { lat: order.vendor.latitude, lng: order.vendor.longitude }
+        : null,
+    destination:
+      order.customerLat != null && order.customerLng != null
+        ? { lat: order.customerLat, lng: order.customerLng }
+        : null,
+    rider:
+      order.riderLat != null && order.riderLng != null ? { lat: order.riderLat, lng: order.riderLng } : null,
+  });
+
   return NextResponse.json({
     ok: true,
     order: {
       id: order.ozowReference || order.publicId,
       status: order.status,
-      eta: statusEta[order.status] ?? "20-30 min",
+      eta: tracking.etaLabel || getTrackingEta(order.status),
       vendor: order.vendor?.name ?? "Unknown vendor",
+      progressPct: tracking.progressPct,
     },
   });
 }

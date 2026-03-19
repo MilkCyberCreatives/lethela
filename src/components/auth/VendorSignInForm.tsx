@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 import { Input } from "@/components/ui/input";
 
 export default function VendorSignInForm() {
+  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,7 +93,7 @@ export default function VendorSignInForm() {
             </p>
             <p>
               Need help with approval?{" "}
-              <a href="https://wa.me/27723908919" target="_blank" rel="noreferrer" className="underline underline-offset-4">
+              <a href={whatsappHref} target="_blank" rel="noreferrer" className="underline underline-offset-4">
                 WhatsApp support
               </a>
             </p>

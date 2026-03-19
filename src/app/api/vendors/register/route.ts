@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { notifyAdminsOfVendorApplication } from "@/lib/admin-notifications";
 import { attachVendorSession } from "@/lib/vendor-session";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const RegisterVendorSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -89,6 +90,19 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const rateLimit = checkRateLimit({
+    key: "vendors-register",
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+    headers: req.headers,
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many vendor applications. Please try again later." },
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+    );
+  }
+
   const raw = await req.json().catch(() => ({}));
   const body = {
     ...raw,

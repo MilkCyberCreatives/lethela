@@ -6,12 +6,16 @@ import { quoteDelivery } from "@/lib/pricing";
 const QuerySchema = z.object({
   vendorId: z.string().trim().min(1),
   destinationSuburb: z.string().trim().min(2).max(140).optional(),
+  destinationLat: z.coerce.number().min(-90).max(90).optional(),
+  destinationLng: z.coerce.number().min(-180).max(180).optional(),
 });
 
 export async function GET(req: NextRequest) {
   const parsed = QuerySchema.safeParse({
     vendorId: req.nextUrl.searchParams.get("vendorId"),
     destinationSuburb: req.nextUrl.searchParams.get("destinationSuburb") || undefined,
+    destinationLat: req.nextUrl.searchParams.get("destinationLat") || undefined,
+    destinationLng: req.nextUrl.searchParams.get("destinationLng") || undefined,
   });
 
   if (!parsed.success) {
@@ -42,6 +46,10 @@ export async function GET(req: NextRequest) {
   const quote = await quoteDelivery({
     vendor,
     destinationSuburb: parsed.data.destinationSuburb,
+    destinationPoint:
+      parsed.data.destinationLat != null && parsed.data.destinationLng != null
+        ? { lat: parsed.data.destinationLat, lng: parsed.data.destinationLng }
+        : null,
     baseFeeCents: vendor.deliveryFee,
   });
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import VendorSignupForm from "@/components/VendorSignupForm";
+import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export const metadata: Metadata = {
   title: "Become a Vendor",
@@ -36,6 +37,7 @@ const CHECKLIST = [
 ];
 
 export default function VendorRegisterPage() {
+  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
       <MainHeader />
@@ -74,7 +76,7 @@ export default function VendorRegisterPage() {
             </ul>
             <p className="mt-4 text-xs text-white/60">
               Need help preparing documents or onboarding? WhatsApp support:{" "}
-              <a className="underline" href="https://wa.me/27723908919" target="_blank" rel="noreferrer">
+              <a className="underline" href={whatsappHref} target="_blank" rel="noreferrer">
                 +27 72 390 8919
               </a>
             </p>

@@ -78,6 +78,12 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
           },
         }),
         prisma.product.findMany({
+          where: {
+            vendor: {
+              isActive: true,
+              status: "ACTIVE",
+            },
+          },
           take: 240,
           orderBy: { updatedAt: "desc" },
           include: {

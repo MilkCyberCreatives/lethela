@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { auth } from "@/auth";
-import { buildOzowRedirectUrl } from "@/lib/ozow";
+import { buildOzowRedirectUrl, createOrderReference } from "@/lib/ozow";
 import { geocodeSuburb } from "@/lib/geo";
 import { quoteDelivery } from "@/lib/pricing";
 import { z } from "zod";
@@ -12,6 +12,8 @@ const BodySchema = z.object({
   vendorId: z.string().min(1),
   vendorSlug: z.string().min(1).optional().default(""),
   destinationSuburb: z.string().trim().min(2).max(140).optional(),
+  destinationLat: z.number().min(-90).max(90).optional(),
+  destinationLng: z.number().min(-180).max(180).optional(),
   items: z.array(
     z.object({
       itemId: z.string(),
@@ -47,7 +49,17 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
   }
-  const { vendorId, vendorSlug, destinationSuburb, items, subtotalCents, deliveryCents, totalCents: requestedTotalCents } = parsed.data;
+  const {
+    vendorId,
+    vendorSlug,
+    destinationSuburb,
+    destinationLat,
+    destinationLng,
+    items,
+    subtotalCents,
+    deliveryCents,
+    totalCents: requestedTotalCents,
+  } = parsed.data;
   if (items.length === 0) {
     return NextResponse.json({ ok: false, error: "Cart is empty." }, { status: 400 });
   }
@@ -108,6 +120,8 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   const deliveryQuote = await quoteDelivery({
     vendor,
     destinationSuburb,
+    destinationPoint:
+      destinationLat != null && destinationLng != null ? { lat: destinationLat, lng: destinationLng } : null,
     baseFeeCents: vendor.deliveryFee,
   });
   const resolvedDeliveryCents = deliveryQuote.deliveryCents;
@@ -130,9 +144,14 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     );
   }
 
-  const destinationPoint = destinationSuburb ? await geocodeSuburb(destinationSuburb) : null;
+  const destinationPoint =
+    destinationLat != null && destinationLng != null
+      ? { lat: destinationLat, lng: destinationLng }
+      : destinationSuburb
+        ? await geocodeSuburb(destinationSuburb)
+        : null;
 
-  const ozowReference = `LET-${Date.now()}`;
+  const ozowReference = createOrderReference();
   const order = await prisma.order.create({
     data: {
       publicId: ozowReference,
@@ -160,8 +179,9 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   });
   const reference = order.ozowReference ?? order.publicId ?? ozowReference;
 
-  const returnUrl = `${baseUrl}/checkout/success?ref=${encodeURIComponent(reference)}`;
+  const successUrl = `${baseUrl}/checkout/success?ref=${encodeURIComponent(reference)}`;
   const cancelUrl = `${baseUrl}/checkout/cancel?ref=${encodeURIComponent(reference)}`;
+  const errorUrl = cancelUrl;
   const notifyUrl = `${baseUrl}/api/payments/ozow/notify`;
 
   const redirectUrl = buildOzowRedirectUrl({
@@ -170,10 +190,11 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     amountCents: totalCents,
     transactionReference: reference,
     bankReference: `Lethela ${vendorSlug || vendor.slug}`,
-    returnUrl,
+    successUrl,
     cancelUrl,
+    errorUrl,
     notifyUrl,
-    isTest: process.env.OZOW_IS_TEST !== "false",
+    isTest: process.env.OZOW_IS_TEST === "true",
   });
 
   return NextResponse.json({ ok: true, redirectUrl, ref: reference });

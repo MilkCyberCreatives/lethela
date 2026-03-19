@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getPusherClient } from "@/lib/pusher-client";
 
 type ChannelStatus = {
@@ -15,6 +15,9 @@ type AdminNotificationEvent = {
   title?: string;
   body?: string;
   pendingCount?: number;
+  riderPendingCount?: number;
+  riderUnderReviewCount?: number;
+  totalPendingApprovals?: number;
 };
 
 export default function AdminAlertsLink() {
@@ -22,34 +25,39 @@ export default function AdminAlertsLink() {
   const [loading, setLoading] = useState(true);
   const [channels, setChannels] = useState<ChannelStatus | null>(null);
 
+  const load = useCallback(async () => {
+    const response = await fetch("/api/admin/notifications", { cache: "no-store" });
+    const json = await response.json();
+    if (!response.ok || !json.ok) return;
+    setPendingCount(Number(json.totalPendingApprovals ?? json.pendingCount ?? 0));
+    setChannels(json.channels ?? null);
+  }, []);
+
   useEffect(() => {
     let active = true;
 
-    async function load() {
+    async function loadInitial() {
       try {
-        const response = await fetch("/api/admin/notifications", { cache: "no-store" });
-        const json = await response.json();
-        if (!response.ok || !json.ok || !active) return;
-        setPendingCount(Number(json.pendingCount ?? 0));
-        setChannels(json.channels ?? null);
+        await load();
       } finally {
         if (active) setLoading(false);
       }
     }
 
-    void load();
+    void loadInitial();
+
+    const refreshIfVisible = () => {
+      if (!active) return;
+      if (document.visibilityState === "visible") {
+        void load();
+      }
+    };
 
     const pusher = getPusherClient();
-    if (!pusher) {
-      return () => {
-        active = false;
-      };
-    }
-
-    const channel = pusher.subscribe("admin-notifications");
+    const channel = pusher ? pusher.subscribe("admin-notifications") : null;
     const onVendorApplication = (event: AdminNotificationEvent) => {
       if (!active) return;
-      setPendingCount(Number(event.pendingCount ?? 0));
+      setPendingCount(Number(event.totalPendingApprovals ?? event.pendingCount ?? 0));
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
         new Notification(event.title || "New vendor application", {
           body: event.body || "An application is waiting for admin approval.",
@@ -57,20 +65,28 @@ export default function AdminAlertsLink() {
       }
     };
 
-    channel.bind("vendor-application", onVendorApplication);
+    channel?.bind("vendor-application", onVendorApplication);
+    window.addEventListener("focus", refreshIfVisible);
+    window.addEventListener("online", refreshIfVisible);
+    document.addEventListener("visibilitychange", refreshIfVisible);
 
     return () => {
       active = false;
-      channel.unbind("vendor-application", onVendorApplication);
-      pusher.unsubscribe("admin-notifications");
+      window.removeEventListener("focus", refreshIfVisible);
+      window.removeEventListener("online", refreshIfVisible);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      channel?.unbind("vendor-application", onVendorApplication);
+      if (pusher) {
+        pusher.unsubscribe("admin-notifications");
+      }
     };
-  }, []);
+  }, [load]);
 
   const title = loading
     ? "Admin alerts"
     : pendingCount > 0
-      ? `${pendingCount} vendor application${pendingCount === 1 ? "" : "s"} pending`
-      : "No pending vendor applications";
+      ? `${pendingCount} approval item${pendingCount === 1 ? "" : "s"} pending`
+      : "No pending approval items";
 
   const pushHint =
     channels?.push.enabled && typeof window !== "undefined" && "Notification" in window

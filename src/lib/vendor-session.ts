@@ -20,7 +20,14 @@ export type VendorSessionPayload = VendorSessionInput & {
 type CookieTarget = Awaited<ReturnType<typeof cookies>>;
 
 function getVendorSessionSecret() {
-  return process.env.VENDOR_SESSION_SECRET || process.env.NEXTAUTH_SECRET || "lethela-dev-vendor-session-secret";
+  const configuredSecret = process.env.VENDOR_SESSION_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim();
+  if (configuredSecret) {
+    return configuredSecret;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("VENDOR_SESSION_SECRET or NEXTAUTH_SECRET must be set in production.");
+  }
+  return "lethela-dev-vendor-session-secret";
 }
 
 function encodeBase64Url(value: string) {

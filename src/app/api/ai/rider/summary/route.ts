@@ -1,6 +1,7 @@
 // src/app/api/ai/rider/summary/route.ts
 import { NextResponse } from "next/server";
 import { aiChat } from "@/lib/ai";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * Input:
@@ -19,6 +20,19 @@ import { aiChat } from "@/lib/ai";
  * }
  */
 export async function POST(req: Request) {
+  const limited = checkRateLimit({
+    key: "ai-rider-summary",
+    limit: 8,
+    windowMs: 60 * 60 * 1000,
+    headers: req.headers,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many rider summary requests. Try again later." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   const { fullName, phone, suburb, vehicle, experience } = body as {
     fullName?: string;

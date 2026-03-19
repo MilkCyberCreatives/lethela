@@ -1,19 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
+import { readPreferredLocation } from "@/lib/location-preference";
 import { DEFAULT_DELIVERY_FEE_CENTS, EXTRA_DELIVERY_FEE_PER_KM_CENTS, INCLUDED_DELIVERY_RADIUS_KM } from "@/lib/pricing";
 import { useUIStore } from "@/store/ui";
 import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
-
-function readCookie(name: string) {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
-  return match ? decodeURIComponent(match[2]) : null;
-}
 
 export default function CartDrawer() {
   const open = useUIStore((state) => state.cartOpen);
@@ -32,7 +28,27 @@ export default function CartDrawer() {
     extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   });
   const [quoteLoading, setQuoteLoading] = useState(false);
-  const destinationSuburb = readCookie("lethela_suburb") || "Klipfontein View, Midrand";
+  const [preferredLocation, setPreferredLocation] = useState(() => readPreferredLocation());
+  const destinationSuburb = preferredLocation?.label || "Klipfontein View, Midrand";
+
+  useEffect(() => {
+    const syncLocation = () => {
+      setPreferredLocation(readPreferredLocation());
+    };
+
+    syncLocation();
+    window.addEventListener("lethela:location-changed", syncLocation);
+    window.addEventListener("storage", syncLocation);
+    window.addEventListener("focus", syncLocation);
+    document.addEventListener("visibilitychange", syncLocation);
+
+    return () => {
+      window.removeEventListener("lethela:location-changed", syncLocation);
+      window.removeEventListener("storage", syncLocation);
+      window.removeEventListener("focus", syncLocation);
+      document.removeEventListener("visibilitychange", syncLocation);
+    };
+  }, [open]);
 
   useEffect(() => {
     const vendorId = items[0]?.vendorId;
@@ -51,8 +67,16 @@ export default function CartDrawer() {
     const timeoutId = window.setTimeout(async () => {
       setQuoteLoading(true);
       try {
+        const params = new URLSearchParams({
+          vendorId,
+          destinationSuburb,
+        });
+        if (preferredLocation?.lat != null && preferredLocation?.lng != null) {
+          params.set("destinationLat", String(preferredLocation.lat));
+          params.set("destinationLng", String(preferredLocation.lng));
+        }
         const response = await fetch(
-          `/api/checkout/delivery-quote?vendorId=${encodeURIComponent(vendorId)}&destinationSuburb=${encodeURIComponent(destinationSuburb)}`,
+          `/api/checkout/delivery-quote?${params.toString()}`,
           { cache: "no-store", signal: controller.signal }
         );
         const json = await response.json();
@@ -79,7 +103,7 @@ export default function CartDrawer() {
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [destinationSuburb, items]);
+  }, [destinationSuburb, items, preferredLocation]);
 
   const delivery = deliveryQuote.deliveryCents;
   const total = subtotal + delivery;
@@ -122,8 +146,9 @@ export default function CartDrawer() {
             items.map((item) => (
               <div key={item.itemId} className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
                 {item.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.image} alt={item.name} className="h-16 w-16 rounded object-cover" />
+                  <div className="relative h-16 w-16 overflow-hidden rounded">
+                    <Image src={item.image} alt={item.name} fill sizes="64px" className="object-cover" />
+                  </div>
                 ) : (
                   <div className="h-16 w-16 rounded bg-white/10" />
                 )}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import MainHeader from "@/components/MainHeader";
 import RiderApplyForm from "@/components/RiderApplyForm";
+import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export const metadata: Metadata = {
   title: "Become a Rider",
@@ -34,6 +35,7 @@ const FLOW = [
 ];
 
 export default function RiderPage() {
+  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
       <MainHeader />
@@ -71,7 +73,7 @@ export default function RiderPage() {
             </ul>
             <p className="mt-4 text-xs text-white/60">
               Questions before applying? WhatsApp support:{" "}
-              <a className="underline" href="https://wa.me/27723908919" target="_blank" rel="noreferrer">
+              <a className="underline" href={whatsappHref} target="_blank" rel="noreferrer">
                 +27 72 390 8919
               </a>
             </p>

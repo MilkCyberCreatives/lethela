@@ -15,6 +15,39 @@ const POPULAR_SOCIALS = [
   { key: "linkedin", label: "LinkedIn" },
 ] as const;
 
+const FOOTER_HIGHLIGHTS = ["Township favourites", "Groceries", "Fast support", "WhatsApp checkout"] as const;
+
+const EXPLORE_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/search", label: "Search" },
+  { href: "/track", label: "Track Order" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/rider", label: "Rider" },
+] as const;
+
+const BUSINESS_LINKS = [
+  { href: "/vendors/register", label: "Become a Vendor" },
+  { href: "/vendors/dashboard", label: "Vendor Dashboard" },
+  { href: "/signin", label: "Sign in" },
+] as const;
+
+const LEGAL_LINKS = [
+  { href: "/privacy-policy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms of Service" },
+  { href: "/popia", label: "POPIA Notice" },
+  { href: "/paia-manual", label: "PAIA Access Guide" },
+  { href: "/refund-policy", label: "Refunds & Cancellations" },
+] as const;
+
+const FOOTER_META_LINKS = [
+  { href: "/privacy-policy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/popia", label: "POPIA" },
+  { href: "/paia-manual", label: "PAIA" },
+  { href: "/refund-policy", label: "Refunds" },
+] as const;
+
 function PaymentMethodIcon({ label }: { label: string }) {
   if (label === "Ozow") return <ShieldCheck className="h-3.5 w-3.5" aria-hidden />;
   if (label === "Instant EFT") return <Landmark className="h-3.5 w-3.5" aria-hidden />;
@@ -26,25 +59,30 @@ export default function Footer() {
   const whatsappLink = `https://wa.me/${getOrderWhatsAppPhone()}`;
   const socialLinks = getFooterSocialLinks();
   const socialByKey = new Map(socialLinks.map((item) => [item.key, item]));
+  const visibleSocials = POPULAR_SOCIALS.filter((item) => socialByKey.has(item.key));
 
   return (
     <footer className="mt-auto border-t border-white/10 bg-lethela-secondary">
-      <div className="container py-8 md:py-9">
-        <div className="mb-5 flex flex-wrap gap-2">
-          {["Township favourites", "Groceries", "Fast support", "WhatsApp checkout"].map((item) => (
-            <span key={item} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white/68 transition-colors hover:bg-white/[0.08]">
+      <div className="container py-10 md:py-12">
+        <div className="mb-6 flex flex-wrap gap-2 md:mb-8">
+          {FOOTER_HIGHLIGHTS.map((item) => (
+            <span
+              key={item}
+              className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white/68 transition-colors hover:bg-white/[0.08]"
+            >
               {item}
             </span>
           ))}
         </div>
 
-        <div className="grid items-start gap-x-6 gap-y-7 md:grid-cols-2 xl:grid-cols-[1.2fr,0.8fr,0.9fr,1fr]">
-          <div className="surface-panel-muted self-start p-5">
-            <h3 className="text-xl font-bold text-white">Lethela</h3>
-            <p className="mt-3 text-sm leading-6 text-white/70">
+        <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.3fr)_repeat(3,minmax(0,1fr))]">
+          <section className="flex h-full flex-col py-2 md:py-3 xl:w-fit xl:justify-self-end">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Local delivery</div>
+            <h3 className="mt-3 text-2xl font-bold text-white">Lethela</h3>
+            <p className="mt-3 max-w-md text-sm leading-6 text-white/70">
               Siyashesha. A cleaner, faster way to order food, groceries and township favourites from local vendors.
             </p>
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/search"
                 className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5"
@@ -61,103 +99,69 @@ export default function Footer() {
               </a>
             </div>
 
-            <div className="mt-4 border-t border-white/10 pt-4">
-              <div className="text-xs uppercase tracking-[0.18em] text-white/45">Social</div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                {POPULAR_SOCIALS.map((item) => {
-                  const social = socialByKey.get(item.key);
-                  const className =
-                    "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] text-white/80 transition-colors";
+            <div className="mt-6 grid gap-4 border-t border-white/10 pt-5 md:grid-cols-[1fr_auto] md:items-end">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Service area</div>
+                <div className="mt-2 text-sm text-white/80">{LEGAL_SERVICE_AREA}</div>
+              </div>
+              <div className="md:text-right">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Social</div>
+                <div className="mt-3 flex flex-wrap items-center gap-2 md:justify-end">
+                  {visibleSocials.map((item) => {
+                    const social = socialByKey.get(item.key);
+                    if (!social) return null;
+                    const className =
+                      "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] text-white/80 transition-colors";
 
-                  if (!social) {
                     return (
-                      <span
+                      <a
                         key={item.key}
-                        aria-label={`${item.label} coming soon`}
-                        title={`${item.label} coming soon`}
-                        className={`${className} cursor-default opacity-35`}
+                        href={social.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={social.label}
+                        className={`${className} hover:border-white/25 hover:text-white`}
                       >
                         <SocialIcon socialKey={item.key} />
-                      </span>
+                      </a>
                     );
-                  }
-
-                  return (
-                    <a
-                      key={item.key}
-                      href={social.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={social.label}
-                      className={`${className} hover:border-white/25 hover:text-white`}
-                    >
-                      <SocialIcon socialKey={item.key} />
-                    </a>
-                  );
-                })}
+                  })}
+                </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="self-start">
-            <h4 className="font-semibold text-white">Explore</h4>
-            <ul className="mt-3 space-y-2 text-sm text-white/80">
-              <li>
-                <Link href="/" className="transition-colors hover:text-white">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="transition-colors hover:text-white">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href="/search" className="transition-colors hover:text-white">
-                  Search
-                </Link>
-              </li>
-              <li>
-                <Link href="/track" className="transition-colors hover:text-white">
-                  Track Order
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="transition-colors hover:text-white">
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link href="/rider" className="transition-colors hover:text-white">
-                  Rider
-                </Link>
-              </li>
+          <section className="flex h-full flex-col py-2 md:py-3">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Explore</div>
+            <h4 className="mt-3 font-semibold text-white">Explore</h4>
+            <ul className="mt-4 space-y-2.5 text-sm text-white/80">
+              {EXPLORE_LINKS.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className="transition-colors hover:text-white">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </section>
 
-          <div className="self-start space-y-5">
-            <h4 className="font-semibold text-white">Business</h4>
-            <ul className="mt-3 space-y-2 text-sm text-white/80">
-              <li>
-                <Link href="/vendors/register" className="transition-colors hover:text-white">
-                  Become a Vendor
-                </Link>
-              </li>
-              <li>
-                <Link href="/vendors/dashboard" className="transition-colors hover:text-white">
-                  Vendor Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link href="/signin" className="transition-colors hover:text-white">
-                  Sign in
-                </Link>
-              </li>
+          <section className="flex h-full flex-col py-2 md:py-3">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Business</div>
+            <h4 className="mt-3 font-semibold text-white">Business</h4>
+            <ul className="mt-4 space-y-2.5 text-sm text-white/80">
+              {BUSINESS_LINKS.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className="transition-colors hover:text-white">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
 
-            <div>
-              <h4 className="font-semibold text-white">Payments</h4>
-              <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Payments</div>
+              <h4 className="mt-3 font-semibold text-white">Payments</h4>
+              <div className="mt-4 flex flex-wrap gap-2">
                 {FOOTER_PAYMENT_METHODS.map((method) => (
                   <span
                     key={method.label}
@@ -169,41 +173,25 @@ export default function Footer() {
                 ))}
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="self-start space-y-5">
-            <h4 className="font-semibold text-white">Legal & Contact</h4>
-            <ul className="mt-3 space-y-2 text-sm text-white/80">
-              <li>
-                <Link href="/privacy-policy" className="transition-colors hover:text-white">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="transition-colors hover:text-white">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link href="/popia" className="transition-colors hover:text-white">
-                  POPIA Notice
-                </Link>
-              </li>
-              <li>
-                <Link href="/paia-manual" className="transition-colors hover:text-white">
-                  PAIA Access Guide
-                </Link>
-              </li>
-              <li>
-                <Link href="/refund-policy" className="transition-colors hover:text-white">
-                  Refunds &amp; Cancellations
-                </Link>
-              </li>
+          <section className="flex h-full flex-col py-2 md:py-3">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Legal & Contact</div>
+            <h4 className="mt-3 font-semibold text-white">Legal & Contact</h4>
+            <ul className="mt-4 space-y-2.5 text-sm text-white/80">
+              {LEGAL_LINKS.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className="transition-colors hover:text-white">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
 
-            <div className="border-t border-white/10 pt-5">
-              <h4 className="font-semibold text-white">Contact</h4>
-              <ul className="mt-3 space-y-2 text-sm text-white/80">
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Contact</div>
+              <h4 className="mt-3 font-semibold text-white">Contact</h4>
+              <ul className="mt-4 space-y-2.5 text-sm text-white/80">
                 <li>Serving: {LEGAL_SERVICE_AREA}</li>
                 {LEGAL_SUPPORT_EMAIL ? <li>Email: {LEGAL_SUPPORT_EMAIL}</li> : null}
                 <li>
@@ -221,27 +209,17 @@ export default function Footer() {
                 </li>
               </ul>
             </div>
-          </div>
+          </section>
         </div>
 
-        <div className="mt-6 border-t border-white/10 pt-4 text-xs text-white/60">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="mt-6 border-t border-white/10 pt-5 text-xs text-white/60 md:mt-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-x-4 gap-y-2 text-white/58">
-              <Link href="/privacy-policy" className="transition-colors hover:text-white">
-                Privacy
-              </Link>
-              <Link href="/terms" className="transition-colors hover:text-white">
-                Terms
-              </Link>
-              <Link href="/popia" className="transition-colors hover:text-white">
-                POPIA
-              </Link>
-              <Link href="/paia-manual" className="transition-colors hover:text-white">
-                PAIA
-              </Link>
-              <Link href="/refund-policy" className="transition-colors hover:text-white">
-                Refunds
-              </Link>
+              {FOOTER_META_LINKS.map((item) => (
+                <Link key={item.href} href={item.href} className="transition-colors hover:text-white">
+                  {item.label}
+                </Link>
+              ))}
             </div>
             <div className="md:text-right">
               <p className="flex flex-wrap items-center justify-start gap-x-1 gap-y-1 text-left md:justify-end">

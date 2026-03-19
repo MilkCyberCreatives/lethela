@@ -21,6 +21,19 @@ export async function GET(req: Request) {
     if (!o || o.customerLat == null || o.customerLng == null) {
       return NextResponse.json({ ok: false, error: "No coordinates" }, { status: 404 });
     }
+
+    if (o.riderLat != null && o.riderLng != null) {
+      return NextResponse.json({
+        ok: true,
+        driver: {
+          lat: o.riderLat,
+          lng: o.riderLng,
+          progress: o.status === "DELIVERED" ? 1 : o.status === "OUT_FOR_DELIVERY" ? 0.86 : 0.42,
+          live: true,
+        },
+      });
+    }
+
     const v = await prisma.vendor.findUnique({ where: { id: vendorId } });
     if (!v || v.latitude == null || v.longitude == null) {
       return NextResponse.json({ ok: false, error: "Vendor has no coordinates" }, { status: 400 });

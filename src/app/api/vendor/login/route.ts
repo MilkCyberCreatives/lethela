@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { attachVendorSession } from "@/lib/vendor-session";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const VendorLoginSchema = z.object({
   email: z.string().email(),
@@ -11,6 +12,19 @@ const VendorLoginSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const rateLimit = checkRateLimit({
+    key: "vendor-login",
+    limit: 10,
+    windowMs: 30 * 60 * 1000,
+    headers: req.headers,
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many sign-in attempts. Please try again later." },
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+    );
+  }
+
   const isDevelopment = process.env.NODE_ENV !== "production";
   const body = await req.json().catch(() => ({}));
   const parsed = VendorLoginSchema.safeParse(body);

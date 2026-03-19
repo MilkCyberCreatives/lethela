@@ -6,12 +6,8 @@ import { attachVendorSession } from "@/lib/vendor-session";
 // IMPORTANT: this route is for development / internal use only.
 // In production you should restrict or remove it.
 export async function POST(req: Request) {
-  // Block in production if you want:
   if (process.env.NODE_ENV === "production") {
-    return NextResponse.json(
-      { ok: false, error: "Admin login disabled in production" },
-      { status: 403 }
-    );
+    return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   }
 
   const body = await req.json().catch(() => ({}));

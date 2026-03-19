@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk } from "next/font/google";
+import { Suspense } from "react";
 import MarketingScripts from "@/components/MarketingScripts";
 import Providers from "@/components/Providers";
 import StructuredData from "@/components/StructuredData";
+import VisitorTelemetry from "@/components/VisitorTelemetry";
+import { getFooterSocialLinks, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -121,6 +124,8 @@ const globalSchema = {
       name: SITE_NAME,
       url: SITE_URL,
       logo: absoluteUrl("/lethelalogo.svg"),
+      email: LEGAL_SUPPORT_EMAIL || undefined,
+      sameAs: getFooterSocialLinks().map((item) => item.href),
       contactPoint: [
         {
           "@type": "ContactPoint",
@@ -162,7 +167,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${spaceGrotesk.className} min-h-dvh bg-lethela-secondary text-white`}>
         <StructuredData data={globalSchema} />
         <MarketingScripts />
-        <Providers>{children}</Providers>
+        <Providers>
+          <Suspense fallback={null}>
+            <VisitorTelemetry />
+          </Suspense>
+          {children}
+        </Providers>
       </body>
     </html>
   );

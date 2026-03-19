@@ -22,6 +22,56 @@ model User {
   ownedVendors Vendor[]       @relation("VendorOwner")
 }
 
+model Visitor {
+  id                String   @id
+  preferredArea     String?
+  userAgent         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  events            VisitorEvent[]
+  pushSubscriptions PushSubscription[]
+
+  @@index([preferredArea])
+  @@index([updatedAt])
+}
+
+model VisitorEvent {
+  id          String   @id @default(cuid())
+  visitorId   String
+  userId      String?
+  type        String
+  path        String?
+  vendorId    String?
+  vendorSlug  String?
+  productId   String?
+  searchQuery String?
+  metaJson    String?
+  createdAt   DateTime @default(now())
+
+  visitor     Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  @@index([visitorId, createdAt])
+  @@index([type, createdAt])
+  @@index([vendorSlug])
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  visitorId  String
+  userId     String?
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  visitor    Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  @@index([visitorId, updatedAt])
+}
+
 model Vendor {
   id          String   @id @default(cuid())
   name        String
@@ -161,6 +211,10 @@ model Order {
   ozowTxnId        String?
   customerLat      Float?
   customerLng      Float?
+  riderLat         Float?
+  riderLng         Float?
+  riderSpeed       Float?
+  riderLocatedAt   DateTime?
   distanceKm       Float?
   subtotalCents    Int      @default(0)
   deliveryFeeCents Int      @default(0)

@@ -15,6 +15,7 @@ import {
   type TownshipCategory,
 } from "@/lib/categories";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
+import { buildPageMetadata } from "@/lib/seo";
 
 type PageProps = {
   params: Promise<{ category: string }>;
@@ -36,13 +37,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  return {
+  return buildPageMetadata({
     title: titleForCategory(resolvedCategory),
     description: `Order ${resolvedCategory.toLowerCase()} from local vendors on ${SITE_NAME}.`,
-    alternates: {
-      canonical: `/categories/${categoryToSlug(resolvedCategory)}`,
-    },
-  };
+    path: `/categories/${categoryToSlug(resolvedCategory)}`,
+  });
 }
 
 export default async function CategoryPage({ params }: PageProps) {

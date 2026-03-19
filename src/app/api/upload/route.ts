@@ -2,6 +2,9 @@ import { randomUUID } from "crypto";
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { getCookie } from "@/lib/cookie-helpers";
+import { parseVendorSessionToken } from "@/lib/vendor-session";
 
 export const runtime = "nodejs";
 
@@ -9,6 +12,12 @@ const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 
 export async function POST(req: Request) {
+  const session = await auth();
+  const vendorSession = parseVendorSessionToken(await getCookie("vendor_session"));
+  if (!session?.user?.id && !vendorSession?.userId) {
+    return NextResponse.json({ ok: false, error: "Auth required" }, { status: 401 });
+  }
+
   const form = await req.formData();
   const file = form.get("file");
 

@@ -1,9 +1,11 @@
 // /components/MenuSectionList.tsx
 "use client";
 
+import Image from "next/image";
 import MealPreferenceControls from "@/components/MealPreferenceControls";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
+import { trackVisitorEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
 import { useUIStore } from "@/store/ui";
 
@@ -47,14 +49,9 @@ export default function MenuSectionList({
               <div key={it.id} className="flex items-start justify-between rounded-lg border border-white/10 p-3">
                 <div className="flex min-w-0 items-start gap-3 pr-3">
                   {it.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={it.image}
-                      alt={it.name}
-                      className="h-16 w-16 shrink-0 rounded-lg object-cover"
-                      loading="lazy"
-                      decoding="async"
-                    />
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                      <Image src={it.image} alt={it.name} fill sizes="64px" className="object-cover" />
+                    </div>
                   ) : null}
                   <div className="min-w-0">
                     <div className="font-medium">{it.name}</div>
@@ -90,6 +87,16 @@ export default function MenuSectionList({
                         },
                         1,
                       );
+                      void trackVisitorEvent({
+                        type: "product_add",
+                        productId: it.id,
+                        vendorId: it.vendorId || vendorId,
+                        vendorSlug,
+                        meta: {
+                          name: it.name,
+                          tags: it.tags,
+                        },
+                      });
                       openCart();
                     }}
                   >

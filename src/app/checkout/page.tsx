@@ -10,21 +10,20 @@ import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
+import { persistPreferredLocation, readPreferredLocation } from "@/lib/location-preference";
 
-function readCookie(name: string) {
-  if (typeof document === "undefined") return null;
-  const m = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
-  return m ? decodeURIComponent(m[2]) : null;
-}
+const isOzowSandbox = process.env.NEXT_PUBLIC_OZOW_IS_TEST === "true";
 
 export default function CheckoutPage() {
   const items = useCart((s) => s.items);
   const subtotal = useCart((s) => s.subtotal());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [destinationSuburb, setDestinationSuburb] = useState(
-    () => readCookie("lethela_suburb") || "Klipfontein View, Midrand"
-  );
+  const [destinationSuburb, setDestinationSuburb] = useState(() => readPreferredLocation()?.label || "Klipfontein View, Midrand");
+  const [destinationPoint, setDestinationPoint] = useState<{ lat: number; lng: number } | null>(() => {
+    const saved = readPreferredLocation();
+    return saved?.lat != null && saved?.lng != null ? { lat: saved.lat, lng: saved.lng } : null;
+  });
   const [deliveryQuote, setDeliveryQuote] = useState({
     baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
     deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
@@ -52,8 +51,16 @@ export default function CheckoutPage() {
     const timeoutId = window.setTimeout(async () => {
       setQuoteLoading(true);
       try {
+        const params = new URLSearchParams({
+          vendorId,
+          destinationSuburb: destination,
+        });
+        if (destinationPoint) {
+          params.set("destinationLat", String(destinationPoint.lat));
+          params.set("destinationLng", String(destinationPoint.lng));
+        }
         const response = await fetch(
-          `/api/checkout/delivery-quote?vendorId=${encodeURIComponent(vendorId)}&destinationSuburb=${encodeURIComponent(destination)}`,
+          `/api/checkout/delivery-quote?${params.toString()}`,
           { cache: "no-store", signal: controller.signal }
         );
         const json = await response.json();
@@ -80,7 +87,7 @@ export default function CheckoutPage() {
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [destinationSuburb, items]);
+  }, [destinationPoint, destinationSuburb, items]);
 
   const deliveryFee = deliveryQuote.deliveryCents;
   const total = subtotal + deliveryFee;
@@ -104,16 +111,16 @@ export default function CheckoutPage() {
   async function payOzow() {
     if (items.length === 0) return;
     const destination = destinationSuburb.trim() || "Klipfontein View, Midrand";
-    document.cookie = `lethela_suburb=${encodeURIComponent(destination)}; path=/; max-age=7776000; samesite=lax`;
-    try {
-      localStorage.setItem("lethela_suburb", destination);
-    } catch {
-      // ignore storage errors in restricted browsers
-    }
-
     setLoading(true);
     setError(null);
     try {
+      persistPreferredLocation({
+        label: destination,
+        suburb: destination,
+        lat: destinationPoint?.lat,
+        lng: destinationPoint?.lng,
+        source: destinationPoint ? "device" : "manual",
+      });
       const vendorId = items[0].vendorId;
       const vendorSlug = items[0].vendorSlug;
       if (!vendorId || vendorId === "unknown-vendor") {
@@ -127,6 +134,8 @@ export default function CheckoutPage() {
           vendorId,
           vendorSlug,
           destinationSuburb: destination,
+          destinationLat: destinationPoint?.lat,
+          destinationLng: destinationPoint?.lng,
           items: items.map((i) => ({
             itemId: i.itemId,
             name: i.name,
@@ -183,7 +192,10 @@ export default function CheckoutPage() {
                 <input
                   className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                   value={destinationSuburb}
-                  onChange={(event) => setDestinationSuburb(event.target.value)}
+                  onChange={(event) => {
+                    setDestinationSuburb(event.target.value);
+                    setDestinationPoint(null);
+                  }}
                   placeholder="Klipfontein View, Midrand"
                   autoComplete="address-level2"
                 />
@@ -213,7 +225,7 @@ export default function CheckoutPage() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Button className="bg-lethela-primary" disabled={loading} onClick={payOzow}>
-                {loading ? "Redirecting..." : "Pay with Ozow (sandbox)"}
+                {loading ? "Redirecting..." : isOzowSandbox ? "Pay with Ozow (sandbox)" : "Pay with Ozow"}
               </Button>
               <Button asChild variant="outline" className="border-white/30 text-white hover:border-white/60">
                 <a href={whatsappLink} target="_blank" rel="noreferrer">

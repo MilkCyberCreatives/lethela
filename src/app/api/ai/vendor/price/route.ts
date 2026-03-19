@@ -1,8 +1,30 @@
 // /src/app/api/ai/vendor/price/route.ts
 import { NextResponse } from "next/server";
 import { aiChat } from "@/lib/ai";
+import { requireVendor } from "@/lib/authz";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  try {
+    await requireVendor("STAFF");
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Vendor access required.";
+    return NextResponse.json({ ok: false, error: message }, { status: 401 });
+  }
+
+  const limited = checkRateLimit({
+    key: "ai-vendor-price",
+    limit: 60,
+    windowMs: 60_000,
+    headers: req.headers,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many AI pricing requests. Try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
+  }
+
   const { name, description, currentPriceCents } = await req.json().catch(() => ({})) as {
     name?: string; description?: string; currentPriceCents?: number;
   };

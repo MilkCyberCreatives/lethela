@@ -2,7 +2,8 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { aiChat } from "@/lib/ai";
-import { prisma } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { createRiderApplication } from "@/lib/rider-applications";
 
 const RiderApplySchema = z.object({
   fullName: z.string().trim().min(3).max(120),
@@ -25,39 +26,20 @@ const RiderApplySchema = z.object({
   experience: z.string().trim().max(1200).optional().nullable(),
 });
 
-async function ensureRiderApplicationsTable() {
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS RiderApplication (
-      id TEXT PRIMARY KEY,
-      fullName TEXT NOT NULL,
-      email TEXT NOT NULL,
-      phone TEXT NOT NULL,
-      idNumberLast4 TEXT NOT NULL,
-      licenseCode TEXT NOT NULL,
-      suburb TEXT NOT NULL,
-      city TEXT NOT NULL,
-      vehicleType TEXT NOT NULL,
-      vehicleRegistration TEXT,
-      availableHours TEXT NOT NULL,
-      emergencyContactName TEXT NOT NULL,
-      emergencyContactPhone TEXT NOT NULL,
-      hasSmartphone INTEGER NOT NULL DEFAULT 1,
-      hasBankAccount INTEGER NOT NULL DEFAULT 1,
-      experience TEXT,
-      aiSummary TEXT,
-      status TEXT NOT NULL DEFAULT 'PENDING',
-      createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  await prisma.$executeRawUnsafe(`
-    CREATE INDEX IF NOT EXISTS RiderApplication_status_createdAt_idx
-    ON RiderApplication(status, createdAt);
-  `);
-}
-
 export async function POST(req: Request) {
+  const rateLimit = checkRateLimit({
+    key: "riders-apply",
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+    headers: req.headers,
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many applications submitted. Please try again later." },
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+    );
+  }
+
   const raw = await req.json().catch(() => ({}));
   const parsed = RiderApplySchema.safeParse(raw);
   if (!parsed.success) {
@@ -93,22 +75,27 @@ Experience: ${payload.experience || "N/A"}
     },
   ]);
 
-  await ensureRiderApplicationsTable();
   const applicationId = randomUUID();
 
-  await prisma.$executeRaw`
-    INSERT INTO RiderApplication (
-      id, fullName, email, phone, idNumberLast4, licenseCode, suburb, city, vehicleType, vehicleRegistration,
-      availableHours, emergencyContactName, emergencyContactPhone, hasSmartphone, hasBankAccount, experience,
-      aiSummary, status, createdAt, updatedAt
-    ) VALUES (
-      ${applicationId}, ${payload.fullName}, ${payload.email}, ${payload.phone}, ${payload.idNumberLast4},
-      ${payload.licenseCode}, ${payload.suburb}, ${payload.city}, ${payload.vehicleType}, ${payload.vehicleRegistration || null},
-      ${payload.availableHours}, ${payload.emergencyContactName}, ${payload.emergencyContactPhone},
-      ${payload.hasSmartphone ? 1 : 0}, ${payload.hasBankAccount ? 1 : 0}, ${payload.experience || null},
-      ${summary.slice(0, 1200)}, ${"PENDING"}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-    )
-  `;
+  await createRiderApplication({
+    id: applicationId,
+    fullName: payload.fullName,
+    email: payload.email,
+    phone: payload.phone,
+    idNumberLast4: payload.idNumberLast4,
+    licenseCode: payload.licenseCode,
+    suburb: payload.suburb,
+    city: payload.city,
+    vehicleType: payload.vehicleType,
+    vehicleRegistration: payload.vehicleRegistration || null,
+    availableHours: payload.availableHours,
+    emergencyContactName: payload.emergencyContactName,
+    emergencyContactPhone: payload.emergencyContactPhone,
+    hasSmartphone: payload.hasSmartphone,
+    hasBankAccount: payload.hasBankAccount,
+    experience: payload.experience || null,
+    aiSummary: summary.slice(0, 1200),
+  });
 
   return NextResponse.json({
     ok: true,

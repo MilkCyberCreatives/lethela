@@ -6,6 +6,7 @@ import {
   passwordResetFingerprint,
   readPasswordResetToken,
 } from "@/lib/password-reset";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const BodySchema = z
   .object({
@@ -19,6 +20,19 @@ const BodySchema = z
   });
 
 export async function POST(req: NextRequest) {
+  const rateLimit = checkRateLimit({
+    key: "auth-reset-password",
+    limit: 8,
+    windowMs: 30 * 60 * 1000,
+    headers: req.headers,
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many reset submissions. Please try again later." },
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {

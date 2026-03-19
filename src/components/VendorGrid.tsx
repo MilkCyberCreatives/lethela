@@ -5,6 +5,7 @@ import VendorCard from "./VendorCard";
 import type { Vendor } from "@/types";
 import { Button } from "@/components/ui/button";
 import { getVendorClicks } from "@/lib/tracking";
+import { readPreferredLocation } from "@/lib/location-preference";
 
 type ApiResponse = { ok: boolean; total: number; items: (Vendor & { baseEtaMin?: number; distanceKm?: number })[] };
 
@@ -19,13 +20,14 @@ export default function VendorGrid({
   const [vendors, setVendors] = useState<Vendor[]>(initialVendors ?? []);
   const [loading, setLoading] = useState(!hasInitial);
   const [error, setError] = useState<string | null>(null);
+  const [activeSuburb, setActiveSuburb] = useState<string | null>(suburb);
   const initialSuburbRef = useRef(suburb);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ suburb: suburb || "", take: "18" });
+      const params = new URLSearchParams({ suburb: activeSuburb || "", take: "18" });
       const vendorResponse = await fetch(`/api/vendors?${params.toString()}`);
       if (!vendorResponse.ok) throw new Error(`Failed: ${vendorResponse.status}`);
       const vendorJson: ApiResponse = await vendorResponse.json();
@@ -47,7 +49,7 @@ export default function VendorGrid({
           })),
           clicks,
           hour,
-          suburb,
+          suburb: activeSuburb,
         }),
       }).then((response) => response.json());
 
@@ -70,19 +72,38 @@ export default function VendorGrid({
     } finally {
       setLoading(false);
     }
-  }, [suburb]);
+  }, [activeSuburb]);
 
   useEffect(() => {
-    if (hasInitial && suburb === initialSuburbRef.current) return;
+    if (hasInitial && activeSuburb === initialSuburbRef.current) return;
     void load();
-  }, [hasInitial, load, suburb]);
+  }, [activeSuburb, hasInitial, load]);
+
+  useEffect(() => {
+    const syncLocation = () => {
+      const next = readPreferredLocation()?.label || suburb || null;
+      setActiveSuburb((current) => (current === next ? current : next));
+    };
+
+    syncLocation();
+    window.addEventListener("lethela:location-changed", syncLocation);
+    window.addEventListener("storage", syncLocation);
+    window.addEventListener("focus", syncLocation);
+    document.addEventListener("visibilitychange", syncLocation);
+    return () => {
+      window.removeEventListener("lethela:location-changed", syncLocation);
+      window.removeEventListener("storage", syncLocation);
+      window.removeEventListener("focus", syncLocation);
+      document.removeEventListener("visibilitychange", syncLocation);
+    };
+  }, [suburb]);
 
   return (
     <section className="container py-8">
       <div className="mb-3 flex items-end justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Popular near {suburb ?? "you"}</h2>
-          {!suburb ? <p className="text-xs text-white/60">Tip: set your suburb to improve results.</p> : null}
+          <h2 className="text-xl font-semibold">Popular near {activeSuburb ?? "you"}</h2>
+          {!activeSuburb ? <p className="text-xs text-white/60">Tip: set your suburb to improve results.</p> : null}
         </div>
         {error ? (
           <Button variant="outline" className="border-white/20" onClick={() => void load()}>

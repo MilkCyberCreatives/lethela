@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import ProductCard, { ProductLite } from "./ProductCard";
 import { Button } from "@/components/ui/button";
 import { TOWNSHIP_CATEGORIES } from "@/lib/categories";
+import { readPreferredLocation } from "@/lib/location-preference";
 
 type ApiResp = { ok: boolean; items: ProductLite[] };
 
@@ -24,6 +25,7 @@ export default function ProductsGrid({
   const [onlyAlcohol, setOnlyAlcohol] = useState(false);
   const [category, setCategory] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [activeSuburb, setActiveSuburb] = useState<string | null>(suburb ?? null);
   const searchParams = useSearchParams();
   const skippedInitialLoad = useRef(false);
 
@@ -39,7 +41,7 @@ export default function ProductsGrid({
       const query = new URLSearchParams();
       if (onlyAlcohol) query.set("alcohol", "true");
       if (category) query.set("category", category);
-      if (suburb) query.set("suburb", suburb);
+      if (activeSuburb) query.set("suburb", activeSuburb);
       query.set("take", "24");
       const response = await fetch(`/api/products?${query.toString()}`);
       if (!response.ok) throw new Error(`Request failed: ${response.status}`);
@@ -50,7 +52,26 @@ export default function ProductsGrid({
     } finally {
       setLoading(false);
     }
-  }, [onlyAlcohol, category, suburb]);
+  }, [activeSuburb, onlyAlcohol, category]);
+
+  useEffect(() => {
+    const syncLocation = () => {
+      const next = readPreferredLocation()?.label || suburb || null;
+      setActiveSuburb((current) => (current === next ? current : next));
+    };
+
+    syncLocation();
+    window.addEventListener("lethela:location-changed", syncLocation);
+    window.addEventListener("storage", syncLocation);
+    window.addEventListener("focus", syncLocation);
+    document.addEventListener("visibilitychange", syncLocation);
+    return () => {
+      window.removeEventListener("lethela:location-changed", syncLocation);
+      window.removeEventListener("storage", syncLocation);
+      window.removeEventListener("focus", syncLocation);
+      document.removeEventListener("visibilitychange", syncLocation);
+    };
+  }, [suburb]);
 
   useEffect(() => {
     const isDefaultFilter = !onlyAlcohol && !category;

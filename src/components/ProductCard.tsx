@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import MealPreferenceControls from "@/components/MealPreferenceControls";
 import { Button } from "@/components/ui/button";
+import { trackVisitorEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
 import { useUIStore } from "@/store/ui";
 
@@ -26,8 +28,15 @@ export default function ProductCard({ p }: { p: ProductLite }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-lethela-secondary transition">
       {p.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={p.image} alt={p.name} className="h-40 w-full object-cover" loading="lazy" decoding="async" />
+        <div className="relative h-40 w-full">
+          <Image
+            src={p.image}
+            alt={p.name}
+            fill
+            sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+            className="object-cover"
+          />
+        </div>
       ) : (
         <div className="h-40 w-full bg-white/10" />
       )}
@@ -66,6 +75,17 @@ export default function ProductCard({ p }: { p: ProductLite }) {
                 },
                 1
               );
+              void trackVisitorEvent({
+                type: "product_add",
+                productId: p.id,
+                vendorId,
+                vendorSlug,
+                meta: {
+                  name: p.name,
+                  category: p.category || null,
+                  vendorName: p.vendor?.name || null,
+                },
+              });
               openCart();
             }}
           >

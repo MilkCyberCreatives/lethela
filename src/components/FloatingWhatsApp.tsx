@@ -1,10 +1,13 @@
 // /src/components/FloatingWhatsApp.tsx
 "use client";
 
+import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
+
 export default function FloatingWhatsApp() {
+  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
   return (
     <a
-      href="https://wa.me/27723908919"
+      href={whatsappHref}
       target="_blank"
       rel="noreferrer"
       aria-label="Message Lethela on WhatsApp"

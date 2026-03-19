@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { DEMO_ORDER_REF, isDemoOrderRef } from "@/lib/demo-order";
 import { pusherServer } from "@/lib/pusher-server";
 import { withQueryTimeout } from "@/lib/query-timeout";
+import { requireVendor } from "@/lib/authz";
+import { readRiderConsoleToken } from "@/lib/rider-console";
 
 const BodySchema = z.object({
   status: z.enum(["PLACED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELED", "ACCEPTED", "PICKED_UP", "ON_THE_WAY"]),
@@ -36,8 +38,33 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const canonicalStatus = STATUS_MAP[parsed.data.status] ?? "PLACED";
+  let vendorSession: Awaited<ReturnType<typeof requireVendor>> | null = null;
+  try {
+    vendorSession = await requireVendor("STAFF");
+  } catch {
+    vendorSession = null;
+  }
+
+  const url = new URL(req.url);
+  const riderToken = readRiderConsoleToken(
+    req.headers.get("x-rider-token")?.trim() || url.searchParams.get("token")?.trim() || null
+  );
+
+  if (!vendorSession && !riderToken) {
+    return NextResponse.json(
+      { ok: false, error: "Authorized rider or vendor access required." },
+      { status: 401 }
+    );
+  }
 
   if (isDemoOrderRef(cleanRef)) {
+    if (!vendorSession && riderToken?.ref !== DEMO_ORDER_REF) {
+      return NextResponse.json(
+        { ok: false, error: "Authorized rider or vendor access required." },
+        { status: 401 }
+      );
+    }
+
     try {
       await pusherServer.trigger(`order-${DEMO_ORDER_REF}`, "status", { status: canonicalStatus, at: new Date().toISOString() });
     } catch {
@@ -48,10 +75,15 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const order = await withQueryTimeout(
     prisma.order.findFirst({
-      where: {
-        OR: [{ ozowReference: cleanRef }, { publicId: cleanRef }, { publicId: cleanRef.toUpperCase() }],
-      },
-      select: { id: true, ozowReference: true, publicId: true },
+      where: riderToken
+        ? {
+            OR: [{ ozowReference: cleanRef }, { publicId: cleanRef }, { publicId: cleanRef.toUpperCase() }],
+          }
+        : {
+            vendorId: vendorSession?.vendorId,
+            OR: [{ ozowReference: cleanRef }, { publicId: cleanRef }, { publicId: cleanRef.toUpperCase() }],
+          },
+      select: { id: true, vendorId: true, ozowReference: true, publicId: true },
     }),
     null
   );
@@ -59,9 +91,31 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, error: "Order not found." }, { status: 404 });
   }
 
+  const riderRef = riderToken?.ref;
+  const publicRef = String(order.publicId || "").trim().toUpperCase();
+  const ozowRef = String(order.ozowReference || "").trim().toUpperCase();
+  const isVendorAuthorized = vendorSession?.vendorId === order.vendorId;
+  const isRiderAuthorized = Boolean(riderRef && (riderRef === publicRef || riderRef === ozowRef));
+
+  if (!isVendorAuthorized && !isRiderAuthorized) {
+    return NextResponse.json(
+      { ok: false, error: "Authorized rider or vendor access required." },
+      { status: 401 }
+    );
+  }
+
   await prisma.order.update({
     where: { id: order.id },
-    data: { status: canonicalStatus },
+    data: {
+      status: canonicalStatus,
+      ...(canonicalStatus === "DELIVERED" || canonicalStatus === "CANCELED"
+        ? {
+            riderLat: null,
+            riderLng: null,
+            riderSpeed: null,
+          }
+        : {}),
+    },
   });
 
   try {
