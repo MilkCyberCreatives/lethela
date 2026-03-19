@@ -131,7 +131,7 @@ export default function Footer() {
             </div>
           </section>
 
-          <section className="flex h-full flex-col py-2 md:py-3">
+          <section className="flex h-full flex-col py-2 md:py-3 xl:pl-8">
             <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Explore</div>
             <h4 className="mt-3 font-semibold text-white">Explore</h4>
             <ul className="mt-4 space-y-2.5 text-sm text-white/80">
