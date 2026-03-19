@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/next-script-for-ga */
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk } from "next/font/google";
 import { Suspense } from "react";
@@ -18,6 +19,7 @@ const spaceGrotesk = Space_Grotesk({
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION?.trim();
 const facebookDomainVerification = process.env.NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION?.trim();
+const gtmId = process.env.NEXT_PUBLIC_GTM_ID?.trim() || "GTM-T7C5HB8K";
 
 const otherVerification: Record<string, string> = {};
 if (bingVerification) otherVerification["msvalidate.01"] = bingVerification;
@@ -164,6 +166,19 @@ const globalSchema = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-ZA">
+      <head>
+        {gtmId ? (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${gtmId}');`,
+            }}
+          />
+        ) : null}
+      </head>
       <body className={`${spaceGrotesk.className} min-h-dvh bg-lethela-secondary text-white`}>
         <StructuredData data={globalSchema} />
         <MarketingScripts />
