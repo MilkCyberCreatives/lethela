@@ -5,8 +5,9 @@ import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
 export async function getVendorBySlug(slug: string) {
+  const allowFallback = shouldPreferCatalogFallback();
   const fallback = getFallbackVendorProfile(slug);
-  if (fallback && shouldPreferCatalogFallback()) {
+  if (fallback && allowFallback) {
     return fallback;
   }
 
@@ -38,7 +39,7 @@ export async function getVendorBySlug(slug: string) {
 
   const vendor = await withQueryTimeout<VendorRecord | null>(vendorQuery, null);
 
-  if (!vendor) return fallback;
+  if (!vendor) return allowFallback ? fallback : null;
 
   const status = String(vendor.status || "").toUpperCase();
   const isPublicVendor = vendor.isActive && (status === "ACTIVE" || status === "APPROVED" || status === "");

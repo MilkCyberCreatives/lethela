@@ -22,6 +22,22 @@ export type VisitorEventInput = {
   meta?: Record<string, unknown>;
 };
 
+type AnalyticsItem = {
+  item_id?: string;
+  item_name?: string;
+  item_brand?: string;
+  item_category?: string;
+  item_variant?: string;
+  price?: number;
+  quantity?: number;
+};
+
+declare global {
+  interface Window {
+    dataLayer?: Array<Record<string, unknown>>;
+  }
+}
+
 function readCookie(name: string) {
   if (typeof document === "undefined") return "";
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
@@ -121,11 +137,10 @@ export async function registerPushSubscription() {
       applicationServerKey: toBase64Uint8Array(publicKey),
     }));
 
-  const visitorId = ensureVisitorId();
   const response = await fetch("/api/push/subscribe", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ visitorId, subscription }),
+    body: JSON.stringify({ subscription }),
   });
 
   if (!response.ok) {
@@ -134,6 +149,22 @@ export async function registerPushSubscription() {
 
   void trackVisitorEvent({ type: "push_opt_in" });
   return { ok: true as const };
+}
+
+export function pushDataLayerEvent(event: string, payload: Record<string, unknown> = {}) {
+  if (typeof window === "undefined") return;
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ event, ...payload });
+}
+
+export function pushEcommerceEvent(
+  event: string,
+  ecommerce: { currency?: string; value?: number; items?: AnalyticsItem[]; [key: string]: unknown }
+) {
+  if (typeof window === "undefined") return;
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ ecommerce: null });
+  window.dataLayer.push({ event, ecommerce });
 }
 
 export async function trackVisitorEvent(input: VisitorEventInput) {

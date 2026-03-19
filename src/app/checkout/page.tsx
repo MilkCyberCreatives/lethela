@@ -9,14 +9,16 @@ import Link from "next/link";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { persistPreferredLocation, readPreferredLocation } from "@/lib/location-preference";
+import { pushEcommerceEvent } from "@/lib/visitor";
 
 const isOzowSandbox = process.env.NEXT_PUBLIC_OZOW_IS_TEST === "true";
 
 export default function CheckoutPage() {
   const items = useCart((s) => s.items);
   const subtotal = useCart((s) => s.subtotal());
+  const checkoutTrackedRef = useRef("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [destinationSuburb, setDestinationSuburb] = useState(() => readPreferredLocation()?.label || "Klipfontein View, Midrand");
@@ -107,6 +109,32 @@ export default function CheckoutPage() {
       }),
     [deliveryFee, destinationSuburb, items, subtotal, total]
   );
+
+  useEffect(() => {
+    if (items.length === 0) return;
+    const signature = JSON.stringify(
+      items.map((item) => ({
+        id: item.itemId,
+        qty: item.qty,
+        price: item.priceCents,
+      }))
+    );
+    if (checkoutTrackedRef.current === signature) return;
+    checkoutTrackedRef.current = signature;
+
+    pushEcommerceEvent("begin_checkout", {
+      currency: "ZAR",
+      value: total / 100,
+      items: items.map((item) => ({
+        item_id: item.itemId,
+        item_name: item.name,
+        item_brand: item.vendorSlug,
+        item_variant: item.vendorSlug,
+        price: item.priceCents / 100,
+        quantity: item.qty,
+      })),
+    });
+  }, [items, total]);
 
   async function payOzow() {
     if (items.length === 0) return;

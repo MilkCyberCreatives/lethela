@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { pushEcommerceEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
 
 type OrderState = "loading" | "paid" | "pending" | "failed" | "missing";
@@ -14,8 +15,18 @@ type Props = {
 type OrderResponse = {
   ok?: boolean;
   order?: {
+    id?: string;
     status?: string;
     paymentStatus?: string;
+    totalCents?: number;
+    vendor?: { name?: string | null } | null;
+    items?: Array<{
+      itemId?: string;
+      productId?: string | null;
+      name?: string;
+      priceCents?: number;
+      qty?: number;
+    }>;
   };
 };
 
@@ -33,7 +44,9 @@ function normalizeOrderState(payload: OrderResponse): OrderState {
 export default function CheckoutSuccessContent({ refId, isSandbox }: Props) {
   const clear = useCart((state) => state.clear);
   const clearedRef = useRef(false);
+  const purchaseTrackedRef = useRef(false);
   const [state, setState] = useState<OrderState>(refId ? "loading" : "missing");
+  const [orderData, setOrderData] = useState<OrderResponse["order"] | null>(null);
 
   useEffect(() => {
     if (!refId) return;
@@ -48,6 +61,7 @@ export default function CheckoutSuccessContent({ refId, isSandbox }: Props) {
         if (cancelled) return;
 
         const nextState = normalizeOrderState(json);
+        setOrderData(json.order ?? null);
         setState(nextState);
 
         if (nextState === "pending" && attempt < 4) {
@@ -79,6 +93,25 @@ export default function CheckoutSuccessContent({ refId, isSandbox }: Props) {
       clearedRef.current = true;
     }
   }, [clear, state]);
+
+  useEffect(() => {
+    if (state !== "paid" || !orderData || purchaseTrackedRef.current) return;
+    purchaseTrackedRef.current = true;
+    pushEcommerceEvent("purchase", {
+      transaction_id: orderData.id || refId,
+      currency: "ZAR",
+      value: Number(orderData.totalCents || 0) / 100,
+      items: Array.isArray(orderData.items)
+        ? orderData.items.map((item) => ({
+            item_id: item.productId || item.itemId || undefined,
+            item_name: item.name || undefined,
+            item_brand: orderData.vendor?.name || undefined,
+            price: Number(item.priceCents || 0) / 100,
+            quantity: item.qty || 1,
+          }))
+        : [],
+    });
+  }, [orderData, refId, state]);
 
   const title =
     state === "paid"

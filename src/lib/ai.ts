@@ -6,6 +6,11 @@ import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
  */
 export type AIMessage = { role: "user" | "assistant" | "system"; content: string };
 import { supportFaq } from "@/lib/business-context";
+import { prisma } from "@/lib/db";
+import { getFallbackVendorCards } from "@/lib/catalog-fallback";
+import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { buildPublicVendorCard } from "@/lib/public-catalog";
+import { withQueryTimeout } from "@/lib/query-timeout";
 import type { VisitorProfile } from "@/lib/visitor-profile";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -240,45 +245,70 @@ function heuristicRecommend(base: AIResult["results"], profile: VisitorProfile |
 }
 
 export async function aiRecommend(suburb: string | null, profile: VisitorProfile | null = null): Promise<AIResult> {
-  const nearMidrand = suburb?.toLowerCase().includes("midrand");
-  const base: AIResult["results"] = [
-    {
-      title: "Hello Tomato",
-      subtitle: "Burgers - 25-30 min",
-      image: "/vendors/burgers.jpg",
-      vendor: "Hello Tomato",
-      slug: "hello-tomato",
-    },
-    {
-      title: "Bento",
-      subtitle: "Sushi - 20-25 min",
-      image: "/vendors/sushi.jpg",
-      vendor: "Bento",
-      slug: "bento",
-    },
-    {
-      title: "Spice Route",
-      subtitle: "Curry - 30-35 min",
-      image: "/vendors/curry.jpg",
-      vendor: "Spice Route",
-      slug: "spice-route",
-    },
-    {
-      title: "Hello Tomato Family Feast",
-      subtitle: "Burgers - 25-30 min",
-      image: "/vendors/grill.jpg",
-      vendor: "Hello Tomato",
-      slug: "hello-tomato",
-    },
-    {
-      title: "Bento Chef's Box",
-      subtitle: "Sushi - 20-25 min",
-      image: "/vendors/vegan.jpg",
-      vendor: "Bento",
-      slug: "bento",
-    },
-  ];
-  const prioritized = nearMidrand ? [base[1], base[0], base[2], base[3], base[4]] : base;
+  const normalizedSuburb = suburb?.split(",")[0]?.trim() || suburb?.trim() || null;
+  const liveRows = shouldPreferCatalogFallback()
+    ? []
+    : await withQueryTimeout(
+        prisma.vendor.findMany({
+          where: {
+            isActive: true,
+            status: "ACTIVE",
+            ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
+          },
+          orderBy: [{ rating: "desc" }, { updatedAt: "desc" }],
+          take: 8,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            rating: true,
+            cuisine: true,
+            halaal: true,
+            image: true,
+            etaMins: true,
+            products: {
+              select: { isAlcohol: true },
+              take: 4,
+            },
+          },
+        }),
+        []
+      );
+
+  const base: AIResult["results"] =
+    liveRows.length > 0
+      ? liveRows.map((vendor) => {
+          const card = buildPublicVendorCard({
+            id: vendor.id,
+            name: vendor.name,
+            slug: vendor.slug,
+            rating: vendor.rating,
+            cuisine: vendor.cuisine,
+            halaal: vendor.halaal,
+            image: vendor.image,
+            etaMins: vendor.etaMins,
+            products: vendor.products,
+          });
+
+          return {
+            title: vendor.name,
+            subtitle: `${card.cuisines[0] || "Delivery"} - ${card.eta}`,
+            image: card.cover,
+            vendor: vendor.name,
+            slug: vendor.slug,
+          };
+        })
+      : shouldPreferCatalogFallback()
+        ? getFallbackVendorCards().map((vendor) => ({
+            title: vendor.name,
+            subtitle: `${vendor.cuisines[0] || "Delivery"} - ${vendor.baseEtaMin}-${vendor.baseEtaMin + 5} min`,
+            image: vendor.cover,
+            vendor: vendor.name,
+            slug: vendor.slug,
+          }))
+        : [];
+
+  const prioritized = base;
   const aiRanked = profile ? await openAIRecommend(prioritized, suburb, profile) : null;
   return { ok: true, results: aiRanked || heuristicRecommend(prioritized, profile) };
 }

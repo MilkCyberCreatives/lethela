@@ -3,6 +3,7 @@ import { aiPredictETA, aiRecommend, aiRerankVendors } from "@/lib/ai";
 import { inferProductCategory } from "@/lib/categories";
 import { getFallbackProducts, getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { buildPublicVendorCard } from "@/lib/public-catalog";
 import type { ProductLite } from "@/components/ProductCard";
 import type { Vendor } from "@/types";
 
@@ -12,6 +13,9 @@ type VendorWithAlcohol = {
   slug: string;
   rating: number;
   cuisine: string;
+  halaal?: boolean | null;
+  image?: string | null;
+  etaMins?: number | null;
   products: Array<{ isAlcohol: boolean }>;
 };
 
@@ -25,8 +29,6 @@ type RecommendationCard = {
 };
 
 const HOME_QUERY_TIMEOUT_MS = 2500;
-const LIVE_VENDOR_SLUGS = new Set(["hello-tomato", "bento", "spice-route"]);
-
 function timeoutFallback<T>(ms: number, fallback: T): Promise<T> {
   return new Promise((resolve) => {
     setTimeout(() => resolve(fallback), ms);
@@ -42,19 +44,6 @@ async function withTimeout<T>(work: () => Promise<T>, fallback: T, ms = HOME_QUE
   }
 }
 
-function parseCuisine(value: string) {
-  try {
-    const parsed = JSON.parse(value || "[]");
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-function vendorCover(hasAlcohol: boolean) {
-  return hasAlcohol ? "/vendors/vegan.jpg" : "/vendors/grill.jpg";
-}
-
 function normalizeSuburb(suburb: string | null) {
   if (!suburb) return null;
   const [firstPart] = suburb.split(",");
@@ -63,7 +52,7 @@ function normalizeSuburb(suburb: string | null) {
 
 export async function getHomeRecommendations(suburb: string | null): Promise<RecommendationCard[]> {
   const result = await withTimeout<Awaited<ReturnType<typeof aiRecommend>>>(() => aiRecommend(suburb), { ok: true, results: [] });
-  return result.results.filter((item) => (item.slug ? LIVE_VENDOR_SLUGS.has(item.slug) : true));
+  return result.results;
 }
 
 export async function getHomeProducts(suburb: string | null, take = 24): Promise<ProductLite[]> {
@@ -149,6 +138,9 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
         slug: true,
         rating: true,
         cuisine: true,
+        halaal: true,
+        image: true,
+        etaMins: true,
         products: {
           select: { isAlcohol: true },
           take: 4,
@@ -161,24 +153,22 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
   );
 
   if (dbVendors.length === 0) {
-    return fallbackVendors(hour);
+    return shouldPreferCatalogFallback() ? fallbackVendors(hour) : [];
   }
 
   const mapped = dbVendors.map((vendor: VendorWithAlcohol) => {
-    const hasAlcohol = vendor.products.some((product) => product.isAlcohol);
-    const cuisine = parseCuisine(vendor.cuisine);
-    return {
+    return buildPublicVendorCard({
       id: vendor.id,
       name: vendor.name,
       slug: vendor.slug,
-      cover: vendorCover(hasAlcohol),
-      badge: hasAlcohol ? "18+ available" : null,
-      rating: Number.isFinite(vendor.rating) ? vendor.rating : 4.4,
-      cuisines: cuisine.length > 0 ? cuisine : hasAlcohol ? ["Food", "Drinks"] : ["Burgers", "Grill"],
-      distanceKm: 3,
-      baseEtaMin: 15,
-      eta: "20-25 min",
-    };
+      rating: vendor.rating,
+      cuisine: vendor.cuisine,
+      halaal: vendor.halaal,
+      image: vendor.image,
+      etaMins: vendor.etaMins,
+      products: vendor.products,
+      baseEtaMin: vendor.etaMins ?? 15,
+    });
   });
 
   const reranked = await aiRerankVendors({

@@ -29,9 +29,19 @@ export default function VisitorTelemetry() {
     void trackVisitorEvent({ type: "page_view", path, preferredArea });
 
     const pageViews = incrementPushPageViews();
+    const isTransactionalPath =
+      path.startsWith("/checkout") ||
+      path.startsWith("/orders/") ||
+      path.startsWith("/admin") ||
+      path.startsWith("/vendors/dashboard") ||
+      path.startsWith("/signin") ||
+      path.startsWith("/signup") ||
+      path.startsWith("/forgot-password") ||
+      path.startsWith("/reset-password");
     const shouldPromptForPush =
-      pageViews >= 2 &&
+      pageViews >= 4 &&
       !wasPushPrompted() &&
+      !isTransactionalPath &&
       typeof Notification !== "undefined" &&
       Notification.permission === "default" &&
       Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim());
@@ -41,7 +51,7 @@ export default function VisitorTelemetry() {
     const timeoutId = window.setTimeout(async () => {
       markPushPrompted();
       await registerPushSubscription().catch(() => undefined);
-    }, 4500);
+    }, 12000);
 
     return () => window.clearTimeout(timeoutId);
   }, [pathname, searchParams]);

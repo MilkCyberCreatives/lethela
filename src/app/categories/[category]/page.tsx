@@ -91,7 +91,9 @@ export default async function CategoryPage({ params }: PageProps) {
               isAlcohol: item.isAlcohol,
             }) === resolvedCategory
         )
-      : getFallbackCategoryProducts(resolvedCategory);
+      : shouldPreferCatalogFallback()
+        ? getFallbackCategoryProducts(resolvedCategory)
+        : [];
 
   const categorySchema = {
     "@context": "https://schema.org",

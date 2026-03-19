@@ -122,12 +122,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           changeFrequency: "daily",
           priority: 0.9,
         }))
-      : getFallbackVendorCards().map((vendor) => ({
-          url: `${SITE_URL}/vendors/${vendor.slug}`,
-          lastModified: now,
-          changeFrequency: "daily",
-          priority: 0.9,
-        }));
+      : shouldPreferCatalogFallback()
+        ? getFallbackVendorCards().map((vendor) => ({
+            url: `${SITE_URL}/vendors/${vendor.slug}`,
+            lastModified: now,
+            changeFrequency: "daily",
+            priority: 0.9,
+          }))
+        : [];
 
   return [...staticRoutes, ...categoryRoutes, ...vendorRoutes];
 }

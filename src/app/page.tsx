@@ -74,6 +74,12 @@ export default async function HomePage() {
     getHomeProducts(address, 24),
     getHomeVendors(address, 18),
   ]);
+  const featuredVendors = vendors.slice(0, 5).map((vendor) => ({
+    name: vendor.name,
+    img: vendor.cover,
+    cta: `/vendors/${vendor.slug}`,
+    sub: `${vendor.cuisines[0] || "Delivery"} - ${vendor.eta}`,
+  }));
 
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
@@ -96,21 +102,17 @@ export default async function HomePage() {
         <SmartBanner />
       </ScrollReveal>
 
-      <ScrollReveal delay={80}>
-        <section className="container py-10">
-          <FeaturedCarousel
-            title="Hungry? Choose from top restaurants near you"
-            items={[
-              { name: "Hello Tomato", img: "/vendors/grill.jpg", cta: "/vendors/hello-tomato" },
-              { name: "Bento", img: "/vendors/sushi.jpg", cta: "/vendors/bento" },
-              { name: "Spice Route", img: "/vendors/curry.jpg", cta: "/vendors/spice-route" },
-              { name: "Hello Tomato Combos", img: "/vendors/burgers.jpg", cta: "/vendors/hello-tomato" },
-              { name: "Bento Favourites", img: "/vendors/vegan.jpg", cta: "/vendors/bento" },
-            ]}
-            autoMs={4000}
-          />
-        </section>
-      </ScrollReveal>
+      {featuredVendors.length > 0 ? (
+        <ScrollReveal delay={80}>
+          <section className="container py-10">
+            <FeaturedCarousel
+              title="Hungry? Choose from top restaurants near you"
+              items={featuredVendors}
+              autoMs={4000}
+            />
+          </section>
+        </ScrollReveal>
+      ) : null}
 
       <ScrollReveal delay={120}>
         <section className="container py-10">

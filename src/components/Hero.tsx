@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatZAR } from "@/lib/format";
 import { persistPreferredLocation, readPreferredLocation } from "@/lib/location-preference";
-import { trackVisitorEvent } from "@/lib/visitor";
+import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
 
 type Suggestion = {
   id: string;
@@ -171,6 +171,10 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
         path: typeof window !== "undefined" ? window.location.pathname : undefined,
         searchQuery: q,
         preferredArea: activeArea,
+      });
+      pushDataLayerEvent("search", {
+        search_term: q,
+        preferred_area: activeArea,
       });
       const response = await fetch("/api/ai/search", {
         method: "POST",

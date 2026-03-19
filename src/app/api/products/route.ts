@@ -74,7 +74,9 @@ export async function GET(req: Request) {
             isAlcohol: item.isAlcohol,
           }),
         }))
-      : getFallbackProducts();
+      : shouldPreferCatalogFallback()
+        ? getFallbackProducts()
+        : [];
 
   const filtered = category
     ? items.filter((item) => item.category.toLowerCase() === category.toLowerCase())

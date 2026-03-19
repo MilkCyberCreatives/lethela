@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { aiPredictETA } from "@/lib/ai";
 import { getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { buildPublicVendorCard } from "@/lib/public-catalog";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +24,8 @@ export async function GET(req: Request) {
         rating: number;
         cuisines: string[];
         eta: string;
-        distanceKm: number;
-        baseEtaMin: number;
+        distanceKm?: number;
+        baseEtaMin?: number;
       }>
     | undefined;
 
@@ -45,7 +46,15 @@ export async function GET(req: Request) {
           },
           orderBy: { updatedAt: "desc" },
           take,
-          include: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            rating: true,
+            cuisine: true,
+            halaal: true,
+            image: true,
+            etaMins: true,
             products: {
               select: { isAlcohol: true },
               take: 3,
@@ -56,19 +65,21 @@ export async function GET(req: Request) {
       );
 
       items = dbVendors.map((vendor) => {
-        const hasAlcohol = vendor.products.some((product) => product.isAlcohol);
-        const etaBase = aiPredictETA(3, 15, hour);
-        return {
+        const card = buildPublicVendorCard({
           id: vendor.id,
           name: vendor.name,
           slug: vendor.slug,
-          cover: hasAlcohol ? "/vendors/vegan.jpg" : "/vendors/grill.jpg",
-          badge: hasAlcohol ? "18+ available" : null,
-          rating: 4.4,
-          cuisines: hasAlcohol ? ["Food", "Drinks"] : ["Burgers", "Grill"],
+          rating: vendor.rating,
+          cuisine: vendor.cuisine,
+          halaal: vendor.halaal,
+          image: vendor.image,
+          etaMins: vendor.etaMins,
+          products: vendor.products,
+        });
+        const etaBase = aiPredictETA(card.distanceKm ?? 3, card.baseEtaMin ?? vendor.etaMins ?? 15, hour);
+        return {
+          ...card,
           eta: `${etaBase}-${etaBase + 5} min`,
-          distanceKm: 3,
-          baseEtaMin: 15,
         };
       });
     } catch {
@@ -76,7 +87,7 @@ export async function GET(req: Request) {
     }
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && shouldPreferCatalogFallback()) {
     const fallback = getFallbackVendorCards().slice(0, take);
 
     items = fallback.map((vendor) => {

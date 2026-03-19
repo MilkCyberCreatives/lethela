@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { VISITOR_COOKIE_NAME } from "@/lib/visitor";
 
 export async function POST(req: Request) {
   const limited = checkRateLimit({
@@ -15,14 +17,13 @@ export async function POST(req: Request) {
   }
 
   const body = (await req.json().catch(() => ({}))) as {
-    visitorId?: string;
     subscription?: {
       endpoint?: string;
       keys?: { p256dh?: string; auth?: string };
     };
   };
 
-  const visitorId = String(body.visitorId || "").trim();
+  const visitorId = (await cookies()).get(VISITOR_COOKIE_NAME)?.value?.trim() || "";
   const endpoint = String(body.subscription?.endpoint || "").trim();
   const p256dh = String(body.subscription?.keys?.p256dh || "").trim();
   const authKey = String(body.subscription?.keys?.auth || "").trim();

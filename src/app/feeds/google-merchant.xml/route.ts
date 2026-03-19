@@ -49,14 +49,16 @@ export async function GET() {
   const products =
     dbProducts.length > 0
       ? dbProducts
-      : getFallbackProducts().slice(0, 5000).map((product) => ({
-          ...product,
-          inStock: true,
-          vendor: {
-            name: product.vendor.name,
-            slug: product.vendor.slug,
-          },
-        }));
+      : shouldPreferCatalogFallback()
+        ? getFallbackProducts().slice(0, 5000).map((product) => ({
+            ...product,
+            inStock: true,
+            vendor: {
+              name: product.vendor.name,
+              slug: product.vendor.slug,
+            },
+          }))
+        : [];
 
   const itemsXml = products
     .map((product) => {

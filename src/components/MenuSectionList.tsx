@@ -5,7 +5,7 @@ import Image from "next/image";
 import MealPreferenceControls from "@/components/MealPreferenceControls";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
-import { trackVisitorEvent } from "@/lib/visitor";
+import { pushEcommerceEvent, trackVisitorEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
 import { useUIStore } from "@/store/ui";
 
@@ -96,6 +96,21 @@ export default function MenuSectionList({
                           name: it.name,
                           tags: it.tags,
                         },
+                      });
+                      pushEcommerceEvent("add_to_cart", {
+                        currency: "ZAR",
+                        value: it.priceCents / 100,
+                        items: [
+                          {
+                            item_id: it.id,
+                            item_name: it.name,
+                            item_brand: vendorSlug,
+                            item_category: s.title,
+                            item_variant: vendorSlug,
+                            price: it.priceCents / 100,
+                            quantity: 1,
+                          },
+                        ],
                       });
                       openCart();
                     }}

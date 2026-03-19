@@ -7,6 +7,7 @@ import ProductCard, { ProductLite } from "./ProductCard";
 import { Button } from "@/components/ui/button";
 import { TOWNSHIP_CATEGORIES } from "@/lib/categories";
 import { readPreferredLocation } from "@/lib/location-preference";
+import { pushEcommerceEvent } from "@/lib/visitor";
 
 type ApiResp = { ok: boolean; items: ProductLite[] };
 
@@ -28,6 +29,7 @@ export default function ProductsGrid({
   const [activeSuburb, setActiveSuburb] = useState<string | null>(suburb ?? null);
   const searchParams = useSearchParams();
   const skippedInitialLoad = useRef(false);
+  const listTrackedRef = useRef("");
 
   useEffect(() => {
     const picked = String(searchParams?.get("category") || "").trim();
@@ -82,6 +84,25 @@ export default function ProductsGrid({
     skippedInitialLoad.current = true;
     void load();
   }, [category, hasInitial, load, onlyAlcohol]);
+
+  useEffect(() => {
+    if (loading || items.length === 0) return;
+    const signature = JSON.stringify(items.map((item) => item.id));
+    if (listTrackedRef.current === signature) return;
+    listTrackedRef.current = signature;
+
+    pushEcommerceEvent("view_item_list", {
+      item_list_name: category || (onlyAlcohol ? "Alcohol" : "Popular picks near you"),
+      items: items.slice(0, 12).map((item) => ({
+        item_id: item.id,
+        item_name: item.name,
+        item_brand: item.vendor?.name || undefined,
+        item_category: item.category || undefined,
+        item_variant: item.vendor?.slug || undefined,
+        price: item.priceCents / 100,
+      })),
+    });
+  }, [category, items, loading, onlyAlcohol]);
 
   return (
     <section className="container py-10" id="products">

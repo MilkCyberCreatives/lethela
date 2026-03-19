@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { VISITOR_COOKIE_NAME } from "@/lib/visitor";
 
 const ALLOWED_EVENT_TYPES = new Set([
   "page_view",
@@ -25,7 +27,6 @@ export async function POST(req: Request) {
   }
 
   const body = (await req.json().catch(() => ({}))) as {
-    visitorId?: string;
     type?: string;
     path?: string;
     vendorId?: string;
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
     meta?: Record<string, unknown>;
   };
 
-  const visitorId = String(body.visitorId || "").trim();
+  const visitorId = (await cookies()).get(VISITOR_COOKIE_NAME)?.value?.trim() || "";
   const type = String(body.type || "").trim();
   if (!visitorId || !ALLOWED_EVENT_TYPES.has(type)) {
     return NextResponse.json({ ok: false, error: "Invalid visitor event payload." }, { status: 400 });

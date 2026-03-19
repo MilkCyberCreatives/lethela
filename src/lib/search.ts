@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { cosine, embed } from "@/lib/embeddings";
 import { getFallbackSearchSources } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { getPublicVendorImage } from "@/lib/public-catalog";
 import { withQueryTimeout, withTimeoutOrThrow } from "@/lib/query-timeout";
 
 export type SearchHit = {
@@ -62,7 +63,8 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
   const fallbackVendorRows = fallbackSources.vendors as any;
   const fallbackProductRows = fallbackSources.products as any;
 
-  const searchSourcesQuery = shouldPreferCatalogFallback()
+  const allowFallback = shouldPreferCatalogFallback();
+  const searchSourcesQuery = allowFallback
     ? Promise.resolve([fallbackVendorRows, fallbackProductRows] as const)
     : Promise.all([
         prisma.vendor.findMany({
@@ -75,6 +77,7 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
             name: true,
             suburb: true,
             city: true,
+            image: true,
           },
         }),
         prisma.product.findMany({
@@ -100,8 +103,8 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
   type SearchSources = Awaited<typeof searchSourcesQuery>;
 
   const [vendors, products] = await withQueryTimeout(searchSourcesQuery, [
-    fallbackVendorRows as SearchSources[0],
-    fallbackProductRows as SearchSources[1],
+    (allowFallback ? fallbackVendorRows : []) as SearchSources[0],
+    (allowFallback ? fallbackProductRows : []) as SearchSources[1],
   ]);
 
   type Row = {
@@ -123,7 +126,7 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
       kind: "vendor" as const,
       title: vendor.name,
       searchText: [vendor.name, vendor.suburb ?? "", vendor.city ?? ""].join(" "),
-      image: "/vendors/grill.jpg",
+      image: getPublicVendorImage(vendor.image ?? null, false),
       slug: vendor.slug,
       vendorName: vendor.name,
       subtitle: [vendor.suburb, vendor.city].filter(Boolean).join(", ") || "Vendor",

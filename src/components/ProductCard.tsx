@@ -3,7 +3,7 @@
 import Image from "next/image";
 import MealPreferenceControls from "@/components/MealPreferenceControls";
 import { Button } from "@/components/ui/button";
-import { trackVisitorEvent } from "@/lib/visitor";
+import { pushEcommerceEvent, trackVisitorEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
 import { useUIStore } from "@/store/ui";
 
@@ -85,6 +85,21 @@ export default function ProductCard({ p }: { p: ProductLite }) {
                   category: p.category || null,
                   vendorName: p.vendor?.name || null,
                 },
+              });
+              pushEcommerceEvent("add_to_cart", {
+                currency: "ZAR",
+                value: p.priceCents / 100,
+                items: [
+                  {
+                    item_id: p.id,
+                    item_name: p.name,
+                    item_brand: p.vendor?.name || undefined,
+                    item_category: p.category || undefined,
+                    item_variant: p.vendor?.slug || undefined,
+                    price: p.priceCents / 100,
+                    quantity: 1,
+                  },
+                ],
               });
               openCart();
             }}
