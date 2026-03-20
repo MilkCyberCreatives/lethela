@@ -36,9 +36,19 @@ function findBundledSqlitePath() {
   return null;
 }
 
+function isRelativeSqliteUrl(value: string) {
+  return /^file:\.\.?\//.test(value) || value === "file:./dev.db";
+}
+
 function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
   const configuredUrl = process.env.DATABASE_URL?.trim();
-  if (configuredUrl) {
+  const shouldIgnoreConfiguredUrl =
+    typeof configuredUrl === "string" &&
+    configuredUrl.length > 0 &&
+    (process.env.NODE_ENV === "production" || process.env.VERCEL) &&
+    isRelativeSqliteUrl(configuredUrl);
+
+  if (configuredUrl && !shouldIgnoreConfiguredUrl) {
     return {
       source: "env",
       url: configuredUrl,
