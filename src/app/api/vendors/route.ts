@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { aiPredictETA } from "@/lib/ai";
 import { getFallbackVendorCards } from "@/lib/catalog-fallback";
-import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { getCatalogMode, shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { buildPublicVendorCard } from "@/lib/public-catalog";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
@@ -104,6 +104,7 @@ export async function GET(req: Request) {
   return NextResponse.json(
     {
       ok: true,
+      catalogMode: getCatalogMode(),
       suburb: suburb || "your area",
       items,
       total: items.length,

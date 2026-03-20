@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminRequest } from "@/lib/admin-auth";
+import { getCatalogMode } from "@/lib/catalog-runtime";
 import { countRiderApplications } from "@/lib/rider-applications";
 import { hasWebPushConfig } from "@/lib/web-push";
 import { prisma } from "@/server/db";
@@ -42,6 +43,7 @@ export async function GET(req: NextRequest) {
       metaPixel: Boolean(process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()),
     },
     catalog: {
+      mode: getCatalogMode(),
       activeVendors,
       activeProducts,
     },

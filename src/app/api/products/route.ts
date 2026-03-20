@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getFallbackProducts } from "@/lib/catalog-fallback";
-import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { getCatalogMode, shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { inferProductCategory } from "@/lib/categories";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
@@ -86,7 +86,7 @@ export async function GET(req: Request) {
     alcohol === "true" ? filtered.filter((item) => item.isAlcohol) : alcohol === "false" ? filtered.filter((item) => !item.isAlcohol) : filtered;
 
   return NextResponse.json(
-    { ok: true, items: alcoholFiltered.slice(0, take), suburb, total: alcoholFiltered.length },
+    { ok: true, catalogMode: getCatalogMode(), items: alcoholFiltered.slice(0, take), suburb, total: alcoholFiltered.length },
     {
       headers: {
         "cache-control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
