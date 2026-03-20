@@ -50,8 +50,12 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
 
   if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
     const tempDbPath = path.join(os.tmpdir(), "lethela-production.db");
+    fs.mkdirSync(path.dirname(tempDbPath), { recursive: true });
     if (bundledPath && !fs.existsSync(tempDbPath)) {
       fs.copyFileSync(bundledPath, tempDbPath);
+    }
+    if (fs.existsSync(tempDbPath)) {
+      fs.chmodSync(tempDbPath, 0o600);
     }
 
     return {
