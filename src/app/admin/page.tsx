@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
+import { ADMIN_KEY_STORAGE_KEY } from "@/lib/admin-portal";
 
 type DashboardView = "vendors" | "riders";
 type VendorStatusFilter = "PENDING" | "ACTIVE" | "REJECTED" | "ALL";
@@ -129,6 +130,24 @@ export default function AdminPage() {
   const [pushPermission, setPushPermission] = useState<string>(
     typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported"
   );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedKey = window.localStorage.getItem(ADMIN_KEY_STORAGE_KEY)?.trim();
+    if (savedKey) {
+      setAdminKey(savedKey);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const normalized = adminKey.trim();
+    if (!normalized) {
+      window.localStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(ADMIN_KEY_STORAGE_KEY, normalized);
+  }, [adminKey]);
 
   const headers = useMemo(
     () => (adminKey.trim() ? { "x-admin-key": adminKey.trim() } : undefined),

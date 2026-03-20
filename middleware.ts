@@ -1,5 +1,6 @@
 // /middleware.ts
 import { NextResponse, type NextRequest } from "next/server";
+import { getAdminPortalPath, getInternalAdminLoginPath } from "@/lib/admin-portal";
 
 const VISITOR_COOKIE_NAME = "lethela_visitor_id";
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
@@ -19,6 +20,21 @@ function withVisitorCookie(req: NextRequest, response: NextResponse) {
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const adminPortalPath = getAdminPortalPath();
+  const internalAdminLoginPath = getInternalAdminLoginPath();
+
+  if (pathname === internalAdminLoginPath) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    return withVisitorCookie(req, NextResponse.redirect(url));
+  }
+
+  if (pathname === adminPortalPath) {
+    const url = req.nextUrl.clone();
+    url.pathname = internalAdminLoginPath;
+    return withVisitorCookie(req, NextResponse.rewrite(url));
+  }
+
   const isVendorDashboard = pathname.startsWith("/vendors/dashboard");
   const isVendorApi = pathname.startsWith("/api/vendor");
   const isVendorArea = isVendorDashboard || isVendorApi;
