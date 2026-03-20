@@ -13,6 +13,13 @@ export type AdminVendorApplicationNotification = {
   createdAt?: Date | string | null;
 };
 
+function settleWithin(task: Promise<unknown>, timeoutMs: number) {
+  return Promise.race([
+    task.catch(() => undefined),
+    new Promise((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+}
+
 function splitCsv(value?: string | null) {
   return String(value || "")
     .split(",")
@@ -184,19 +191,33 @@ export function getAdminNotificationChannelStatus() {
 export async function notifyAdminsOfVendorApplication(application: AdminVendorApplicationNotification) {
   const pendingCount = await prisma.vendor.count({ where: { status: "PENDING" } });
   const channels = getAdminNotificationChannelStatus();
+  const tasks: Promise<unknown>[] = [];
 
-  await Promise.allSettled([
-    pusherServer.trigger("admin-notifications", "vendor-application", {
-      type: "vendor-application",
-      title: "New vendor application",
-      body: `${application.name} is waiting for admin approval.`,
-      href: "/admin",
-      pendingCount,
-      at: new Date().toISOString(),
-    }),
-    sendResendEmailNotification(application, pendingCount),
-    sendTwilioWhatsAppNotification(application, pendingCount),
-  ]);
+  if (channels.push.enabled) {
+    tasks.push(
+      settleWithin(
+        pusherServer.trigger("admin-notifications", "vendor-application", {
+          type: "vendor-application",
+          title: "New vendor application",
+          body: `${application.name} is waiting for admin approval.`,
+          href: "/admin",
+          pendingCount,
+          at: new Date().toISOString(),
+        }),
+        1500
+      )
+    );
+  }
+
+  if (channels.email.enabled) {
+    tasks.push(settleWithin(sendResendEmailNotification(application, pendingCount), 3000));
+  }
+
+  if (channels.whatsapp.enabled) {
+    tasks.push(settleWithin(sendTwilioWhatsAppNotification(application, pendingCount), 3000));
+  }
+
+  await Promise.all(tasks);
 
   return {
     pendingCount,

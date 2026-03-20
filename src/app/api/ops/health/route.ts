@@ -3,7 +3,7 @@ import { requireAdminRequest } from "@/lib/admin-auth";
 import { getCatalogMode } from "@/lib/catalog-runtime";
 import { countRiderApplications } from "@/lib/rider-applications";
 import { hasWebPushConfig } from "@/lib/web-push";
-import { prisma } from "@/server/db";
+import { prisma, prismaRuntimeInfo } from "@/server/db";
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdminRequest(req);
@@ -29,7 +29,11 @@ export async function GET(req: NextRequest) {
     ok: true,
     environment: process.env.NODE_ENV,
     services: {
-      db: true,
+      db: {
+        ok: true,
+        source: prismaRuntimeInfo.source,
+        persistent: prismaRuntimeInfo.persistent,
+      },
       webPush: hasWebPushConfig(),
       pusher: Boolean(
         process.env.PUSHER_APP_ID?.trim() &&

@@ -32,6 +32,9 @@ const nextConfig = {
       allowedOrigins: ["localhost:3000", "localhost:3001"],
     },
   },
+  outputFileTracingIncludes: {
+    "/*": ["./prisma/dev.db"],
+  },
   images: {
     remotePatterns: configuredRemotePatterns,
   },
