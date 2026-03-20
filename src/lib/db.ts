@@ -9,6 +9,7 @@ type PrismaRuntimeInfo = {
   url: string;
   seedPath: string | null;
   persistent: boolean;
+  writable: boolean | null;
 };
 
 const globalForPrisma = globalThis as unknown as {
@@ -43,6 +44,7 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
       url: configuredUrl,
       seedPath: null,
       persistent: !configuredUrl.startsWith("file:"),
+      writable: null,
     };
   }
 
@@ -57,12 +59,20 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
     if (fs.existsSync(tempDbPath)) {
       fs.chmodSync(tempDbPath, 0o600);
     }
+    let writable = false;
+    try {
+      fs.accessSync(tempDbPath, fs.constants.W_OK);
+      writable = true;
+    } catch {
+      writable = false;
+    }
 
     return {
       source: "production-temp",
       url: toSqliteFileUrl(tempDbPath),
       seedPath: bundledPath,
       persistent: false,
+      writable,
     };
   }
 
@@ -72,10 +82,21 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
     url: toSqliteFileUrl(localPath),
     seedPath: bundledPath,
     persistent: true,
+    writable: null,
   };
 }
 
 export const prismaRuntimeInfo = globalForPrisma.prismaRuntimeInfo ?? resolvePrismaRuntimeInfo();
+
+if (process.env.NODE_ENV === "production") {
+  console.info("[prisma-runtime]", {
+    source: prismaRuntimeInfo.source,
+    persistent: prismaRuntimeInfo.persistent,
+    writable: prismaRuntimeInfo.writable,
+    hasSeedPath: Boolean(prismaRuntimeInfo.seedPath),
+    url: prismaRuntimeInfo.url,
+  });
+}
 
 export const prisma =
   globalForPrisma.prisma ??
