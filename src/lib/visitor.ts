@@ -12,7 +12,14 @@ export type VisitorEventInput = {
     | "product_add"
     | "recommendation_click"
     | "location_update"
-    | "push_opt_in";
+    | "push_opt_in"
+    | "favorite_toggle"
+    | "product_rate"
+    | "whatsapp_click"
+    | "vendor_application_submit"
+    | "rider_application_submit"
+    | "track_order_view"
+    | "reorder";
   path?: string;
   vendorId?: string;
   vendorSlug?: string;
@@ -151,6 +158,28 @@ export async function registerPushSubscription() {
   return { ok: true as const };
 }
 
+export async function unregisterPushSubscription() {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+    return { ok: false as const, reason: "unsupported" };
+  }
+
+  const registration = await navigator.serviceWorker.getRegistration("/");
+  const subscription = await registration?.pushManager.getSubscription();
+  if (!subscription) {
+    return { ok: true as const };
+  }
+
+  const endpoint = subscription.endpoint;
+  const unsubscribed = await subscription.unsubscribe().catch(() => false);
+  await fetch("/api/push/subscribe", {
+    method: "DELETE",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ endpoint }),
+  }).catch(() => undefined);
+
+  return unsubscribed ? { ok: true as const } : { ok: false as const, reason: "unsubscribe-failed" };
+}
+
 export function pushDataLayerEvent(event: string, payload: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
   window.dataLayer = window.dataLayer || [];
@@ -165,6 +194,20 @@ export function pushEcommerceEvent(
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ ecommerce: null });
   window.dataLayer.push({ event, ecommerce });
+}
+
+export function trackWhatsAppClick(context: string, meta: Record<string, unknown> = {}) {
+  void trackVisitorEvent({
+    type: "whatsapp_click",
+    meta: {
+      context,
+      ...meta,
+    },
+  });
+  pushDataLayerEvent("whatsapp_click", {
+    context,
+    ...meta,
+  });
 }
 
 export async function trackVisitorEvent(input: VisitorEventInput) {

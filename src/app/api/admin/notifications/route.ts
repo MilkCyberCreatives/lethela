@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
 
-  const [pendingCount, latestPending, riderPendingCount, riderUnderReviewCount] = await Promise.all([
+  const [pendingCount, latestPending, riderPendingCount, riderUnderReviewCount, recentCampaigns] = await Promise.all([
     prisma.vendor.count({ where: { status: "PENDING" } }),
     prisma.vendor.findMany({
       where: { status: "PENDING" },
@@ -28,6 +28,18 @@ export async function GET(req: NextRequest) {
     }),
     countRiderApplications("PENDING"),
     countRiderApplications("UNDER_REVIEW"),
+    prisma.pushCampaign.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        segment: true,
+        sentCount: true,
+        failedCount: true,
+        createdAt: true,
+      },
+    }),
   ]);
 
   return NextResponse.json({
@@ -37,6 +49,7 @@ export async function GET(req: NextRequest) {
     riderUnderReviewCount,
     totalPendingApprovals: pendingCount + riderPendingCount + riderUnderReviewCount,
     latestPending,
+    recentCampaigns,
     channels: getAdminNotificationChannelStatus(),
   });
 }

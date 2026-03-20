@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Banknote, Facebook, Instagram, Landmark, Linkedin, MessageCircle, Music2, ShieldCheck, Youtube } from "lucide-react";
 import { FOOTER_PAYMENT_METHODS, getFooterSocialLinks, LEGAL_SERVICE_AREA, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
+import { trackWhatsAppClick } from "@/lib/visitor";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 const POPULAR_SOCIALS = [
@@ -93,6 +94,7 @@ export default function Footer() {
                 href={whatsappLink}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => trackWhatsAppClick("footer_primary")}
                 className="rounded-full border border-white/18 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/[0.08]"
               >
                 Order on WhatsApp
@@ -199,6 +201,7 @@ export default function Footer() {
                     href={whatsappLink}
                     target="_blank"
                     rel="noreferrer"
+                    onClick={() => trackWhatsAppClick("footer_contact")}
                     className="inline-flex items-center gap-2 text-white hover:opacity-90"
                   >
                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>

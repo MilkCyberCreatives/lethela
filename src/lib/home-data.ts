@@ -17,6 +17,7 @@ type VendorWithAlcohol = {
   image?: string | null;
   etaMins?: number | null;
   products: Array<{ isAlcohol: boolean }>;
+  reviews?: Array<{ rating: number }>;
 };
 
 type RecommendationCard = {
@@ -145,6 +146,10 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
           select: { isAlcohol: true },
           take: 4,
         },
+        reviews: {
+          select: { rating: true },
+          take: 40,
+        },
       },
       orderBy: { updatedAt: "desc" },
       take: Math.min(60, Math.max(6, take)),
@@ -167,6 +172,7 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
       image: vendor.image,
       etaMins: vendor.etaMins,
       products: vendor.products,
+      reviews: vendor.reviews,
       baseEtaMin: vendor.etaMins ?? 15,
     });
   });

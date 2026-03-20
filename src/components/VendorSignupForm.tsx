@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
 
 type VendorState = {
   slug: string;
@@ -135,6 +136,21 @@ export default function VendorSignupForm() {
         name: json.vendor.name,
         status: json.vendor.status,
         isActive: Boolean(json.vendor.isActive),
+      });
+      void trackVisitorEvent({
+        type: "vendor_application_submit",
+        vendorSlug: json.vendor.slug,
+        meta: {
+          cuisine: toCuisineList(form.cuisineInput),
+          suburb: form.suburb,
+          city: form.city,
+        },
+      });
+      pushDataLayerEvent("generate_lead", {
+        lead_type: "vendor_application",
+        vendor_slug: json.vendor.slug,
+        suburb: form.suburb,
+        city: form.city,
       });
     } catch (e: unknown) {
       setError(e instanceof Error && e.message ? e.message : "Failed to register vendor");

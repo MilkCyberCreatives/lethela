@@ -7,6 +7,7 @@ import MainHeader from "@/components/MainHeader";
 import OrderMap from "@/components/OrderMap";
 import { formatZAR } from "@/lib/format";
 import { getPusherClient } from "@/lib/pusher-client";
+import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
 import {
   getTrackingStatusDetail,
   getTrackingStatusLabel,
@@ -144,6 +145,19 @@ export default function OrderTrackingPage({ params }: Props) {
   useEffect(() => {
     void load(false);
   }, [load]);
+
+  useEffect(() => {
+    void trackVisitorEvent({
+      type: "track_order_view",
+      path: typeof window !== "undefined" ? window.location.pathname : undefined,
+      meta: {
+        orderRef: ref,
+      },
+    });
+    pushDataLayerEvent("track_order_view", {
+      order_ref: ref,
+    });
+  }, [ref]);
 
   useEffect(() => {
     if (!order || isTerminalTrackingStatus(order.status) || document.visibilityState !== "visible") return;

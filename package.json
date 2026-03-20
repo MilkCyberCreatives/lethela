@@ -11,6 +11,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "test": "node --import tsx --test tests/**/*.test.ts",
+    "smoke": "node scripts/smoke-site.mjs",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",

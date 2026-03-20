@@ -11,7 +11,7 @@ import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { persistPreferredLocation, readPreferredLocation } from "@/lib/location-preference";
-import { pushEcommerceEvent } from "@/lib/visitor";
+import { pushEcommerceEvent, trackWhatsAppClick } from "@/lib/visitor";
 
 const isOzowSandbox = process.env.NEXT_PUBLIC_OZOW_IS_TEST === "true";
 
@@ -256,7 +256,12 @@ export default function CheckoutPage() {
                 {loading ? "Redirecting..." : isOzowSandbox ? "Pay with Ozow (sandbox)" : "Pay with Ozow"}
               </Button>
               <Button asChild variant="outline" className="border-white/30 text-white hover:border-white/60">
-                <a href={whatsappLink} target="_blank" rel="noreferrer">
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => trackWhatsAppClick("checkout", { item_count: items.length, total_cents: total })}
+                >
                   Order via WhatsApp
                 </a>
               </Button>

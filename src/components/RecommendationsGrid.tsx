@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readPreferredLocation } from "@/lib/location-preference";
-import { trackVisitorEvent } from "@/lib/visitor";
+import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
 
 type Card = {
   title: string;
@@ -115,14 +115,21 @@ export default function RecommendationsGrid({
                   href={href}
                   className="overflow-hidden rounded-2xl border border-white/10 bg-lethela-secondary"
                   onClick={() =>
-                    void trackVisitorEvent({
-                      type: "recommendation_click",
-                      vendorSlug: card.slug || undefined,
-                      meta: {
-                        title: card.title,
-                        subtitle: card.subtitle || null,
-                      },
-                    })
+                    {
+                      void trackVisitorEvent({
+                        type: "recommendation_click",
+                        vendorSlug: card.slug || undefined,
+                        meta: {
+                          title: card.title,
+                          subtitle: card.subtitle || null,
+                        },
+                      });
+                      pushDataLayerEvent("select_promotion", {
+                        promotion_name: "recommendations",
+                        item_name: card.title,
+                        vendor_slug: card.slug || null,
+                      });
+                    }
                   }
                 >
                   {body}

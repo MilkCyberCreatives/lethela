@@ -20,6 +20,7 @@ const STOP_WORDS = new Set([
 export type VisitorProfile = {
   preferredArea: string | null;
   favoriteVendorSlugs: string[];
+  favoriteProductIds: string[];
   keywordScores: Record<string, number>;
   recentQueries: string[];
   eventCount: number;
@@ -46,6 +47,7 @@ export async function getVisitorProfile(visitorId?: string | null): Promise<Visi
         take: 80,
         select: {
           type: true,
+          userId: true,
           vendorSlug: true,
           searchQuery: true,
           metaJson: true,
@@ -59,6 +61,7 @@ export async function getVisitorProfile(visitorId?: string | null): Promise<Visi
   const vendorScores = new Map<string, number>();
   const keywordScores = new Map<string, number>();
   const recentQueries: string[] = [];
+  const recentUserId = visitor.events.find((event) => typeof event.userId === "string" && event.userId)?.userId || null;
 
   for (const event of visitor.events) {
     if (event.vendorSlug) {
@@ -92,18 +95,67 @@ export async function getVisitorProfile(visitorId?: string | null): Promise<Visi
     }
   }
 
+  const [favoriteProducts, reviewedProducts] = recentUserId
+    ? await Promise.all([
+        prisma.userFavoriteProduct.findMany({
+          where: { userId: recentUserId },
+          select: {
+            productId: true,
+            product: {
+              select: {
+                vendor: {
+                  select: { slug: true },
+                },
+                name: true,
+              },
+            },
+          },
+          take: 24,
+        }),
+        prisma.userProductReview.findMany({
+          where: { userId: recentUserId },
+          select: {
+            rating: true,
+            productId: true,
+            product: {
+              select: {
+                vendor: { select: { slug: true } },
+                name: true,
+              },
+            },
+          },
+          take: 24,
+        }),
+      ])
+    : [[], []];
+
+  for (const item of favoriteProducts) {
+    vendorScores.set(item.product.vendor.slug, (vendorScores.get(item.product.vendor.slug) ?? 0) + 6);
+    for (const token of tokenize(item.product.name)) {
+      keywordScores.set(token, (keywordScores.get(token) ?? 0) + 3);
+    }
+  }
+
+  for (const item of reviewedProducts) {
+    vendorScores.set(item.product.vendor.slug, (vendorScores.get(item.product.vendor.slug) ?? 0) + item.rating);
+    for (const token of tokenize(item.product.name)) {
+      keywordScores.set(token, (keywordScores.get(token) ?? 0) + Math.max(2, item.rating - 1));
+    }
+  }
+
   return {
     preferredArea: visitor.preferredArea || null,
     favoriteVendorSlugs: Array.from(vendorScores.entries())
       .sort((a, b) => b[1] - a[1])
       .map(([slug]) => slug)
       .slice(0, 5),
+    favoriteProductIds: favoriteProducts.map((item) => item.productId),
     keywordScores: Object.fromEntries(
       Array.from(keywordScores.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
     ),
     recentQueries: recentQueries.slice(0, 6),
-    eventCount: visitor.events.length,
+    eventCount: visitor.events.length + favoriteProducts.length + reviewedProducts.length,
   };
 }

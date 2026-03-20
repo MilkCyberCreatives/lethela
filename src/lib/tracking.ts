@@ -1,5 +1,5 @@
 // /src/lib/tracking.ts
-import { trackVisitorEvent } from "@/lib/visitor";
+import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
 
 const KEY = "lethela_clicks_vendors";
 
@@ -14,7 +14,15 @@ export function getVendorClicks(): ClickMap {
   }
 }
 
-export function recordVendorClick(id: string, slug?: string) {
+export function recordVendorClick(
+  id: string,
+  slug?: string,
+  details?: {
+    name?: string;
+    rating?: number;
+    cuisines?: string[];
+  }
+) {
   try {
     const m = getVendorClicks();
     m[id] = (m[id] ?? 0) + 1;
@@ -26,5 +34,17 @@ export function recordVendorClick(id: string, slug?: string) {
     vendorId: id,
     vendorSlug: slug,
     path: typeof window !== "undefined" ? window.location.pathname : undefined,
+    meta: {
+      name: details?.name || null,
+      rating: details?.rating ?? null,
+      cuisines: details?.cuisines || [],
+    },
+  });
+  pushDataLayerEvent("select_item", {
+    content_type: "vendor",
+    item_id: id,
+    item_name: details?.name || null,
+    vendor_slug: slug || null,
+    item_category: details?.cuisines?.[0] || null,
   });
 }

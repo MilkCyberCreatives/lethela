@@ -12,6 +12,7 @@ import { formatZAR } from "@/lib/format";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 import { buildPageMetadata } from "@/lib/seo";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
+import { getVendorTrustSnapshot } from "@/lib/customer-experience";
 import { getVendorBySlug as getVendorProfile } from "@/server/queries";
 
 type PageProps = {
@@ -125,6 +126,8 @@ export default async function VendorProfilePage({ params }: PageProps) {
 
   if (!vendor) return notFound();
 
+  const trust = await getVendorTrustSnapshot(vendor.id);
+
   const location = [vendor.suburb, vendor.city].filter(Boolean).join(", ");
   const isAlcoholVendor = vendor.products.some((item) => item.isAlcohol);
   const vendorUrl = absoluteUrl(`/vendors/${vendor.slug}`);
@@ -221,6 +224,11 @@ export default async function VendorProfilePage({ params }: PageProps) {
               <span className="rounded-full border border-white/20 px-3 py-1">
                 ETA {vendor.etaMins}-{vendor.etaMins + 10} min
               </span>
+              <span className="rounded-full border border-white/20 px-3 py-1">
+                {trust.averageRating != null ? `${trust.averageRating.toFixed(1)} rating` : `${vendor.rating.toFixed(1)} rating`}
+              </span>
+              <span className="rounded-full border border-white/20 px-3 py-1">{trust.reviewCount} reviews</span>
+              <span className="rounded-full border border-white/20 px-3 py-1">{trust.orderCount} delivered orders</span>
               {vendor.halaal ? <span className="rounded-full border border-white/20 px-3 py-1">Halaal</span> : null}
               {vendor.phone ? <span className="rounded-full border border-white/20 px-3 py-1">{vendor.phone}</span> : null}
             </div>
@@ -357,6 +365,29 @@ export default async function VendorProfilePage({ params }: PageProps) {
           </div>
         )}
       </section>
+
+      {trust.recentReviews.length > 0 ? (
+        <section className="container pb-10">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">Customer reviews</h2>
+            <span className="text-xs text-white/65">{trust.reviewCount} verified ratings</span>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {trust.recentReviews.map((review, index) => (
+              <article key={`${review.userName}-${index}`} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-white">{review.userName}</div>
+                    <div className="text-xs text-white/60">{review.productName}</div>
+                  </div>
+                  <div className="text-sm text-white/80">{review.rating}/5</div>
+                </div>
+                <p className="mt-3 text-sm text-white/75">{review.comment}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <Footer />
     </main>

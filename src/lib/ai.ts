@@ -270,6 +270,10 @@ export async function aiRecommend(suburb: string | null, profile: VisitorProfile
               select: { isAlcohol: true },
               take: 4,
             },
+            reviews: {
+              select: { rating: true },
+              take: 40,
+            },
           },
         }),
         []
@@ -288,6 +292,7 @@ export async function aiRecommend(suburb: string | null, profile: VisitorProfile
             image: vendor.image,
             etaMins: vendor.etaMins,
             products: vendor.products,
+            reviews: vendor.reviews,
           });
 
           return {

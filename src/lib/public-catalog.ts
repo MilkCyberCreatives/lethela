@@ -10,6 +10,7 @@ type PublicVendorSource = {
   image?: string | null;
   etaMins?: number | null;
   products?: Array<{ isAlcohol?: boolean | null }>;
+  reviews?: Array<{ rating?: number | null }>;
 };
 
 export function parseCuisineList(value: unknown) {
@@ -54,6 +55,13 @@ export function buildPublicVendorCard(
   const hasAlcohol = (source.products ?? []).some((product) => Boolean(product.isAlcohol));
   const cuisines = parseCuisineList(source.cuisine);
   const baseEtaMin = source.baseEtaMin ?? source.etaMins ?? null;
+  const reviewValues = (source.reviews ?? [])
+    .map((review) => Number(review.rating))
+    .filter((rating) => Number.isFinite(rating));
+  const averageRating =
+    reviewValues.length > 0
+      ? Number((reviewValues.reduce((sum, rating) => sum + rating, 0) / reviewValues.length).toFixed(1))
+      : null;
 
   return {
     id: source.id,
@@ -61,7 +69,7 @@ export function buildPublicVendorCard(
     slug: source.slug,
     cover: getPublicVendorImage(source.image, hasAlcohol),
     badge: getPublicVendorBadge(source, hasAlcohol),
-    rating: Number.isFinite(source.rating) ? Number(source.rating) : 4.4,
+    rating: averageRating ?? (Number.isFinite(source.rating) ? Number(source.rating) : 4.4),
     cuisines,
     eta: getPublicVendorEta(baseEtaMin),
     distanceKm: source.distanceKm ?? undefined,

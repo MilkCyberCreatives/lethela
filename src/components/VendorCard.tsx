@@ -9,7 +9,7 @@ export default function VendorCard({ v }: { v: Vendor }) {
   return (
     <Link
       href={`/vendors/${v.slug}`}
-      onClick={() => recordVendorClick(v.id, v.slug)}
+      onClick={() => recordVendorClick(v.id, v.slug, { name: v.name, rating: v.rating, cuisines: v.cuisines })}
       className="group overflow-hidden rounded-2xl border border-white/10 bg-lethela-secondary transition"
     >
       <div className="relative aspect-[16/10]">

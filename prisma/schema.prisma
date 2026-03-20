@@ -20,6 +20,10 @@ model User {
   memberships  VendorMember[]
   orders       Order[]
   ownedVendors Vendor[]       @relation("VendorOwner")
+  favoriteProducts UserFavoriteProduct[]
+  productReviews   UserProductReview[]
+  pushPreferences  PushPreference[]
+  pushCampaigns    PushCampaign[]      @relation("PushCampaignCreator")
 }
 
 model Visitor {
@@ -31,6 +35,7 @@ model Visitor {
 
   events            VisitorEvent[]
   pushSubscriptions PushSubscription[]
+  pushPreferences   PushPreference[]
 
   @@index([preferredArea])
   @@index([updatedAt])
@@ -72,6 +77,23 @@ model PushSubscription {
   @@index([visitorId, updatedAt])
 }
 
+model PushPreference {
+  id                     String   @id @default(cuid())
+  visitorId              String   @unique
+  userId                 String?
+  marketingEnabled       Boolean  @default(false)
+  orderUpdatesEnabled    Boolean  @default(true)
+  recommendationsEnabled Boolean  @default(true)
+  adminAlertsEnabled     Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  visitor                Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  user                   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, updatedAt])
+}
+
 model Vendor {
   id          String   @id @default(cuid())
   name        String
@@ -106,6 +128,7 @@ model Vendor {
   items       Item[]
   upsells     ProductUpsell[]
   lateFlags   LateOrderFlag[]
+  reviews     UserProductReview[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -146,10 +169,45 @@ model Product {
   orderItems  OrderItem[]
   baseFor     ProductUpsell[] @relation("BaseProduct")
   upsellFor   ProductUpsell[] @relation("UpsellProduct")
+  favorites   UserFavoriteProduct[]
+  reviews     UserProductReview[]
 
   @@unique([vendorId, slug])
   @@index([vendorId, updatedAt])
   @@index([name])
+}
+
+model UserFavoriteProduct {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
+  @@index([productId])
+}
+
+model UserProductReview {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  vendorId  String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([vendorId, createdAt])
+  @@index([productId, createdAt])
 }
 
 model MenuSection {
@@ -295,4 +353,22 @@ model LateOrderFlag {
 
   @@index([vendorId, createdAt])
   @@index([orderId])
+}
+
+model PushCampaign {
+  id              String   @id @default(cuid())
+  title           String
+  body            String
+  url             String   @default("/")
+  segment         String   @default("ALL")
+  sentCount       Int      @default(0)
+  failedCount     Int      @default(0)
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  createdBy       User?    @relation("PushCampaignCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([segment, createdAt])
 }

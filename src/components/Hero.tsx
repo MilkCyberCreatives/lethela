@@ -323,6 +323,10 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
           ? `Showing options for ${savedLocation.label}. Accuracy about ${Math.round(position.coords.accuracy)} m.`
           : `Showing options for ${savedLocation.label}.`
       );
+      pushDataLayerEvent("use_my_location", {
+        preferred_area: savedLocation.label,
+        accuracy_meters: position.coords.accuracy,
+      });
       setShowLocationPicker(false);
       router.refresh();
     } catch {

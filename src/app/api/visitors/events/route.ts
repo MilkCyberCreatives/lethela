@@ -13,6 +13,13 @@ const ALLOWED_EVENT_TYPES = new Set([
   "recommendation_click",
   "location_update",
   "push_opt_in",
+  "favorite_toggle",
+  "product_rate",
+  "whatsapp_click",
+  "vendor_application_submit",
+  "rider_application_submit",
+  "track_order_view",
+  "reorder",
 ]);
 
 export async function POST(req: Request) {
@@ -66,6 +73,13 @@ export async function POST(req: Request) {
       userAgent: userAgent || undefined,
     },
   });
+
+  if (userId) {
+    await prisma.pushPreference.updateMany({
+      where: { visitorId },
+      data: { userId },
+    });
+  }
 
   await prisma.visitorEvent.create({
     data: {

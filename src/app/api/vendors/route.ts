@@ -59,6 +59,10 @@ export async function GET(req: Request) {
               select: { isAlcohol: true },
               take: 3,
             },
+            reviews: {
+              select: { rating: true },
+              take: 40,
+            },
           },
         }),
         []
@@ -75,6 +79,7 @@ export async function GET(req: Request) {
           image: vendor.image,
           etaMins: vendor.etaMins,
           products: vendor.products,
+          reviews: vendor.reviews,
         });
         const etaBase = aiPredictETA(card.distanceKm ?? 3, card.baseEtaMin ?? vendor.etaMins ?? 15, hour);
         return {

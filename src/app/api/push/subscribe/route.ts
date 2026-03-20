@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { upsertPushPreference } from "@/lib/customer-experience";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { VISITOR_COOKIE_NAME } from "@/lib/visitor";
@@ -71,6 +72,29 @@ export async function POST(req: Request) {
       auth: authKey,
       userAgent: userAgent || undefined,
     },
+  });
+
+  await upsertPushPreference(visitorId, userId, {
+    orderUpdatesEnabled: true,
+    recommendationsEnabled: true,
+  });
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(req: Request) {
+  const visitorId = (await cookies()).get(VISITOR_COOKIE_NAME)?.value?.trim() || "";
+  if (!visitorId) {
+    return NextResponse.json({ ok: false, error: "No active visitor session." }, { status: 400 });
+  }
+
+  const body = (await req.json().catch(() => ({}))) as {
+    endpoint?: string;
+  };
+  const endpoint = String(body.endpoint || "").trim();
+
+  await prisma.pushSubscription.deleteMany({
+    where: endpoint ? { visitorId, endpoint } : { visitorId },
   });
 
   return NextResponse.json({ ok: true });

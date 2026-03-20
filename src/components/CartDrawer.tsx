@@ -9,6 +9,7 @@ import { useCart } from "@/store/cart";
 import { readPreferredLocation } from "@/lib/location-preference";
 import { DEFAULT_DELIVERY_FEE_CENTS, EXTRA_DELIVERY_FEE_PER_KM_CENTS, INCLUDED_DELIVERY_RADIUS_KM } from "@/lib/pricing";
 import { useUIStore } from "@/store/ui";
+import { trackWhatsAppClick } from "@/lib/visitor";
 import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
 
 export default function CartDrawer() {
@@ -214,7 +215,15 @@ export default function CartDrawer() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="border-white/20 text-white" disabled={items.length === 0}>
-              <a href={whatsappLink} target="_blank" rel="noreferrer" onClick={closeCart}>
+              <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  trackWhatsAppClick("cart_drawer", { item_count: items.length });
+                  closeCart();
+                }}
+              >
                 WhatsApp order
               </a>
             </Button>

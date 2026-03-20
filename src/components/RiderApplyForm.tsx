@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
 
 type RiderResponse = {
   ok: boolean;
@@ -81,6 +82,20 @@ export default function RiderApplyForm() {
       setSummary(json.summary || "");
       setApplicationId(json.application?.id || "");
       setStatus(json.application?.status || "PENDING");
+      void trackVisitorEvent({
+        type: "rider_application_submit",
+        meta: {
+          city: form.city,
+          suburb: form.suburb,
+          vehicleType: form.vehicleType,
+        },
+      });
+      pushDataLayerEvent("generate_lead", {
+        lead_type: "rider_application",
+        city: form.city,
+        suburb: form.suburb,
+        vehicle_type: form.vehicleType,
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unable to submit rider application.");
     } finally {
