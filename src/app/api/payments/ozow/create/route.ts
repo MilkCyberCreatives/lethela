@@ -4,9 +4,11 @@ import { prisma } from "@/server/db";
 import { auth } from "@/auth";
 import { buildOzowRedirectUrl, createOrderReference } from "@/lib/ozow";
 import { geocodeSuburb } from "@/lib/geo";
+import { createOrderTrackingToken } from "@/lib/order-tracking-access";
 import { quoteDelivery } from "@/lib/pricing";
 import { z } from "zod";
 import { withSentryRoute } from "@/server/withSentryRoute";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const BodySchema = z.object({
   vendorId: z.string().min(1),
@@ -26,9 +28,30 @@ const BodySchema = z.object({
   subtotalCents: z.number().int().nonnegative(),
   deliveryCents: z.number().int().nonnegative(),
   totalCents: z.number().int().positive()
-});
+}).refine(
+  (data) =>
+    Boolean(data.destinationSuburb?.trim()) ||
+    (typeof data.destinationLat === "number" && typeof data.destinationLng === "number"),
+  {
+    message: "Destination suburb or coordinates are required.",
+    path: ["destinationSuburb"],
+  }
+);
 
 export const POST = withSentryRoute(async (req: NextRequest) => {
+  const limited = await checkRateLimit({
+    key: "ozow-create",
+    limit: 20,
+    windowMs: 60_000,
+    headers: req.headers,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many checkout requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
+  }
+
   const requestOrigin = req.nextUrl.origin;
   const baseUrl =
     requestOrigin ||
@@ -127,6 +150,20 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   const resolvedDeliveryCents = deliveryQuote.deliveryCents;
   const totalCents = calcSubtotal + resolvedDeliveryCents;
 
+  if (!deliveryQuote.originResolved) {
+    return NextResponse.json(
+      { ok: false, error: "Vendor delivery location is incomplete." },
+      { status: 422 }
+    );
+  }
+
+  if (!deliveryQuote.destinationResolved) {
+    return NextResponse.json(
+      { ok: false, error: "We could not verify that delivery address. Please review checkout before paying." },
+      { status: 422 }
+    );
+  }
+
   if (
     Math.abs(calcSubtotal - subtotalCents) > 5 ||
     Math.abs(resolvedDeliveryCents - deliveryCents) > 5 ||
@@ -150,6 +187,13 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       : destinationSuburb
         ? await geocodeSuburb(destinationSuburb)
         : null;
+
+  if (!destinationPoint) {
+    return NextResponse.json(
+      { ok: false, error: "We could not verify that delivery address. Please review checkout before paying." },
+      { status: 422 }
+    );
+  }
 
   const ozowReference = createOrderReference();
   const order = await prisma.order.create({
@@ -178,8 +222,9 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     select: { id: true, ozowReference: true, publicId: true },
   });
   const reference = order.ozowReference ?? order.publicId ?? ozowReference;
+  const trackingToken = createOrderTrackingToken(reference);
 
-  const successUrl = `${baseUrl}/checkout/success?ref=${encodeURIComponent(reference)}`;
+  const successUrl = `${baseUrl}/checkout/success?ref=${encodeURIComponent(reference)}&t=${encodeURIComponent(trackingToken)}`;
   const cancelUrl = `${baseUrl}/checkout/cancel?ref=${encodeURIComponent(reference)}`;
   const errorUrl = cancelUrl;
   const notifyUrl = `${baseUrl}/api/payments/ozow/notify`;

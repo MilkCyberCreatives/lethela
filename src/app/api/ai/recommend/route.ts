@@ -7,7 +7,7 @@ import { getVisitorProfile } from "@/lib/visitor-profile";
 import { VISITOR_COOKIE_NAME } from "@/lib/visitor";
 
 export async function POST(req: Request) {
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "ai-recommend",
     limit: 20,
     windowMs: 60_000,

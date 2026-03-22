@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getDemoOrderDetails, isDemoOrderRef } from "@/lib/demo-order";
+import { getOrderRealtimeChannel, verifyOrderTrackingToken } from "@/lib/order-tracking-access";
 import { buildTrackingSnapshot } from "@/lib/order-tracking";
-import { withQueryTimeout } from "@/lib/query-timeout";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 
 type Params = { params: Promise<{ ref: string }> };
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   const { ref } = await params;
   const cleanRef = String(ref || "").trim();
   const normalizedRef = cleanRef.toUpperCase().replace(/\s+/g, "-").replace(/-+/g, "-");
@@ -18,8 +18,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true, order: getDemoOrderDetails() });
   }
 
-  const order = await withQueryTimeout(
-    prisma.order.findFirst({
+  const order = await runBoundedDbQuery((db) =>
+    db.order.findFirst({
       where: {
         OR: [
           { ozowReference: cleanRef },
@@ -53,13 +53,18 @@ export async function GET(_req: NextRequest, { params }: Params) {
           },
         },
       },
-    }),
-    null
-  );
+    })
+  ).catch(() => null);
 
   if (!order) {
     return NextResponse.json({ ok: false, error: "Order not found." }, { status: 404 });
   }
+
+  const trackingToken =
+    req.nextUrl.searchParams.get("t")?.trim() ||
+    req.headers.get("x-tracking-token")?.trim() ||
+    "";
+  const hasDetailedTracking = verifyOrderTrackingToken(trackingToken, order.ozowReference || order.publicId);
 
   const destination =
     order.customerLat != null && order.customerLng != null ? { lat: order.customerLat, lng: order.customerLng } : null;
@@ -85,8 +90,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     updatedAt: order.updatedAt,
     riderLocatedAt: order.riderLocatedAt,
     vendor: vendorPoint,
-    destination,
-    rider: riderPoint,
+    destination: hasDetailedTracking ? destination : null,
+    rider: hasDetailedTracking ? riderPoint : null,
   });
 
   return NextResponse.json({
@@ -101,9 +106,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
       totalCents: order.totalCents,
       items,
       vendor: order.vendor,
-      destination,
+      destination: hasDetailedTracking ? destination : null,
       rider:
-        riderPoint || tracking.rider
+        hasDetailedTracking && (riderPoint || tracking.rider)
           ? {
               lat: (riderPoint || tracking.rider)!.lat,
               lng: (riderPoint || tracking.rider)!.lng,
@@ -112,6 +117,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
               simulated: !riderPoint,
             }
           : null,
+      channel: hasDetailedTracking ? getOrderRealtimeChannel(order.ozowReference || order.publicId) : null,
       tracking,
     },
   });

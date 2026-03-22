@@ -2,9 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
-import { prisma } from "@/lib/db";
 import { isDemoOrderRef } from "@/lib/demo-order";
-import { withQueryTimeout } from "@/lib/query-timeout";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 
 type SearchParams = Promise<{ ref?: string | string[] }> | { ref?: string | string[] };
 
@@ -30,8 +29,8 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
   const clean = normalizeRef(params.ref);
   const isDemo = clean ? isDemoOrderRef(clean) : false;
   const order = clean
-    ? await withQueryTimeout(
-        prisma.order.findFirst({
+    ? await runBoundedDbQuery((db) =>
+        db.order.findFirst({
           where: {
             OR: [{ publicId: clean }, { ozowReference: clean }],
           },
@@ -39,9 +38,8 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
             publicId: true,
             ozowReference: true,
           },
-        }),
-        null
-      )
+        })
+      ).catch(() => null)
     : null;
   const resolvedRef = order ? order.ozowReference || order.publicId : isDemo ? clean : null;
   const resolvedHref = resolvedRef ? `/orders/${encodeURIComponent(resolvedRef)}` : "/track";

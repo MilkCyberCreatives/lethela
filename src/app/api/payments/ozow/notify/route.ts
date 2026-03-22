@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
   const receivedHash = String(payload.Hash || payload.hash || "").trim().toUpperCase();
   const privateKey = process.env.OZOW_PRIVATE_KEY?.trim() || "";
   const expectedSiteCode = process.env.OZOW_SITE_CODE?.trim() || "";
+  const expectedIsTest = process.env.OZOW_IS_TEST === "true" ? "true" : "false";
 
   if (!ref) {
     return NextResponse.json({ ok: false, error: "Missing reference." }, { status: 400 });
@@ -80,6 +81,12 @@ export async function POST(req: NextRequest) {
   }
   if (siteCode !== expectedSiteCode) {
     return NextResponse.json({ ok: false, error: "Unexpected site code." }, { status: 400 });
+  }
+  if (currencyCode !== "ZAR") {
+    return NextResponse.json({ ok: false, error: "Unexpected currency code." }, { status: 400 });
+  }
+  if (isTest !== expectedIsTest) {
+    return NextResponse.json({ ok: false, error: "Unexpected Ozow test mode value." }, { status: 400 });
   }
 
   const expectedHash = buildOzowResponseHash({

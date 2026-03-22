@@ -12,7 +12,7 @@ const RegisterSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: "auth-register",
     limit: 10,
     windowMs: 60 * 60 * 1000,

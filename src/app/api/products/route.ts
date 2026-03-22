@@ -1,10 +1,9 @@
 // src/app/api/products/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getFallbackProducts } from "@/lib/catalog-fallback";
 import { getCatalogMode, shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { inferProductCategory } from "@/lib/categories";
-import { withQueryTimeout } from "@/lib/query-timeout";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 
 export const dynamic = "force-dynamic";
 
@@ -39,8 +38,8 @@ export async function GET(req: Request) {
 
   const dbItems = shouldPreferCatalogFallback()
     ? []
-    : await withQueryTimeout(
-        prisma.product.findMany({
+    : await runBoundedDbQuery((db) =>
+        db.product.findMany({
           where,
           select: {
             id: true,
@@ -60,9 +59,8 @@ export async function GET(req: Request) {
           },
           take,
           orderBy: { updatedAt: "desc" },
-        }),
-        []
-      );
+        })
+      ).catch(() => []);
 
   const items =
     dbItems.length > 0

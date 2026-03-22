@@ -19,7 +19,7 @@ const spaceGrotesk = Space_Grotesk({
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION?.trim();
 const facebookDomainVerification = process.env.NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION?.trim();
-const gtmId = process.env.NEXT_PUBLIC_GTM_ID?.trim() || "GTM-T7C5HB8K";
+const gtmId = process.env.NEXT_PUBLIC_GTM_ID?.trim() || "";
 
 const otherVerification: Record<string, string> = {};
 if (bingVerification) otherVerification["msvalidate.01"] = bingVerification;

@@ -14,7 +14,7 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: "auth-forgot-password",
     limit: 6,
     windowMs: 30 * 60 * 1000,

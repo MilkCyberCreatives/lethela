@@ -2,11 +2,12 @@ import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import CheckoutSuccessContent from "@/components/CheckoutSuccessContent";
 
-type SearchParams = Promise<{ ref?: string }> | { ref?: string };
+type SearchParams = Promise<{ ref?: string; t?: string }> | { ref?: string; t?: string };
 
 export default async function SuccessPage({ searchParams }: { searchParams: SearchParams }) {
-  const { ref } = await Promise.resolve(searchParams);
+  const { ref, t } = await Promise.resolve(searchParams);
   const cleanRef = typeof ref === "string" ? ref.trim() : "";
+  const trackingToken = typeof t === "string" ? t.trim() : "";
 
   if (!cleanRef) {
     return (
@@ -27,7 +28,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: Sear
 
   return (
     <PageShell contentClassName="max-w-2xl">
-      <CheckoutSuccessContent refId={cleanRef} isSandbox={process.env.OZOW_IS_TEST === "true"} />
+      <CheckoutSuccessContent refId={cleanRef} trackingToken={trackingToken} isSandbox={process.env.OZOW_IS_TEST === "true"} />
     </PageShell>
   );
 }

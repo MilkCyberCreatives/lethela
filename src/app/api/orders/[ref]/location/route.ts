@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { DEMO_ORDER_REF, isDemoOrderRef } from "@/lib/demo-order";
+import { getOrderRealtimeChannel } from "@/lib/order-tracking-access";
 import { pusherServer } from "@/lib/pusher-server";
-import { withQueryTimeout } from "@/lib/query-timeout";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { requireVendor } from "@/lib/authz";
 import { readRiderConsoleToken } from "@/lib/rider-console";
 
@@ -63,8 +64,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true });
   }
 
-  const order = await withQueryTimeout(
-    prisma.order.findFirst({
+  const order = await runBoundedDbQuery((db) =>
+    db.order.findFirst({
       where: riderToken
         ? {
             OR: [{ ozowReference: cleanRef }, { publicId: cleanRef }, { publicId: cleanRef.toUpperCase() }],
@@ -72,11 +73,10 @@ export async function POST(req: NextRequest, { params }: Params) {
         : {
             vendorId: vendorSession?.vendorId,
             OR: [{ ozowReference: cleanRef }, { publicId: cleanRef }, { publicId: cleanRef.toUpperCase() }],
-          },
+      },
       select: { id: true, vendorId: true, ozowReference: true, publicId: true },
-    }),
-    null
-  );
+    })
+  ).catch(() => null);
   if (!order) {
     return NextResponse.json({ ok: false, error: "Order not found." }, { status: 404 });
   }
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   });
 
   try {
-    const channel = `order-${order.ozowReference || order.publicId}`;
+    const channel = getOrderRealtimeChannel(order.ozowReference || order.publicId);
     await pusherServer.trigger(channel, "location", { ...parsed.data, at: new Date().toISOString() });
   } catch {
     // realtime may be disabled in local environments

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import OrderMap from "@/components/OrderMap";
@@ -59,6 +60,7 @@ type OrderPayload = {
     locatedAt?: string | null;
     simulated?: boolean;
   } | null;
+  channel?: string | null;
   tracking?: TrackingPayload | null;
 };
 
@@ -103,6 +105,7 @@ function buildFallbackTracking(order: OrderPayload): TrackingPayload {
 }
 
 export default function OrderTrackingPage({ params }: Props) {
+  const searchParams = useSearchParams();
   const [ref] = useState(() => normalizeRef(params.ref));
   const [order, setOrder] = useState<OrderPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +122,9 @@ export default function OrderTrackingPage({ params }: Props) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/orders/${encodeURIComponent(ref)}`, { cache: "no-store" });
+      const token = searchParams?.get("t")?.trim() || "";
+      const trackingParam = token ? `?t=${encodeURIComponent(token)}` : "";
+      const response = await fetch(`/api/orders/${encodeURIComponent(ref)}${trackingParam}`, { cache: "no-store" });
       const json = await response.json().catch(() => ({}));
 
       if (!response.ok || !json?.ok || !json.order) {
@@ -140,7 +145,7 @@ export default function OrderTrackingPage({ params }: Props) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [ref]);
+  }, [ref, searchParams]);
 
   useEffect(() => {
     void load(false);
@@ -192,7 +197,8 @@ export default function OrderTrackingPage({ params }: Props) {
     const pusher = getPusherClient();
     if (!pusher) return;
 
-    const channelName = `order-${ref}`;
+    const channelName = order?.channel;
+    if (!channelName) return;
     const channel = pusher.subscribe(channelName);
 
     const onEvent = () => {
@@ -208,7 +214,7 @@ export default function OrderTrackingPage({ params }: Props) {
       channel.unbind("location", onEvent);
       pusher.unsubscribe(channelName);
     };
-  }, [error, load, loading, ref]);
+  }, [error, load, loading, order]);
 
   const tracking = useMemo(() => (order ? order.tracking || buildFallbackTracking(order) : null), [order]);
   const stageIndex = tracking ? STAGES.indexOf(tracking.status) : -1;

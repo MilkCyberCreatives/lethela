@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
-import { ADMIN_KEY_STORAGE_KEY } from "@/lib/admin-portal";
 
 type DashboardView = "vendors" | "riders";
 type VendorStatusFilter = "PENDING" | "ACTIVE" | "REJECTED" | "ALL";
@@ -130,48 +129,49 @@ export default function AdminPage() {
   const [pushPermission, setPushPermission] = useState<string>(
     typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported"
   );
+  const adminKeyRef = useRef("");
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedKey = window.localStorage.getItem(ADMIN_KEY_STORAGE_KEY)?.trim();
-    if (savedKey) {
-      setAdminKey(savedKey);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const normalized = adminKey.trim();
-    if (!normalized) {
-      window.localStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
-      return;
-    }
-    window.localStorage.setItem(ADMIN_KEY_STORAGE_KEY, normalized);
+    adminKeyRef.current = adminKey.trim();
   }, [adminKey]);
 
-  const headers = useMemo(
-    () => (adminKey.trim() ? { "x-admin-key": adminKey.trim() } : undefined),
-    [adminKey]
-  );
+  const syncAdminAccess = useCallback(async () => {
+    const normalizedKey = adminKeyRef.current;
+    if (!normalizedKey) return;
+
+    const response = await fetch("/api/admin/access", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ adminKey: normalizedKey }),
+    });
+    const json = await response.json();
+    if (!response.ok || !json.ok) {
+      throw new Error(json.error || "Failed to validate admin approval key.");
+    }
+    if (json.promoted && json.message) {
+      setNotice(json.message);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      await syncAdminAccess();
+
       const [vendorsResponse, ridersResponse, notificationsResponse] = await Promise.all([
         fetch(`/api/admin/vendors?status=${vendorStatus}`, {
           method: "GET",
-          headers,
           cache: "no-store",
         }),
         fetch(`/api/admin/riders?status=${riderStatus}`, {
           method: "GET",
-          headers,
           cache: "no-store",
         }),
         fetch("/api/admin/notifications", {
           method: "GET",
-          headers,
           cache: "no-store",
         }),
       ]);
@@ -221,7 +221,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [headers, riderStatus, vendorStatus]);
+  }, [riderStatus, syncAdminAccess, vendorStatus]);
 
   useEffect(() => {
     void load();
@@ -248,11 +248,12 @@ export default function AdminPage() {
     setError(null);
     setNotice(null);
     try {
+      await syncAdminAccess();
+
       const response = await fetch(`/api/admin/vendors/${vendorId}`, {
         method: "PATCH",
         headers: {
           "content-type": "application/json",
-          ...(headers ?? {}),
         },
         body: JSON.stringify({ action }),
       });
@@ -272,11 +273,12 @@ export default function AdminPage() {
     setError(null);
     setNotice(null);
     try {
+      await syncAdminAccess();
+
       const response = await fetch(`/api/admin/riders/${id}`, {
         method: "PATCH",
         headers: {
           "content-type": "application/json",
-          ...(headers ?? {}),
         },
         body: JSON.stringify({ status }),
       });

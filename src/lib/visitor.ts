@@ -2,6 +2,7 @@ export const VISITOR_COOKIE_NAME = "lethela_visitor_id";
 const VISITOR_STORAGE_KEY = "lethela_visitor_id";
 const VISITOR_PUSH_PROMPTED_KEY = "lethela_push_prompted";
 const VISITOR_PUSH_PAGEVIEWS_KEY = "lethela_push_pageviews";
+const VISITOR_EVENT_DEDUPE_KEY = "lethela_event_dedupe";
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 
 export type VisitorEventInput = {
@@ -212,6 +213,31 @@ export function trackWhatsAppClick(context: string, meta: Record<string, unknown
 
 export async function trackVisitorEvent(input: VisitorEventInput) {
   if (typeof window === "undefined") return;
+
+  try {
+    const dedupeWindowMs =
+      input.type === "page_view" ? 30_000 : input.type === "track_order_view" ? 60_000 : input.type === "location_update" ? 45_000 : 0;
+    if (dedupeWindowMs > 0) {
+      const raw = window.sessionStorage.getItem(VISITOR_EVENT_DEDUPE_KEY) || "{}";
+      const cache = JSON.parse(raw) as Record<string, number>;
+      const signature = JSON.stringify([
+        input.type,
+        input.path || "",
+        input.vendorId || "",
+        input.vendorSlug || "",
+        input.productId || "",
+        input.searchQuery || "",
+      ]);
+      const now = Date.now();
+      if ((cache[signature] || 0) > now - dedupeWindowMs) {
+        return;
+      }
+      cache[signature] = now;
+      window.sessionStorage.setItem(VISITOR_EVENT_DEDUPE_KEY, JSON.stringify(cache));
+    }
+  } catch {
+    // ignore local dedupe storage failures
+  }
 
   const payload = {
     visitorId: ensureVisitorId(),

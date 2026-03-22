@@ -4,10 +4,9 @@ import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import StructuredData from "@/components/StructuredData";
-import { prisma } from "@/lib/db";
 import { getFallbackCategoryProducts } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
-import { withQueryTimeout } from "@/lib/query-timeout";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 import {
   categoryToSlug,
   inferProductCategory,
@@ -51,8 +50,8 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const dbItems = shouldPreferCatalogFallback()
     ? []
-    : await withQueryTimeout(
-        prisma.product.findMany({
+    : await runBoundedDbQuery((db) =>
+        db.product.findMany({
           where: {
             inStock: true,
             vendor: {
@@ -77,9 +76,8 @@ export default async function CategoryPage({ params }: PageProps) {
               },
             },
           },
-        }),
-        []
-      );
+        })
+      ).catch(() => []);
 
   const items =
     dbItems.length > 0

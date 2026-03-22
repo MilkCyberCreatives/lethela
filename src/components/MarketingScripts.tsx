@@ -1,6 +1,6 @@
 import Script from "next/script";
 
-const gtmId = process.env.NEXT_PUBLIC_GTM_ID?.trim() || "GTM-T7C5HB8K";
+const gtmId = process.env.NEXT_PUBLIC_GTM_ID?.trim() || "";
 const ga4Id = process.env.NEXT_PUBLIC_GA4_ID;
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 

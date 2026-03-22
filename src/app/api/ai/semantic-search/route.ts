@@ -4,7 +4,7 @@ import { searchCatalog } from "@/lib/search";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "ai-semantic-search",
     limit: 30,
     windowMs: 60_000,

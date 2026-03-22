@@ -7,7 +7,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { VISITOR_COOKIE_NAME } from "@/lib/visitor";
 
 export async function POST(req: Request) {
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "push-subscribe",
     limit: 20,
     windowMs: 60_000,

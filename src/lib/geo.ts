@@ -61,7 +61,7 @@ export async function geocodeSuburb(query: string): Promise<LatLng | null> {
   if (direct) return direct.point;
 
   const matched = FALLBACK_AREAS.find((area) => clean.includes(area.key));
-  return matched ? matched.point : FALLBACK_AREAS[0].point;
+  return matched ? matched.point : null;
 }
 
 export async function reverseGeocodePoint(point: LatLng) {

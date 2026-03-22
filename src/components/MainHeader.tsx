@@ -24,6 +24,11 @@ export default function MainHeader() {
     .slice(0, 2)
     .toUpperCase();
 
+  async function handleSignOut() {
+    await fetch("/api/admin/access", { method: "DELETE" }).catch(() => undefined);
+    await signOut({ callbackUrl: "/" });
+  }
+
   return (
     <header className="sticky top-0 z-50 surface-header">
       <div className="container flex h-20 items-center justify-between text-sm text-black">
@@ -66,7 +71,7 @@ export default function MainHeader() {
                 </span>
                 <span className="font-medium">{user.name || "Profile"}</span>
               </Link>
-              <Button variant="outline" className="border-black/20 text-black hover:bg-black/5" onClick={() => void signOut({ callbackUrl: "/" })}>
+              <Button variant="outline" className="border-black/20 text-black hover:bg-black/5" onClick={() => void handleSignOut()}>
                 Sign Out
               </Button>
             </div>
@@ -120,7 +125,7 @@ export default function MainHeader() {
                     </Link>
                     <Button
                       className="mt-4 w-full bg-lethela-primary hover:opacity-90"
-                      onClick={() => void signOut({ callbackUrl: "/" })}
+                      onClick={() => void handleSignOut()}
                     >
                       Sign Out
                     </Button>

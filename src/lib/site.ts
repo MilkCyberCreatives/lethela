@@ -1,5 +1,4 @@
-const DEFAULT_PRODUCTION_SITE_URL = "https://www.lethela.co.za";
-const DEFAULT_SITE_URL = process.env.NODE_ENV === "production" ? DEFAULT_PRODUCTION_SITE_URL : "http://localhost:3000";
+const DEFAULT_SITE_URL = process.env.NODE_ENV === "production" ? "" : "http://localhost:3000";
 
 function normalizeSiteUrl(input?: string | null) {
   const value = (input || "").trim();
@@ -15,7 +14,11 @@ function normalizeSiteUrl(input?: string | null) {
 const rawSiteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ||
   process.env.NEXTAUTH_URL ||
-  (process.env.NODE_ENV === "production" ? DEFAULT_PRODUCTION_SITE_URL : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+  (process.env.NODE_ENV === "production" ? "" : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+
+if (process.env.NODE_ENV === "production" && !rawSiteUrl) {
+  throw new Error("NEXT_PUBLIC_SITE_URL or NEXTAUTH_URL must be configured in production.");
+}
 
 export const SITE_URL = normalizeSiteUrl(rawSiteUrl);
 export const SITE_NAME = "Lethela";

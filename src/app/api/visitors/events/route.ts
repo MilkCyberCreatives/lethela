@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -22,8 +23,61 @@ const ALLOWED_EVENT_TYPES = new Set([
   "reorder",
 ]);
 
+const visitorEventState = globalThis as typeof globalThis & {
+  __lethelaKnownVisitors?: Map<string, number>;
+  __lethelaLinkedVisitors?: Map<string, number>;
+};
+
+function getKnownVisitors() {
+  if (!visitorEventState.__lethelaKnownVisitors) {
+    visitorEventState.__lethelaKnownVisitors = new Map<string, number>();
+  }
+  return visitorEventState.__lethelaKnownVisitors;
+}
+
+function getLinkedVisitors() {
+  if (!visitorEventState.__lethelaLinkedVisitors) {
+    visitorEventState.__lethelaLinkedVisitors = new Map<string, number>();
+  }
+  return visitorEventState.__lethelaLinkedVisitors;
+}
+
+function markKnownVisitor(visitorId: string, ttlMs = 15 * 60_000) {
+  getKnownVisitors().set(visitorId, Date.now() + ttlMs);
+}
+
+function isKnownVisitor(visitorId: string) {
+  const expiresAt = getKnownVisitors().get(visitorId) || 0;
+  return expiresAt > Date.now();
+}
+
+function markLinkedVisitor(visitorId: string, userId: string, ttlMs = 15 * 60_000) {
+  getLinkedVisitors().set(`${visitorId}:${userId}`, Date.now() + ttlMs);
+}
+
+function isLinkedVisitor(visitorId: string, userId: string) {
+  const expiresAt = getLinkedVisitors().get(`${visitorId}:${userId}`) || 0;
+  return expiresAt > Date.now();
+}
+
+async function ensureVisitorRecord(visitorId: string, preferredArea: string | null | undefined, userAgent: string | null) {
+  await prisma.visitor.upsert({
+    where: { id: visitorId },
+    create: {
+      id: visitorId,
+      preferredArea: preferredArea?.trim() || null,
+      userAgent,
+    },
+    update: {
+      preferredArea: preferredArea?.trim() || undefined,
+      userAgent: userAgent || undefined,
+    },
+  });
+  markKnownVisitor(visitorId);
+}
+
 export async function POST(req: Request) {
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "visitor-events",
     limit: 180,
     windowMs: 60_000,
@@ -61,39 +115,43 @@ export async function POST(req: Request) {
   }
 
   const userAgent = req.headers.get("user-agent")?.slice(0, 240) || null;
-  await prisma.visitor.upsert({
-    where: { id: visitorId },
-    create: {
-      id: visitorId,
-      preferredArea: body.preferredArea?.trim() || null,
-      userAgent,
-    },
-    update: {
-      preferredArea: body.preferredArea?.trim() || undefined,
-      userAgent: userAgent || undefined,
-    },
-  });
+  if (!isKnownVisitor(visitorId) || body.preferredArea?.trim()) {
+    await ensureVisitorRecord(visitorId, body.preferredArea, userAgent);
+  }
 
-  if (userId) {
+  if (userId && !isLinkedVisitor(visitorId, userId)) {
     await prisma.pushPreference.updateMany({
       where: { visitorId },
       data: { userId },
     });
+    markLinkedVisitor(visitorId, userId);
   }
 
-  await prisma.visitorEvent.create({
-    data: {
-      visitorId,
-      userId,
-      type,
-      path: body.path?.slice(0, 240) || null,
-      vendorId: body.vendorId?.slice(0, 64) || null,
-      vendorSlug: body.vendorSlug?.slice(0, 120) || null,
-      productId: body.productId?.slice(0, 64) || null,
-      searchQuery: body.searchQuery?.slice(0, 240) || null,
-      metaJson: body.meta ? JSON.stringify(body.meta).slice(0, 1800) : null,
-    },
-  });
+  const eventData = {
+    visitorId,
+    userId,
+    type,
+    path: body.path?.slice(0, 240) || null,
+    vendorId: body.vendorId?.slice(0, 64) || null,
+    vendorSlug: body.vendorSlug?.slice(0, 120) || null,
+    productId: body.productId?.slice(0, 64) || null,
+    searchQuery: body.searchQuery?.slice(0, 240) || null,
+    metaJson: body.meta ? JSON.stringify(body.meta).slice(0, 1800) : null,
+  };
+
+  try {
+    await prisma.visitorEvent.create({ data: eventData });
+  } catch (error) {
+    const missingVisitor =
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2003" || error.code === "P2025");
+    if (!missingVisitor) {
+      throw error;
+    }
+
+    await ensureVisitorRecord(visitorId, body.preferredArea, userAgent);
+    await prisma.visitorEvent.create({ data: eventData });
+  }
 
   return NextResponse.json({ ok: true });
 }

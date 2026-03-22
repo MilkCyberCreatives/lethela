@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { aiPredictETA } from "@/lib/ai";
 import { getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { getCatalogMode, shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { buildPublicVendorCard } from "@/lib/public-catalog";
-import { withQueryTimeout } from "@/lib/query-timeout";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 
 export const dynamic = "force-dynamic";
 
@@ -37,8 +36,8 @@ export async function GET(req: Request) {
     });
   } else {
     try {
-      const dbVendors = await withQueryTimeout(
-        prisma.vendor.findMany({
+      const dbVendors = await runBoundedDbQuery((db) =>
+        db.vendor.findMany({
           where: {
             isActive: true,
             status: "ACTIVE",
@@ -64,8 +63,7 @@ export async function GET(req: Request) {
               take: 40,
             },
           },
-        }),
-        []
+        })
       );
 
       items = dbVendors.map((vendor) => {

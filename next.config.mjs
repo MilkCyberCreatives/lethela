@@ -25,11 +25,34 @@ const configuredRemotePatterns = [
   toRemotePattern(process.env.SUPABASE_URL, "/storage/v1/object/public/**"),
 ].filter(Boolean);
 
+function originHost(value) {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+    return url.host;
+  } catch {
+    return null;
+  }
+}
+
+const allowedServerActionOrigins = Array.from(
+  new Set(
+    [
+      "localhost:3000",
+      "localhost:3001",
+      originHost(process.env.NEXT_PUBLIC_SITE_URL),
+      originHost(process.env.NEXTAUTH_URL),
+      process.env.VERCEL_URL || null,
+    ].filter(Boolean)
+  )
+);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
     serverActions: {
-      allowedOrigins: ["localhost:3000", "localhost:3001"],
+      allowedOrigins: allowedServerActionOrigins,
     },
   },
   outputFileTracingIncludes: {

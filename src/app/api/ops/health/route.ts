@@ -3,6 +3,7 @@ import { requireAdminRequest } from "@/lib/admin-auth";
 import { getCatalogMode } from "@/lib/catalog-runtime";
 import { countRiderApplications } from "@/lib/rider-applications";
 import { hasWebPushConfig } from "@/lib/web-push";
+import { hasStorageConfig } from "@/server/supabase";
 import { prisma, prismaRuntimeInfo } from "@/server/db";
 
 export async function GET(req: NextRequest) {
@@ -30,10 +31,14 @@ export async function GET(req: NextRequest) {
     environment: process.env.NODE_ENV,
     services: {
       db: {
-        ok: true,
+        ok: prismaRuntimeInfo.persistent && prismaRuntimeInfo.scalable,
         source: prismaRuntimeInfo.source,
+        provider: prismaRuntimeInfo.provider,
         persistent: prismaRuntimeInfo.persistent,
+        scalable: prismaRuntimeInfo.scalable,
       },
+      storage: hasStorageConfig(),
+      maps: Boolean(process.env.GOOGLE_MAPS_API_KEY?.trim() || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()),
       webPush: hasWebPushConfig(),
       pusher: Boolean(
         process.env.PUSHER_APP_ID?.trim() &&
@@ -42,7 +47,7 @@ export async function GET(req: NextRequest) {
           process.env.NEXT_PUBLIC_PUSHER_KEY?.trim()
       ),
       ozow: Boolean(process.env.OZOW_SITE_CODE?.trim() && process.env.OZOW_PRIVATE_KEY?.trim()),
-      gtm: Boolean(process.env.NEXT_PUBLIC_GTM_ID?.trim() || "GTM-T7C5HB8K"),
+      gtm: Boolean(process.env.NEXT_PUBLIC_GTM_ID?.trim()),
       ga4: Boolean(process.env.NEXT_PUBLIC_GA4_ID?.trim()),
       metaPixel: Boolean(process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()),
     },

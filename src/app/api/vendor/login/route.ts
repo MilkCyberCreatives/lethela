@@ -12,7 +12,7 @@ const VendorLoginSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: "vendor-login",
     limit: 10,
     windowMs: 30 * 60 * 1000,

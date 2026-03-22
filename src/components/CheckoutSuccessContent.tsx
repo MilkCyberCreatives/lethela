@@ -9,6 +9,7 @@ type OrderState = "loading" | "paid" | "pending" | "failed" | "missing";
 
 type Props = {
   refId?: string;
+  trackingToken?: string;
   isSandbox: boolean;
 };
 
@@ -41,7 +42,7 @@ function normalizeOrderState(payload: OrderResponse): OrderState {
   return "pending";
 }
 
-export default function CheckoutSuccessContent({ refId, isSandbox }: Props) {
+export default function CheckoutSuccessContent({ refId, trackingToken, isSandbox }: Props) {
   const clear = useCart((state) => state.clear);
   const clearedRef = useRef(false);
   const purchaseTrackedRef = useRef(false);
@@ -56,7 +57,8 @@ export default function CheckoutSuccessContent({ refId, isSandbox }: Props) {
 
     const fetchOrderState = async (attempt = 0) => {
       try {
-        const response = await fetch(`/api/orders/${encodeURIComponent(refId)}`, { cache: "no-store" });
+        const trackingParam = trackingToken ? `?t=${encodeURIComponent(trackingToken)}` : "";
+        const response = await fetch(`/api/orders/${encodeURIComponent(refId)}${trackingParam}`, { cache: "no-store" });
         const json = (await response.json().catch(() => ({}))) as OrderResponse;
         if (cancelled) return;
 
@@ -85,7 +87,7 @@ export default function CheckoutSuccessContent({ refId, isSandbox }: Props) {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [refId]);
+  }, [refId, trackingToken]);
 
   useEffect(() => {
     if (state === "paid" && !clearedRef.current) {
@@ -151,7 +153,7 @@ export default function CheckoutSuccessContent({ refId, isSandbox }: Props) {
 
       <div className="mt-4 flex gap-4">
         {refId ? (
-          <Link href={`/orders/${refId}`} className="underline">
+          <Link href={trackingToken ? `/orders/${refId}?t=${encodeURIComponent(trackingToken)}` : `/orders/${refId}`} className="underline">
             Track your order {"->"}
           </Link>
         ) : null}

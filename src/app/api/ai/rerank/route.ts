@@ -4,7 +4,7 @@ import { aiRerankVendors, type RerankInput } from "@/lib/ai";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "ai-rerank",
     limit: 20,
     windowMs: 60_000,

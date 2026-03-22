@@ -29,7 +29,7 @@ async function runSearch(rawQuery: string) {
 }
 
 export async function GET(req: Request) {
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "ai-search",
     limit: 30,
     windowMs: 60_000,
@@ -47,7 +47,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "ai-search",
     limit: 30,
     windowMs: 60_000,

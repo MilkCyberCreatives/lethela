@@ -76,6 +76,9 @@ export async function quoteDelivery({
       : null;
 
   return {
+    originResolved: Boolean(originPoint),
+    destinationResolved: Boolean(destinationPoint),
+    locationResolved: Boolean(originPoint && destinationPoint),
     baseFeeCents: normalizedBaseFeeCents,
     deliveryCents: deliveryFeeCents(distanceKm, normalizedBaseFeeCents),
     distanceKm,

@@ -27,7 +27,7 @@ const RiderApplySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: "riders-apply",
     limit: 5,
     windowMs: 60 * 60 * 1000,

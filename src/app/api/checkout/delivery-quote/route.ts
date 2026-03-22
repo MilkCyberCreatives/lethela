@@ -8,7 +8,15 @@ const QuerySchema = z.object({
   destinationSuburb: z.string().trim().min(2).max(140).optional(),
   destinationLat: z.coerce.number().min(-90).max(90).optional(),
   destinationLng: z.coerce.number().min(-180).max(180).optional(),
-});
+}).refine(
+  (data) =>
+    Boolean(data.destinationSuburb?.trim()) ||
+    (typeof data.destinationLat === "number" && typeof data.destinationLng === "number"),
+  {
+    message: "Destination suburb or coordinates are required.",
+    path: ["destinationSuburb"],
+  }
+);
 
 export async function GET(req: NextRequest) {
   const parsed = QuerySchema.safeParse({
@@ -52,6 +60,20 @@ export async function GET(req: NextRequest) {
         : null,
     baseFeeCents: vendor.deliveryFee,
   });
+
+  if (!quote.originResolved) {
+    return NextResponse.json(
+      { ok: false, error: "Vendor delivery location is incomplete." },
+      { status: 422 }
+    );
+  }
+
+  if (!quote.destinationResolved) {
+    return NextResponse.json(
+      { ok: false, error: "We could not verify that delivery address. Please choose a supported location." },
+      { status: 422 }
+    );
+  }
 
   return NextResponse.json({ ok: true, ...quote });
 }

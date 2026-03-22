@@ -1,16 +1,22 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/auth";
+import { ADMIN_ACCESS_COOKIE_NAME, readAdminAccessToken } from "@/lib/admin-access";
 
 type AdminGuardResult =
-  | { ok: true; mode: "session" | "key" | "dev-bypass" }
+  | { ok: true; mode: "session" | "key" | "key-cookie" | "dev-bypass" }
   | { ok: false; status: number; error: string };
 
 export async function requireAdminRequest(req: NextRequest): Promise<AdminGuardResult> {
   const adminKey = process.env.ADMIN_APPROVAL_KEY?.trim();
   const providedKey = req.headers.get("x-admin-key")?.trim();
+  const accessCookie = req.cookies.get(ADMIN_ACCESS_COOKIE_NAME)?.value?.trim();
 
   if (adminKey && providedKey && providedKey === adminKey) {
     return { ok: true, mode: "key" };
+  }
+
+  if (accessCookie && readAdminAccessToken(accessCookie)) {
+    return { ok: true, mode: "key-cookie" };
   }
 
   try {

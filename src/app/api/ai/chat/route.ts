@@ -1,13 +1,12 @@
 // /src/app/api/ai/chat/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { aiChat, aiRecommend, type AIMessage } from "@/lib/ai";
 import { buildBusinessSystemPrompt, supportFaq, type SupportFaqItem } from "@/lib/business-context";
 import { getDemoOrderSummary, isDemoOrderRef } from "@/lib/demo-order";
 import { buildTrackingSnapshot, getTrackingEta } from "@/lib/order-tracking";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { searchCatalog } from "@/lib/search";
-import { withQueryTimeout } from "@/lib/query-timeout";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 type IncomingBody = {
@@ -129,8 +128,8 @@ async function getTrackedOrderSummary(id: string) {
     };
   }
 
-  const order = await withQueryTimeout(
-    prisma.order.findFirst({
+  const order = await runBoundedDbQuery((db) =>
+    db.order.findFirst({
       where: {
         OR: [{ publicId: id }, { ozowReference: id }],
       },
@@ -139,9 +138,8 @@ async function getTrackedOrderSummary(id: string) {
           select: { name: true, latitude: true, longitude: true },
         },
       },
-    }),
-    null
-  );
+    })
+  ).catch(() => null);
 
   if (!order) return null;
 
@@ -209,7 +207,7 @@ function normalizeSearchResults(rows: Awaited<ReturnType<typeof searchCatalog>>)
 
 export async function POST(req: Request) {
   const whatsappSupportHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "ai-chat",
     limit: 20,
     windowMs: 60_000,

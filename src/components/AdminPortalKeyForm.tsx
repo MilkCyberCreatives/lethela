@@ -4,16 +4,34 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ADMIN_KEY_STORAGE_KEY } from "@/lib/admin-portal";
 
 export default function AdminPortalKeyForm() {
   const router = useRouter();
   const [adminKey, setAdminKey] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function submit() {
+  async function submit() {
     const normalized = adminKey.trim();
     if (!normalized) return;
-    window.localStorage.setItem(ADMIN_KEY_STORAGE_KEY, normalized);
+
+    setSubmitting(true);
+    setError(null);
+    const response = await fetch("/api/admin/access", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ adminKey: normalized }),
+    });
+    const json = await response.json().catch(() => ({}));
+    setSubmitting(false);
+
+    if (!response.ok || !json.ok) {
+      setError(json.error || "Failed to enable admin access.");
+      return;
+    }
+
     router.push("/admin");
   }
 
@@ -30,10 +48,11 @@ export default function AdminPortalKeyForm() {
         variant="outline"
         className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
         onClick={submit}
-        disabled={!adminKey.trim()}
+        disabled={!adminKey.trim() || submitting}
       >
-        Continue with key
+        {submitting ? "Continuing..." : "Continue with key"}
       </Button>
+      {error ? <p className="text-sm text-red-200">{error}</p> : null}
     </div>
   );
 }

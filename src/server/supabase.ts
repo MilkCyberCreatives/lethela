@@ -1,6 +1,14 @@
 // /src/server/supabase.ts
 import { createClient } from "@supabase/supabase-js";
 
+export function hasStorageConfig() {
+  return Boolean(
+    process.env.SUPABASE_URL?.trim() &&
+      process.env.SUPABASE_SERVICE_ROLE?.trim() &&
+      process.env.SUPABASE_BUCKET?.trim()
+  );
+}
+
 export function createAdminClient() {
   const url = process.env.SUPABASE_URL!;
   const key = process.env.SUPABASE_SERVICE_ROLE!;

@@ -81,7 +81,7 @@ function composeAnswer(top: SupportSource[]) {
 }
 
 export async function POST(req: Request) {
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "ai-support",
     limit: 15,
     windowMs: 60_000,

@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: message }, { status: 401 });
   }
 
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "ai-vendor-price",
     limit: 60,
     windowMs: 60_000,

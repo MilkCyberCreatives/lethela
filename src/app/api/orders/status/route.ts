@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getDemoOrderSummary, isDemoOrderRef } from "@/lib/demo-order";
 import { buildTrackingSnapshot, getTrackingEta } from "@/lib/order-tracking";
-import { withQueryTimeout } from "@/lib/query-timeout";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +16,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, order: getDemoOrderSummary() });
   }
 
-  const order = await withQueryTimeout(
-    prisma.order.findFirst({
+  const order = await runBoundedDbQuery((db) =>
+    db.order.findFirst({
       where: {
         OR: [{ publicId: id }, { ozowReference: id }],
       },
@@ -27,9 +26,8 @@ export async function GET(req: Request) {
           select: { name: true, latitude: true, longitude: true },
         },
       },
-    }),
-    null
-  );
+    })
+  ).catch(() => null);
 
   if (!order) {
     return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });

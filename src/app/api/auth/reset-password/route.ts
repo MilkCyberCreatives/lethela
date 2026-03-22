@@ -20,7 +20,7 @@ const BodySchema = z
   });
 
 export async function POST(req: NextRequest) {
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: "auth-reset-password",
     limit: 8,
     windowMs: 30 * 60 * 1000,

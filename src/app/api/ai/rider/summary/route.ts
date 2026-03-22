@@ -20,7 +20,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
  * }
  */
 export async function POST(req: Request) {
-  const limited = checkRateLimit({
+  const limited = await checkRateLimit({
     key: "ai-rider-summary",
     limit: 8,
     windowMs: 60 * 60 * 1000,

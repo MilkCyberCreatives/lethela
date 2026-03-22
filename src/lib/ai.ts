@@ -6,11 +6,10 @@ import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
  */
 export type AIMessage = { role: "user" | "assistant" | "system"; content: string };
 import { supportFaq } from "@/lib/business-context";
-import { prisma } from "@/lib/db";
 import { getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { buildPublicVendorCard } from "@/lib/public-catalog";
-import { withQueryTimeout } from "@/lib/query-timeout";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 import type { VisitorProfile } from "@/lib/visitor-profile";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -248,8 +247,8 @@ export async function aiRecommend(suburb: string | null, profile: VisitorProfile
   const normalizedSuburb = suburb?.split(",")[0]?.trim() || suburb?.trim() || null;
   const liveRows = shouldPreferCatalogFallback()
     ? []
-    : await withQueryTimeout(
-        prisma.vendor.findMany({
+    : await runBoundedDbQuery((db) =>
+        db.vendor.findMany({
           where: {
             isActive: true,
             status: "ACTIVE",
@@ -275,9 +274,8 @@ export async function aiRecommend(suburb: string | null, profile: VisitorProfile
               take: 40,
             },
           },
-        }),
-        []
-      );
+        })
+      ).catch(() => []);
 
   const base: AIResult["results"] =
     liveRows.length > 0

@@ -2,8 +2,7 @@
 import crypto from "crypto";
 
 /**
- * Build an Ozow Hosted Redirect URL.
- * NOTE: This follows the common Ozow hashing pattern. We'll verify against docs in a later hardening pass.
+ * Build an Ozow Hosted Redirect URL using Ozow's documented hash field ordering.
  */
 type CreateUrlArgs = {
   siteCode: string;
