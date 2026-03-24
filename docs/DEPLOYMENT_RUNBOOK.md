@@ -254,7 +254,8 @@ Then verify the live deployment:
 3. Confirm `services.storage` is `true`.
 4. Confirm `services.maps` is `true`.
 5. Confirm `services.ozow` is `true`.
-6. Confirm `catalog.activeVendors` and `catalog.activeProducts` are sensible for your launch state.
+6. Confirm `catalog.mode` is `live`.
+7. Confirm `catalog.activeVendors` and `catalog.activeProducts` are sensible for your launch state.
 
 Relevant code:
 - `src/app/api/ops/health/route.ts`
@@ -281,6 +282,7 @@ Run this exact flow on the live site:
 - `serverActions.allowedOrigins` now follows your configured site origins, so make sure `NEXT_PUBLIC_SITE_URL` and `NEXTAUTH_URL` are correct before deployment.
 - `NEXT_PUBLIC_SITE_URL` and `NEXTAUTH_URL` should match the public canonical domain exactly.
 - Avoid relying on fallback defaults for production analytics or public legal metadata.
+- Production launches now intentionally reject demo catalog mode unless `ALLOW_PRODUCTION_DEMO_CATALOG=true` is set for a temporary non-launch environment.
 
 Relevant code:
 - `src/app/api/orders/[ref]/route.ts`

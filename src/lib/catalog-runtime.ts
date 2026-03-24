@@ -5,12 +5,25 @@ function isTruthy(value?: string | null) {
 
 export type CatalogMode = "demo" | "live";
 
-export function getCatalogMode(): CatalogMode {
-  if (isTruthy(process.env.DEMO_CATALOG_MODE)) {
-    return "demo";
-  }
+function isProductionCatalogRuntime() {
+  return process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+}
 
-  if (isTruthy(process.env.FORCE_CATALOG_FALLBACK)) {
+function allowProductionDemoCatalog() {
+  return isTruthy(process.env.ALLOW_PRODUCTION_DEMO_CATALOG);
+}
+
+export function getCatalogMode(): CatalogMode {
+  const wantsDemoCatalog =
+    isTruthy(process.env.DEMO_CATALOG_MODE) || isTruthy(process.env.FORCE_CATALOG_FALLBACK);
+
+  if (wantsDemoCatalog) {
+    if (isProductionCatalogRuntime() && !allowProductionDemoCatalog()) {
+      throw new Error(
+        "Demo catalog mode is disabled for production launches. Remove DEMO_CATALOG_MODE/FORCE_CATALOG_FALLBACK or explicitly set ALLOW_PRODUCTION_DEMO_CATALOG=true for a temporary non-launch environment."
+      );
+    }
+
     return "demo";
   }
 

@@ -55,9 +55,6 @@ const nextConfig = {
       allowedOrigins: allowedServerActionOrigins,
     },
   },
-  outputFileTracingIncludes: {
-    "/*": ["./prisma/dev.db"],
-  },
   images: {
     remotePatterns: configuredRemotePatterns,
   },

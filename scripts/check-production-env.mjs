@@ -76,6 +76,11 @@ function read(key, values) {
   return (values[key] || "").trim();
 }
 
+function isTruthy(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
 const argFile = process.argv[2];
 const { values, source } = loadEnvFromArg(argFile);
 
@@ -180,6 +185,14 @@ const nextPublicOzowIsTest = requireNonPlaceholder(
 );
 if (nextPublicOzowIsTest && nextPublicOzowIsTest !== "false") {
   errors.push("NEXT_PUBLIC_OZOW_IS_TEST: must be exactly 'false' for live checkout.");
+}
+
+if (isTruthy(read("DEMO_CATALOG_MODE", values)) || isTruthy(read("FORCE_CATALOG_FALLBACK", values))) {
+  errors.push("DEMO_CATALOG_MODE/FORCE_CATALOG_FALLBACK: demo catalog mode must be disabled for a live launch.");
+}
+
+if (isTruthy(read("ALLOW_PRODUCTION_DEMO_CATALOG", values))) {
+  warnings.push("ALLOW_PRODUCTION_DEMO_CATALOG: should be unset for a real launch.");
 }
 
 warnIfMissing("PASSWORD_RESET_SECRET", "recommended so password reset does not rely on NEXTAUTH_SECRET.");
