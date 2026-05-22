@@ -62,15 +62,18 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
   const configuredUrl = process.env.DATABASE_URL?.trim();
   const provider = resolveConfiguredProvider(configuredUrl);
   const isProductionRuntime = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
+  const isProductionBuild = process.env.NEXT_PHASE === "phase-production-build";
+  const isDeployedBuild = Boolean(process.env.VERCEL);
+  const shouldEnforceProductionDatabase = isProductionRuntime && (!isProductionBuild || isDeployedBuild);
 
   if (configuredUrl) {
-    if (provider === "sqlite" && isProductionRuntime && isRelativeSqliteUrl(configuredUrl)) {
+    if (provider === "sqlite" && shouldEnforceProductionDatabase && isRelativeSqliteUrl(configuredUrl)) {
       throw new Error(
         "DATABASE_URL must point to a persistent production database. Relative SQLite paths are not allowed in production."
       );
     }
 
-    if (isProductionRuntime && provider !== "postgresql") {
+    if (shouldEnforceProductionDatabase && provider !== "postgresql") {
       throw new Error(
         "Production deployments must use PostgreSQL for scale and multi-instance safety. Set DATABASE_PROVIDER=postgresql."
       );
@@ -108,6 +111,19 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
 
 export const prismaRuntimeInfo = globalForPrisma.prismaRuntimeInfo ?? resolvePrismaRuntimeInfo();
 
+function redactDatabaseUrl(value: string) {
+  if (value.startsWith("file:")) return "file:[redacted]";
+
+  try {
+    const url = new URL(value);
+    if (url.password) url.password = "[redacted]";
+    if (url.username) url.username = "[redacted]";
+    return url.toString();
+  } catch {
+    return "[redacted]";
+  }
+}
+
 if (process.env.NODE_ENV === "production") {
   console.info("[prisma-runtime]", {
     source: prismaRuntimeInfo.source,
@@ -116,7 +132,7 @@ if (process.env.NODE_ENV === "production") {
     scalable: prismaRuntimeInfo.scalable,
     writable: prismaRuntimeInfo.writable,
     hasSeedPath: Boolean(prismaRuntimeInfo.seedPath),
-    url: prismaRuntimeInfo.url,
+    url: redactDatabaseUrl(prismaRuntimeInfo.url),
   });
 }
 

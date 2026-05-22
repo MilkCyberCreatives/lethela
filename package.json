@@ -7,13 +7,13 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "npm run prisma:generate && next build",
+    "dev": "next dev --webpack",
+    "build": "npm run prisma:generate && next build --webpack",
     "start": "next start",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "smoke": "node scripts/smoke-site.mjs",
     "check:production-env": "node scripts/check-production-env.mjs",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -38,9 +38,9 @@
     "@vis.gl/react-google-maps": "^1.5.5",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "0.7.0",
-    "js-cookie": "3.0.5",
+    "js-cookie": "^3.0.7",
     "lucide-react": "0.469.0",
-    "next": "^15.5.12",
+    "next": "^16.2.6",
     "next-auth": "^4.24.11",
     "papaparse": "^5.5.3",
     "pusher": "^5.2.0",
@@ -60,10 +60,10 @@
     "@types/web-push": "^3.6.4",
     "autoprefixer": "10.4.20",
     "eslint": "^9.37.0",
-    "eslint-config-next": "^15.5.12",
+    "eslint-config-next": "^16.2.6",
     "husky": "9.1.6",
-    "lint-staged": "15.2.10",
-    "postcss": "8.4.47",
+    "lint-staged": "^15.5.2",
+    "postcss": "^8.5.15",
     "prettier": "3.3.3",
     "prisma": "^5.22.0",
     "tailwindcss": "3.4.13",
@@ -75,5 +75,18 @@
     "*.{ts,tsx,js,jsx,json,css,md}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.15"
+    },
+    "next-auth": {
+      "uuid": "11.1.1"
+    },
+    "eslint": {
+      "minimatch": {
+        "brace-expansion": "1.1.14"
+      }
+    }
   }
 }

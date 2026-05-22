@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { logError } from "@/lib/logger";
+import { withTimeoutOrThrow } from "@/lib/query-timeout";
 
 type RateLimitConfig = {
   key: string;
@@ -82,29 +83,37 @@ function fallbackCheckRateLimit({ key, limit, windowMs, headers }: RateLimitConf
 }
 
 export async function checkRateLimit({ key, limit, windowMs, headers }: RateLimitConfig): Promise<RateLimitResult> {
+  if (!prismaRuntimeInfo.scalable) {
+    return fallbackCheckRateLimit({ key, limit, windowMs, headers });
+  }
+
   const now = Date.now();
   const identifier = clientIdentifier(headers);
   const bucketId = crypto.createHash("sha256").update(`${key}::${identifier}`).digest("hex");
   const nextResetAt = now + windowMs;
 
   try {
-    await ensureRateLimitTable();
+    await withTimeoutOrThrow(ensureRateLimitTable(), 1000, "Rate limit table setup timed out");
 
-    const rows = await prisma.$queryRaw<Array<{ count: number; reset_at: number }>>`
-      INSERT INTO app_rate_limits (bucket_id, scope_key, identifier, count, reset_at, updated_at)
-      VALUES (${bucketId}, ${key}, ${identifier}, 1, ${nextResetAt}, ${now})
-      ON CONFLICT(bucket_id) DO UPDATE SET
-        count = CASE
-          WHEN app_rate_limits.reset_at <= ${now} THEN 1
-          ELSE app_rate_limits.count + 1
-        END,
-        reset_at = CASE
-          WHEN app_rate_limits.reset_at <= ${now} THEN ${nextResetAt}
-          ELSE app_rate_limits.reset_at
-        END,
-        updated_at = ${now}
-      RETURNING count, reset_at
-    `;
+    const rows = await withTimeoutOrThrow(
+      prisma.$queryRaw<Array<{ count: number; reset_at: number }>>`
+        INSERT INTO app_rate_limits (bucket_id, scope_key, identifier, count, reset_at, updated_at)
+        VALUES (${bucketId}, ${key}, ${identifier}, 1, ${nextResetAt}, ${now})
+        ON CONFLICT(bucket_id) DO UPDATE SET
+          count = CASE
+            WHEN app_rate_limits.reset_at <= ${now} THEN 1
+            ELSE app_rate_limits.count + 1
+          END,
+          reset_at = CASE
+            WHEN app_rate_limits.reset_at <= ${now} THEN ${nextResetAt}
+            ELSE app_rate_limits.reset_at
+          END,
+          updated_at = ${now}
+        RETURNING count, reset_at
+      `,
+      1000,
+      "Rate limit check timed out"
+    );
 
     const row = rows[0];
     if (!row) {

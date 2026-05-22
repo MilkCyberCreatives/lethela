@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
-import { prisma } from "@/lib/db";
 import { getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { SITE_URL } from "@/lib/site";
 import { TOWNSHIP_CATEGORIES, categoryToSlug } from "@/lib/categories";
 
@@ -105,14 +105,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const vendorRows = shouldPreferCatalogFallback()
     ? []
-    : await prisma.vendor
-        .findMany({
+    : await runBoundedDbQuery((db) =>
+        db.vendor.findMany({
           where: { isActive: true, status: "ACTIVE" },
           select: { slug: true, updatedAt: true },
           orderBy: { updatedAt: "desc" },
           take: 5000,
         })
-        .catch(() => []);
+      ).catch(() => []);
 
   const vendorRoutes: MetadataRoute.Sitemap =
     vendorRows.length > 0

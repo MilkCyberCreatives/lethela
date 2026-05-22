@@ -20,7 +20,7 @@ export async function runBoundedDbQuery<T>(
   ms = DEFAULT_QUERY_TIMEOUT_MS
 ): Promise<T> {
   if (prismaRuntimeInfo.provider !== "postgresql") {
-    return query(prisma);
+    return withTimeoutOrThrow(query(prisma), ms, "Database query timed out");
   }
 
   const statementTimeoutMs = Math.max(250, Math.floor(ms));
