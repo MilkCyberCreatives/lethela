@@ -1,6 +1,5 @@
 /* eslint-disable @next/next/next-script-for-ga */
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk } from "next/font/google";
 import { Suspense } from "react";
 import MarketingScripts from "@/components/MarketingScripts";
 import Providers from "@/components/Providers";
@@ -9,12 +8,6 @@ import VisitorTelemetry from "@/components/VisitorTelemetry";
 import { getFooterSocialLinks, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 import "./globals.css";
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-space-grotesk",
-});
 
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION?.trim();
@@ -179,7 +172,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           />
         ) : null}
       </head>
-      <body className={`${spaceGrotesk.className} min-h-dvh bg-lethela-secondary text-white`}>
+      <body className="min-h-dvh bg-lethela-secondary text-white">
         <StructuredData data={globalSchema} />
         <MarketingScripts />
         <Providers>

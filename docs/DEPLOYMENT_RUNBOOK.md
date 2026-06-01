@@ -7,6 +7,7 @@ This runbook is for taking the current application live without changing the pro
 - Use a production-grade PostgreSQL database.
 - The application now treats PostgreSQL as the required production database profile for scale and multi-instance safety.
 - Local development can still use SQLite for convenience, but that is a dev-only profile.
+- Going forward, dashboard and backend operations should move toward Laravel as documented in `docs/LARAVEL_BACKEND_DIRECTION.md`.
 
 Relevant code:
 - `prisma/schema.prisma`

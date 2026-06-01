@@ -374,3 +374,30 @@ model PushCampaign {
   @@index([createdAt])
   @@index([segment, createdAt])
 }
+
+model RiderApplication {
+  id                    String   @id
+  fullName              String
+  email                 String
+  phone                 String
+  idNumberLast4         String
+  licenseCode           String
+  suburb                String
+  city                  String
+  vehicleType           String
+  vehicleRegistration   String?
+  availableHours        String
+  emergencyContactName  String
+  emergencyContactPhone String
+  hasSmartphone         Boolean  @default(true)
+  hasBankAccount        Boolean  @default(true)
+  experience            String?
+  aiSummary             String?
+  status                String   @default("PENDING")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@index([phone])
+}
