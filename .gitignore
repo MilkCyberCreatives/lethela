@@ -30,3 +30,4 @@ prisma/dev.db-journal
 prisma/dev-copy.db
 
 .vercel
+.env*.local
