@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import MainHeader from "@/components/MainHeader";
 import RiderApplyForm from "@/components/RiderApplyForm";
+import { Button } from "@/components/ui/button";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export const metadata: Metadata = {
@@ -50,6 +52,20 @@ export default function RiderPage() {
             <p className="mt-4 max-w-2xl text-sm text-white/80 md:text-base">
               Flexible hours with local demand zones, live order flow, and clear operations support from day one.
             </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
+                <Link href="/rider/dashboard">View rider dashboard</Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+              >
+                <a href={whatsappHref} target="_blank" rel="noreferrer">
+                  WhatsApp support
+                </a>
+              </Button>
+            </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {FLOW.map((step, index) => (

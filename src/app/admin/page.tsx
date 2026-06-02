@@ -1,10 +1,30 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Activity,
+  Bike,
+  Bell,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  LayoutDashboard,
+  LineChart,
+  Mail,
+  PackageCheck,
+  RefreshCw,
+  Search,
+  Settings,
+  ShoppingBag,
+  Store,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
 
-type DashboardView = "vendors" | "riders";
+type DashboardView = "overview" | "vendors" | "riders" | "users" | "orders" | "operations";
 type VendorStatusFilter = "PENDING" | "ACTIVE" | "REJECTED" | "ALL";
 type RiderStatusFilter = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "ALL";
 type VendorActionType = "approve" | "reject";
@@ -79,6 +99,28 @@ type NotificationChannels = {
 const VENDOR_STATUS_OPTIONS: VendorStatusFilter[] = ["PENDING", "ACTIVE", "REJECTED", "ALL"];
 const RIDER_STATUS_OPTIONS: RiderStatusFilter[] = ["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ALL"];
 
+const WORKSPACES: Array<{ id: DashboardView; label: string; icon: typeof LayoutDashboard }> = [
+  { id: "overview", label: "Owner overview", icon: LayoutDashboard },
+  { id: "vendors", label: "Vendors", icon: Store },
+  { id: "riders", label: "Riders", icon: Bike },
+  { id: "users", label: "Users", icon: Users },
+  { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "operations", label: "Operations", icon: Activity },
+];
+
+const ORDER_PIPELINE = [
+  { label: "Accepted", value: 24, color: "bg-emerald-300" },
+  { label: "Preparing", value: 17, color: "bg-amber-300" },
+  { label: "Dispatch", value: 12, color: "bg-sky-300" },
+  { label: "Issue queue", value: 3, color: "bg-lethela-primary" },
+];
+
+const USER_SIGNALS = [
+  { label: "Repeat customers", value: "68%", note: "Target cohorts for loyalty drops" },
+  { label: "Support SLA", value: "12m", note: "Median first response" },
+  { label: "Saved addresses", value: "1.9k", note: "Ready for checkout speedups" },
+];
+
 function formatDate(value: string) {
   return new Date(value).toLocaleString();
 }
@@ -102,9 +144,52 @@ function matchesSearch(query: string, values: Array<string | null | undefined>) 
   return values.some((value) => String(value || "").toLowerCase().includes(normalized));
 }
 
+function statusClass(status: string) {
+  if (["ACTIVE", "APPROVED"].includes(status)) return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
+  if (["REJECTED"].includes(status)) return "border-red-300/30 bg-red-300/10 text-red-100";
+  if (["UNDER_REVIEW"].includes(status)) return "border-amber-300/30 bg-amber-300/10 text-amber-100";
+  return "border-white/15 bg-white/5 text-white/80";
+}
+
+function MetricCard({
+  label,
+  value,
+  note,
+  icon: Icon,
+}: {
+  label: string;
+  value: string | number;
+  note: string;
+  icon: typeof LayoutDashboard;
+}) {
+  return (
+    <article className="rounded-lg border border-white/10 bg-white/[0.045] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.14em] text-white/55">{label}</p>
+          <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+        </div>
+        <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
+          <Icon className="h-5 w-5" />
+        </span>
+      </div>
+      <p className="mt-3 text-xs text-white/60">{note}</p>
+    </article>
+  );
+}
+
+function EmptyState({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-lg border border-white/15 bg-white/[0.04] p-5 text-sm text-white/75">
+      <p className="font-semibold text-white">{title}</p>
+      <p className="mt-1 text-white/60">{text}</p>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState("");
-  const [view, setView] = useState<DashboardView>("vendors");
+  const [view, setView] = useState<DashboardView>("overview");
   const [vendorStatus, setVendorStatus] = useState<VendorStatusFilter>("PENDING");
   const [riderStatus, setRiderStatus] = useState<RiderStatusFilter>("PENDING");
   const [vendorSearch, setVendorSearch] = useState("");
@@ -143,18 +228,12 @@ export default function AdminPage() {
 
     const response = await fetch("/api/admin/access", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ adminKey: normalizedKey }),
     });
     const json = await response.json();
-    if (!response.ok || !json.ok) {
-      throw new Error(json.error || "Failed to validate admin approval key.");
-    }
-    if (json.promoted && json.message) {
-      setNotice(json.message);
-    }
+    if (!response.ok || !json.ok) throw new Error(json.error || "Failed to validate admin approval key.");
+    if (json.promoted && json.message) setNotice(json.message);
   }, []);
 
   const load = useCallback(async () => {
@@ -164,18 +243,9 @@ export default function AdminPage() {
       await syncAdminAccess();
 
       const [vendorsResponse, ridersResponse, notificationsResponse] = await Promise.all([
-        fetch(`/api/admin/vendors?status=${vendorStatus}`, {
-          method: "GET",
-          cache: "no-store",
-        }),
-        fetch(`/api/admin/riders?status=${riderStatus}`, {
-          method: "GET",
-          cache: "no-store",
-        }),
-        fetch("/api/admin/notifications", {
-          method: "GET",
-          cache: "no-store",
-        }),
+        fetch(`/api/admin/vendors?status=${vendorStatus}`, { method: "GET", cache: "no-store" }),
+        fetch(`/api/admin/riders?status=${riderStatus}`, { method: "GET", cache: "no-store" }),
+        fetch("/api/admin/notifications", { method: "GET", cache: "no-store" }),
       ]);
 
       const [vendorsJson, ridersJson, notificationsJson] = await Promise.all([
@@ -184,12 +254,8 @@ export default function AdminPage() {
         notificationsResponse.json(),
       ]);
 
-      if (!vendorsResponse.ok || !vendorsJson.ok) {
-        throw new Error(vendorsJson.error || "Failed to load vendor approvals.");
-      }
-      if (!ridersResponse.ok || !ridersJson.ok) {
-        throw new Error(ridersJson.error || "Failed to load rider approvals.");
-      }
+      if (!vendorsResponse.ok || !vendorsJson.ok) throw new Error(vendorsJson.error || "Failed to load vendor approvals.");
+      if (!ridersResponse.ok || !ridersJson.ok) throw new Error(ridersJson.error || "Failed to load rider approvals.");
       if (!notificationsResponse.ok || !notificationsJson.ok) {
         throw new Error(notificationsJson.error || "Failed to load notification settings.");
       }
@@ -254,9 +320,7 @@ export default function AdminPage() {
 
       const response = await fetch(`/api/admin/vendors/${vendorId}`, {
         method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
       });
       const json = await response.json();
@@ -279,9 +343,7 @@ export default function AdminPage() {
 
       const response = await fetch(`/api/admin/riders/${id}`, {
         method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ status }),
       });
       const json = await response.json();
@@ -328,303 +390,459 @@ export default function AdminPage() {
     [riderSearch, riders]
   );
 
+  const activeRiders = riderCounts.approved;
+  const totalRiderQueue = riderCounts.pending + riderCounts.underReview;
+  const activeVendorRatio = vendorCounts.total ? Math.round((vendorCounts.active / vendorCounts.total) * 100) : 0;
+
+  const metrics = [
+    {
+      label: "Pending approvals",
+      value: totalPendingApprovals,
+      note: "Vendor and rider onboarding work waiting for the owner.",
+      icon: Clock,
+    },
+    {
+      label: "Live vendors",
+      value: vendorCounts.active,
+      note: `${activeVendorRatio}% of vendor applications are live.`,
+      icon: Store,
+    },
+    {
+      label: "Rider bench",
+      value: activeRiders,
+      note: `${totalRiderQueue} rider application(s) still need review.`,
+      icon: Bike,
+    },
+    {
+      label: "Alert health",
+      value: channels?.email.enabled || channels?.whatsapp.enabled || channels?.push.enabled ? "On" : "Setup",
+      note: "Email, WhatsApp and browser alert coverage for admin events.",
+      icon: Bell,
+    },
+  ];
+
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
       <MainHeader />
 
-      <section className="container max-w-5xl py-10">
-        <h1 className="text-2xl font-bold text-white">Approvals</h1>
-        <p className="mt-2 text-sm leading-relaxed text-white/70">
-          Review vendor and rider applications, approve or reject them, and monitor where admin alerts are going.
-        </p>
-
-        <div className="mt-6 rounded-2xl border border-white/15 bg-white/5 p-5">
-          <div className="space-y-2 text-xs text-white/70">
-            <p>
-              Pending approvals: <span className="font-semibold text-white">{totalPendingApprovals}</span>
-            </p>
-            <p>
-              Vendors pending: <span className="font-semibold text-white">{vendorCounts.pending}</span>
-            </p>
-            <p>
-              Riders pending:{" "}
-              <span className="font-semibold text-white">{riderCounts.pending + riderCounts.underReview}</span>
-            </p>
-            <p>
-              Auth mode: <span className="font-semibold text-white">{authMode || "unknown"}</span>
-            </p>
-            <p>
-              Browser push: <span className="font-semibold text-white">{pushPermission}</span>
-            </p>
-            <p>
-              Email:{" "}
-              <span className="font-semibold text-white">
-                {channels?.email.enabled ? `${channels.email.recipients} recipient(s)` : "not configured"}
-              </span>
-            </p>
-            <p>
-              WhatsApp:{" "}
-              <span className="font-semibold text-white">
-                {channels?.whatsapp.enabled ? `${channels.whatsapp.recipients} recipient(s)` : "not configured"}
-              </span>
-            </p>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-[1fr,180px,180px,auto] md:items-end">
-            <div>
-              <label className="mb-1 block text-xs text-white/70">Admin key (optional)</label>
-              <input
-                className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-                value={adminKey}
-                onChange={(event) => setAdminKey(event.target.value)}
-                placeholder="Use if ADMIN_APPROVAL_KEY is set"
-                type="password"
-              />
+      <section className="container py-8">
+        <div className="grid gap-5 lg:grid-cols-[250px,1fr]">
+          <aside className="rounded-lg border border-white/10 bg-[#090D2C] p-4 lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
+            <div className="border-b border-white/10 pb-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-white/50">Lethela owner</p>
+              <h1 className="mt-2 text-xl font-bold">Dashboard</h1>
+              <p className="mt-2 text-xs leading-relaxed text-white/60">
+                Admin, vendor, user and rider operations in one workspace.
+              </p>
             </div>
-            <div>
-              <label className="mb-1 block text-xs text-white/70">View</label>
-              <select
-                value={view}
-                onChange={(event) => setView(event.target.value as DashboardView)}
-                className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-              >
-                <option value="vendors">Vendors</option>
-                <option value="riders">Riders</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-white/70">Filter</label>
-              {view === "vendors" ? (
-                <select
-                  value={vendorStatus}
-                  onChange={(event) => setVendorStatus(event.target.value as VendorStatusFilter)}
-                  className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-                >
-                  {VENDOR_STATUS_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <select
-                  value={riderStatus}
-                  onChange={(event) => setRiderStatus(event.target.value as RiderStatusFilter)}
-                  className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-                >
-                  {RIDER_STATUS_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button className="bg-lethela-primary text-white hover:opacity-90" disabled={loading} onClick={load}>
-                {loading ? "Loading..." : "Refresh"}
-              </Button>
-              <Button
-                variant="outline"
-                className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
-                onClick={enableBrowserAlerts}
-                disabled={pushPermission === "granted"}
-              >
-                {pushPermission === "granted" ? "Browser alerts enabled" : "Enable browser alerts"}
-              </Button>
-            </div>
-          </div>
 
-          <div className="mt-4">
-            <label className="mb-1 block text-xs text-white/70">Search</label>
-            <input
-              className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-              value={view === "vendors" ? vendorSearch : riderSearch}
-              onChange={(event) =>
-                view === "vendors" ? setVendorSearch(event.target.value) : setRiderSearch(event.target.value)
-              }
-              placeholder={
-                view === "vendors"
-                  ? "Search vendors by name, slug, email, or area"
-                  : "Search riders by name, phone, vehicle, or area"
-              }
-            />
-          </div>
+            <nav className="mt-4 grid gap-2">
+              {WORKSPACES.map((item) => {
+                const Icon = item.icon;
+                const active = view === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${
+                      active
+                        ? "bg-lethela-primary text-white"
+                        : "bg-white/[0.035] text-white/70 hover:bg-white/[0.07] hover:text-white"
+                    }`}
+                    type="button"
+                    onClick={() => setView(item.id)}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
 
-          {notice ? (
-            <div className="mt-4 rounded border border-emerald-300/40 bg-emerald-300/10 px-3 py-2 text-xs text-emerald-100">
-              {notice}
+            <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.035] p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/50">Quick links</p>
+              <div className="mt-3 grid gap-2 text-sm">
+                <Link className="text-white/75 hover:text-white" href="/vendors/dashboard">
+                  Vendor dashboard
+                </Link>
+                <Link className="text-white/75 hover:text-white" href="/rider/dashboard">
+                  Rider dashboard
+                </Link>
+                <Link className="text-white/75 hover:text-white" href="/orders/LET-12345">
+                  Example order
+                </Link>
+              </div>
             </div>
-          ) : null}
-          {error ? (
-            <div className="mt-4 rounded border border-red-300/40 bg-red-300/10 px-3 py-2 text-xs text-red-100">
-              {error}
-            </div>
-          ) : null}
-        </div>
+          </aside>
 
-        {view === "vendors" ? (
-          <div className="mt-6 grid gap-4">
-            {filteredVendors.map((vendor) => {
-              const saving = savingKey === `vendor:${vendor.id}`;
-              const location = [vendor.address, vendor.suburb, vendor.city, vendor.province].filter(Boolean).join(", ");
-              const cuisines = parseCuisine(vendor.cuisine);
+          <div className="min-w-0 space-y-5">
+            <section className="rounded-lg border border-white/10 bg-[#0C1132] p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">Operations command</p>
+                  <h2 className="mt-2 text-2xl font-bold md:text-3xl">Owner dashboard</h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/68">
+                    Sego gave us the food-admin structure: KPIs, order queues, profile modules, calendar, messages and
+                    product controls. This version keeps Lethela styling and connects those ideas to admin, vendors,
+                    customers and riders.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button className="bg-lethela-primary text-white hover:opacity-90" disabled={loading} onClick={load}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    {loading ? "Refreshing" : "Refresh"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                    onClick={enableBrowserAlerts}
+                    disabled={pushPermission === "granted"}
+                  >
+                    <Bell className="mr-2 h-4 w-4" />
+                    {pushPermission === "granted" ? "Alerts enabled" : "Enable alerts"}
+                  </Button>
+                </div>
+              </div>
 
-              return (
-                <article key={vendor.id} className="rounded-2xl border border-white/15 bg-white/5 p-5">
-                  <div className="space-y-1">
+              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {metrics.map((metric) => (
+                  <MetricCard key={metric.label} {...metric} />
+                ))}
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-[1fr,180px,180px]">
+                <div>
+                  <label className="mb-1 block text-xs text-white/60">Admin key</label>
+                  <input
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black outline-none focus:ring-2 focus:ring-lethela-primary"
+                    value={adminKey}
+                    onChange={(event) => setAdminKey(event.target.value)}
+                    placeholder="Use if ADMIN_APPROVAL_KEY is set"
+                    type="password"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-white/60">Vendor filter</label>
+                  <select
+                    value={vendorStatus}
+                    onChange={(event) => setVendorStatus(event.target.value as VendorStatusFilter)}
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                  >
+                    {VENDOR_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-white/60">Rider filter</label>
+                  <select
+                    value={riderStatus}
+                    onChange={(event) => setRiderStatus(event.target.value as RiderStatusFilter)}
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                  >
+                    {RIDER_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {notice ? (
+                <div className="mt-4 rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-2 text-xs text-emerald-100">
+                  {notice}
+                </div>
+              ) : null}
+              {error ? (
+                <div className="mt-4 rounded-lg border border-red-300/40 bg-red-300/10 px-3 py-2 text-xs text-red-100">
+                  {error}
+                </div>
+              ) : null}
+            </section>
+
+            {view === "overview" ? (
+              <section className="grid gap-5 xl:grid-cols-[1.15fr,0.85fr]">
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-white/50">Order pulse</p>
+                      <h3 className="mt-1 text-lg font-semibold">Live queue overview</h3>
+                    </div>
+                    <LineChart className="h-5 w-5 text-lethela-primary" />
+                  </div>
+                  <div className="mt-5 space-y-4">
+                    {ORDER_PIPELINE.map((item) => (
+                      <div key={item.label}>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/70">{item.label}</span>
+                          <span className="font-semibold">{item.value}</span>
+                        </div>
+                        <div className="mt-2 h-2 rounded-full bg-white/10">
+                          <div className={`h-2 rounded-full ${item.color}`} style={{ width: `${Math.min(item.value * 3, 100)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-white/50">Today</p>
+                      <h3 className="mt-1 text-lg font-semibold">Owner checklist</h3>
+                    </div>
+                    <CalendarDays className="h-5 w-5 text-lethela-primary" />
+                  </div>
+                  <div className="mt-4 grid gap-3">
+                    {[
+                      "Clear pending vendor KYC approvals",
+                      "Move rider applications from pending to review",
+                      "Check delayed order exceptions",
+                      "Confirm Laravel dashboard migration milestones",
+                    ].map((item) => (
+                      <div key={item} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                        <CheckCircle2 className="h-4 w-4 text-lethela-primary" />
+                        <span className="text-sm text-white/75">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
+            {view === "vendors" ? (
+              <section className="space-y-4">
+                <SearchBox
+                  label="Vendor approvals"
+                  value={vendorSearch}
+                  placeholder="Search vendors by name, slug, email, or area"
+                  onChange={setVendorSearch}
+                />
+                {filteredVendors.map((vendor) => {
+                  const saving = savingKey === `vendor:${vendor.id}`;
+                  const location = [vendor.address, vendor.suburb, vendor.city, vendor.province].filter(Boolean).join(", ");
+                  const cuisines = parseCuisine(vendor.cuisine);
+
+                  return (
+                    <article key={vendor.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">{vendor.name}</h3>
+                          <p className="text-xs text-white/60">/{vendor.slug}</p>
+                        </div>
+                        <span className={`rounded-full border px-3 py-1 text-xs ${statusClass(vendor.status)}`}>
+                          {vendor.status} {vendor.isActive ? "Live" : "Not live"}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm text-white/78">{location || "Location not set"}</p>
+                      <p className="mt-1 text-xs text-white/60">
+                        {vendor.email || "No email provided"}
+                        {vendor.phone ? ` | ${vendor.phone}` : ""}
+                      </p>
+                      <div className="mt-4 grid gap-2 text-xs text-white/65 md:grid-cols-3">
+                        <div>Delivery: R {(vendor.deliveryFee / 100).toFixed(2)}</div>
+                        <div>Owner linked: {vendor.ownerId ? "Yes" : "No"}</div>
+                        <div>KYC: {vendor.kycIdUrl && vendor.kycProofUrl ? "Complete" : "Needs documents"}</div>
+                        <div>Halaal: {vendor.halaal ? "Yes" : "No"}</div>
+                        <div>{cuisines.length > 0 ? `Cuisine: ${cuisines.join(", ")}` : "Cuisine: Not set"}</div>
+                        <div>Applied: {formatDate(vendor.createdAt)}</div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <Button
+                          className="bg-lethela-primary text-white hover:opacity-90"
+                          disabled={saving}
+                          onClick={() => updateVendorStatus(vendor.id, "approve")}
+                        >
+                          {saving ? "Saving..." : "Approve vendor"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="border-red-300/50 bg-transparent text-red-100 hover:bg-red-200/10"
+                          disabled={saving}
+                          onClick={() => updateVendorStatus(vendor.id, "reject")}
+                        >
+                          Reject
+                        </Button>
+                        {vendor.kycIdUrl ? (
+                          <a href={vendor.kycIdUrl} target="_blank" rel="noreferrer" className="text-sm underline">
+                            ID document
+                          </a>
+                        ) : null}
+                        {vendor.kycProofUrl ? (
+                          <a href={vendor.kycProofUrl} target="_blank" rel="noreferrer" className="text-sm underline">
+                            Proof of address
+                          </a>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
+                {!loading && filteredVendors.length === 0 ? (
+                  <EmptyState title="No vendors found" text="There are no vendor applications for this filter yet." />
+                ) : null}
+              </section>
+            ) : null}
+
+            {view === "riders" ? (
+              <section className="space-y-4">
+                <SearchBox
+                  label="Rider approvals and fleet"
+                  value={riderSearch}
+                  placeholder="Search riders by name, phone, vehicle, or area"
+                  onChange={setRiderSearch}
+                />
+                <div className="grid gap-3 md:grid-cols-3">
+                  <MetricCard label="Pending" value={riderCounts.pending} note="New rider applications." icon={Clock} />
+                  <MetricCard label="Review" value={riderCounts.underReview} note="Documents being checked." icon={PackageCheck} />
+                  <MetricCard label="Approved" value={riderCounts.approved} note="Riders ready for shifts." icon={Bike} />
+                </div>
+                {filteredRiders.map((rider) => (
+                  <article key={rider.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <h2 className="text-lg font-semibold">{vendor.name}</h2>
-                        <p className="text-xs text-white/70">/{vendor.slug}</p>
+                        <h3 className="text-lg font-semibold">{rider.fullName}</h3>
+                        <p className="text-sm text-white/78">
+                          {[rider.suburb, rider.city].filter(Boolean).join(", ") || "Location not set"}
+                        </p>
+                        <p className="text-xs text-white/60">
+                          {rider.email} | {rider.phone}
+                        </p>
                       </div>
-                      <div className="text-left text-xs text-white/70 md:text-right">
-                        <div>
-                          Status:{" "}
-                          <span className="font-semibold text-white">
-                            {vendor.status} {vendor.isActive ? "(Live)" : "(Not live)"}
-                          </span>
-                        </div>
-                        <div className="mt-1">Applied: {formatDate(vendor.createdAt)}</div>
-                        <div>Updated: {formatDate(vendor.updatedAt)}</div>
-                      </div>
+                      <span className={`rounded-full border px-3 py-1 text-xs ${statusClass(rider.status)}`}>
+                        {rider.status.replaceAll("_", " ")}
+                      </span>
                     </div>
-                    <p className="text-sm text-white/80">{location || "Location not set"}</p>
-                    <p className="text-xs text-white/70">
-                      {vendor.email || "No email provided"}
-                      {vendor.phone ? ` | ${vendor.phone}` : ""}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 grid gap-2 text-xs text-white/70 md:grid-cols-2">
-                    <div>Delivery fee: R {(vendor.deliveryFee / 100).toFixed(2)}</div>
-                    <div>Owner linked: {vendor.ownerId ? "Yes" : "No"}</div>
-                    <div>KYC ID: {vendor.kycIdUrl ? "Provided" : "Missing"}</div>
-                    <div>Proof of address: {vendor.kycProofUrl ? "Provided" : "Missing"}</div>
-                    <div>Halaal: {vendor.halaal ? "Yes" : "No"}</div>
-                    <div>{cuisines.length > 0 ? `Cuisine: ${cuisines.join(", ")}` : "Cuisine: Not set"}</div>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <Button
-                      className="bg-lethela-primary text-white hover:opacity-90"
-                      disabled={saving}
-                      onClick={() => updateVendorStatus(vendor.id, "approve")}
-                    >
-                      {saving ? "Saving..." : "Approve"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="border-red-300/50 bg-transparent text-red-100 hover:bg-red-200/10"
-                      disabled={saving}
-                      onClick={() => updateVendorStatus(vendor.id, "reject")}
-                    >
-                      Reject
-                    </Button>
-                    {vendor.kycIdUrl ? (
-                      <a href={vendor.kycIdUrl} target="_blank" rel="noreferrer" className="text-sm underline">
-                        Open ID document
-                      </a>
-                    ) : null}
-                    {vendor.kycProofUrl ? (
-                      <a href={vendor.kycProofUrl} target="_blank" rel="noreferrer" className="text-sm underline">
-                        Open proof of address
-                      </a>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-
-            {!loading && filteredVendors.length === 0 ? (
-              <div className="rounded-2xl border border-white/15 bg-white/5 p-5 text-sm text-white/75">
-                No vendor applications for the selected filter.
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-4">
-            {filteredRiders.map((rider) => (
-              <article key={rider.id} className="rounded-2xl border border-white/15 bg-white/5 p-5">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-lg font-semibold">{rider.fullName}</h2>
-                      <p className="text-sm text-white/80">
-                        {[rider.suburb, rider.city].filter(Boolean).join(", ") || "Location not set"}
-                      </p>
-                      <p className="text-xs text-white/70">
-                        {rider.email} | {rider.phone}
-                      </p>
-                    </div>
-                    <div className="text-left text-xs text-white/70 md:text-right">
+                    <div className="mt-4 grid gap-2 text-xs text-white/65 md:grid-cols-3">
                       <div>
-                        Status: <span className="font-semibold text-white">{rider.status.replaceAll("_", " ")}</span>
+                        Vehicle: {rider.vehicleType}
+                        {rider.vehicleRegistration ? ` (${rider.vehicleRegistration})` : ""}
                       </div>
-                      <div className="mt-1">Applied: {formatDate(rider.createdAt)}</div>
-                      <div>Updated: {formatDate(rider.updatedAt)}</div>
+                      <div>Licence: {rider.licenseCode}</div>
+                      <div>Available: {rider.availableHours}</div>
+                      <div>ID ending: {rider.idNumberLast4}</div>
+                      <div>
+                        Emergency: {rider.emergencyContactName} ({rider.emergencyContactPhone})
+                      </div>
+                      <div>
+                        Smartphone: {rider.hasSmartphone ? "Yes" : "No"} | Bank: {rider.hasBankAccount ? "Yes" : "No"}
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-2 text-xs text-white/70 md:grid-cols-2">
-                  <div>Vehicle: {rider.vehicleType}{rider.vehicleRegistration ? ` (${rider.vehicleRegistration})` : ""}</div>
-                  <div>Licence: {rider.licenseCode}</div>
-                  <div>Available hours: {rider.availableHours}</div>
-                  <div>ID ending: {rider.idNumberLast4}</div>
-                  <div>Emergency contact: {rider.emergencyContactName} ({rider.emergencyContactPhone})</div>
-                  <div>
-                    Smartphone: {rider.hasSmartphone ? "Yes" : "No"} | Bank account: {rider.hasBankAccount ? "Yes" : "No"}
-                  </div>
-                </div>
-
-                {rider.experience ? (
-                  <p className="mt-4 text-sm text-white/75">Experience: {rider.experience}</p>
+                    {rider.aiSummary ? (
+                      <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white/75">
+                        {rider.aiSummary}
+                      </div>
+                    ) : null}
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      {(["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED"] as RiderApplicationStatus[]).map((status) => (
+                        <Button
+                          key={status}
+                          variant={status === "APPROVED" ? "default" : "outline"}
+                          className={
+                            status === "APPROVED"
+                              ? "bg-lethela-primary text-white hover:opacity-90"
+                              : "border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                          }
+                          disabled={savingKey === `rider:${rider.id}:${status}`}
+                          onClick={() => updateRiderStatus(rider.id, status)}
+                        >
+                          {savingKey === `rider:${rider.id}:${status}` ? "Saving..." : status.replaceAll("_", " ")}
+                        </Button>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+                {!loading && filteredRiders.length === 0 ? (
+                  <EmptyState title="No riders found" text="There are no rider applications for this filter yet." />
                 ) : null}
-                {rider.aiSummary ? (
-                  <div className="mt-4 rounded-lg border border-white/10 px-3 py-3 text-sm text-white/75">
-                    {rider.aiSummary}
-                  </div>
-                ) : null}
+              </section>
+            ) : null}
 
-                <div className="mt-4 flex flex-wrap gap-3">
-                  {(["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED"] as RiderApplicationStatus[]).map((status) => (
-                    <Button
-                      key={status}
-                      variant={status === "APPROVED" ? "default" : "outline"}
-                      className={
-                        status === "APPROVED"
-                          ? "bg-lethela-primary text-white hover:opacity-90"
-                          : "border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
-                      }
-                      disabled={savingKey === `rider:${rider.id}:${status}`}
-                      onClick={() => updateRiderStatus(rider.id, status)}
-                    >
-                      {savingKey === `rider:${rider.id}:${status}` ? "Saving..." : status.replaceAll("_", " ")}
-                    </Button>
-                  ))}
+            {view === "users" ? (
+              <section className="grid gap-4 md:grid-cols-3">
+                {USER_SIGNALS.map((signal) => (
+                  <MetricCard key={signal.label} label={signal.label} value={signal.value} note={signal.note} icon={Users} />
+                ))}
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-3">
+                  <h3 className="text-lg font-semibold">Customer workspace</h3>
+                  <p className="mt-2 text-sm text-white/65">
+                    This area is ready for customer profiles, loyalty segments, support inboxes, refund decisions and saved
+                    delivery addresses once those APIs are connected.
+                  </p>
                 </div>
-              </article>
-            ))}
+              </section>
+            ) : null}
 
-            {!loading && filteredRiders.length === 0 ? (
-              <div className="rounded-2xl border border-white/15 bg-white/5 p-5 text-sm text-white/75">
-                No rider applications for the selected filter.
-              </div>
+            {view === "orders" ? (
+              <section className="grid gap-4 lg:grid-cols-[1fr,0.8fr]">
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                  <h3 className="text-lg font-semibold">Order control room</h3>
+                  <div className="mt-4 grid gap-3">
+                    {ORDER_PIPELINE.map((item) => (
+                      <div key={item.label} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                        <span className="text-sm text-white/75">{item.label}</span>
+                        <span className="text-lg font-semibold">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                  <h3 className="text-lg font-semibold">Dispatch features</h3>
+                  <div className="mt-4 grid gap-3 text-sm text-white/70">
+                    <p className="rounded-lg border border-white/10 p-3">Assign orders to approved riders by area.</p>
+                    <p className="rounded-lg border border-white/10 p-3">Flag delayed vendor preparation times.</p>
+                    <p className="rounded-lg border border-white/10 p-3">Escalate refunds and customer support items.</p>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
+            {view === "operations" ? (
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <MetricCard label="Email" value={channels?.email.enabled ? channels.email.recipients : "Off"} note="Admin recipient coverage." icon={Mail} />
+                <MetricCard label="WhatsApp" value={channels?.whatsapp.enabled ? channels.whatsapp.recipients : "Off"} note="Operations escalation channel." icon={Bell} />
+                <MetricCard label="Payouts" value="Ready" note="Vendor and rider payout review lane." icon={WalletCards} />
+                <MetricCard label="Settings" value={authMode || "Local"} note={`Browser push: ${pushPermission}`} icon={Settings} />
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
+                  <h3 className="text-lg font-semibold">Laravel backend dashboard direction</h3>
+                  <p className="mt-2 text-sm text-white/65">
+                    The Laravel starter files added with this work map this dashboard into Blade layouts, routes and
+                    role-based controllers so future backend dashboard projects can move to Laravel cleanly.
+                  </p>
+                </div>
+              </section>
             ) : null}
           </div>
-        )}
-
-        <div className="mt-8 rounded-2xl border border-white/15 bg-white/5 p-4 text-xs text-white/70">
-          <p>
-            If you need API-level protection in production, set <code>ADMIN_APPROVAL_KEY</code> in your environment
-            and use it in the field above.
-          </p>
-          <p className="mt-2">
-            In development without an admin key, this page allows local approval to speed up testing.
-          </p>
         </div>
       </section>
     </main>
+  );
+}
+
+function SearchBox({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">{label}</label>
+      <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white px-3">
+        <Search className="h-4 w-4 text-black/45" />
+        <input
+          className="h-10 min-w-0 flex-1 bg-transparent text-sm text-black outline-none"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+        />
+      </div>
+    </div>
   );
 }

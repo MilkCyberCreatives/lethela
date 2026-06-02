@@ -18,6 +18,8 @@ const eslintConfig = [
       ".next/**",
       "out/**",
       "build/**",
+      "React-Sego-v1.4-30-April-2023/**",
+      "laravel-dashboard-template/**",
       "next-env.d.ts",
     ],
   },
