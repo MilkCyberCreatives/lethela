@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BarChart3, CheckCircle2, Clock, LayoutDashboard, ShieldCheck, Store, Truck, WalletCards } from "lucide-react";
+import { CheckCircle2, Clock, FileCheck2, ShieldCheck, Store, Truck, WalletCards } from "lucide-react";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import VendorSignupForm from "@/components/VendorSignupForm";
@@ -19,15 +19,15 @@ export const metadata: Metadata = {
 const STEPS = [
   {
     title: "Apply",
-    text: "Create the owner account, store profile, location, cuisine and operating defaults.",
+    text: "Send your business details, contact information and trading location.",
   },
   {
     title: "Review",
-    text: "Lethela checks KYC, coverage, food readiness and customer support details.",
+    text: "We check your store details, area coverage and required documents.",
   },
   {
-    title: "Launch",
-    text: "Approved vendors open their dashboard, publish menus and start receiving orders.",
+    title: "Start selling",
+    text: "Once approved, you can manage your menu and receive customer orders.",
   },
 ];
 
@@ -39,16 +39,16 @@ const CHECKLIST = [
 ];
 
 const DASHBOARD_MODULES = [
-  { title: "Orders", text: "Accept, prepare and track live customer orders.", icon: Truck },
-  { title: "Menu", text: "Manage products, pricing, stock and categories.", icon: Store },
-  { title: "Payouts", text: "Review settlement and delivery-fee activity.", icon: WalletCards },
-  { title: "Insights", text: "Monitor sales, feedback and operating issues.", icon: BarChart3 },
+  { title: "Orders", text: "Accept and update customer orders from your dashboard.", icon: Truck },
+  { title: "Menu", text: "Add products, prices, stock status and menu sections.", icon: Store },
+  { title: "Payouts", text: "Keep track of settlements and delivery fees.", icon: WalletCards },
+  { title: "Documents", text: "Keep owner and business documents ready for review.", icon: FileCheck2 },
 ];
 
 const READINESS = [
   { label: "Admin approval", value: "Required", icon: ShieldCheck },
-  { label: "Setup time", value: "2-5 min", icon: Clock },
-  { label: "Dashboard", value: "Included", icon: LayoutDashboard },
+  { label: "Application time", value: "2-5 min", icon: Clock },
+  { label: "Vendor account", value: "Included", icon: Store },
 ];
 
 export default function VendorRegisterPage() {
@@ -62,11 +62,11 @@ export default function VendorRegisterPage() {
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">Vendor onboarding</p>
             <h1 className="mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-5xl">
-              Launch your store on Lethela with a professional vendor dashboard.
+              Become a Lethela vendor.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 md:text-base">
-              Apply once, get reviewed by the owner, then manage orders, menu, payouts, trading hours, specials and team
-              access from a clean operations workspace.
+              Lethela helps local food and grocery businesses reach more customers. Complete the application below and
+              we will review your store before it goes live.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -127,12 +127,12 @@ export default function VendorRegisterPage() {
         <div className="container py-8">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-white/50">Dashboard after approval</p>
-              <h2 className="mt-2 text-2xl font-semibold">Everything a vendor needs to operate</h2>
+              <p className="text-xs uppercase tracking-[0.16em] text-white/50">After approval</p>
+              <h2 className="mt-2 text-2xl font-semibold">Manage your store from one place</h2>
             </div>
             <p className="max-w-xl text-sm leading-6 text-white/62">
-              The vendor dashboard follows the same clean operations direction as the admin template: focused modules,
-              clear queues and no clutter.
+              Approved vendors can update products, manage orders, set trading hours and keep store information up to
+              date.
             </p>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-3">
