@@ -26,6 +26,14 @@ const RiderApplySchema = z.object({
   experience: z.string().trim().max(1200).optional().nullable(),
 });
 
+function isLocalSqliteRuntime() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+  );
+}
+
 export async function POST(req: Request) {
   const rateLimit = await checkRateLimit({
     key: "riders-apply",
@@ -76,6 +84,18 @@ Experience: ${payload.experience || "N/A"}
   ]);
 
   const applicationId = randomUUID();
+
+  if (isLocalSqliteRuntime()) {
+    return NextResponse.json({
+      ok: true,
+      application: {
+        id: applicationId,
+        status: "PENDING",
+      },
+      summary: summary.slice(0, 1200),
+      message: "Application submitted locally. Ops will review and contact you on WhatsApp.",
+    });
+  }
 
   await createRiderApplication({
     id: applicationId,

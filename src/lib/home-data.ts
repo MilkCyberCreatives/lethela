@@ -2,7 +2,11 @@ import { prisma } from "@/lib/db";
 import { aiPredictETA, aiRecommend, aiRerankVendors } from "@/lib/ai";
 import { inferProductCategory } from "@/lib/categories";
 import { getFallbackProducts, getFallbackVendorCards } from "@/lib/catalog-fallback";
-import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import {
+  shouldFallbackWhenCatalogEmpty,
+  shouldPreferCatalogFallback,
+  shouldUseCatalogFallbackBeforeQuery,
+} from "@/lib/catalog-runtime";
 import { buildPublicVendorCard } from "@/lib/public-catalog";
 import type { ProductLite } from "@/components/ProductCard";
 import type { Vendor } from "@/types";
@@ -57,7 +61,7 @@ export async function getHomeRecommendations(suburb: string | null): Promise<Rec
 }
 
 export async function getHomeProducts(suburb: string | null, take = 24): Promise<ProductLite[]> {
-  if (shouldPreferCatalogFallback()) {
+  if (shouldUseCatalogFallbackBeforeQuery()) {
     return getFallbackProducts().slice(0, Math.min(60, Math.max(6, take)));
   }
 
@@ -95,6 +99,10 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
     []
   );
 
+  if (rows.length === 0 && shouldFallbackWhenCatalogEmpty()) {
+    return getFallbackProducts().slice(0, Math.min(60, Math.max(6, take)));
+  }
+
   return rows.map((item) => ({
     id: item.id,
     name: item.name,
@@ -120,7 +128,7 @@ function fallbackVendors(hour: number): Vendor[] {
 
 export async function getHomeVendors(suburb: string | null, take = 18): Promise<Vendor[]> {
   const hour = new Date().getHours();
-  if (shouldPreferCatalogFallback()) {
+  if (shouldUseCatalogFallbackBeforeQuery()) {
     return fallbackVendors(hour).slice(0, Math.min(60, Math.max(6, take)));
   }
 
@@ -158,7 +166,7 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
   );
 
   if (dbVendors.length === 0) {
-    return shouldPreferCatalogFallback() ? fallbackVendors(hour) : [];
+    return shouldPreferCatalogFallback() || shouldFallbackWhenCatalogEmpty() ? fallbackVendors(hour) : [];
   }
 
   const mapped = dbVendors.map((vendor: VendorWithAlcohol) => {

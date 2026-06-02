@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import OrderMap from "@/components/OrderMap";
@@ -16,8 +16,6 @@ import {
   normalizeTrackingStatus,
   type TrackingOrderStatus,
 } from "@/lib/order-tracking";
-
-type Props = { params: { ref: string } };
 
 type OrderItem = {
   itemId?: string;
@@ -104,9 +102,13 @@ function buildFallbackTracking(order: OrderPayload): TrackingPayload {
   };
 }
 
-export default function OrderTrackingPage({ params }: Props) {
+export default function OrderTrackingPage() {
+  const params = useParams<{ ref?: string | string[] }>();
   const searchParams = useSearchParams();
-  const [ref] = useState(() => normalizeRef(params.ref));
+  const [ref] = useState(() => {
+    const value = Array.isArray(params?.ref) ? params.ref[0] : params?.ref;
+    return normalizeRef(value || "");
+  });
   const [order, setOrder] = useState<OrderPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

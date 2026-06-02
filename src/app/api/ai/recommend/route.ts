@@ -6,6 +6,14 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { getVisitorProfile } from "@/lib/visitor-profile";
 import { VISITOR_COOKIE_NAME } from "@/lib/visitor";
 
+function isLocalSqliteRuntime() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+  );
+}
+
 export async function POST(req: Request) {
   const limited = await checkRateLimit({
     key: "ai-recommend",
@@ -22,7 +30,7 @@ export async function POST(req: Request) {
 
   const { suburb } = (await req.json().catch(() => ({}))) as { suburb?: string | null };
   const visitorId = (await cookies()).get(VISITOR_COOKIE_NAME)?.value?.trim() || "";
-  const profile = await getVisitorProfile(visitorId || null);
+  const profile = isLocalSqliteRuntime() ? null : await getVisitorProfile(visitorId || null);
   const out = await aiRecommend(suburb ?? null, profile);
   return NextResponse.json(out, {
     headers: {

@@ -4,10 +4,31 @@ import { requireAdminRequest } from "@/lib/admin-auth";
 import { getAdminNotificationChannelStatus } from "@/lib/admin-notifications";
 import { countRiderApplications } from "@/lib/rider-applications";
 
+function isLocalSqliteRuntime() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+  );
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminRequest(req);
   if (!guard.ok) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
+  }
+
+  if (isLocalSqliteRuntime()) {
+    return NextResponse.json({
+      ok: true,
+      pendingCount: 0,
+      riderPendingCount: 0,
+      riderUnderReviewCount: 0,
+      totalPendingApprovals: 0,
+      latestPending: [],
+      recentCampaigns: [],
+      channels: getAdminNotificationChannelStatus(),
+    });
   }
 
   const [pendingCount, latestPending, riderPendingCount, riderUnderReviewCount, recentCampaigns] = await Promise.all([

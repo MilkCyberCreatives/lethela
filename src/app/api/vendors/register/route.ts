@@ -40,6 +40,14 @@ function isApprovedVendor(status: string | null | undefined, isActive: boolean) 
   return isActive && (normalizedStatus === "ACTIVE" || normalizedStatus === "APPROVED" || normalizedStatus === "");
 }
 
+function isLocalSqliteRuntime() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+  );
+}
+
 async function ensureUniqueSlug(baseName: string) {
   const base = slugify(baseName) || "vendor";
   let slug = base;
@@ -144,6 +152,31 @@ export async function POST(req: Request) {
   }
 
   const payload = parsed.data;
+  if (isLocalSqliteRuntime()) {
+    const vendor = {
+      id: `local-vendor-${Date.now()}`,
+      name: payload.name,
+      slug: slugify(payload.name) || "local-vendor",
+      status: "PENDING",
+      isActive: false,
+    };
+
+    const response = NextResponse.json({
+      ok: true,
+      pending: true,
+      message: "Application submitted locally. An admin must approve your vendor before it goes live.",
+      vendor,
+    });
+    attachVendorSession(response, {
+      userId: `local-user-${Date.now()}`,
+      vendorId: vendor.id,
+      vendorSlug: vendor.slug,
+      role: "OWNER",
+      email: payload.email,
+    });
+    return response;
+  }
+
   const existingUser = await prisma.user.findUnique({
     where: { email: payload.email },
     select: {

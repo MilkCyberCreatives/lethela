@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
 import { readPreferredLocation } from "@/lib/location-preference";
@@ -20,7 +20,8 @@ export default function CartDrawer() {
   const dec = useCart((state) => state.dec);
   const remove = useCart((state) => state.remove);
   const clear = useCart((state) => state.clear);
-  const subtotal = useCart((state) => state.subtotal());
+  const cartSubtotal = useCart((state) => state.subtotal());
+  const [mounted, setMounted] = useState(false);
   const [deliveryQuote, setDeliveryQuote] = useState({
     baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
     deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
@@ -29,10 +30,18 @@ export default function CartDrawer() {
     extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   });
   const [quoteLoading, setQuoteLoading] = useState(false);
-  const [preferredLocation, setPreferredLocation] = useState(() => readPreferredLocation());
+  const [preferredLocation, setPreferredLocation] = useState<ReturnType<typeof readPreferredLocation>>(null);
+  const visibleItems = useMemo(() => (mounted ? items : []), [items, mounted]);
+  const subtotal = mounted ? cartSubtotal : 0;
   const destinationSuburb = preferredLocation?.label || "Klipfontein View, Midrand";
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const syncLocation = () => {
       setPreferredLocation(readPreferredLocation());
     };
@@ -49,10 +58,12 @@ export default function CartDrawer() {
       window.removeEventListener("focus", syncLocation);
       document.removeEventListener("visibilitychange", syncLocation);
     };
-  }, [open]);
+  }, [mounted, open]);
 
   useEffect(() => {
-    const vendorId = items[0]?.vendorId;
+    if (!mounted) return;
+
+    const vendorId = visibleItems[0]?.vendorId;
     if (!vendorId) {
       setDeliveryQuote({
         baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
@@ -104,12 +115,12 @@ export default function CartDrawer() {
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [destinationSuburb, items, preferredLocation]);
+  }, [destinationSuburb, mounted, preferredLocation, visibleItems]);
 
   const delivery = deliveryQuote.deliveryCents;
   const total = subtotal + delivery;
   const whatsappLink = buildWhatsAppOrderLink({
-    items: items.map((item) => ({
+    items: visibleItems.map((item) => ({
       name: item.name,
       qty: item.qty,
       priceCents: item.priceCents,
@@ -118,7 +129,7 @@ export default function CartDrawer() {
     deliveryCents: delivery,
     totalCents: total,
     destinationSuburb,
-    vendorSlug: items[0]?.vendorSlug || null,
+    vendorSlug: visibleItems[0]?.vendorSlug || null,
   });
 
   return (
@@ -141,10 +152,10 @@ export default function CartDrawer() {
         </div>
 
         <div className="h-[calc(100%-208px)] space-y-3 overflow-y-auto p-4">
-          {items.length === 0 ? (
+          {visibleItems.length === 0 ? (
             <p className="text-white/80">Your cart is empty.</p>
           ) : (
-            items.map((item) => (
+            visibleItems.map((item) => (
               <div key={item.itemId} className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
                 {item.image ? (
                   <div className="relative h-16 w-16 overflow-hidden rounded">
@@ -209,25 +220,25 @@ export default function CartDrawer() {
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button asChild className="flex-1 bg-lethela-primary" disabled={items.length === 0}>
+            <Button asChild className="flex-1 bg-lethela-primary" disabled={visibleItems.length === 0}>
               <Link href="/checkout" onClick={closeCart}>
                 Checkout
               </Link>
             </Button>
-            <Button asChild variant="outline" className="border-white/20 text-white" disabled={items.length === 0}>
+            <Button asChild variant="outline" className="border-white/20 text-white" disabled={visibleItems.length === 0}>
               <a
                 href={whatsappLink}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => {
-                  trackWhatsAppClick("cart_drawer", { item_count: items.length });
+                  trackWhatsAppClick("cart_drawer", { item_count: visibleItems.length });
                   closeCart();
                 }}
               >
                 WhatsApp order
               </a>
             </Button>
-            <Button variant="outline" className="border-white/20 text-white" onClick={clear} disabled={items.length === 0}>
+            <Button variant="outline" className="border-white/20 text-white" onClick={clear} disabled={visibleItems.length === 0}>
               Clear
             </Button>
           </div>

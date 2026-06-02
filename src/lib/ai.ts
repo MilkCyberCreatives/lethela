@@ -7,7 +7,11 @@ import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 export type AIMessage = { role: "user" | "assistant" | "system"; content: string };
 import { supportFaq } from "@/lib/business-context";
 import { getFallbackVendorCards } from "@/lib/catalog-fallback";
-import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import {
+  shouldFallbackWhenCatalogEmpty,
+  shouldPreferCatalogFallback,
+  shouldUseCatalogFallbackBeforeQuery,
+} from "@/lib/catalog-runtime";
 import { buildPublicVendorCard } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import type { VisitorProfile } from "@/lib/visitor-profile";
@@ -245,7 +249,7 @@ function heuristicRecommend(base: AIResult["results"], profile: VisitorProfile |
 
 export async function aiRecommend(suburb: string | null, profile: VisitorProfile | null = null): Promise<AIResult> {
   const normalizedSuburb = suburb?.split(",")[0]?.trim() || suburb?.trim() || null;
-  const liveRows = shouldPreferCatalogFallback()
+  const liveRows = shouldUseCatalogFallbackBeforeQuery()
     ? []
     : await runBoundedDbQuery((db) =>
         db.vendor.findMany({
@@ -309,7 +313,15 @@ export async function aiRecommend(suburb: string | null, profile: VisitorProfile
             vendor: vendor.name,
             slug: vendor.slug,
           }))
-        : [];
+        : shouldFallbackWhenCatalogEmpty()
+          ? getFallbackVendorCards().map((vendor) => ({
+              title: vendor.name,
+              subtitle: `${vendor.cuisines[0] || "Delivery"} - ${vendor.baseEtaMin}-${vendor.baseEtaMin + 5} min`,
+              image: vendor.cover,
+              vendor: vendor.name,
+              slug: vendor.slug,
+            }))
+          : [];
 
   const prioritized = base;
   const aiRanked = profile ? await openAIRecommend(prioritized, suburb, profile) : null;

@@ -4,6 +4,14 @@ import { requireAdminRequest } from "@/lib/admin-auth";
 
 const STATUS_VALUES = new Set(["PENDING", "ACTIVE", "REJECTED", "ALL"]);
 
+function isLocalSqliteRuntime() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+  );
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminRequest(req);
   if (!guard.ok) {
@@ -13,6 +21,21 @@ export async function GET(req: NextRequest) {
   const rawStatus = (req.nextUrl.searchParams.get("status") || "PENDING").toUpperCase();
   if (!STATUS_VALUES.has(rawStatus)) {
     return NextResponse.json({ ok: false, error: "Invalid status filter." }, { status: 400 });
+  }
+
+  if (isLocalSqliteRuntime()) {
+    return NextResponse.json({
+      ok: true,
+      authMode: guard.mode,
+      pendingCount: 0,
+      counts: {
+        pending: 0,
+        active: 0,
+        rejected: 0,
+        total: 0,
+      },
+      items: [],
+    });
   }
 
   const where =

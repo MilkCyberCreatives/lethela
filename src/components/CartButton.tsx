@@ -1,6 +1,7 @@
 // src/components/CartButton.tsx
 "use client";
 
+import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/store/cart";
 import { useUIStore } from "@/store/ui";
@@ -15,6 +16,11 @@ import { Button } from "@/components/ui/button";
 export default function CartButton() {
   const count = useCart((state) => state.count());
   const openCart = useUIStore((state) => state.openCart);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <Button
@@ -26,7 +32,7 @@ export default function CartButton() {
       {/* Icon stays white; no hover color changes */}
       <ShoppingCart className="h-5 w-5 text-white" />
 
-      {count > 0 && (
+      {mounted && count > 0 && (
         <span
           className="absolute -top-2 -right-2 rounded-full bg-lethela-primary text-white
                      text-[10px] leading-none px-1.5 py-1"

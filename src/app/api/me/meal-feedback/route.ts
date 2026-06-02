@@ -11,7 +11,21 @@ const MealFeedbackSchema = z.object({
   comment: z.string().trim().max(280).optional().nullable(),
 });
 
+function isLocalSqliteRuntime() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+  );
+}
+
+const emptyFeedback = { favorites: [], ratings: {}, comments: {} };
+
 export async function GET() {
+  if (isLocalSqliteRuntime()) {
+    return NextResponse.json({ ok: true, feedback: emptyFeedback });
+  }
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: "Sign in required." }, { status: 401 });
@@ -22,6 +36,18 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
+  if (isLocalSqliteRuntime()) {
+    const body = await req.json().catch(() => ({}));
+    const parsed = MealFeedbackSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid meal feedback payload.", fieldErrors: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json({ ok: true, feedback: emptyFeedback });
+  }
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: "Sign in required." }, { status: 401 });

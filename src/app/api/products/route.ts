@@ -1,7 +1,12 @@
 // src/app/api/products/route.ts
 import { NextResponse } from "next/server";
 import { getFallbackProducts } from "@/lib/catalog-fallback";
-import { getCatalogMode, shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import {
+  getCatalogMode,
+  shouldFallbackWhenCatalogEmpty,
+  shouldPreferCatalogFallback,
+  shouldUseCatalogFallbackBeforeQuery,
+} from "@/lib/catalog-runtime";
 import { inferProductCategory } from "@/lib/categories";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 
@@ -36,7 +41,7 @@ export async function GET(req: Request) {
     };
   }
 
-  const dbItems = shouldPreferCatalogFallback()
+  const dbItems = shouldUseCatalogFallbackBeforeQuery()
     ? []
     : await runBoundedDbQuery((db) =>
         db.product.findMany({
@@ -74,7 +79,9 @@ export async function GET(req: Request) {
         }))
       : shouldPreferCatalogFallback()
         ? getFallbackProducts()
-        : [];
+        : shouldFallbackWhenCatalogEmpty()
+          ? getFallbackProducts()
+          : [];
 
   const filtered = category
     ? items.filter((item) => item.category.toLowerCase() === category.toLowerCase())

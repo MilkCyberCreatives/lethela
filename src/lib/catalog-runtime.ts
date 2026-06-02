@@ -37,3 +37,19 @@ export function isDemoCatalogMode() {
 export function shouldPreferCatalogFallback() {
   return isDemoCatalogMode();
 }
+
+export function shouldFallbackWhenCatalogEmpty() {
+  return !isProductionCatalogRuntime();
+}
+
+export function isLocalSqliteCatalogRuntime() {
+  return Boolean(
+    !isProductionCatalogRuntime() &&
+      (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+        process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+  );
+}
+
+export function shouldUseCatalogFallbackBeforeQuery() {
+  return shouldPreferCatalogFallback() || isLocalSqliteCatalogRuntime();
+}

@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { aiPredictETA } from "@/lib/ai";
 import { getFallbackVendorCards } from "@/lib/catalog-fallback";
-import { getCatalogMode, shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import {
+  getCatalogMode,
+  shouldFallbackWhenCatalogEmpty,
+  shouldPreferCatalogFallback,
+  shouldUseCatalogFallbackBeforeQuery,
+} from "@/lib/catalog-runtime";
 import { buildPublicVendorCard } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 
@@ -28,7 +33,7 @@ export async function GET(req: Request) {
       }>
     | undefined;
 
-  if (shouldPreferCatalogFallback()) {
+  if (shouldUseCatalogFallbackBeforeQuery()) {
     const fallback = getFallbackVendorCards().slice(0, take);
     items = fallback.map((vendor) => {
       const etaBase = aiPredictETA(vendor.distanceKm, vendor.baseEtaMin, hour);
@@ -90,7 +95,7 @@ export async function GET(req: Request) {
     }
   }
 
-  if (items.length === 0 && shouldPreferCatalogFallback()) {
+  if (items.length === 0 && (shouldPreferCatalogFallback() || shouldFallbackWhenCatalogEmpty())) {
     const fallback = getFallbackVendorCards().slice(0, take);
 
     items = fallback.map((vendor) => {

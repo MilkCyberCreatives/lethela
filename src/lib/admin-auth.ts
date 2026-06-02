@@ -10,6 +10,10 @@ export async function requireAdminRequest(req: NextRequest): Promise<AdminGuardR
   const adminKey = process.env.ADMIN_APPROVAL_KEY?.trim();
   const providedKey = req.headers.get("x-admin-key")?.trim();
   const accessCookie = req.cookies.get(ADMIN_ACCESS_COOKIE_NAME)?.value?.trim();
+  const isLocalSqlite =
+    process.env.NODE_ENV !== "production" &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"));
 
   if (adminKey && providedKey && providedKey === adminKey) {
     return { ok: true, mode: "key" };
@@ -17,6 +21,10 @@ export async function requireAdminRequest(req: NextRequest): Promise<AdminGuardR
 
   if (accessCookie && readAdminAccessToken(accessCookie)) {
     return { ok: true, mode: "key-cookie" };
+  }
+
+  if (isLocalSqlite) {
+    return { ok: true, mode: "dev-bypass" };
   }
 
   try {

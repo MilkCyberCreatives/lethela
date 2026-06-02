@@ -9,6 +9,7 @@ import { quoteDelivery } from "@/lib/pricing";
 import { z } from "zod";
 import { withSentryRoute } from "@/server/withSentryRoute";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { DEMO_ORDER_REF } from "@/lib/demo-order";
 
 const BodySchema = z.object({
   vendorId: z.string().min(1),
@@ -38,6 +39,14 @@ const BodySchema = z.object({
   }
 );
 
+function isLocalSqliteRuntime() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+  );
+}
+
 export const POST = withSentryRoute(async (req: NextRequest) => {
   const limited = await checkRateLimit({
     key: "ozow-create",
@@ -58,19 +67,25 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     process.env.NEXTAUTH_URL?.trim() ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
-  const siteCode = process.env.OZOW_SITE_CODE || "";
-  const privateKey = process.env.OZOW_PRIVATE_KEY || "";
-  if (!siteCode || !privateKey) {
-    return NextResponse.json(
-      { ok: false, error: "OZOW_SITE_CODE or OZOW_PRIVATE_KEY not set" },
-      { status: 500 }
-    );
-  }
-
   const body = await req.json().catch(() => ({}));
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const siteCode = process.env.OZOW_SITE_CODE || "";
+  const privateKey = process.env.OZOW_PRIVATE_KEY || "";
+  if (!siteCode || !privateKey) {
+    if (isLocalSqliteRuntime()) {
+      const trackingToken = createOrderTrackingToken(DEMO_ORDER_REF);
+      const redirectUrl = `${baseUrl}/checkout/success?ref=${encodeURIComponent(DEMO_ORDER_REF)}&t=${encodeURIComponent(trackingToken)}`;
+      return NextResponse.json({ ok: true, redirectUrl, ref: DEMO_ORDER_REF, localDemo: true });
+    }
+
+    return NextResponse.json(
+      { ok: false, error: "OZOW_SITE_CODE or OZOW_PRIVATE_KEY not set" },
+      { status: 500 }
+    );
   }
   const {
     vendorId,

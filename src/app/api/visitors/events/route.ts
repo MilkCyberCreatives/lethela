@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/db";
+import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { VISITOR_COOKIE_NAME } from "@/lib/visitor";
 
@@ -102,6 +102,10 @@ export async function POST(req: Request) {
   const type = String(body.type || "").trim();
   if (!visitorId || !ALLOWED_EVENT_TYPES.has(type)) {
     return NextResponse.json({ ok: false, error: "Invalid visitor event payload." }, { status: 400 });
+  }
+
+  if (process.env.NODE_ENV !== "production" && prismaRuntimeInfo.provider === "sqlite") {
+    return NextResponse.json({ ok: true, stored: false });
   }
 
   let userId: string | undefined;
