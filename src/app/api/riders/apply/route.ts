@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { aiChat } from "@/lib/ai";
+import { notifyAdminsOfRiderApplication, notifyApplicant } from "@/lib/application-notifications";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createRiderApplication } from "@/lib/rider-applications";
 
@@ -100,7 +101,8 @@ Experience: ${payload.experience || "N/A"}
         status: "PENDING",
       },
       summary: summary.slice(0, 1200),
-      message: "Application submitted locally. Ops will review and contact you on WhatsApp.",
+      message:
+        "Application submitted locally. Ops will review and contact you by email and WhatsApp.",
     });
   }
 
@@ -124,6 +126,26 @@ Experience: ${payload.experience || "N/A"}
     aiSummary: summary.slice(0, 1200),
   });
 
+  await Promise.all([
+    notifyAdminsOfRiderApplication({
+      id: applicationId,
+      fullName: payload.fullName,
+      email: payload.email,
+      phone: payload.phone,
+      suburb: payload.suburb,
+      city: payload.city,
+      vehicleType: payload.vehicleType,
+    }),
+    notifyApplicant({
+      kind: "rider",
+      name: payload.fullName,
+      email: payload.email,
+      phone: payload.phone,
+      status: "submitted",
+      reference: applicationId,
+    }),
+  ]);
+
   return NextResponse.json({
     ok: true,
     application: {
@@ -131,6 +153,7 @@ Experience: ${payload.experience || "N/A"}
       status: "PENDING",
     },
     summary: summary.slice(0, 1200),
-    message: "Application submitted. Ops will review and contact you on WhatsApp.",
+    message:
+      "Application submitted. We sent a confirmation and will contact you by email and WhatsApp when the owner approves it.",
   });
 }

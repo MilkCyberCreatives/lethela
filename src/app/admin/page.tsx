@@ -96,6 +96,11 @@ type NotificationChannels = {
   push: { enabled: boolean };
 };
 
+type ApplicantNotificationChannels = {
+  email: { enabled: boolean };
+  whatsapp: { enabled: boolean };
+};
+
 const VENDOR_STATUS_OPTIONS: VendorStatusFilter[] = ["PENDING", "ACTIVE", "REJECTED", "ALL"];
 const RIDER_STATUS_OPTIONS: RiderStatusFilter[] = [
   "PENDING",
@@ -224,6 +229,9 @@ export default function AdminPage() {
     total: 0,
   });
   const [channels, setChannels] = useState<NotificationChannels | null>(null);
+  const [applicantChannels, setApplicantChannels] = useState<ApplicantNotificationChannels | null>(
+    null,
+  );
   const [totalPendingApprovals, setTotalPendingApprovals] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -306,6 +314,7 @@ export default function AdminPage() {
         },
       );
       setChannels(notificationsJson.channels ?? null);
+      setApplicantChannels(notificationsJson.applicantChannels ?? null);
       setTotalPendingApprovals(Number(notificationsJson.totalPendingApprovals ?? 0));
       setAuthMode(vendorsJson.authMode ?? ridersJson.authMode ?? null);
     } catch (err: unknown) {
@@ -446,10 +455,14 @@ export default function AdminPage() {
     {
       label: "Alert health",
       value:
-        channels?.email.enabled || channels?.whatsapp.enabled || channels?.push.enabled
+        channels?.email.enabled ||
+        channels?.whatsapp.enabled ||
+        channels?.push.enabled ||
+        applicantChannels?.email.enabled ||
+        applicantChannels?.whatsapp.enabled
           ? "On"
           : "Setup",
-      note: "Email, WhatsApp and browser alert coverage for admin events.",
+      note: "Email, WhatsApp and browser alert coverage for admin and applicant events.",
       icon: Bell,
     },
   ];
@@ -938,6 +951,18 @@ export default function AdminPage() {
                   icon={Bell}
                 />
                 <MetricCard
+                  label="Applicant email"
+                  value={applicantChannels?.email.enabled ? "On" : "Off"}
+                  note="Vendor and rider confirmations and approval notices."
+                  icon={Mail}
+                />
+                <MetricCard
+                  label="Applicant WhatsApp"
+                  value={applicantChannels?.whatsapp.enabled ? "On" : "Off"}
+                  note="Compulsory phone-based onboarding updates."
+                  icon={Bell}
+                />
+                <MetricCard
                   label="Payouts"
                   value="Ready"
                   note="Vendor and rider payout review lane."
@@ -950,12 +975,18 @@ export default function AdminPage() {
                   icon={Settings}
                 />
                 <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
-                  <h3 className="text-lg font-semibold">Laravel backend dashboard direction</h3>
-                  <p className="mt-2 text-sm text-white/65">
-                    The Laravel starter files added with this work map this dashboard into Blade
-                    layouts, routes and role-based controllers so future backend dashboard projects
-                    can move to Laravel cleanly.
-                  </p>
+                  <h3 className="text-lg font-semibold">Launch communication workflow</h3>
+                  <div className="mt-4 grid gap-3 text-sm text-white/70 md:grid-cols-3">
+                    <p className="rounded-lg border border-white/10 p-3">
+                      Vendor registration sends an applicant confirmation and owner alert.
+                    </p>
+                    <p className="rounded-lg border border-white/10 p-3">
+                      Rider registration sends an applicant confirmation and owner alert.
+                    </p>
+                    <p className="rounded-lg border border-white/10 p-3">
+                      Approval or rejection sends a decision notice by email and WhatsApp.
+                    </p>
+                  </div>
                 </div>
               </section>
             ) : null}

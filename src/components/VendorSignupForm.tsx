@@ -336,7 +336,7 @@ export default function VendorSignupForm() {
           </h3>
           <div className="mt-3 grid gap-3">
             <p className="text-sm text-white/75">
-              Owner ID and proof of address will be requested manually on WhatsApp after
+              Owner ID and proof of address will be requested by email or WhatsApp after
               registration.
             </p>
             <label className="md:col-span-2 inline-flex items-center gap-2 text-sm text-white/80">

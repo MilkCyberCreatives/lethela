@@ -1,6 +1,16 @@
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 import { pusherServer } from "@/lib/pusher-server";
 import { prisma } from "@/lib/db";
+import {
+  escapeHtml,
+  hasEmailChannel,
+  hasWhatsAppChannel,
+  normalizeWhatsAppRecipient,
+  sendResendEmail,
+  sendTwilioWhatsApp,
+  settleWithin,
+  splitCsv,
+} from "@/lib/notification-channels";
 
 export type AdminVendorApplicationNotification = {
   id: string;
@@ -12,34 +22,6 @@ export type AdminVendorApplicationNotification = {
   city?: string | null;
   createdAt?: Date | string | null;
 };
-
-function settleWithin(task: Promise<unknown>, timeoutMs: number) {
-  return Promise.race([
-    task.catch(() => undefined),
-    new Promise((resolve) => setTimeout(resolve, timeoutMs)),
-  ]);
-}
-
-function splitCsv(value?: string | null) {
-  return String(value || "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function normalizeWhatsAppRecipient(value: string) {
-  const raw = value.trim();
-  if (!raw) return "";
-  if (raw.toLowerCase().startsWith("whatsapp:")) return raw;
-  const digits = raw.replace(/[^\d+]/g, "");
-  return `whatsapp:${digits.startsWith("+") ? digits : `+${digits}`}`;
-}
-
-function normalizeWhatsAppSender(value?: string | null) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  return raw.toLowerCase().startsWith("whatsapp:") ? raw : `whatsapp:${raw}`;
-}
 
 function adminNotificationEmails() {
   return splitCsv(process.env.ADMIN_NOTIFICATION_EMAILS || process.env.NEXT_PUBLIC_SUPPORT_EMAIL);
@@ -81,13 +63,13 @@ function buildHtmlMessage(application: AdminVendorApplicationNotification, pendi
   return `
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
       <h2 style="margin:0 0 12px">New vendor application received</h2>
-      <p style="margin:0 0 16px">A vendor has applied on ${SITE_NAME}. You can review it from the admin approvals page.</p>
+      <p style="margin:0 0 16px">A vendor has applied on ${escapeHtml(SITE_NAME)}. You can review it from the admin approvals page.</p>
       <ul style="padding-left:20px;margin:0 0 16px">
-        <li><strong>Business:</strong> ${application.name}</li>
-        <li><strong>Slug:</strong> /${application.slug}</li>
-        <li><strong>Email:</strong> ${application.email || "Not provided"}</li>
-        <li><strong>Phone:</strong> ${application.phone || "Not provided"}</li>
-        <li><strong>Location:</strong> ${location}</li>
+        <li><strong>Business:</strong> ${escapeHtml(application.name)}</li>
+        <li><strong>Slug:</strong> /${escapeHtml(application.slug)}</li>
+        <li><strong>Email:</strong> ${escapeHtml(application.email || "Not provided")}</li>
+        <li><strong>Phone:</strong> ${escapeHtml(application.phone || "Not provided")}</li>
+        <li><strong>Location:</strong> ${escapeHtml(location)}</li>
         <li><strong>Pending applications:</strong> ${pendingCount}</li>
       </ul>
       <p style="margin:0"><a href="${notificationsBaseUrl()}" style="color:#B5001B">Open admin approvals</a></p>
@@ -99,96 +81,40 @@ async function sendResendEmailNotification(
   application: AdminVendorApplicationNotification,
   pendingCount: number,
 ) {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.ADMIN_NOTIFICATION_EMAIL_FROM?.trim();
   const to = adminNotificationEmails();
 
-  if (!apiKey || !from || to.length === 0) return { delivered: false as const };
+  if (to.length === 0) return { delivered: false as const };
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject: `New vendor application: ${application.name}`,
-      text: buildPlainTextMessage(application, pendingCount),
-      html: buildHtmlMessage(application, pendingCount),
-    }),
+  return sendResendEmail({
+    to,
+    subject: `New vendor application: ${application.name}`,
+    text: buildPlainTextMessage(application, pendingCount),
+    html: buildHtmlMessage(application, pendingCount),
   });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(text || "Failed to send admin email notification.");
-  }
-
-  return { delivered: true as const, recipients: to.length };
 }
 
 async function sendTwilioWhatsAppNotification(
   application: AdminVendorApplicationNotification,
   pendingCount: number,
 ) {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim();
-  const authToken = process.env.TWILIO_AUTH_TOKEN?.trim();
-  const from = normalizeWhatsAppSender(process.env.TWILIO_WHATSAPP_FROM);
   const recipients = adminWhatsAppRecipients();
 
-  if (!accountSid || !authToken || !from || recipients.length === 0) {
-    return { delivered: false as const };
-  }
+  if (recipients.length === 0) return { delivered: false as const };
 
-  const body = buildPlainTextMessage(application, pendingCount);
-  const auth = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
-
-  await Promise.all(
-    recipients.map(async (to) => {
-      const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${auth}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            To: to,
-            From: from,
-            Body: body,
-          }).toString(),
-        },
-      );
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => "");
-        throw new Error(text || "Failed to send admin WhatsApp notification.");
-      }
-    }),
-  );
-
-  return { delivered: true as const, recipients: recipients.length };
+  return sendTwilioWhatsApp({
+    to: recipients,
+    body: buildPlainTextMessage(application, pendingCount),
+  });
 }
 
 export function getAdminNotificationChannelStatus() {
   return {
     email: {
-      enabled: Boolean(
-        process.env.RESEND_API_KEY?.trim() &&
-          process.env.ADMIN_NOTIFICATION_EMAIL_FROM?.trim() &&
-          adminNotificationEmails().length > 0,
-      ),
+      enabled: Boolean(hasEmailChannel() && adminNotificationEmails().length > 0),
       recipients: adminNotificationEmails().length,
     },
     whatsapp: {
-      enabled: Boolean(
-        process.env.TWILIO_ACCOUNT_SID?.trim() &&
-          process.env.TWILIO_AUTH_TOKEN?.trim() &&
-          normalizeWhatsAppSender(process.env.TWILIO_WHATSAPP_FROM) &&
-          adminWhatsAppRecipients().length > 0,
-      ),
+      enabled: Boolean(hasWhatsAppChannel() && adminWhatsAppRecipients().length > 0),
       recipients: adminWhatsAppRecipients().length,
     },
     push: {

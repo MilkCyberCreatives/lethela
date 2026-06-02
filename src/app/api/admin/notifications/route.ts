@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
+import { getApplicantNotificationChannelStatus } from "@/lib/application-notifications";
 import { getAdminNotificationChannelStatus } from "@/lib/admin-notifications";
 import { countRiderApplications } from "@/lib/rider-applications";
 
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
       latestPending: [],
       recentCampaigns: [],
       channels: getAdminNotificationChannelStatus(),
+      applicantChannels: getApplicantNotificationChannelStatus(),
     });
   }
 
@@ -73,5 +75,6 @@ export async function GET(req: NextRequest) {
     latestPending,
     recentCampaigns,
     channels: getAdminNotificationChannelStatus(),
+    applicantChannels: getApplicantNotificationChannelStatus(),
   });
 }

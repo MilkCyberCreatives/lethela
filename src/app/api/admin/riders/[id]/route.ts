@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminRequest } from "@/lib/admin-auth";
+import { notifyApplicant } from "@/lib/application-notifications";
 import {
   type RiderApplicationStatus,
   updateRiderApplicationStatus,
@@ -36,6 +37,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   );
   if (!item) {
     return NextResponse.json({ ok: false, error: "Rider application not found." }, { status: 404 });
+  }
+
+  const notificationStatus =
+    item.status === "APPROVED"
+      ? "approved"
+      : item.status === "REJECTED"
+        ? "rejected"
+        : item.status === "UNDER_REVIEW"
+          ? "under_review"
+          : null;
+
+  if (notificationStatus) {
+    await notifyApplicant({
+      kind: "rider",
+      name: item.fullName,
+      email: item.email,
+      phone: item.phone,
+      status: notificationStatus,
+      reference: item.id,
+    });
   }
 
   return NextResponse.json({ ok: true, item });

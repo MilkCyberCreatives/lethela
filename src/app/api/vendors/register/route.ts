@@ -4,6 +4,7 @@ import { compare, hash } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { notifyAdminsOfVendorApplication } from "@/lib/admin-notifications";
+import { notifyApplicant } from "@/lib/application-notifications";
 import { attachVendorSession } from "@/lib/vendor-session";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -377,21 +378,41 @@ export async function POST(req: Request) {
   });
 
   if (shouldNotifyAdmins) {
-    await notifyAdminsOfVendorApplication({
-      id: vendor.id,
+    await Promise.all([
+      notifyAdminsOfVendorApplication({
+        id: vendor.id,
+        name: payload.name,
+        slug: vendor.slug,
+        email: payload.email,
+        phone: payload.phone,
+        suburb: payload.suburb,
+        city: payload.city,
+      }),
+      notifyApplicant({
+        kind: "vendor",
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone,
+        status: "submitted",
+        reference: vendor.slug,
+      }),
+    ]);
+  } else {
+    await notifyApplicant({
+      kind: "vendor",
       name: payload.name,
-      slug: vendor.slug,
       email: payload.email,
       phone: payload.phone,
-      suburb: payload.suburb,
-      city: payload.city,
+      status: "submitted",
+      reference: vendor.slug,
     });
   }
 
   const response = NextResponse.json({
     ok: true,
     pending: true,
-    message: "Application submitted. An admin must approve your vendor before it goes live.",
+    message:
+      "Application submitted. We will confirm by email and WhatsApp, then notify you again when the owner approves it.",
     vendor,
   });
   attachVendorSession(response, {

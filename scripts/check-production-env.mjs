@@ -212,15 +212,30 @@ warnIfMissing(
   "PASSWORD_RESET_EMAIL_FROM",
   "recommended if you want public password reset emails to work.",
 );
-warnIfMissing(
+requireNonPlaceholder(
   "RESEND_API_KEY",
-  "recommended if you want email notifications and password reset emails.",
+  "must be set so vendor and rider applicants receive email confirmations and approval notices.",
 );
-warnIfMissing("ADMIN_NOTIFICATION_EMAILS", "recommended if admins should receive email alerts.");
-warnIfMissing(
-  "ADMIN_NOTIFICATION_EMAIL_FROM",
-  "recommended if admins should receive email alerts.",
+const notificationEmailFrom =
+  read("ADMIN_NOTIFICATION_EMAIL_FROM", values) || read("PASSWORD_RESET_EMAIL_FROM", values);
+if (looksLikePlaceholder(notificationEmailFrom)) {
+  errors.push(
+    "ADMIN_NOTIFICATION_EMAIL_FROM/PASSWORD_RESET_EMAIL_FROM: at least one verified sender must be set for applicant emails.",
+  );
+}
+const adminNotificationRecipients =
+  read("ADMIN_NOTIFICATION_EMAILS", values) || read("ADMIN_NOTIFICATION_WHATSAPP_TO", values);
+if (looksLikePlaceholder(adminNotificationRecipients)) {
+  errors.push(
+    "ADMIN_NOTIFICATION_EMAILS/ADMIN_NOTIFICATION_WHATSAPP_TO: at least one owner notification recipient must be set.",
+  );
+}
+requireNonPlaceholder(
+  "TWILIO_ACCOUNT_SID",
+  "must be set so vendor and rider applicants receive WhatsApp confirmations and approval notices.",
 );
+requireNonPlaceholder("TWILIO_AUTH_TOKEN", "must be set for WhatsApp notifications.");
+requireNonPlaceholder("TWILIO_WHATSAPP_FROM", "must be set to a Twilio WhatsApp sender.");
 warnIfMissing("PUSHER_APP_ID", "recommended if you want realtime updates.");
 warnIfMissing("PUSHER_KEY", "recommended if you want realtime updates.");
 warnIfMissing("PUSHER_SECRET", "recommended if you want realtime updates.");

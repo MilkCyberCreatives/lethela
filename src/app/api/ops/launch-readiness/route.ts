@@ -105,10 +105,22 @@ export async function GET(req: NextRequest) {
     ),
     item("Approved riders", approvedRiders > 0, `${approvedRiders} approved rider(s)`),
     item(
-      "Email notifications",
-      configured("RESEND_API_KEY") && configured("ADMIN_NOTIFICATION_EMAILS"),
-      "Resend and admin recipients",
-      "recommended",
+      "Applicant email notifications",
+      configured("RESEND_API_KEY") &&
+        (configured("ADMIN_NOTIFICATION_EMAIL_FROM") || configured("PASSWORD_RESET_EMAIL_FROM")),
+      "Resend API key and verified sender email",
+    ),
+    item(
+      "Applicant WhatsApp notifications",
+      configured("TWILIO_ACCOUNT_SID") &&
+        configured("TWILIO_AUTH_TOKEN") &&
+        configured("TWILIO_WHATSAPP_FROM"),
+      "Twilio WhatsApp sender configured",
+    ),
+    item(
+      "Owner notification recipients",
+      configured("ADMIN_NOTIFICATION_EMAILS") || configured("ADMIN_NOTIFICATION_WHATSAPP_TO"),
+      "Owner email or WhatsApp recipients configured",
     ),
     item(
       "Realtime updates",
@@ -117,6 +129,7 @@ export async function GET(req: NextRequest) {
       "recommended",
     ),
     item("Web push", hasWebPushConfig(), "VAPID keys configured", "recommended"),
+    item("Sentry monitoring", configured("SENTRY_DSN"), "Sentry DSN configured", "recommended"),
     item("Search/AI index", true, "/sitemap.xml, /robots.txt, /llms.txt, /ai.txt", "recommended"),
   ];
 

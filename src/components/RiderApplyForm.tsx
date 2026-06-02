@@ -109,8 +109,8 @@ export default function RiderApplyForm() {
         <div>
           <h2 className="text-xl font-semibold">Rider Application</h2>
           <p className="mt-1 text-sm text-white/70">
-            Complete your details once. Operations reviews your application and contacts you on
-            WhatsApp.
+            Complete your details once. Operations reviews your application and contacts you by
+            email and WhatsApp.
           </p>
         </div>
         <span className="rounded-full border border-white/25 px-3 py-1 text-xs text-white/80">

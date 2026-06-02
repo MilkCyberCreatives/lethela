@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
+import { notifyApplicant } from "@/lib/application-notifications";
 
 const ActionSchema = z.object({
   action: z.enum(["approve", "reject"]),
@@ -46,6 +47,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         name: true,
         slug: true,
         email: true,
+        phone: true,
         status: true,
         isActive: true,
         updatedAt: true,
@@ -107,6 +109,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     return updated;
   });
+
+  if (vendor.email && vendor.phone) {
+    await notifyApplicant({
+      kind: "vendor",
+      name: vendor.name,
+      email: vendor.email,
+      phone: vendor.phone,
+      status: approved ? "approved" : "rejected",
+      reference: vendor.slug,
+    });
+  }
 
   return NextResponse.json({
     ok: true,
