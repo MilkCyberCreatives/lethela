@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LineChart,
   Mail,
+  MessageSquare,
   PackageCheck,
   RefreshCw,
   Search,
@@ -24,7 +25,14 @@ import {
 import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
 
-type DashboardView = "overview" | "vendors" | "riders" | "users" | "orders" | "operations";
+type DashboardView =
+  | "overview"
+  | "vendors"
+  | "riders"
+  | "users"
+  | "orders"
+  | "messages"
+  | "operations";
 type VendorStatusFilter = "PENDING" | "ACTIVE" | "REJECTED" | "ALL";
 type RiderStatusFilter = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "ALL";
 type VendorActionType = "approve" | "reject";
@@ -101,6 +109,34 @@ type ApplicantNotificationChannels = {
   whatsapp: { enabled: boolean };
 };
 
+type PlatformMessage = {
+  id: string;
+  recipientType: string;
+  recipientId: string | null;
+  subject: string;
+  body: string;
+  channel: string;
+  createdAt: string;
+};
+
+type MessageRecipientType = "VENDOR" | "RIDER" | "ALL_VENDORS" | "ALL_RIDERS" | "ALL";
+
+type AdminStats = {
+  ordersToday: number;
+  revenueTodayCents: number;
+  revenueMonthCents: number;
+  activeVendors: number;
+  activeRiders: number;
+  pendingDeliveries: number;
+  averageDeliveryTimeMins: number;
+  customerSatisfactionScore: number;
+  delayedOrders: number;
+  failedDeliveries: number;
+  cancelledOrders: number;
+  topProducts: Array<{ id: string | null; name: string; qty: number }>;
+  topVendors: Array<{ id: string; name: string; revenueCents: number }>;
+};
+
 const VENDOR_STATUS_OPTIONS: VendorStatusFilter[] = ["PENDING", "ACTIVE", "REJECTED", "ALL"];
 const RIDER_STATUS_OPTIONS: RiderStatusFilter[] = [
   "PENDING",
@@ -116,6 +152,7 @@ const WORKSPACES: Array<{ id: DashboardView; label: string; icon: typeof LayoutD
   { id: "riders", label: "Riders", icon: Bike },
   { id: "users", label: "Users", icon: Users },
   { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "operations", label: "Operations", icon: Activity },
 ];
 
@@ -134,6 +171,10 @@ const USER_SIGNALS = [
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString();
+}
+
+function money(cents: number) {
+  return `R${(Number(cents || 0) / 100).toFixed(2)}`;
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -175,14 +216,16 @@ function MetricCard({
   value,
   note,
   icon: Icon,
+  onClick,
 }: {
   label: string;
   value: string | number;
   note: string;
   icon: typeof LayoutDashboard;
+  onClick?: () => void;
 }) {
-  return (
-    <article className="rounded-lg border border-white/10 bg-white/[0.045] p-4">
+  const content = (
+    <>
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.14em] text-white/55">{label}</p>
@@ -193,7 +236,23 @@ function MetricCard({
         </span>
       </div>
       <p className="mt-3 text-xs text-white/60">{note}</p>
-    </article>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        className="rounded-lg border border-white/10 bg-white/[0.045] p-4 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
+        type="button"
+        onClick={onClick}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <article className="rounded-lg border border-white/10 bg-white/[0.045] p-4">{content}</article>
   );
 }
 
@@ -232,6 +291,21 @@ export default function AdminPage() {
   const [applicantChannels, setApplicantChannels] = useState<ApplicantNotificationChannels | null>(
     null,
   );
+  const [messages, setMessages] = useState<PlatformMessage[]>([]);
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [messageForm, setMessageForm] = useState<{
+    recipientType: MessageRecipientType;
+    recipientId: string;
+    subject: string;
+    body: string;
+    channel: "DASHBOARD" | "EMAIL_WHATSAPP" | "ALL";
+  }>({
+    recipientType: "ALL",
+    recipientId: "",
+    subject: "",
+    body: "",
+    channel: "ALL",
+  });
   const [totalPendingApprovals, setTotalPendingApprovals] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -274,17 +348,28 @@ export default function AdminPage() {
     try {
       await syncAdminAccess();
 
-      const [vendorsResponse, ridersResponse, notificationsResponse] = await Promise.all([
+      const [
+        vendorsResponse,
+        ridersResponse,
+        notificationsResponse,
+        messagesResponse,
+        statsResponse,
+      ] = await Promise.all([
         fetch(`/api/admin/vendors?status=${vendorStatus}`, { method: "GET", cache: "no-store" }),
         fetch(`/api/admin/riders?status=${riderStatus}`, { method: "GET", cache: "no-store" }),
         fetch("/api/admin/notifications", { method: "GET", cache: "no-store" }),
+        fetch("/api/admin/messages", { method: "GET", cache: "no-store" }),
+        fetch("/api/admin/stats", { method: "GET", cache: "no-store" }),
       ]);
 
-      const [vendorsJson, ridersJson, notificationsJson] = await Promise.all([
-        vendorsResponse.json(),
-        ridersResponse.json(),
-        notificationsResponse.json(),
-      ]);
+      const [vendorsJson, ridersJson, notificationsJson, messagesJson, statsJson] =
+        await Promise.all([
+          vendorsResponse.json(),
+          ridersResponse.json(),
+          notificationsResponse.json(),
+          messagesResponse.json(),
+          statsResponse.json(),
+        ]);
 
       if (!vendorsResponse.ok || !vendorsJson.ok)
         throw new Error(vendorsJson.error || "Failed to load vendor approvals.");
@@ -292,6 +377,12 @@ export default function AdminPage() {
         throw new Error(ridersJson.error || "Failed to load rider approvals.");
       if (!notificationsResponse.ok || !notificationsJson.ok) {
         throw new Error(notificationsJson.error || "Failed to load notification settings.");
+      }
+      if (!messagesResponse.ok || !messagesJson.ok) {
+        throw new Error(messagesJson.error || "Failed to load messages.");
+      }
+      if (!statsResponse.ok || !statsJson.ok) {
+        throw new Error(statsJson.error || "Failed to load owner statistics.");
       }
 
       setVendors(vendorsJson.items ?? []);
@@ -315,6 +406,8 @@ export default function AdminPage() {
       );
       setChannels(notificationsJson.channels ?? null);
       setApplicantChannels(notificationsJson.applicantChannels ?? null);
+      setMessages(messagesJson.items ?? []);
+      setStats(statsJson.stats ?? null);
       setTotalPendingApprovals(Number(notificationsJson.totalPendingApprovals ?? 0));
       setAuthMode(vendorsJson.authMode ?? ridersJson.authMode ?? null);
     } catch (err: unknown) {
@@ -394,6 +487,36 @@ export default function AdminPage() {
     }
   }
 
+  async function sendOwnerMessage() {
+    setSavingKey("message:send");
+    setError(null);
+    setNotice(null);
+    try {
+      await syncAdminAccess();
+
+      const response = await fetch("/api/admin/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...messageForm,
+          recipientId:
+            messageForm.recipientType === "VENDOR" || messageForm.recipientType === "RIDER"
+              ? messageForm.recipientId
+              : null,
+        }),
+      });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Failed to send message.");
+      setNotice(json.notice || "Message sent.");
+      setMessageForm((state) => ({ ...state, subject: "", body: "" }));
+      await load();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to send message."));
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
   const filteredVendors = useMemo(
     () =>
       vendors.filter((vendor) =>
@@ -435,22 +558,67 @@ export default function AdminPage() {
 
   const metrics = [
     {
+      label: "Orders today",
+      value: stats?.ordersToday ?? 0,
+      note: "Orders created since midnight.",
+      icon: ShoppingBag,
+      target: "orders" as DashboardView,
+    },
+    {
+      label: "Revenue today",
+      value: money(stats?.revenueTodayCents ?? 0),
+      note: "Paid and successful orders today.",
+      icon: WalletCards,
+      target: "orders" as DashboardView,
+    },
+    {
+      label: "Revenue month",
+      value: money(stats?.revenueMonthCents ?? 0),
+      note: "Paid and successful orders this month.",
+      icon: LineChart,
+      target: "orders" as DashboardView,
+    },
+    {
       label: "Pending approvals",
       value: totalPendingApprovals,
       note: "Vendor and rider onboarding work waiting for the owner.",
       icon: Clock,
+      target: "vendors" as DashboardView,
     },
     {
       label: "Live vendors",
-      value: vendorCounts.active,
+      value: stats?.activeVendors ?? vendorCounts.active,
       note: `${activeVendorRatio}% of vendor applications are live.`,
       icon: Store,
+      target: "vendors" as DashboardView,
     },
     {
       label: "Rider bench",
-      value: activeRiders,
+      value: stats?.activeRiders ?? activeRiders,
       note: `${totalRiderQueue} rider application(s) still need review.`,
       icon: Bike,
+      target: "riders" as DashboardView,
+    },
+    {
+      label: "Pending deliveries",
+      value: stats?.pendingDeliveries ?? 0,
+      note: "Orders waiting, preparing, or out for delivery.",
+      icon: PackageCheck,
+      target: "orders" as DashboardView,
+    },
+    {
+      label: "Average delivery",
+      value: `${stats?.averageDeliveryTimeMins ?? 0}m`,
+      note: "Operational benchmark until live route events mature.",
+      icon: Clock,
+      target: "orders" as DashboardView,
+    },
+    {
+      label: "Satisfaction",
+      value: `${stats?.customerSatisfactionScore ?? 0}/5`,
+      note: "Customer experience score.",
+      icon: CheckCircle2,
+      target: "users" as DashboardView,
     },
     {
       label: "Alert health",
@@ -464,6 +632,7 @@ export default function AdminPage() {
           : "Setup",
       note: "Email, WhatsApp and browser alert coverage for admin and applicant events.",
       icon: Bell,
+      target: "operations" as DashboardView,
     },
   ];
 
@@ -559,7 +728,11 @@ export default function AdminPage() {
 
               <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 {metrics.map((metric) => (
-                  <MetricCard key={metric.label} {...metric} />
+                  <MetricCard
+                    key={metric.label}
+                    {...metric}
+                    onClick={() => setView(metric.target)}
+                  />
                 ))}
               </div>
 
@@ -617,61 +790,108 @@ export default function AdminPage() {
             </section>
 
             {view === "overview" ? (
-              <section className="grid gap-5 xl:grid-cols-[1.15fr,0.85fr]">
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-white/50">
-                        Order pulse
-                      </p>
-                      <h3 className="mt-1 text-lg font-semibold">Live queue overview</h3>
-                    </div>
-                    <LineChart className="h-5 w-5 text-lethela-primary" />
-                  </div>
-                  <div className="mt-5 space-y-4">
-                    {ORDER_PIPELINE.map((item) => (
-                      <div key={item.label}>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-white/70">{item.label}</span>
-                          <span className="font-semibold">{item.value}</span>
-                        </div>
-                        <div className="mt-2 h-2 rounded-full bg-white/10">
-                          <div
-                            className={`h-2 rounded-full ${item.color}`}
-                            style={{ width: `${Math.min(item.value * 3, 100)}%` }}
-                          />
-                        </div>
+              <div className="space-y-5">
+                <section className="grid gap-5 xl:grid-cols-[1.15fr,0.85fr]">
+                  <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          Order monitoring
+                        </p>
+                        <h3 className="mt-1 text-lg font-semibold">Live queue overview</h3>
                       </div>
-                    ))}
+                      <LineChart className="h-5 w-5 text-lethela-primary" />
+                    </div>
+                    <div className="mt-5 space-y-4">
+                      {ORDER_PIPELINE.map((item) => (
+                        <button
+                          key={item.label}
+                          className="block w-full text-left"
+                          type="button"
+                          onClick={() => setView("orders")}
+                        >
+                          <div className="flex justify-between text-sm">
+                            <span className="text-white/70">{item.label}</span>
+                            <span className="font-semibold">{item.value}</span>
+                          </div>
+                          <div className="mt-2 h-2 rounded-full bg-white/10">
+                            <div
+                              className={`h-2 rounded-full ${item.color}`}
+                              style={{ width: `${Math.min(item.value * 3, 100)}%` }}
+                            />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-white/50">Today</p>
-                      <h3 className="mt-1 text-lg font-semibold">Owner checklist</h3>
-                    </div>
-                    <CalendarDays className="h-5 w-5 text-lethela-primary" />
-                  </div>
-                  <div className="mt-4 grid gap-3">
-                    {[
-                      "Clear pending vendor KYC approvals",
-                      "Move rider applications from pending to review",
-                      "Check delayed order exceptions",
-                      "Confirm Laravel dashboard migration milestones",
-                    ].map((item) => (
-                      <div
-                        key={item}
-                        className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3"
-                      >
-                        <CheckCircle2 className="h-4 w-4 text-lethela-primary" />
-                        <span className="text-sm text-white/75">{item}</span>
+                  <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-white/50">Today</p>
+                        <h3 className="mt-1 text-lg font-semibold">Owner checklist</h3>
                       </div>
-                    ))}
+                      <CalendarDays className="h-5 w-5 text-lethela-primary" />
+                    </div>
+                    <div className="mt-4 grid gap-3">
+                      {[
+                        { label: "Clear pending vendor KYC approvals", target: "vendors" },
+                        {
+                          label: "Move rider applications from pending to review",
+                          target: "riders",
+                        },
+                        { label: "Check delayed order exceptions", target: "orders" },
+                        { label: "Send launch updates to vendors and riders", target: "messages" },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
+                          type="button"
+                          onClick={() => setView(item.target as DashboardView)}
+                        >
+                          <CheckCircle2 className="h-4 w-4 text-lethela-primary" />
+                          <span className="text-sm text-white/75">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </section>
+                </section>
+
+                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    {
+                      title: "AI insights",
+                      body: `Most ordered: ${stats?.topProducts[0]?.name || "Build order history"}. Peak trends and customer habits will deepen as orders grow.`,
+                      target: "orders",
+                    },
+                    {
+                      title: "Vendor performance",
+                      body: `Top vendor: ${stats?.topVendors[0]?.name || "No paid vendor sales yet"}. View vendor sales, ratings, and stock coaching.`,
+                      target: "vendors",
+                    },
+                    {
+                      title: "Township commerce",
+                      body: "Kota, shisanyama, spaza, groceries, airtime, electricity, and township specials are grouped as growth lanes.",
+                      target: "users",
+                    },
+                    {
+                      title: "Marketing control",
+                      body: "Promotions, coupons, free delivery campaigns, push, SMS, and WhatsApp broadcasts are managed from operations.",
+                      target: "operations",
+                    },
+                  ].map((item) => (
+                    <button
+                      key={item.title}
+                      className="rounded-lg border border-white/10 bg-white/[0.035] p-5 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
+                      type="button"
+                      onClick={() => setView(item.target as DashboardView)}
+                    >
+                      <h3 className="text-lg font-semibold">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-white/65">{item.body}</p>
+                    </button>
+                  ))}
+                </section>
+              </div>
             ) : null}
 
             {view === "vendors" ? (
@@ -931,6 +1151,206 @@ export default function AdminPage() {
                     <p className="rounded-lg border border-white/10 p-3">
                       Escalate refunds and customer support items.
                     </p>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
+            {view === "messages" ? (
+              <section className="grid gap-4 xl:grid-cols-[0.95fr,1.05fr]">
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
+                      <MessageSquare className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3 className="text-lg font-semibold">Send owner message</h3>
+                      <p className="text-sm text-white/60">
+                        Message vendors, riders, or everyone from one place.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-3">
+                    <label className="grid gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        Recipient
+                      </span>
+                      <select
+                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        value={messageForm.recipientType}
+                        onChange={(event) =>
+                          setMessageForm((state) => ({
+                            ...state,
+                            recipientType: event.target.value as MessageRecipientType,
+                            recipientId: "",
+                          }))
+                        }
+                      >
+                        <option value="ALL">All vendors and riders</option>
+                        <option value="ALL_VENDORS">All active vendors</option>
+                        <option value="ALL_RIDERS">All approved riders</option>
+                        <option value="VENDOR">One vendor</option>
+                        <option value="RIDER">One rider</option>
+                      </select>
+                    </label>
+
+                    {messageForm.recipientType === "VENDOR" ? (
+                      <label className="grid gap-1 text-sm">
+                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          Vendor
+                        </span>
+                        <select
+                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          value={messageForm.recipientId}
+                          onChange={(event) =>
+                            setMessageForm((state) => ({
+                              ...state,
+                              recipientId: event.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Choose vendor</option>
+                          {vendors.map((vendor) => (
+                            <option key={vendor.id} value={vendor.id}>
+                              {vendor.name} ({vendor.status})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+
+                    {messageForm.recipientType === "RIDER" ? (
+                      <label className="grid gap-1 text-sm">
+                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          Rider
+                        </span>
+                        <select
+                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          value={messageForm.recipientId}
+                          onChange={(event) =>
+                            setMessageForm((state) => ({
+                              ...state,
+                              recipientId: event.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Choose rider</option>
+                          {riders.map((rider) => (
+                            <option key={rider.id} value={rider.id}>
+                              {rider.fullName} ({rider.status.replaceAll("_", " ")})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+
+                    <label className="grid gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        Channel
+                      </span>
+                      <select
+                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        value={messageForm.channel}
+                        onChange={(event) =>
+                          setMessageForm((state) => ({
+                            ...state,
+                            channel: event.target.value as "DASHBOARD" | "EMAIL_WHATSAPP" | "ALL",
+                          }))
+                        }
+                      >
+                        <option value="ALL">Dashboard plus email/WhatsApp</option>
+                        <option value="DASHBOARD">Dashboard inbox only</option>
+                        <option value="EMAIL_WHATSAPP">Email and WhatsApp plus inbox</option>
+                      </select>
+                    </label>
+
+                    <label className="grid gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        Subject
+                      </span>
+                      <input
+                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        value={messageForm.subject}
+                        onChange={(event) =>
+                          setMessageForm((state) => ({ ...state, subject: event.target.value }))
+                        }
+                        placeholder="Weekend specials, payout notice, rider shift update..."
+                      />
+                    </label>
+
+                    <label className="grid gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        Message
+                      </span>
+                      <textarea
+                        className="min-h-36 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-black"
+                        value={messageForm.body}
+                        onChange={(event) =>
+                          setMessageForm((state) => ({ ...state, body: event.target.value }))
+                        }
+                        placeholder="Write the operational message here..."
+                      />
+                    </label>
+
+                    <Button
+                      className="bg-lethela-primary text-white hover:opacity-90"
+                      disabled={savingKey === "message:send"}
+                      onClick={sendOwnerMessage}
+                    >
+                      {savingKey === "message:send" ? "Sending..." : "Send message"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-semibold">Recent owner messages</h3>
+                      <p className="text-sm text-white/60">
+                        Sent dashboard messages are saved here for audit and follow-up.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                      onClick={load}
+                    >
+                      Refresh
+                    </Button>
+                  </div>
+
+                  <div className="mt-5 grid gap-3">
+                    {messages.length === 0 ? (
+                      <EmptyState
+                        title="No messages yet"
+                        text="Send your first update to vendors or riders."
+                      />
+                    ) : (
+                      messages.map((message) => (
+                        <article
+                          key={message.id}
+                          className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <h4 className="text-sm font-semibold">{message.subject}</h4>
+                              <p className="mt-1 text-xs text-white/45">
+                                {message.recipientType.replaceAll("_", " ")}
+                                {message.recipientId ? ` · ${message.recipientId}` : ""} ·{" "}
+                                {new Date(message.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                            <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/65">
+                              {message.channel.replaceAll("_", " ")}
+                            </span>
+                          </div>
+                          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-white/72">
+                            {message.body}
+                          </p>
+                        </article>
+                      ))
+                    )}
                   </div>
                 </div>
               </section>

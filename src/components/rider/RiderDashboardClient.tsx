@@ -65,6 +65,14 @@ type RiderMeResponse = {
   }>;
 };
 
+type PlatformMessage = {
+  id: string;
+  subject: string;
+  body: string;
+  channel: string;
+  createdAt: string;
+};
+
 function money(cents: number) {
   return `R ${(Number(cents || 0) / 100).toFixed(2)}`;
 }
@@ -78,15 +86,24 @@ function statusClass(status?: string) {
 
 export default function RiderDashboardClient() {
   const [data, setData] = useState<RiderMeResponse | null>(null);
+  const [messages, setMessages] = useState<PlatformMessage[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function load() {
     setLoading(true);
-    const response = await fetch("/api/riders/me", { cache: "no-store" });
-    const json = (await response
-      .json()
-      .catch(() => ({ ok: false, error: "Failed to load rider dashboard." }))) as RiderMeResponse;
+    const [response, messagesResponse] = await Promise.all([
+      fetch("/api/riders/me", { cache: "no-store" }),
+      fetch("/api/riders/messages", { cache: "no-store" }).catch(() => null),
+    ]);
+    const json = (await response.json().catch(() => ({
+      ok: false,
+      error: "Failed to load rider dashboard.",
+    }))) as RiderMeResponse;
+    const messagesJson = messagesResponse
+      ? await messagesResponse.json().catch(() => ({ ok: false, items: [] }))
+      : { ok: false, items: [] };
     setData(json);
+    setMessages(messagesJson.ok ? messagesJson.items || [] : []);
     setLoading(false);
   }
 
@@ -292,6 +309,50 @@ export default function RiderDashboardClient() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
+        <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="h-5 w-5 text-lethela-primary" />
+              <h2 className="text-lg font-semibold">Messages from Lethela</h2>
+            </div>
+            <Button
+              variant="outline"
+              className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+              onClick={load}
+            >
+              Refresh messages
+            </Button>
+          </div>
+          <div className="mt-4 grid gap-3">
+            {messages.length === 0 ? (
+              <EmptyPanel
+                title="No owner messages yet"
+                text="Important rider updates from Lethela management will appear here."
+              />
+            ) : (
+              messages.map((message) => (
+                <article
+                  key={message.id}
+                  className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold">{message.subject}</h3>
+                      <p className="mt-1 text-xs text-white/45">
+                        {new Date(message.createdAt).toLocaleString()} ·{" "}
+                        {message.channel.replaceAll("_", " ")}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-white/72">
+                    {message.body}
+                  </p>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+
         <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-5 w-5 text-lethela-primary" />

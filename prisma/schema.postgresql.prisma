@@ -375,6 +375,22 @@ model PushCampaign {
   @@index([segment, createdAt])
 }
 
+model PlatformMessage {
+  id            String    @id
+  recipientType String
+  recipientId   String?
+  subject       String
+  body          String
+  channel       String    @default("DASHBOARD")
+  status        String    @default("SENT")
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  readAt        DateTime?
+
+  @@index([recipientType, recipientId, createdAt])
+  @@index([createdAt])
+}
+
 model RiderApplication {
   id                    String   @id
   fullName              String

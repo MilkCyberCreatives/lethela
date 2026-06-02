@@ -30,6 +30,9 @@ const PayoutsPanel = dynamic(() => import("@/components/dashboard/PayoutsPanel")
 const NotificationsPanel = dynamic(() => import("@/components/dashboard/NotificationsPanel"), {
   loading: () => <DashboardPanelSkeleton lines={5} />,
 });
+const MessagesPanel = dynamic(() => import("@/components/dashboard/MessagesPanel"), {
+  loading: () => <DashboardPanelSkeleton lines={5} />,
+});
 const FeedbackPanel = dynamic(() => import("@/components/dashboard/FeedbackPanel"), {
   loading: () => <DashboardPanelSkeleton lines={5} />,
 });
@@ -63,6 +66,7 @@ type DashboardTab =
   | "menu"
   | "payouts"
   | "operations"
+  | "messages"
   | "experience"
   | "team"
   | "profile"
@@ -78,6 +82,7 @@ const tabs: Array<{ tab: DashboardTab; label: string; hint: string }> = [
   { tab: "menu", label: "Menu", hint: "Public menu, products and imports" },
   { tab: "payouts", label: "Payouts", hint: "Settlements and cash flow" },
   { tab: "operations", label: "Operations", hint: "Notifications and issues" },
+  { tab: "messages", label: "Messages", hint: "Lethela owner inbox" },
   { tab: "experience", label: "Feedback", hint: "Ratings and service signals" },
   { tab: "team", label: "Team", hint: "Staff and permissions" },
   { tab: "profile", label: "Profile", hint: "Store settings" },
@@ -514,6 +519,10 @@ export default async function VendorDashboardPage({
     case "operations":
       title = "Operations";
       content = <NotificationsPanel />;
+      break;
+    case "messages":
+      title = "Messages";
+      content = <MessagesPanel />;
       break;
     case "experience":
       title = "Feedback";
