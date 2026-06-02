@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
     delayedOrders,
     failedDeliveries,
     cancelledOrders,
+    customerCount,
+    reviewStats,
     topProducts,
     topVendors,
   ] = await Promise.all([
@@ -70,6 +72,11 @@ export async function GET(req: NextRequest) {
       prisma.order.count({ where: { status: { in: ["CANCELED", "CANCELLED"] } } }),
       0,
     ),
+    withQueryTimeout(prisma.user.count({ where: { role: "USER" } }), 0),
+    withQueryTimeout(prisma.userProductReview.aggregate({ _avg: { rating: true }, _count: true }), {
+      _avg: { rating: 0 },
+      _count: 0,
+    }),
     withQueryTimeout(
       prisma.orderItem.groupBy({
         by: ["productId"],
@@ -121,11 +128,13 @@ export async function GET(req: NextRequest) {
       activeVendors,
       activeRiders,
       pendingDeliveries,
-      averageDeliveryTimeMins: 32,
-      customerSatisfactionScore: 4.6,
+      averageDeliveryTimeMins: 0,
+      customerSatisfactionScore: Number((reviewStats._avg.rating || 0).toFixed(1)),
       delayedOrders,
       failedDeliveries,
       cancelledOrders,
+      customerCount,
+      reviewCount: reviewStats._count,
       topProducts: topProducts.map((item) => ({
         id: item.productId,
         name: item.productId

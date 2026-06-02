@@ -133,6 +133,8 @@ type AdminStats = {
   delayedOrders: number;
   failedDeliveries: number;
   cancelledOrders: number;
+  customerCount: number;
+  reviewCount: number;
   topProducts: Array<{ id: string | null; name: string; qty: number }>;
   topVendors: Array<{ id: string; name: string; revenueCents: number }>;
 };
@@ -154,19 +156,6 @@ const WORKSPACES: Array<{ id: DashboardView; label: string; icon: typeof LayoutD
   { id: "orders", label: "Orders", icon: ShoppingBag },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "operations", label: "Operations", icon: Activity },
-];
-
-const ORDER_PIPELINE = [
-  { label: "Accepted", value: 24, color: "bg-emerald-300" },
-  { label: "Preparing", value: 17, color: "bg-amber-300" },
-  { label: "Dispatch", value: 12, color: "bg-sky-300" },
-  { label: "Issue queue", value: 3, color: "bg-lethela-primary" },
-];
-
-const USER_SIGNALS = [
-  { label: "Repeat customers", value: "68%", note: "Target cohorts for loyalty drops" },
-  { label: "Support SLA", value: "12m", note: "Median first response" },
-  { label: "Saved addresses", value: "1.9k", note: "Ready for checkout speedups" },
 ];
 
 function formatDate(value: string) {
@@ -227,22 +216,22 @@ function MetricCard({
   const content = (
     <>
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.14em] text-white/55">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+          <p className="mt-1 text-xl font-bold text-white">{value}</p>
         </div>
-        <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
-          <Icon className="h-5 w-5" />
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
+          <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p className="mt-3 text-xs text-white/60">{note}</p>
+      <p className="mt-2 text-xs leading-5 text-white/60">{note}</p>
     </>
   );
 
   if (onClick) {
     return (
       <button
-        className="rounded-lg border border-white/10 bg-white/[0.045] p-4 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
+        className="rounded-lg border border-white/10 bg-white/[0.045] p-3 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
         type="button"
         onClick={onClick}
       >
@@ -252,7 +241,7 @@ function MetricCard({
   }
 
   return (
-    <article className="rounded-lg border border-white/10 bg-white/[0.045] p-4">{content}</article>
+    <article className="rounded-lg border border-white/10 bg-white/[0.045] p-3">{content}</article>
   );
 }
 
@@ -421,6 +410,13 @@ export default function AdminPage() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void load();
+    }, 15000);
+    return () => window.clearInterval(timer);
   }, [load]);
 
   async function enableBrowserAlerts() {
@@ -608,15 +604,15 @@ export default function AdminPage() {
     },
     {
       label: "Average delivery",
-      value: `${stats?.averageDeliveryTimeMins ?? 0}m`,
-      note: "Operational benchmark until live route events mature.",
+      value: stats?.averageDeliveryTimeMins ? `${stats.averageDeliveryTimeMins}m` : "N/A",
+      note: "Starts after completed deliveries.",
       icon: Clock,
       target: "orders" as DashboardView,
     },
     {
       label: "Satisfaction",
-      value: `${stats?.customerSatisfactionScore ?? 0}/5`,
-      note: "Customer experience score.",
+      value: stats?.reviewCount ? `${stats.customerSatisfactionScore}/5` : "N/A",
+      note: "Starts after customer reviews.",
       icon: CheckCircle2,
       target: "users" as DashboardView,
     },
@@ -633,6 +629,47 @@ export default function AdminPage() {
       note: "Email, WhatsApp and browser alert coverage for admin and applicant events.",
       icon: Bell,
       target: "operations" as DashboardView,
+    },
+  ];
+
+  const orderMonitoring = [
+    {
+      label: "Pending deliveries",
+      value: stats?.pendingDeliveries ?? 0,
+      color: "bg-sky-300",
+    },
+    {
+      label: "Delayed orders",
+      value: stats?.delayedOrders ?? 0,
+      color: "bg-amber-300",
+    },
+    {
+      label: "Failed deliveries",
+      value: stats?.failedDeliveries ?? 0,
+      color: "bg-red-300",
+    },
+    {
+      label: "Cancelled orders",
+      value: stats?.cancelledOrders ?? 0,
+      color: "bg-lethela-primary",
+    },
+  ];
+
+  const customerSignals = [
+    {
+      label: "Customers",
+      value: stats?.customerCount ?? 0,
+      note: "Registered customer accounts.",
+    },
+    {
+      label: "Product reviews",
+      value: stats?.reviewCount ?? 0,
+      note: "Customer ratings submitted.",
+    },
+    {
+      label: "Satisfaction",
+      value: stats?.reviewCount ? `${stats.customerSatisfactionScore}/5` : "N/A",
+      note: "Starts when customers submit ratings.",
     },
   ];
 
@@ -684,9 +721,6 @@ export default function AdminPage() {
                 <Link className="text-white/75 hover:text-white" href="/rider/dashboard">
                   Rider dashboard
                 </Link>
-                <Link className="text-white/75 hover:text-white" href="/orders/LET-12345">
-                  Example order
-                </Link>
               </div>
             </div>
           </aside>
@@ -726,7 +760,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-5">
                 {metrics.map((metric) => (
                   <MetricCard
                     key={metric.label}
@@ -803,7 +837,7 @@ export default function AdminPage() {
                       <LineChart className="h-5 w-5 text-lethela-primary" />
                     </div>
                     <div className="mt-5 space-y-4">
-                      {ORDER_PIPELINE.map((item) => (
+                      {orderMonitoring.map((item) => (
                         <button
                           key={item.label}
                           className="block w-full text-left"
@@ -817,7 +851,7 @@ export default function AdminPage() {
                           <div className="mt-2 h-2 rounded-full bg-white/10">
                             <div
                               className={`h-2 rounded-full ${item.color}`}
-                              style={{ width: `${Math.min(item.value * 3, 100)}%` }}
+                              style={{ width: `${Math.min(item.value * 10, 100)}%` }}
                             />
                           </div>
                         </button>
@@ -861,28 +895,32 @@ export default function AdminPage() {
                   {[
                     {
                       title: "AI insights",
-                      body: `Most ordered: ${stats?.topProducts[0]?.name || "Build order history"}. Peak trends and customer habits will deepen as orders grow.`,
+                      body: stats?.topProducts[0]
+                        ? `Most ordered: ${stats.topProducts[0].name}. Peak trends and customer habits will deepen as orders grow.`
+                        : "No customer order trends yet. This will start once the first paid orders are placed.",
                       target: "orders",
                     },
                     {
                       title: "Vendor performance",
-                      body: `Top vendor: ${stats?.topVendors[0]?.name || "No paid vendor sales yet"}. View vendor sales, ratings, and stock coaching.`,
+                      body: stats?.topVendors[0]
+                        ? `Top vendor: ${stats.topVendors[0].name}. View vendor sales, ratings, and stock coaching.`
+                        : "No vendor sales yet. Performance insights start after vendors receive paid orders.",
                       target: "vendors",
                     },
                     {
                       title: "Township commerce",
-                      body: "Kota, shisanyama, spaza, groceries, airtime, electricity, and township specials are grouped as growth lanes.",
+                      body: "Kota, shisanyama, spaza, groceries, airtime, electricity, and township specials will be activated from real vendor categories.",
                       target: "users",
                     },
                     {
                       title: "Marketing control",
-                      body: "Promotions, coupons, free delivery campaigns, push, SMS, and WhatsApp broadcasts are managed from operations.",
+                      body: "Promotions, coupons, free delivery campaigns, push, SMS, and WhatsApp broadcasts will use real customer and vendor segments.",
                       target: "operations",
                     },
                   ].map((item) => (
                     <button
                       key={item.title}
-                      className="rounded-lg border border-white/10 bg-white/[0.035] p-5 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
+                      className="rounded-lg border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
                       type="button"
                       onClick={() => setView(item.target as DashboardView)}
                     >
@@ -1103,32 +1141,46 @@ export default function AdminPage() {
             ) : null}
 
             {view === "users" ? (
-              <section className="grid gap-4 md:grid-cols-3">
-                {USER_SIGNALS.map((signal) => (
-                  <MetricCard
-                    key={signal.label}
-                    label={signal.label}
-                    value={signal.value}
-                    note={signal.note}
-                    icon={Users}
-                  />
-                ))}
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-3">
-                  <h3 className="text-lg font-semibold">Customer workspace</h3>
-                  <p className="mt-2 text-sm text-white/65">
-                    This area is ready for customer profiles, loyalty segments, support inboxes,
-                    refund decisions and saved delivery addresses once those APIs are connected.
-                  </p>
+              <section className="space-y-4">
+                <div className="grid gap-3 md:grid-cols-3">
+                  {customerSignals.map((signal) => (
+                    <MetricCard
+                      key={signal.label}
+                      label={signal.label}
+                      value={signal.value}
+                      note={signal.note}
+                      icon={Users}
+                    />
+                  ))}
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                  <h3 className="text-lg font-semibold">Customer growth</h3>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
+                      <p className="text-sm font-semibold">Order history</p>
+                      <p className="mt-1 text-sm text-white/62">
+                        Customer history, reorder buttons, favourites, and saved delivery addresses
+                        will populate from real customer activity.
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
+                      <p className="text-sm font-semibold">Rewards programme</p>
+                      <p className="mt-1 text-sm text-white/62">
+                        Points and discount redemption stay at zero until paid orders create real
+                        reward balances.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </section>
             ) : null}
 
             {view === "orders" ? (
               <section className="grid gap-4 lg:grid-cols-[1fr,0.8fr]">
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
                   <h3 className="text-lg font-semibold">Order control room</h3>
                   <div className="mt-4 grid gap-3">
-                    {ORDER_PIPELINE.map((item) => (
+                    {orderMonitoring.map((item) => (
                       <div
                         key={item.label}
                         className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-3"
@@ -1139,17 +1191,19 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-                  <h3 className="text-lg font-semibold">Dispatch features</h3>
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                  <h3 className="text-lg font-semibold">Realtime delivery readiness</h3>
                   <div className="mt-4 grid gap-3 text-sm text-white/70">
                     <p className="rounded-lg border border-white/10 p-3">
-                      Assign orders to approved riders by area.
+                      Live delivery maps and rider locations activate once paid orders enter
+                      dispatch.
                     </p>
                     <p className="rounded-lg border border-white/10 p-3">
-                      Flag delayed vendor preparation times.
+                      Delayed, failed, and cancelled order counters are real database counts.
                     </p>
                     <p className="rounded-lg border border-white/10 p-3">
-                      Escalate refunds and customer support items.
+                      AI delivery optimisation will assign riders from actual distance, workload,
+                      and availability data.
                     </p>
                   </div>
                 </div>

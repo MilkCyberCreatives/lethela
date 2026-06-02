@@ -55,16 +55,14 @@ export default function RiderPage() {
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
-                <Link href="/rider/dashboard">View rider dashboard</Link>
+                <a href="#rider-application">Start application</a>
               </Button>
               <Button
                 asChild
                 variant="outline"
                 className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
               >
-                <a href={whatsappHref} target="_blank" rel="noreferrer">
-                  WhatsApp support
-                </a>
+                <Link href="/rider/dashboard">Rider dashboard</Link>
               </Button>
             </div>
 
@@ -103,7 +101,7 @@ export default function RiderPage() {
         </div>
       </section>
 
-      <section className="surface-section">
+      <section id="rider-application" className="surface-section">
         <div className="container py-10">
           <RiderApplyForm />
         </div>
