@@ -70,6 +70,9 @@ export async function GET(req: Request) {
       })),
     });
   } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error.message || "Not signed in as vendor" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: error.message || "Not signed in as vendor" },
+      { status: 401 },
+    );
   }
 }

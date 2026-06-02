@@ -233,7 +233,9 @@
 .scroll-reveal {
   opacity: 1;
   transform: none;
-  transition: transform 500ms ease, opacity 500ms ease;
+  transition:
+    transform 500ms ease,
+    opacity 500ms ease;
 }
 
 .scroll-reveal.is-visible {

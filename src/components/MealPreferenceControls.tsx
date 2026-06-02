@@ -23,7 +23,9 @@ export default function MealPreferenceControls({
   const sessionState = useSession();
   const session = sessionState?.data;
   const profileKey = getProfileKey(session?.user?.id);
-  const isFavorite = useMealFeedback((state) => state.profiles[profileKey]?.favorites.includes(itemId) ?? false);
+  const isFavorite = useMealFeedback(
+    (state) => state.profiles[profileKey]?.favorites.includes(itemId) ?? false,
+  );
   const rating = useMealFeedback((state) => state.profiles[profileKey]?.ratings[itemId] ?? 0);
   const hydrated = useMealFeedback((state) => state.hydratedProfiles[profileKey] ?? false);
   const toggleFavorite = useMealFeedback((state) => state.toggleFavorite);
@@ -68,7 +70,7 @@ export default function MealPreferenceControls({
         className={cn(
           "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition hover:border-white/30 hover:text-white",
           isFavorite && "border-lethela-primary bg-lethela-primary/10 text-lethela-primary",
-          compact && "h-8 w-8"
+          compact && "h-8 w-8",
         )}
         onClick={() => {
           const nextFavorite = !isFavorite;
@@ -101,7 +103,7 @@ export default function MealPreferenceControls({
               className={cn(
                 "inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:text-[#f8d16a]",
                 active ? "text-[#f8d16a]" : "text-white/40",
-                compact && "h-7 w-7"
+                compact && "h-7 w-7",
               )}
               onClick={() => {
                 setRating(profileKey, itemId, starValue);

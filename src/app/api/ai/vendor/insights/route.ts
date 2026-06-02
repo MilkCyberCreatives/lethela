@@ -12,24 +12,18 @@ export async function GET() {
       products: true,
       orders: {
         include: {
-          items: true
-        }
-      }
-    }
+          items: true,
+        },
+      },
+    },
   });
 
   if (!vendor) {
-    return NextResponse.json(
-      { ok: false, error: "Vendor not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ ok: false, error: "Vendor not found" }, { status: 404 });
   }
 
   // revenue, top products, etc.
-  const revenueCents = vendor.orders.reduce(
-    (s: number, o: any) => s + o.totalCents,
-    0
-  );
+  const revenueCents = vendor.orders.reduce((s: number, o: any) => s + o.totalCents, 0);
 
   // count product frequency from order line items
   const productCountMap = vendor.orders
@@ -55,7 +49,7 @@ export async function GET() {
       name: vendor.name,
       revenueCents,
       totalOrders: vendor.orders.length,
-      bestSellers
-    }
+      bestSellers,
+    },
   });
 }

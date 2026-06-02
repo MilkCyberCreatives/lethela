@@ -4,7 +4,8 @@ import RiderDashboardClient from "@/components/rider/RiderDashboardClient";
 
 export const metadata: Metadata = {
   title: "Rider Dashboard",
-  description: "Lethela rider dashboard for shifts, active deliveries, payouts, documents, and support.",
+  description:
+    "Lethela rider dashboard for shifts, active deliveries, payouts, documents, and support.",
   alternates: {
     canonical: "/rider/dashboard",
   },

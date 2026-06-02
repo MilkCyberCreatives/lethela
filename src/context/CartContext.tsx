@@ -48,7 +48,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = (item: Omit<CartItem, "qty">, qty = 1) => {
     // Alcohol age gate check
-    if (item.isAlcohol && typeof document !== "undefined" && !document.cookie.includes("age_verified=1")) {
+    if (
+      item.isAlcohol &&
+      typeof document !== "undefined" &&
+      !document.cookie.includes("age_verified=1")
+    ) {
       setAgeGateOpen(true);
       return;
     }
@@ -71,7 +75,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const totalCents = useMemo(
     () => items.reduce((sum, it) => sum + it.priceCents * it.qty, 0),
-    [items]
+    [items],
   );
 
   const value: CartContextType = {

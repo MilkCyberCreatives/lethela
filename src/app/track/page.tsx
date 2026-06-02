@@ -38,7 +38,7 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
             publicId: true,
             ozowReference: true,
           },
-        })
+        }),
       ).catch(() => null)
     : null;
   const resolvedRef = order ? order.ozowReference || order.publicId : isDemo ? clean : null;
@@ -53,7 +53,8 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
       <section className="container max-w-2xl py-10 md:py-14">
         <h1 className="text-3xl font-bold md:text-4xl">Track your order</h1>
         <p className="mt-3 text-sm text-white/75 md:text-base">
-          Enter your order reference (example: <span className="font-semibold">LET-12345</span>) to view live status.
+          Enter your order reference (example: <span className="font-semibold">LET-12345</span>) to
+          view live status.
         </p>
 
         <form action="/track" method="get" className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -65,7 +66,10 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
             className="w-full rounded border border-white/20 bg-white px-3 py-2 text-black"
             autoComplete="off"
           />
-          <button type="submit" className="rounded bg-lethela-primary px-4 py-2 font-medium text-white">
+          <button
+            type="submit"
+            className="rounded bg-lethela-primary px-4 py-2 font-medium text-white"
+          >
             Find order
           </button>
         </form>
@@ -89,7 +93,8 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
               We could not find an order for <span className="font-mono">{clean}</span>.
             </p>
             <p className="mt-2 text-xs text-red-50/80">
-              Check the reference and try again. It should look like <span className="font-semibold">LET-12345</span>.
+              Check the reference and try again. It should look like{" "}
+              <span className="font-semibold">LET-12345</span>.
             </p>
           </div>
         ) : null}

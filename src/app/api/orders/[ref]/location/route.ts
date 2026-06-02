@@ -38,13 +38,13 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const url = new URL(req.url);
   const riderToken = readRiderConsoleToken(
-    req.headers.get("x-rider-token")?.trim() || url.searchParams.get("token")?.trim() || null
+    req.headers.get("x-rider-token")?.trim() || url.searchParams.get("token")?.trim() || null,
   );
 
   if (!vendorSession && !riderToken) {
     return NextResponse.json(
       { ok: false, error: "Authorized rider or vendor access required." },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -52,12 +52,15 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (!vendorSession && riderToken?.ref !== DEMO_ORDER_REF) {
       return NextResponse.json(
         { ok: false, error: "Authorized rider or vendor access required." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     try {
-      await pusherServer.trigger(`order-${DEMO_ORDER_REF}`, "location", { ...parsed.data, at: new Date().toISOString() });
+      await pusherServer.trigger(`order-${DEMO_ORDER_REF}`, "location", {
+        ...parsed.data,
+        at: new Date().toISOString(),
+      });
     } catch {
       // realtime may be disabled locally
     }
@@ -68,29 +71,41 @@ export async function POST(req: NextRequest, { params }: Params) {
     db.order.findFirst({
       where: riderToken
         ? {
-            OR: [{ ozowReference: cleanRef }, { publicId: cleanRef }, { publicId: cleanRef.toUpperCase() }],
+            OR: [
+              { ozowReference: cleanRef },
+              { publicId: cleanRef },
+              { publicId: cleanRef.toUpperCase() },
+            ],
           }
         : {
             vendorId: vendorSession?.vendorId,
-            OR: [{ ozowReference: cleanRef }, { publicId: cleanRef }, { publicId: cleanRef.toUpperCase() }],
-      },
+            OR: [
+              { ozowReference: cleanRef },
+              { publicId: cleanRef },
+              { publicId: cleanRef.toUpperCase() },
+            ],
+          },
       select: { id: true, vendorId: true, ozowReference: true, publicId: true },
-    })
+    }),
   ).catch(() => null);
   if (!order) {
     return NextResponse.json({ ok: false, error: "Order not found." }, { status: 404 });
   }
 
   const riderRef = riderToken?.ref;
-  const publicRef = String(order.publicId || "").trim().toUpperCase();
-  const ozowRef = String(order.ozowReference || "").trim().toUpperCase();
+  const publicRef = String(order.publicId || "")
+    .trim()
+    .toUpperCase();
+  const ozowRef = String(order.ozowReference || "")
+    .trim()
+    .toUpperCase();
   const isVendorAuthorized = vendorSession?.vendorId === order.vendorId;
   const isRiderAuthorized = Boolean(riderRef && (riderRef === publicRef || riderRef === ozowRef));
 
   if (!isVendorAuthorized && !isRiderAuthorized) {
     return NextResponse.json(
       { ok: false, error: "Authorized rider or vendor access required." },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -106,7 +121,10 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   try {
     const channel = getOrderRealtimeChannel(order.ozowReference || order.publicId);
-    await pusherServer.trigger(channel, "location", { ...parsed.data, at: new Date().toISOString() });
+    await pusherServer.trigger(channel, "location", {
+      ...parsed.data,
+      at: new Date().toISOString(),
+    });
   } catch {
     // realtime may be disabled in local environments
   }

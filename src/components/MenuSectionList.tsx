@@ -46,20 +46,34 @@ export default function MenuSectionList({
           <h3 className="text-lg font-semibold">{s.title}</h3>
           <div className="mt-3 space-y-3">
             {s.items.map((it) => (
-              <div key={it.id} className="flex items-start justify-between rounded-lg border border-white/10 p-3">
+              <div
+                key={it.id}
+                className="flex items-start justify-between rounded-lg border border-white/10 p-3"
+              >
                 <div className="flex min-w-0 items-start gap-3 pr-3">
                   {it.image ? (
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
-                      <Image src={it.image} alt={it.name} fill sizes="64px" className="object-cover" />
+                      <Image
+                        src={it.image}
+                        alt={it.name}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
                     </div>
                   ) : null}
                   <div className="min-w-0">
                     <div className="font-medium">{it.name}</div>
-                    {it.description ? <div className="mt-1 text-sm text-white/70">{it.description}</div> : null}
+                    {it.description ? (
+                      <div className="mt-1 text-sm text-white/70">{it.description}</div>
+                    ) : null}
                     {it.tags.length > 0 ? (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {it.tags.slice(0, 3).map((tag) => (
-                          <span key={tag} className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-white/65">
+                          <span
+                            key={tag}
+                            className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-white/65"
+                          >
                             {tag}
                           </span>
                         ))}

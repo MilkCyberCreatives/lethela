@@ -48,7 +48,8 @@ export default function NotificationsPanel() {
     <DashCard title="Notifications and Issues">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-white/70">
-          This is the operational inbox for store blockers, missed settings, and urgent order signals.
+          This is the operational inbox for store blockers, missed settings, and urgent order
+          signals.
         </p>
         <button
           type="button"

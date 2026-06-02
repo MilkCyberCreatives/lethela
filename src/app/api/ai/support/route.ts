@@ -11,7 +11,12 @@ type SupportSource = {
 };
 
 function tokenize(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean).slice(0, 16);
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 16);
 }
 
 function lexicalScore(queryTokens: string[], item: SupportFaqItem) {
@@ -90,12 +95,14 @@ export async function POST(req: Request) {
   if (!limited.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many support requests. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
     );
   }
 
   const { q } = (await req.json().catch(() => ({ q: "" }))) as { q?: string };
-  const query = String(q || "").trim().slice(0, 500);
+  const query = String(q || "")
+    .trim()
+    .slice(0, 500);
   if (!query) {
     return NextResponse.json({
       ok: true,

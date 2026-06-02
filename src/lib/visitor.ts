@@ -178,7 +178,9 @@ export async function unregisterPushSubscription() {
     body: JSON.stringify({ endpoint }),
   }).catch(() => undefined);
 
-  return unsubscribed ? { ok: true as const } : { ok: false as const, reason: "unsubscribe-failed" };
+  return unsubscribed
+    ? { ok: true as const }
+    : { ok: false as const, reason: "unsubscribe-failed" };
 }
 
 export function pushDataLayerEvent(event: string, payload: Record<string, unknown> = {}) {
@@ -189,7 +191,7 @@ export function pushDataLayerEvent(event: string, payload: Record<string, unknow
 
 export function pushEcommerceEvent(
   event: string,
-  ecommerce: { currency?: string; value?: number; items?: AnalyticsItem[]; [key: string]: unknown }
+  ecommerce: { currency?: string; value?: number; items?: AnalyticsItem[]; [key: string]: unknown },
 ) {
   if (typeof window === "undefined") return;
   window.dataLayer = window.dataLayer || [];
@@ -216,7 +218,13 @@ export async function trackVisitorEvent(input: VisitorEventInput) {
 
   try {
     const dedupeWindowMs =
-      input.type === "page_view" ? 30_000 : input.type === "track_order_view" ? 60_000 : input.type === "location_update" ? 45_000 : 0;
+      input.type === "page_view"
+        ? 30_000
+        : input.type === "track_order_view"
+          ? 60_000
+          : input.type === "location_update"
+            ? 45_000
+            : 0;
     if (dedupeWindowMs > 0) {
       const raw = window.sessionStorage.getItem(VISITOR_EVENT_DEDUPE_KEY) || "{}";
       const cache = JSON.parse(raw) as Record<string, number>;

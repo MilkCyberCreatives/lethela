@@ -42,7 +42,10 @@ function configureWebPush() {
   configured = true;
 }
 
-export async function sendPushToSubscription(subscription: PushSubscriptionRecord, payload: PushPayload) {
+export async function sendPushToSubscription(
+  subscription: PushSubscriptionRecord,
+  payload: PushPayload,
+) {
   configureWebPush();
   return webpush.sendNotification(
     {
@@ -52,6 +55,6 @@ export async function sendPushToSubscription(subscription: PushSubscriptionRecor
         auth: subscription.auth,
       },
     },
-    JSON.stringify(payload)
+    JSON.stringify(payload),
   );
 }

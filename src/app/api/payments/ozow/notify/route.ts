@@ -36,7 +36,10 @@ type NotifyPayload = {
 
 async function readPayload(req: NextRequest): Promise<NotifyPayload> {
   const contentType = req.headers.get("content-type") || "";
-  if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
+  if (
+    contentType.includes("application/x-www-form-urlencoded") ||
+    contentType.includes("multipart/form-data")
+  ) {
     const form = await req.formData();
     return Object.fromEntries(form.entries()) as NotifyPayload;
   }
@@ -50,16 +53,22 @@ export async function POST(req: NextRequest) {
       payload.transactionReference ||
       payload.ozowReference ||
       payload.ref ||
-      ""
+      "",
   ).trim();
   const txnId = String(payload.TransactionId || payload.transactionId || payload.id || "").trim();
   const amount = String(payload.Amount || payload.amount || "").trim();
   const siteCode = String(payload.SiteCode || payload.siteCode || "").trim();
-  const status = String(payload.Status || payload.status || "").toUpperCase().trim();
+  const status = String(payload.Status || payload.status || "")
+    .toUpperCase()
+    .trim();
   const currencyCode = String(payload.CurrencyCode || payload.currencyCode || "ZAR").trim();
-  const isTest = String(payload.IsTest || payload.isTest || "false").trim().toLowerCase();
+  const isTest = String(payload.IsTest || payload.isTest || "false")
+    .trim()
+    .toLowerCase();
   const statusMessage = String(payload.StatusMessage || payload.statusMessage || "").trim();
-  const receivedHash = String(payload.Hash || payload.hash || "").trim().toUpperCase();
+  const receivedHash = String(payload.Hash || payload.hash || "")
+    .trim()
+    .toUpperCase();
   const privateKey = process.env.OZOW_PRIVATE_KEY?.trim() || "";
   const expectedSiteCode = process.env.OZOW_SITE_CODE?.trim() || "";
   const expectedIsTest = process.env.OZOW_IS_TEST === "true" ? "true" : "false";
@@ -77,7 +86,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Missing status." }, { status: 400 });
   }
   if (!receivedHash || !privateKey || !expectedSiteCode) {
-    return NextResponse.json({ ok: false, error: "Ozow callback verification is not configured." }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Ozow callback verification is not configured." },
+      { status: 500 },
+    );
   }
   if (siteCode !== expectedSiteCode) {
     return NextResponse.json({ ok: false, error: "Unexpected site code." }, { status: 400 });
@@ -86,7 +98,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Unexpected currency code." }, { status: 400 });
   }
   if (isTest !== expectedIsTest) {
-    return NextResponse.json({ ok: false, error: "Unexpected Ozow test mode value." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Unexpected Ozow test mode value." },
+      { status: 400 },
+    );
   }
 
   const expectedHash = buildOzowResponseHash({
@@ -113,7 +128,10 @@ export async function POST(req: NextRequest) {
     expectedHashBuffer.length !== receivedHashBuffer.length ||
     !crypto.timingSafeEqual(expectedHashBuffer, receivedHashBuffer)
   ) {
-    return NextResponse.json({ ok: false, error: "Invalid Ozow callback signature." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid Ozow callback signature." },
+      { status: 400 },
+    );
   }
 
   const order = await prisma.order.findFirst({

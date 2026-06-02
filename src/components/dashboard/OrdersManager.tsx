@@ -4,12 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import OrderMap from "@/components/OrderMap";
 import DashCard from "./DashCard";
 
-type OrderStatus =
-  | "PLACED"
-  | "PREPARING"
-  | "OUT_FOR_DELIVERY"
-  | "DELIVERED"
-  | "CANCELED";
+type OrderStatus = "PLACED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELED";
 
 type Order = {
   publicId: string;
@@ -96,19 +91,18 @@ export default function OrdersManager() {
   useEffect(() => {
     const timer = setInterval(async () => {
       const activeOrders = orders.filter(
-        (order) =>
-          order.status === "OUT_FOR_DELIVERY" || order.status === "PREPARING"
+        (order) => order.status === "OUT_FOR_DELIVERY" || order.status === "PREPARING",
       );
       if (activeOrders.length === 0) return;
 
       const updates = await Promise.all(
         activeOrders.map(async (order) => {
           const response = await fetch(
-            `/api/vendors/orders/track?id=${encodeURIComponent(order.publicId)}`
+            `/api/vendors/orders/track?id=${encodeURIComponent(order.publicId)}`,
           );
           const json = await response.json();
           return json?.ok ? { id: order.publicId, driver: json.driver } : null;
-        })
+        }),
       );
 
       setTracking((current) => {
@@ -180,7 +174,7 @@ export default function OrdersManager() {
     }
 
     setOrders((current) =>
-      current.map((order) => (order.publicId === publicId ? { ...order, status } : order))
+      current.map((order) => (order.publicId === publicId ? { ...order, status } : order)),
     );
   }
 
@@ -300,10 +294,7 @@ export default function OrdersManager() {
                 <select
                   value={selectedOrder.status}
                   onChange={(event) =>
-                    void updateStatus(
-                      selectedOrder.publicId,
-                      event.target.value as OrderStatus
-                    )
+                    void updateStatus(selectedOrder.publicId, event.target.value as OrderStatus)
                   }
                   className="rounded bg-white px-3 py-2 text-sm text-black"
                 >
@@ -341,9 +332,7 @@ export default function OrdersManager() {
               </div>
 
               <div className="rounded border border-white/10 bg-black/20 p-3 text-sm">
-                <div className="text-xs uppercase tracking-[0.12em] text-white/60">
-                  Items
-                </div>
+                <div className="text-xs uppercase tracking-[0.12em] text-white/60">Items</div>
                 <ul className="mt-2 space-y-1 text-white/85">
                   {selectedOrder.items.map((item) => (
                     <li key={item.id}>

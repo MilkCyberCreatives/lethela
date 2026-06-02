@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ESNext"
-    ],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
@@ -16,21 +12,14 @@
     "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
     "moduleDetection": "force",
     "incremental": true,
-    "types": [
-      "node",
-      "next",
-      "next/types",
-      "next/navigation"
-    ],
+    "types": ["node", "next", "next/types", "next/navigation"],
     "plugins": [
       {
         "name": "next"
@@ -44,9 +33,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    ".next",
-    "archive"
-  ]
+  "exclude": ["node_modules", ".next", "archive"]
 }

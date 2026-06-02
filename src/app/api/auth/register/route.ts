@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   if (!rateLimit.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many sign-up attempts. Please try again later." },
-      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
     );
   }
 

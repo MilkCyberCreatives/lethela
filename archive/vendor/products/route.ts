@@ -5,7 +5,10 @@ import { aiModerateProduct } from "@/lib/ai";
 
 // For MVP, map email -> vendor record
 async function getOrCreateVendor(email: string) {
-  const slug = email.split("@")[0].replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const slug = email
+    .split("@")[0]
+    .replace(/[^a-z0-9]+/gi, "-")
+    .toLowerCase();
   let vendor = await prisma.vendor.findFirst({ where: { slug } });
   if (!vendor) {
     vendor = await prisma.vendor.create({
@@ -40,7 +43,10 @@ export async function POST(req: Request) {
   // AI moderation
   const mod = await aiModerateProduct(body.name, body.description ?? "");
   if (!mod.allowed) {
-    return NextResponse.json({ ok: false, error: "Content not allowed", reasons: mod.reasons }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Content not allowed", reasons: mod.reasons },
+      { status: 400 },
+    );
   }
 
   const p = await prisma.product.create({

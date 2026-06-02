@@ -34,7 +34,10 @@ function toCuisineList(value: string) {
 
 function isApprovedVendor(status: string, isActive: boolean) {
   const normalizedStatus = String(status || "").toUpperCase();
-  return isActive && (normalizedStatus === "ACTIVE" || normalizedStatus === "APPROVED" || normalizedStatus === "");
+  return (
+    isActive &&
+    (normalizedStatus === "ACTIVE" || normalizedStatus === "APPROVED" || normalizedStatus === "")
+  );
 }
 
 export default function VendorSignupForm() {
@@ -182,7 +185,9 @@ export default function VendorSignupForm() {
 
       <form className="mt-5 space-y-6" onSubmit={submit}>
         <section className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Business Details</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">
+            Business Details
+          </h3>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <input
               className="rounded-lg bg-white px-3 py-2 text-black"
@@ -215,7 +220,9 @@ export default function VendorSignupForm() {
               required
               minLength={8}
               value={form.confirmPassword}
-              onChange={(event) => setForm((state) => ({ ...state, confirmPassword: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, confirmPassword: event.target.value }))
+              }
             />
             <input
               className="rounded-lg bg-white px-3 py-2 text-black"
@@ -260,14 +267,18 @@ export default function VendorSignupForm() {
         </section>
 
         <section className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Operations Setup</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">
+            Operations Setup
+          </h3>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <input
               className="rounded-lg bg-white px-3 py-2 text-black md:col-span-2"
               placeholder="Cuisines* (comma separated)"
               required
               value={form.cuisineInput}
-              onChange={(event) => setForm((state) => ({ ...state, cuisineInput: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, cuisineInput: event.target.value }))
+              }
             />
             <input
               className="rounded-lg bg-white px-3 py-2 text-black"
@@ -278,7 +289,9 @@ export default function VendorSignupForm() {
               placeholder="Default delivery fee (R)*"
               required
               value={form.deliveryFeeCents}
-              onChange={(event) => setForm((state) => ({ ...state, deliveryFeeCents: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, deliveryFeeCents: event.target.value }))
+              }
             />
             <input
               className="rounded-lg bg-white px-3 py-2 text-black"
@@ -300,13 +313,17 @@ export default function VendorSignupForm() {
               className="rounded-lg bg-white px-3 py-2 text-black"
               placeholder="Longitude (optional)"
               value={form.longitude}
-              onChange={(event) => setForm((state) => ({ ...state, longitude: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, longitude: event.target.value }))
+              }
             />
             <label className="md:col-span-2 inline-flex items-center gap-2 text-sm text-white/80">
               <input
                 type="checkbox"
                 checked={form.halaal}
-                onChange={(event) => setForm((state) => ({ ...state, halaal: event.target.checked }))}
+                onChange={(event) =>
+                  setForm((state) => ({ ...state, halaal: event.target.checked }))
+                }
               />
               Halaal friendly menu available
             </label>
@@ -314,24 +331,34 @@ export default function VendorSignupForm() {
         </section>
 
         <section className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Compliance</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">
+            Compliance
+          </h3>
           <div className="mt-3 grid gap-3">
             <p className="text-sm text-white/75">
-              Owner ID and proof of address will be requested manually on WhatsApp after registration.
+              Owner ID and proof of address will be requested manually on WhatsApp after
+              registration.
             </p>
             <label className="md:col-span-2 inline-flex items-center gap-2 text-sm text-white/80">
               <input
                 type="checkbox"
                 checked={form.agreeToReview}
-                onChange={(event) => setForm((state) => ({ ...state, agreeToReview: event.target.checked }))}
+                onChange={(event) =>
+                  setForm((state) => ({ ...state, agreeToReview: event.target.checked }))
+                }
               />
-              I confirm the details are accurate and understand that admin approval is required before going live.
+              I confirm the details are accurate and understand that admin approval is required
+              before going live.
             </label>
           </div>
         </section>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" className="bg-lethela-primary transition-opacity hover:opacity-90" disabled={loading}>
+          <Button
+            type="submit"
+            className="bg-lethela-primary transition-opacity hover:opacity-90"
+            disabled={loading}
+          >
             {loading ? "Submitting..." : "Submit vendor application"}
           </Button>
           <Button
@@ -368,12 +395,14 @@ export default function VendorSignupForm() {
           ) : null}
           {approvalState === "pending" ? (
             <p className="mt-2 text-white/80">
-              Application received and pending admin approval. Dashboard access unlocks immediately after approval.
+              Application received and pending admin approval. Dashboard access unlocks immediately
+              after approval.
             </p>
           ) : null}
           {approvalState === "rejected" ? (
             <p className="mt-2 text-red-200">
-              This application was rejected. Update your details and submit again, or contact support.
+              This application was rejected. Update your details and submit again, or contact
+              support.
             </p>
           ) : null}
         </div>

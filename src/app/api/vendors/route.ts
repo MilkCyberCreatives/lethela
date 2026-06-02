@@ -68,7 +68,7 @@ export async function GET(req: Request) {
               take: 40,
             },
           },
-        })
+        }),
       );
 
       items = dbVendors.map((vendor) => {
@@ -84,7 +84,11 @@ export async function GET(req: Request) {
           products: vendor.products,
           reviews: vendor.reviews,
         });
-        const etaBase = aiPredictETA(card.distanceKm ?? 3, card.baseEtaMin ?? vendor.etaMins ?? 15, hour);
+        const etaBase = aiPredictETA(
+          card.distanceKm ?? 3,
+          card.baseEtaMin ?? vendor.etaMins ?? 15,
+          hour,
+        );
         return {
           ...card,
           eta: `${etaBase}-${etaBase + 5} min`,
@@ -116,6 +120,6 @@ export async function GET(req: Request) {
       headers: {
         "cache-control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
       },
-    }
+    },
   );
 }

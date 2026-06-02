@@ -79,7 +79,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             placeholder="Search township food, groceries, vendors..."
             className="w-full rounded border border-white/20 bg-white px-3 py-2 text-black"
           />
-          <button type="submit" className="rounded bg-lethela-primary px-4 py-2 font-medium text-white">
+          <button
+            type="submit"
+            className="rounded bg-lethela-primary px-4 py-2 font-medium text-white"
+          >
             Search
           </button>
         </form>
@@ -100,9 +103,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
               >
                 <div className="text-xs uppercase tracking-[0.1em] text-white/60">{item.kind}</div>
                 <h2 className="mt-1 text-base font-semibold">{item.title}</h2>
-                <p className="mt-1 text-sm text-white/70">{item.subtitle || item.vendorName || "Local listing"}</p>
+                <p className="mt-1 text-sm text-white/70">
+                  {item.subtitle || item.vendorName || "Local listing"}
+                </p>
                 {item.priceCents != null ? (
-                  <p className="mt-2 text-sm text-white/85">R {(item.priceCents / 100).toFixed(2)}</p>
+                  <p className="mt-2 text-sm text-white/85">
+                    R {(item.priceCents / 100).toFixed(2)}
+                  </p>
                 ) : null}
               </Link>
             ))}

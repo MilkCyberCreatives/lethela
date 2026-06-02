@@ -65,7 +65,11 @@ type OrderPayload = {
 const STAGES: TrackingOrderStatus[] = ["PLACED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED"];
 
 function normalizeRef(value: string) {
-  return String(value || "").trim().toUpperCase().replace(/\s+/g, "-").replace(/-+/g, "-");
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 }
 
 function formatDateTime(value?: string | null) {
@@ -96,7 +100,13 @@ function buildFallbackTracking(order: OrderPayload): TrackingPayload {
               ? "Delivered"
               : "Canceled",
     progressPct:
-      status === "PLACED" ? 12 : status === "PREPARING" ? 42 : status === "OUT_FOR_DELIVERY" ? 78 : 100,
+      status === "PLACED"
+        ? 12
+        : status === "PREPARING"
+          ? 42
+          : status === "OUT_FOR_DELIVERY"
+            ? 78
+            : 100,
     rider: order.rider ? { lat: order.rider.lat, lng: order.rider.lng } : null,
     hasLiveRider: Boolean(order.rider && !order.rider.simulated),
   };
@@ -115,39 +125,44 @@ export default function OrderTrackingPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastEventAt, setLastEventAt] = useState<string | null>(null);
 
-  const load = useCallback(async (silent = false) => {
-    if (silent) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-
-    try {
-      const token = searchParams?.get("t")?.trim() || "";
-      const trackingParam = token ? `?t=${encodeURIComponent(token)}` : "";
-      const response = await fetch(`/api/orders/${encodeURIComponent(ref)}${trackingParam}`, { cache: "no-store" });
-      const json = await response.json().catch(() => ({}));
-
-      if (!response.ok || !json?.ok || !json.order) {
-        setOrder(null);
-        setError(
-          response.status === 404
-            ? "Order not found. Please check your reference and try again."
-            : "Could not load order tracking right now."
-        );
-        return;
+  const load = useCallback(
+    async (silent = false) => {
+      if (silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
       }
+      setError(null);
 
-      setOrder(json.order as OrderPayload);
-    } catch {
-      setOrder(null);
-      setError("Could not load order tracking right now.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [ref, searchParams]);
+      try {
+        const token = searchParams?.get("t")?.trim() || "";
+        const trackingParam = token ? `?t=${encodeURIComponent(token)}` : "";
+        const response = await fetch(`/api/orders/${encodeURIComponent(ref)}${trackingParam}`, {
+          cache: "no-store",
+        });
+        const json = await response.json().catch(() => ({}));
+
+        if (!response.ok || !json?.ok || !json.order) {
+          setOrder(null);
+          setError(
+            response.status === 404
+              ? "Order not found. Please check your reference and try again."
+              : "Could not load order tracking right now.",
+          );
+          return;
+        }
+
+        setOrder(json.order as OrderPayload);
+      } catch {
+        setOrder(null);
+        setError("Could not load order tracking right now.");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [ref, searchParams],
+  );
 
   useEffect(() => {
     void load(false);
@@ -167,7 +182,8 @@ export default function OrderTrackingPage() {
   }, [ref]);
 
   useEffect(() => {
-    if (!order || isTerminalTrackingStatus(order.status) || document.visibilityState !== "visible") return;
+    if (!order || isTerminalTrackingStatus(order.status) || document.visibilityState !== "visible")
+      return;
     const timer = window.setInterval(() => {
       void load(true);
     }, 12000);
@@ -218,7 +234,10 @@ export default function OrderTrackingPage() {
     };
   }, [error, load, loading, order]);
 
-  const tracking = useMemo(() => (order ? order.tracking || buildFallbackTracking(order) : null), [order]);
+  const tracking = useMemo(
+    () => (order ? order.tracking || buildFallbackTracking(order) : null),
+    [order],
+  );
   const stageIndex = tracking ? STAGES.indexOf(tracking.status) : -1;
   const vendorPoint =
     order?.vendor?.latitude != null && order?.vendor?.longitude != null
@@ -264,13 +283,15 @@ export default function OrderTrackingPage() {
             <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">
               <div className="grid gap-2 text-sm text-white/75 sm:grid-cols-3">
                 <div>
-                  Current stage: <span className="font-semibold text-white">{tracking.statusLabel}</span>
+                  Current stage:{" "}
+                  <span className="font-semibold text-white">{tracking.statusLabel}</span>
                 </div>
                 <div>
                   ETA: <span className="font-semibold text-white">{tracking.etaLabel}</span>
                 </div>
                 <div>
-                  Total: <span className="font-semibold text-white">{formatZAR(order.totalCents)}</span>
+                  Total:{" "}
+                  <span className="font-semibold text-white">{formatZAR(order.totalCents)}</span>
                 </div>
               </div>
             </div>
@@ -280,11 +301,16 @@ export default function OrderTrackingPage() {
                 <div className="rounded-xl border border-white/15 bg-white/5 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-semibold">Order journey</div>
-                    {normalizeTrackingStatus(order.status) === "CANCELED" ? <StatusBadge>Canceled</StatusBadge> : null}
+                    {normalizeTrackingStatus(order.status) === "CANCELED" ? (
+                      <StatusBadge>Canceled</StatusBadge>
+                    ) : null}
                   </div>
                   <p className="mt-3 text-sm text-white/75">{tracking.statusDetail}</p>
                   <div className="mt-4 h-2 rounded-full bg-white/10">
-                    <div className="h-2 rounded-full bg-lethela-primary" style={{ width: `${tracking.progressPct}%` }} />
+                    <div
+                      className="h-2 rounded-full bg-lethela-primary"
+                      style={{ width: `${tracking.progressPct}%` }}
+                    />
                   </div>
                   <ol className="mt-5 relative border-l border-white/20 pl-6">
                     {STAGES.map((stage, index) => {
@@ -349,7 +375,8 @@ export default function OrderTrackingPage() {
                   </div>
                   <div className="mt-3 space-y-1 text-xs text-white/60">
                     <p>
-                      Vendor: {order.vendor?.name || "Unknown"} | Area: {formatLocation(order.vendor)}
+                      Vendor: {order.vendor?.name || "Unknown"} | Area:{" "}
+                      {formatLocation(order.vendor)}
                     </p>
                     <p>
                       {refreshing
@@ -362,7 +389,8 @@ export default function OrderTrackingPage() {
                 <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">
                   <div className="grid gap-2 text-sm text-white/75 sm:grid-cols-2">
                     <div>
-                      Payment: <span className="font-semibold text-white">{order.paymentStatus}</span>
+                      Payment:{" "}
+                      <span className="font-semibold text-white">{order.paymentStatus}</span>
                     </div>
                     <div>
                       Rider signal:{" "}
@@ -375,7 +403,10 @@ export default function OrderTrackingPage() {
                       </span>
                     </div>
                     <div>
-                      Placed: <span className="font-semibold text-white">{formatDateTime(order.createdAt)}</span>
+                      Placed:{" "}
+                      <span className="font-semibold text-white">
+                        {formatDateTime(order.createdAt)}
+                      </span>
                     </div>
                     <div>
                       Reference: <span className="font-semibold text-white">{ref}</span>
@@ -399,5 +430,9 @@ export default function OrderTrackingPage() {
 }
 
 function StatusBadge({ children }: { children: ReactNode }) {
-  return <span className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/78">{children}</span>;
+  return (
+    <span className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/78">
+      {children}
+    </span>
+  );
 }

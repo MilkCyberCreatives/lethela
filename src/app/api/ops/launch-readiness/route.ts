@@ -14,7 +14,12 @@ function isFalse(name: string) {
   return process.env[name]?.trim() === "false";
 }
 
-function item(label: string, ok: boolean, detail: string, severity: "required" | "recommended" = "required") {
+function item(
+  label: string,
+  ok: boolean,
+  detail: string,
+  severity: "required" | "recommended" = "required",
+) {
   return { label, ok, detail, severity };
 }
 
@@ -34,10 +39,21 @@ export async function GET(req: NextRequest) {
     users,
   ] = await Promise.all([
     withQueryTimeout(prisma.vendor.count({ where: { isActive: true, status: "ACTIVE" } }), 0),
-    withQueryTimeout(prisma.product.count({ where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } } }), 0),
-    withQueryTimeout(prisma.order.count({ where: { paymentStatus: { in: ["PAID", "SUCCESS"] } } }), 0),
+    withQueryTimeout(
+      prisma.product.count({
+        where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } },
+      }),
+      0,
+    ),
+    withQueryTimeout(
+      prisma.order.count({ where: { paymentStatus: { in: ["PAID", "SUCCESS"] } } }),
+      0,
+    ),
     withQueryTimeout(prisma.vendor.count({ where: { status: "PENDING" } }), 0),
-    withQueryTimeout(prisma.riderApplication.count({ where: { status: { in: ["PENDING", "UNDER_REVIEW"] } } }), 0),
+    withQueryTimeout(
+      prisma.riderApplication.count({ where: { status: { in: ["PENDING", "UNDER_REVIEW"] } } }),
+      0,
+    ),
     withQueryTimeout(prisma.riderApplication.count({ where: { status: "APPROVED" } }), 0),
     withQueryTimeout(prisma.user.count(), 0),
   ]);
@@ -45,21 +61,61 @@ export async function GET(req: NextRequest) {
   const checks = [
     item(
       "Production database",
-      prismaRuntimeInfo.provider === "postgresql" && prismaRuntimeInfo.persistent && prismaRuntimeInfo.scalable,
-      `provider=${prismaRuntimeInfo.provider || "unknown"}`
+      prismaRuntimeInfo.provider === "postgresql" &&
+        prismaRuntimeInfo.persistent &&
+        prismaRuntimeInfo.scalable,
+      `provider=${prismaRuntimeInfo.provider || "unknown"}`,
     ),
-    item("Canonical URL", configured("NEXT_PUBLIC_SITE_URL") && configured("NEXTAUTH_URL"), "NEXT_PUBLIC_SITE_URL and NEXTAUTH_URL"),
-    item("Authentication secrets", configured("NEXTAUTH_SECRET") && configured("VENDOR_SESSION_SECRET"), "NextAuth and vendor session secrets"),
+    item(
+      "Canonical URL",
+      configured("NEXT_PUBLIC_SITE_URL") && configured("NEXTAUTH_URL"),
+      "NEXT_PUBLIC_SITE_URL and NEXTAUTH_URL",
+    ),
+    item(
+      "Authentication secrets",
+      configured("NEXTAUTH_SECRET") && configured("VENDOR_SESSION_SECRET"),
+      "NextAuth and vendor session secrets",
+    ),
     item("Admin owner access", configured("ADMIN_APPROVAL_KEY"), "ADMIN_APPROVAL_KEY configured"),
-    item("Rider console security", configured("RIDER_CONSOLE_SECRET") || configured("NEXTAUTH_SECRET"), "Secure rider console tokens"),
-    item("Ozow live checkout", configured("OZOW_SITE_CODE") && configured("OZOW_PRIVATE_KEY"), "Site code and private key configured"),
-    item("Ozow live mode", isFalse("OZOW_IS_TEST") && isFalse("NEXT_PUBLIC_OZOW_IS_TEST"), "Both Ozow test flags set to false"),
-    item("Google Maps", configured("GOOGLE_MAPS_API_KEY") && configured("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"), "Server and browser map keys"),
+    item(
+      "Rider console security",
+      configured("RIDER_CONSOLE_SECRET") || configured("NEXTAUTH_SECRET"),
+      "Secure rider console tokens",
+    ),
+    item(
+      "Ozow live checkout",
+      configured("OZOW_SITE_CODE") && configured("OZOW_PRIVATE_KEY"),
+      "Site code and private key configured",
+    ),
+    item(
+      "Ozow live mode",
+      isFalse("OZOW_IS_TEST") && isFalse("NEXT_PUBLIC_OZOW_IS_TEST"),
+      "Both Ozow test flags set to false",
+    ),
+    item(
+      "Google Maps",
+      configured("GOOGLE_MAPS_API_KEY") && configured("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"),
+      "Server and browser map keys",
+    ),
     item("Durable uploads", hasStorageConfig(), "Supabase storage configured"),
-    item("Active catalog", getCatalogMode() === "live" && activeVendors > 0 && activeProducts > 0, `${activeVendors} vendors, ${activeProducts} products`),
+    item(
+      "Active catalog",
+      getCatalogMode() === "live" && activeVendors > 0 && activeProducts > 0,
+      `${activeVendors} vendors, ${activeProducts} products`,
+    ),
     item("Approved riders", approvedRiders > 0, `${approvedRiders} approved rider(s)`),
-    item("Email notifications", configured("RESEND_API_KEY") && configured("ADMIN_NOTIFICATION_EMAILS"), "Resend and admin recipients", "recommended"),
-    item("Realtime updates", configured("PUSHER_APP_ID") && configured("PUSHER_KEY") && configured("PUSHER_SECRET"), "Pusher server keys", "recommended"),
+    item(
+      "Email notifications",
+      configured("RESEND_API_KEY") && configured("ADMIN_NOTIFICATION_EMAILS"),
+      "Resend and admin recipients",
+      "recommended",
+    ),
+    item(
+      "Realtime updates",
+      configured("PUSHER_APP_ID") && configured("PUSHER_KEY") && configured("PUSHER_SECRET"),
+      "Pusher server keys",
+      "recommended",
+    ),
     item("Web push", hasWebPushConfig(), "VAPID keys configured", "recommended"),
     item("Search/AI index", true, "/sitemap.xml, /robots.txt, /llms.txt, /ai.txt", "recommended"),
   ];

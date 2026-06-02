@@ -40,7 +40,11 @@ function timeoutFallback<T>(ms: number, fallback: T): Promise<T> {
   });
 }
 
-async function withTimeout<T>(work: () => Promise<T>, fallback: T, ms = HOME_QUERY_TIMEOUT_MS): Promise<T> {
+async function withTimeout<T>(
+  work: () => Promise<T>,
+  fallback: T,
+  ms = HOME_QUERY_TIMEOUT_MS,
+): Promise<T> {
   try {
     const guarded = Promise.resolve(work()).catch(() => fallback);
     return await Promise.race([guarded, timeoutFallback(ms, fallback)]);
@@ -56,7 +60,10 @@ function normalizeSuburb(suburb: string | null) {
 }
 
 export async function getHomeRecommendations(suburb: string | null): Promise<RecommendationCard[]> {
-  const result = await withTimeout<Awaited<ReturnType<typeof aiRecommend>>>(() => aiRecommend(suburb), { ok: true, results: [] });
+  const result = await withTimeout<Awaited<ReturnType<typeof aiRecommend>>>(
+    () => aiRecommend(suburb),
+    { ok: true, results: [] },
+  );
   return result.results;
 }
 
@@ -69,34 +76,34 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
   const rows = await withTimeout(
     () =>
       prisma.product.findMany({
-      where: {
-        inStock: true,
-        vendor: {
-          isActive: true,
-          status: "ACTIVE",
-          ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        priceCents: true,
-        image: true,
-        isAlcohol: true,
-        vendor: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            deliveryFee: true,
+        where: {
+          inStock: true,
+          vendor: {
+            isActive: true,
+            status: "ACTIVE",
+            ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
           },
         },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: Math.min(60, Math.max(6, take)),
-    }),
-    []
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          priceCents: true,
+          image: true,
+          isAlcohol: true,
+          vendor: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              deliveryFee: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: Math.min(60, Math.max(6, take)),
+      }),
+    [],
   );
 
   if (rows.length === 0 && shouldFallbackWhenCatalogEmpty()) {
@@ -136,37 +143,39 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
   const dbVendors = await withTimeout(
     () =>
       prisma.vendor.findMany({
-      where: {
-        isActive: true,
-        status: "ACTIVE",
-        ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        rating: true,
-        cuisine: true,
-        halaal: true,
-        image: true,
-        etaMins: true,
-        products: {
-          select: { isAlcohol: true },
-          take: 4,
+        where: {
+          isActive: true,
+          status: "ACTIVE",
+          ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
         },
-        reviews: {
-          select: { rating: true },
-          take: 40,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          rating: true,
+          cuisine: true,
+          halaal: true,
+          image: true,
+          etaMins: true,
+          products: {
+            select: { isAlcohol: true },
+            take: 4,
+          },
+          reviews: {
+            select: { rating: true },
+            take: 40,
+          },
         },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: Math.min(60, Math.max(6, take)),
-    }),
-    []
+        orderBy: { updatedAt: "desc" },
+        take: Math.min(60, Math.max(6, take)),
+      }),
+    [],
   );
 
   if (dbVendors.length === 0) {
-    return shouldPreferCatalogFallback() || shouldFallbackWhenCatalogEmpty() ? fallbackVendors(hour) : [];
+    return shouldPreferCatalogFallback() || shouldFallbackWhenCatalogEmpty()
+      ? fallbackVendors(hour)
+      : [];
   }
 
   const mapped = dbVendors.map((vendor: VendorWithAlcohol) => {
@@ -208,7 +217,8 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
   }
 
   const merged = mapped.map((vendor) => {
-    const etaStart = etaById.get(vendor.id) ?? aiPredictETA(vendor.distanceKm ?? 3, vendor.baseEtaMin ?? 15, hour);
+    const etaStart =
+      etaById.get(vendor.id) ?? aiPredictETA(vendor.distanceKm ?? 3, vendor.baseEtaMin ?? 15, hour);
     return {
       ...vendor,
       eta: `${etaStart}-${etaStart + 5} min`,

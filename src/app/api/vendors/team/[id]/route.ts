@@ -7,10 +7,7 @@ const RoleSchema = z.object({
   role: z.enum(["MANAGER", "STAFF"]),
 });
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireVendor("OWNER");
     const { id } = await params;
@@ -38,7 +35,7 @@ export async function PATCH(
     if (existing.userId === vendor?.ownerId) {
       return NextResponse.json(
         { ok: false, error: "The store owner role cannot be changed here." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -56,10 +53,7 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireVendor("OWNER");
     const { id } = await params;
@@ -81,14 +75,14 @@ export async function DELETE(
     if (existing.userId === vendor?.ownerId) {
       return NextResponse.json(
         { ok: false, error: "The store owner cannot be removed." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (existing.userId === session.userId) {
       return NextResponse.json(
         { ok: false, error: "You cannot remove your own access." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

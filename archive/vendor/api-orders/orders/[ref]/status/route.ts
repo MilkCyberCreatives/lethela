@@ -23,7 +23,10 @@ export async function GET(req: Request) {
           id: o.publicId,
           status: o.status,
           vendor: o.vendor?.name ?? "Vendor",
-          eta: o.distanceKm != null ? `${Math.max(12, Math.round(15 + (o.distanceKm * 4.5)))}–${Math.max(17, Math.round(20 + (o.distanceKm * 4.5)))} min` : "25–35 min",
+          eta:
+            o.distanceKm != null
+              ? `${Math.max(12, Math.round(15 + o.distanceKm * 4.5))}–${Math.max(17, Math.round(20 + o.distanceKm * 4.5))} min`
+              : "25–35 min",
         },
       });
     }

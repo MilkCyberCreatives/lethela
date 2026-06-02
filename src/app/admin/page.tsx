@@ -97,7 +97,13 @@ type NotificationChannels = {
 };
 
 const VENDOR_STATUS_OPTIONS: VendorStatusFilter[] = ["PENDING", "ACTIVE", "REJECTED", "ALL"];
-const RIDER_STATUS_OPTIONS: RiderStatusFilter[] = ["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ALL"];
+const RIDER_STATUS_OPTIONS: RiderStatusFilter[] = [
+  "PENDING",
+  "UNDER_REVIEW",
+  "APPROVED",
+  "REJECTED",
+  "ALL",
+];
 
 const WORKSPACES: Array<{ id: DashboardView; label: string; icon: typeof LayoutDashboard }> = [
   { id: "overview", label: "Owner overview", icon: LayoutDashboard },
@@ -132,7 +138,9 @@ function getErrorMessage(error: unknown, fallback: string) {
 function parseCuisine(value: string) {
   try {
     const parsed = JSON.parse(value || "[]");
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
   } catch {
     return [];
   }
@@ -141,13 +149,19 @@ function parseCuisine(value: string) {
 function matchesSearch(query: string, values: Array<string | null | undefined>) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
-  return values.some((value) => String(value || "").toLowerCase().includes(normalized));
+  return values.some((value) =>
+    String(value || "")
+      .toLowerCase()
+      .includes(normalized),
+  );
 }
 
 function statusClass(status: string) {
-  if (["ACTIVE", "APPROVED"].includes(status)) return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
+  if (["ACTIVE", "APPROVED"].includes(status))
+    return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
   if (["REJECTED"].includes(status)) return "border-red-300/30 bg-red-300/10 text-red-100";
-  if (["UNDER_REVIEW"].includes(status)) return "border-amber-300/30 bg-amber-300/10 text-amber-100";
+  if (["UNDER_REVIEW"].includes(status))
+    return "border-amber-300/30 bg-amber-300/10 text-amber-100";
   return "border-white/15 bg-white/5 text-white/80";
 }
 
@@ -195,7 +209,12 @@ export default function AdminPage() {
   const [vendorSearch, setVendorSearch] = useState("");
   const [riderSearch, setRiderSearch] = useState("");
   const [vendors, setVendors] = useState<VendorApplication[]>([]);
-  const [vendorCounts, setVendorCounts] = useState<VendorCounts>({ pending: 0, active: 0, rejected: 0, total: 0 });
+  const [vendorCounts, setVendorCounts] = useState<VendorCounts>({
+    pending: 0,
+    active: 0,
+    rejected: 0,
+    total: 0,
+  });
   const [riders, setRiders] = useState<RiderApplication[]>([]);
   const [riderCounts, setRiderCounts] = useState<RiderCounts>({
     pending: 0,
@@ -215,7 +234,11 @@ export default function AdminPage() {
   const adminKeyRef = useRef("");
 
   useEffect(() => {
-    setPushPermission(typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported");
+    setPushPermission(
+      typeof window !== "undefined" && "Notification" in window
+        ? Notification.permission
+        : "unsupported",
+    );
   }, []);
 
   useEffect(() => {
@@ -232,7 +255,8 @@ export default function AdminPage() {
       body: JSON.stringify({ adminKey: normalizedKey }),
     });
     const json = await response.json();
-    if (!response.ok || !json.ok) throw new Error(json.error || "Failed to validate admin approval key.");
+    if (!response.ok || !json.ok)
+      throw new Error(json.error || "Failed to validate admin approval key.");
     if (json.promoted && json.message) setNotice(json.message);
   }, []);
 
@@ -254,8 +278,10 @@ export default function AdminPage() {
         notificationsResponse.json(),
       ]);
 
-      if (!vendorsResponse.ok || !vendorsJson.ok) throw new Error(vendorsJson.error || "Failed to load vendor approvals.");
-      if (!ridersResponse.ok || !ridersJson.ok) throw new Error(ridersJson.error || "Failed to load rider approvals.");
+      if (!vendorsResponse.ok || !vendorsJson.ok)
+        throw new Error(vendorsJson.error || "Failed to load vendor approvals.");
+      if (!ridersResponse.ok || !ridersJson.ok)
+        throw new Error(ridersJson.error || "Failed to load rider approvals.");
       if (!notificationsResponse.ok || !notificationsJson.ok) {
         throw new Error(notificationsJson.error || "Failed to load notification settings.");
       }
@@ -267,7 +293,7 @@ export default function AdminPage() {
           active: 0,
           rejected: 0,
           total: Number((vendorsJson.items ?? []).length),
-        }
+        },
       );
       setRiders(ridersJson.items ?? []);
       setRiderCounts(
@@ -277,7 +303,7 @@ export default function AdminPage() {
           approved: 0,
           rejected: 0,
           total: Number((ridersJson.items ?? []).length),
-        }
+        },
       );
       setChannels(notificationsJson.channels ?? null);
       setTotalPendingApprovals(Number(notificationsJson.totalPendingApprovals ?? 0));
@@ -307,7 +333,7 @@ export default function AdminPage() {
     setNotice(
       permission === "granted"
         ? "Browser push notifications enabled for admin alerts."
-        : "Browser push notifications were not enabled."
+        : "Browser push notifications were not enabled.",
     );
   }
 
@@ -324,7 +350,8 @@ export default function AdminPage() {
         body: JSON.stringify({ action }),
       });
       const json = await response.json();
-      if (!response.ok || !json.ok) throw new Error(json.error || "Failed to update vendor application.");
+      if (!response.ok || !json.ok)
+        throw new Error(json.error || "Failed to update vendor application.");
       setNotice(json.message || "Vendor application updated.");
       await load();
     } catch (err: unknown) {
@@ -347,7 +374,8 @@ export default function AdminPage() {
         body: JSON.stringify({ status }),
       });
       const json = await response.json();
-      if (!response.ok || !json.ok) throw new Error(json.error || "Failed to update rider application.");
+      if (!response.ok || !json.ok)
+        throw new Error(json.error || "Failed to update rider application.");
       setNotice(`Rider moved to ${status.replaceAll("_", " ").toLowerCase()}.`);
       await load();
     } catch (err: unknown) {
@@ -368,9 +396,9 @@ export default function AdminPage() {
           vendor.address,
           vendor.suburb,
           vendor.city,
-        ])
+        ]),
       ),
-    [vendorSearch, vendors]
+    [vendorSearch, vendors],
   );
 
   const filteredRiders = useMemo(
@@ -385,14 +413,16 @@ export default function AdminPage() {
           rider.suburb,
           rider.city,
           rider.status,
-        ])
+        ]),
       ),
-    [riderSearch, riders]
+    [riderSearch, riders],
   );
 
   const activeRiders = riderCounts.approved;
   const totalRiderQueue = riderCounts.pending + riderCounts.underReview;
-  const activeVendorRatio = vendorCounts.total ? Math.round((vendorCounts.active / vendorCounts.total) * 100) : 0;
+  const activeVendorRatio = vendorCounts.total
+    ? Math.round((vendorCounts.active / vendorCounts.total) * 100)
+    : 0;
 
   const metrics = [
     {
@@ -415,7 +445,10 @@ export default function AdminPage() {
     },
     {
       label: "Alert health",
-      value: channels?.email.enabled || channels?.whatsapp.enabled || channels?.push.enabled ? "On" : "Setup",
+      value:
+        channels?.email.enabled || channels?.whatsapp.enabled || channels?.push.enabled
+          ? "On"
+          : "Setup",
       note: "Email, WhatsApp and browser alert coverage for admin events.",
       icon: Bell,
     },
@@ -459,7 +492,9 @@ export default function AdminPage() {
             </nav>
 
             <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.035] p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/50">Quick links</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
+                Quick links
+              </p>
               <div className="mt-3 grid gap-2 text-sm">
                 <Link className="text-white/75 hover:text-white" href="/vendors/dashboard">
                   Vendor dashboard
@@ -478,16 +513,22 @@ export default function AdminPage() {
             <section className="rounded-lg border border-white/10 bg-[#0C1132] p-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">Operations command</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
+                    Operations command
+                  </p>
                   <h2 className="mt-2 text-2xl font-bold md:text-3xl">Owner dashboard</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/68">
-                    Sego gave us the food-admin structure: KPIs, order queues, profile modules, calendar, messages and
-                    product controls. This version keeps Lethela styling and connects those ideas to admin, vendors,
-                    customers and riders.
+                    Sego gave us the food-admin structure: KPIs, order queues, profile modules,
+                    calendar, messages and product controls. This version keeps Lethela styling and
+                    connects those ideas to admin, vendors, customers and riders.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button className="bg-lethela-primary text-white hover:opacity-90" disabled={loading} onClick={load}>
+                  <Button
+                    className="bg-lethela-primary text-white hover:opacity-90"
+                    disabled={loading}
+                    onClick={load}
+                  >
                     <RefreshCw className="mr-2 h-4 w-4" />
                     {loading ? "Refreshing" : "Refresh"}
                   </Button>
@@ -567,7 +608,9 @@ export default function AdminPage() {
                 <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-white/50">Order pulse</p>
+                      <p className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        Order pulse
+                      </p>
                       <h3 className="mt-1 text-lg font-semibold">Live queue overview</h3>
                     </div>
                     <LineChart className="h-5 w-5 text-lethela-primary" />
@@ -580,7 +623,10 @@ export default function AdminPage() {
                           <span className="font-semibold">{item.value}</span>
                         </div>
                         <div className="mt-2 h-2 rounded-full bg-white/10">
-                          <div className={`h-2 rounded-full ${item.color}`} style={{ width: `${Math.min(item.value * 3, 100)}%` }} />
+                          <div
+                            className={`h-2 rounded-full ${item.color}`}
+                            style={{ width: `${Math.min(item.value * 3, 100)}%` }}
+                          />
                         </div>
                       </div>
                     ))}
@@ -602,7 +648,10 @@ export default function AdminPage() {
                       "Check delayed order exceptions",
                       "Confirm Laravel dashboard migration milestones",
                     ].map((item) => (
-                      <div key={item} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                      <div
+                        key={item}
+                        className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3"
+                      >
                         <CheckCircle2 className="h-4 w-4 text-lethela-primary" />
                         <span className="text-sm text-white/75">{item}</span>
                       </div>
@@ -622,17 +671,24 @@ export default function AdminPage() {
                 />
                 {filteredVendors.map((vendor) => {
                   const saving = savingKey === `vendor:${vendor.id}`;
-                  const location = [vendor.address, vendor.suburb, vendor.city, vendor.province].filter(Boolean).join(", ");
+                  const location = [vendor.address, vendor.suburb, vendor.city, vendor.province]
+                    .filter(Boolean)
+                    .join(", ");
                   const cuisines = parseCuisine(vendor.cuisine);
 
                   return (
-                    <article key={vendor.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                    <article
+                      key={vendor.id}
+                      className="rounded-lg border border-white/10 bg-white/[0.035] p-5"
+                    >
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                           <h3 className="text-lg font-semibold">{vendor.name}</h3>
                           <p className="text-xs text-white/60">/{vendor.slug}</p>
                         </div>
-                        <span className={`rounded-full border px-3 py-1 text-xs ${statusClass(vendor.status)}`}>
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs ${statusClass(vendor.status)}`}
+                        >
                           {vendor.status} {vendor.isActive ? "Live" : "Not live"}
                         </span>
                       </div>
@@ -644,9 +700,16 @@ export default function AdminPage() {
                       <div className="mt-4 grid gap-2 text-xs text-white/65 md:grid-cols-3">
                         <div>Delivery: R {(vendor.deliveryFee / 100).toFixed(2)}</div>
                         <div>Owner linked: {vendor.ownerId ? "Yes" : "No"}</div>
-                        <div>KYC: {vendor.kycIdUrl && vendor.kycProofUrl ? "Complete" : "Needs documents"}</div>
+                        <div>
+                          KYC:{" "}
+                          {vendor.kycIdUrl && vendor.kycProofUrl ? "Complete" : "Needs documents"}
+                        </div>
                         <div>Halaal: {vendor.halaal ? "Yes" : "No"}</div>
-                        <div>{cuisines.length > 0 ? `Cuisine: ${cuisines.join(", ")}` : "Cuisine: Not set"}</div>
+                        <div>
+                          {cuisines.length > 0
+                            ? `Cuisine: ${cuisines.join(", ")}`
+                            : "Cuisine: Not set"}
+                        </div>
                         <div>Applied: {formatDate(vendor.createdAt)}</div>
                       </div>
                       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -666,12 +729,22 @@ export default function AdminPage() {
                           Reject
                         </Button>
                         {vendor.kycIdUrl ? (
-                          <a href={vendor.kycIdUrl} target="_blank" rel="noreferrer" className="text-sm underline">
+                          <a
+                            href={vendor.kycIdUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm underline"
+                          >
                             ID document
                           </a>
                         ) : null}
                         {vendor.kycProofUrl ? (
-                          <a href={vendor.kycProofUrl} target="_blank" rel="noreferrer" className="text-sm underline">
+                          <a
+                            href={vendor.kycProofUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm underline"
+                          >
                             Proof of address
                           </a>
                         ) : null}
@@ -680,7 +753,10 @@ export default function AdminPage() {
                   );
                 })}
                 {!loading && filteredVendors.length === 0 ? (
-                  <EmptyState title="No vendors found" text="There are no vendor applications for this filter yet." />
+                  <EmptyState
+                    title="No vendors found"
+                    text="There are no vendor applications for this filter yet."
+                  />
                 ) : null}
               </section>
             ) : null}
@@ -694,23 +770,44 @@ export default function AdminPage() {
                   onChange={setRiderSearch}
                 />
                 <div className="grid gap-3 md:grid-cols-3">
-                  <MetricCard label="Pending" value={riderCounts.pending} note="New rider applications." icon={Clock} />
-                  <MetricCard label="Review" value={riderCounts.underReview} note="Documents being checked." icon={PackageCheck} />
-                  <MetricCard label="Approved" value={riderCounts.approved} note="Riders ready for shifts." icon={Bike} />
+                  <MetricCard
+                    label="Pending"
+                    value={riderCounts.pending}
+                    note="New rider applications."
+                    icon={Clock}
+                  />
+                  <MetricCard
+                    label="Review"
+                    value={riderCounts.underReview}
+                    note="Documents being checked."
+                    icon={PackageCheck}
+                  />
+                  <MetricCard
+                    label="Approved"
+                    value={riderCounts.approved}
+                    note="Riders ready for shifts."
+                    icon={Bike}
+                  />
                 </div>
                 {filteredRiders.map((rider) => (
-                  <article key={rider.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                  <article
+                    key={rider.id}
+                    className="rounded-lg border border-white/10 bg-white/[0.035] p-5"
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold">{rider.fullName}</h3>
                         <p className="text-sm text-white/78">
-                          {[rider.suburb, rider.city].filter(Boolean).join(", ") || "Location not set"}
+                          {[rider.suburb, rider.city].filter(Boolean).join(", ") ||
+                            "Location not set"}
                         </p>
                         <p className="text-xs text-white/60">
                           {rider.email} | {rider.phone}
                         </p>
                       </div>
-                      <span className={`rounded-full border px-3 py-1 text-xs ${statusClass(rider.status)}`}>
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs ${statusClass(rider.status)}`}
+                      >
                         {rider.status.replaceAll("_", " ")}
                       </span>
                     </div>
@@ -726,7 +823,8 @@ export default function AdminPage() {
                         Emergency: {rider.emergencyContactName} ({rider.emergencyContactPhone})
                       </div>
                       <div>
-                        Smartphone: {rider.hasSmartphone ? "Yes" : "No"} | Bank: {rider.hasBankAccount ? "Yes" : "No"}
+                        Smartphone: {rider.hasSmartphone ? "Yes" : "No"} | Bank:{" "}
+                        {rider.hasBankAccount ? "Yes" : "No"}
                       </div>
                     </div>
                     {rider.aiSummary ? (
@@ -735,7 +833,14 @@ export default function AdminPage() {
                       </div>
                     ) : null}
                     <div className="mt-4 flex flex-wrap gap-3">
-                      {(["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED"] as RiderApplicationStatus[]).map((status) => (
+                      {(
+                        [
+                          "PENDING",
+                          "UNDER_REVIEW",
+                          "APPROVED",
+                          "REJECTED",
+                        ] as RiderApplicationStatus[]
+                      ).map((status) => (
                         <Button
                           key={status}
                           variant={status === "APPROVED" ? "default" : "outline"}
@@ -747,14 +852,19 @@ export default function AdminPage() {
                           disabled={savingKey === `rider:${rider.id}:${status}`}
                           onClick={() => updateRiderStatus(rider.id, status)}
                         >
-                          {savingKey === `rider:${rider.id}:${status}` ? "Saving..." : status.replaceAll("_", " ")}
+                          {savingKey === `rider:${rider.id}:${status}`
+                            ? "Saving..."
+                            : status.replaceAll("_", " ")}
                         </Button>
                       ))}
                     </div>
                   </article>
                 ))}
                 {!loading && filteredRiders.length === 0 ? (
-                  <EmptyState title="No riders found" text="There are no rider applications for this filter yet." />
+                  <EmptyState
+                    title="No riders found"
+                    text="There are no rider applications for this filter yet."
+                  />
                 ) : null}
               </section>
             ) : null}
@@ -762,13 +872,19 @@ export default function AdminPage() {
             {view === "users" ? (
               <section className="grid gap-4 md:grid-cols-3">
                 {USER_SIGNALS.map((signal) => (
-                  <MetricCard key={signal.label} label={signal.label} value={signal.value} note={signal.note} icon={Users} />
+                  <MetricCard
+                    key={signal.label}
+                    label={signal.label}
+                    value={signal.value}
+                    note={signal.note}
+                    icon={Users}
+                  />
                 ))}
                 <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-3">
                   <h3 className="text-lg font-semibold">Customer workspace</h3>
                   <p className="mt-2 text-sm text-white/65">
-                    This area is ready for customer profiles, loyalty segments, support inboxes, refund decisions and saved
-                    delivery addresses once those APIs are connected.
+                    This area is ready for customer profiles, loyalty segments, support inboxes,
+                    refund decisions and saved delivery addresses once those APIs are connected.
                   </p>
                 </div>
               </section>
@@ -780,7 +896,10 @@ export default function AdminPage() {
                   <h3 className="text-lg font-semibold">Order control room</h3>
                   <div className="mt-4 grid gap-3">
                     {ORDER_PIPELINE.map((item) => (
-                      <div key={item.label} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                      <div
+                        key={item.label}
+                        className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-3"
+                      >
                         <span className="text-sm text-white/75">{item.label}</span>
                         <span className="text-lg font-semibold">{item.value}</span>
                       </div>
@@ -790,9 +909,15 @@ export default function AdminPage() {
                 <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="text-lg font-semibold">Dispatch features</h3>
                   <div className="mt-4 grid gap-3 text-sm text-white/70">
-                    <p className="rounded-lg border border-white/10 p-3">Assign orders to approved riders by area.</p>
-                    <p className="rounded-lg border border-white/10 p-3">Flag delayed vendor preparation times.</p>
-                    <p className="rounded-lg border border-white/10 p-3">Escalate refunds and customer support items.</p>
+                    <p className="rounded-lg border border-white/10 p-3">
+                      Assign orders to approved riders by area.
+                    </p>
+                    <p className="rounded-lg border border-white/10 p-3">
+                      Flag delayed vendor preparation times.
+                    </p>
+                    <p className="rounded-lg border border-white/10 p-3">
+                      Escalate refunds and customer support items.
+                    </p>
                   </div>
                 </div>
               </section>
@@ -800,15 +925,36 @@ export default function AdminPage() {
 
             {view === "operations" ? (
               <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <MetricCard label="Email" value={channels?.email.enabled ? channels.email.recipients : "Off"} note="Admin recipient coverage." icon={Mail} />
-                <MetricCard label="WhatsApp" value={channels?.whatsapp.enabled ? channels.whatsapp.recipients : "Off"} note="Operations escalation channel." icon={Bell} />
-                <MetricCard label="Payouts" value="Ready" note="Vendor and rider payout review lane." icon={WalletCards} />
-                <MetricCard label="Settings" value={authMode || "Local"} note={`Browser push: ${pushPermission}`} icon={Settings} />
+                <MetricCard
+                  label="Email"
+                  value={channels?.email.enabled ? channels.email.recipients : "Off"}
+                  note="Admin recipient coverage."
+                  icon={Mail}
+                />
+                <MetricCard
+                  label="WhatsApp"
+                  value={channels?.whatsapp.enabled ? channels.whatsapp.recipients : "Off"}
+                  note="Operations escalation channel."
+                  icon={Bell}
+                />
+                <MetricCard
+                  label="Payouts"
+                  value="Ready"
+                  note="Vendor and rider payout review lane."
+                  icon={WalletCards}
+                />
+                <MetricCard
+                  label="Settings"
+                  value={authMode || "Local"}
+                  note={`Browser push: ${pushPermission}`}
+                  icon={Settings}
+                />
                 <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
                   <h3 className="text-lg font-semibold">Laravel backend dashboard direction</h3>
                   <p className="mt-2 text-sm text-white/65">
-                    The Laravel starter files added with this work map this dashboard into Blade layouts, routes and
-                    role-based controllers so future backend dashboard projects can move to Laravel cleanly.
+                    The Laravel starter files added with this work map this dashboard into Blade
+                    layouts, routes and role-based controllers so future backend dashboard projects
+                    can move to Laravel cleanly.
                   </p>
                 </div>
               </section>
@@ -833,7 +979,9 @@ function SearchBox({
 }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">{label}</label>
+      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">
+        {label}
+      </label>
       <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white px-3">
         <Search className="h-4 w-4 text-black/45" />
         <input

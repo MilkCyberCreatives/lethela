@@ -97,9 +97,13 @@ export async function GET() {
     application,
     readiness: {
       approved,
-      canReceiveDispatch: approved && Boolean(process.env.RIDER_CONSOLE_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim()),
+      canReceiveDispatch:
+        approved &&
+        Boolean(process.env.RIDER_CONSOLE_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim()),
       hasApplication: Boolean(application),
-      documentsReady: Boolean(application?.hasSmartphone && application?.hasBankAccount && application?.licenseCode),
+      documentsReady: Boolean(
+        application?.hasSmartphone && application?.hasBankAccount && application?.licenseCode,
+      ),
       area: application ? [application.suburb, application.city].filter(Boolean).join(", ") : null,
     },
     activeOrders: activeOrders.map((order) => {
@@ -108,7 +112,8 @@ export async function GET() {
         ref,
         status: order.status,
         vendor: order.vendor?.name || "Unknown vendor",
-        pickupArea: [order.vendor?.suburb, order.vendor?.city].filter(Boolean).join(", ") || "Area not set",
+        pickupArea:
+          [order.vendor?.suburb, order.vendor?.city].filter(Boolean).join(", ") || "Area not set",
         totalCents: order.totalCents,
         deliveryFeeCents: order.deliveryFeeCents,
         riderLocatedAt: order.riderLocatedAt,

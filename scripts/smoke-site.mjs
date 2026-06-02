@@ -1,8 +1,9 @@
 const baseArg = process.argv.find((arg) => arg.startsWith("--base="));
-const baseUrl = (baseArg?.slice("--base=".length) || process.env.SMOKE_BASE_URL || "http://127.0.0.1:3000").replace(
-  /\/+$/,
-  "",
-);
+const baseUrl = (
+  baseArg?.slice("--base=".length) ||
+  process.env.SMOKE_BASE_URL ||
+  "http://127.0.0.1:3000"
+).replace(/\/+$/, "");
 
 const checks = [
   { method: "GET", path: "/" },

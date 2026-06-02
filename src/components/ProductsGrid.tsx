@@ -149,13 +149,18 @@ export default function ProductsGrid({
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {loading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-52 animate-pulse rounded-2xl border border-white/10 bg-white/[0.06]" />
-            ))
-          : items.length === 0
-            ? <p className="text-white/70">No products found.</p>
-            : items.map((product) => <ProductCard key={product.id} p={product} />)}
+        {loading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-52 animate-pulse rounded-2xl border border-white/10 bg-white/[0.06]"
+            />
+          ))
+        ) : items.length === 0 ? (
+          <p className="text-white/70">No products found.</p>
+        ) : (
+          items.map((product) => <ProductCard key={product.id} p={product} />)
+        )}
       </div>
 
       {!loading && items.length >= 6 ? (

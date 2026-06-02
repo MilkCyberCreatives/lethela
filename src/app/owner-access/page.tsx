@@ -21,18 +21,23 @@ export default function OwnerAccessPage() {
           <p className="text-xs uppercase tracking-[0.16em] text-white/60">Owner access</p>
           <h1 className="mt-2 text-3xl font-bold">Private admin entry</h1>
           <p className="mt-3 max-w-2xl text-sm text-white/75">
-            This page is for Lethela owner access only. Use your admin sign-in or your approval key to open the admin dashboard.
+            This page is for Lethela owner access only. Use your admin sign-in or your approval key
+            to open the admin dashboard.
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="rounded-xl border border-white/10 p-4">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Admin session</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">
+                Admin session
+              </h2>
               <p className="mt-2 text-sm text-white/75">
                 Sign in with your owner admin account first, then continue to the dashboard.
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Link href="/signin?callbackUrl=/owner-access">
-                  <Button className="bg-lethela-primary text-white hover:opacity-90">Sign in as owner</Button>
+                  <Button className="bg-lethela-primary text-white hover:opacity-90">
+                    Sign in as owner
+                  </Button>
                 </Link>
                 <Link href="/admin">
                   <Button
@@ -46,15 +51,20 @@ export default function OwnerAccessPage() {
             </div>
 
             <div className="rounded-xl border border-white/10 p-4">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Approval key</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">
+                Approval key
+              </h2>
               <p className="mt-2 text-sm text-white/75">
-                If you use an admin approval key, enter it here once to enable secure admin access in this browser.
+                If you use an admin approval key, enter it here once to enable secure admin access
+                in this browser.
               </p>
               <AdminPortalKeyForm />
             </div>
           </div>
 
-          <p className="mt-6 text-xs text-white/60">Keep this URL private and share it only with the owner.</p>
+          <p className="mt-6 text-xs text-white/60">
+            Keep this URL private and share it only with the owner.
+          </p>
         </div>
       </section>
     </main>

@@ -44,8 +44,8 @@ const allowedServerActionOrigins = Array.from(
       originHost(process.env.NEXT_PUBLIC_SITE_URL),
       originHost(process.env.NEXTAUTH_URL),
       process.env.VERCEL_URL || null,
-    ].filter(Boolean)
-  )
+    ].filter(Boolean),
+  ),
 );
 
 /** @type {import('next').NextConfig} */

@@ -45,7 +45,7 @@ export async function findLocalSqliteUserByEmail(email: string): Promise<LocalSq
   try {
     const row = db
       .prepare(
-        'SELECT id, email, name, image, passwordHash, role FROM "User" WHERE lower(email) = lower(?) LIMIT 1'
+        'SELECT id, email, name, image, passwordHash, role FROM "User" WHERE lower(email) = lower(?) LIMIT 1',
       )
       .get(email) as LocalSqliteUser | undefined;
     return row ?? null;

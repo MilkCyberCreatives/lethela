@@ -41,8 +41,12 @@ export async function POST(req: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { ok: false, error: "Invalid menu item payload.", fieldErrors: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        {
+          ok: false,
+          error: "Invalid menu item payload.",
+          fieldErrors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
       );
     }
 

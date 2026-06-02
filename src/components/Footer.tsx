@@ -48,10 +48,13 @@ export default function Footer() {
       <div className="container py-8 md:py-10">
         <div className="grid gap-7 lg:grid-cols-[1.25fr_repeat(3,minmax(0,0.7fr))]">
           <section>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Local delivery</div>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">
+              Local delivery
+            </div>
             <h3 className="mt-3 text-2xl font-bold text-white">Lethela</h3>
             <p className="mt-3 max-w-sm text-sm leading-6 text-white/68">
-              A clean South African marketplace for food, groceries, vendor operations and rider dispatch.
+              A clean South African marketplace for food, groceries, vendor operations and rider
+              dispatch.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
@@ -128,7 +131,9 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-            {LEGAL_SUPPORT_EMAIL ? <p className="mt-4 text-sm text-white/60">{LEGAL_SUPPORT_EMAIL}</p> : null}
+            {LEGAL_SUPPORT_EMAIL ? (
+              <p className="mt-4 text-sm text-white/60">{LEGAL_SUPPORT_EMAIL}</p>
+            ) : null}
           </section>
         </div>
 

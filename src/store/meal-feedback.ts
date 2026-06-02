@@ -18,7 +18,10 @@ type MealFeedbackState = {
   hydrateProfile: (profileKey: string, feedback: Partial<ProfileFeedback>) => void;
 };
 
-function getProfile(profiles: Record<string, ProfileFeedback>, profileKey: string): ProfileFeedback {
+function getProfile(
+  profiles: Record<string, ProfileFeedback>,
+  profileKey: string,
+): ProfileFeedback {
   return profiles[profileKey] ?? { favorites: [], ratings: {}, comments: {} };
 }
 
@@ -100,7 +103,10 @@ export const useMealFeedback = create<MealFeedbackState>()(
     {
       name: "lethela_meal_feedback",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ profiles: state.profiles, hydratedProfiles: state.hydratedProfiles }),
-    }
-  )
+      partialize: (state) => ({
+        profiles: state.profiles,
+        hydratedProfiles: state.hydratedProfiles,
+      }),
+    },
+  ),
 );

@@ -32,7 +32,9 @@ export default function ForgotPasswordForm() {
         return;
       }
 
-      setMessage(json?.message ?? "If an account exists for that email, a reset link has been sent.");
+      setMessage(
+        json?.message ?? "If an account exists for that email, a reset link has been sent.",
+      );
       setResetUrl(typeof json?.resetUrl === "string" ? json.resetUrl : null);
     } catch {
       setError("Could not start password reset.");
@@ -44,7 +46,9 @@ export default function ForgotPasswordForm() {
   return (
     <>
       <h1 className="text-2xl font-bold">Forgot password</h1>
-      <p className="mt-2 text-sm text-white/70">Enter your email and we will send you a reset link.</p>
+      <p className="mt-2 text-sm text-white/70">
+        Enter your email and we will send you a reset link.
+      </p>
 
       <div className="mt-6 space-y-3">
         <Input
@@ -54,7 +58,11 @@ export default function ForgotPasswordForm() {
           onChange={(event) => setEmail(event.target.value)}
           className="bg-white text-black"
         />
-        <Button onClick={submit} disabled={submitting || !email.trim()} className="bg-lethela-primary">
+        <Button
+          onClick={submit}
+          disabled={submitting || !email.trim()}
+          className="bg-lethela-primary"
+        >
           {submitting ? "Sending..." : "Send reset link"}
         </Button>
         {message ? <p className="text-sm text-white/80">{message}</p> : null}

@@ -58,7 +58,9 @@ export default function CheckoutSuccessContent({ refId, trackingToken, isSandbox
     const fetchOrderState = async (attempt = 0) => {
       try {
         const trackingParam = trackingToken ? `?t=${encodeURIComponent(trackingToken)}` : "";
-        const response = await fetch(`/api/orders/${encodeURIComponent(refId)}${trackingParam}`, { cache: "no-store" });
+        const response = await fetch(`/api/orders/${encodeURIComponent(refId)}${trackingParam}`, {
+          cache: "no-store",
+        });
         const json = (await response.json().catch(() => ({}))) as OrderResponse;
         if (cancelled) return;
 
@@ -127,11 +129,7 @@ export default function CheckoutSuccessContent({ refId, trackingToken, isSandbox
             : "Order reference unavailable";
 
   const titleClass =
-    state === "paid"
-      ? "text-green-400"
-      : state === "failed"
-        ? "text-yellow-400"
-        : "text-white";
+    state === "paid" ? "text-green-400" : state === "failed" ? "text-yellow-400" : "text-white";
 
   const message =
     state === "paid"
@@ -153,7 +151,14 @@ export default function CheckoutSuccessContent({ refId, trackingToken, isSandbox
 
       <div className="mt-4 flex gap-4">
         {refId ? (
-          <Link href={trackingToken ? `/orders/${refId}?t=${encodeURIComponent(trackingToken)}` : `/orders/${refId}`} className="underline">
+          <Link
+            href={
+              trackingToken
+                ? `/orders/${refId}?t=${encodeURIComponent(trackingToken)}`
+                : `/orders/${refId}`
+            }
+            className="underline"
+          >
             Track your order {"->"}
           </Link>
         ) : null}

@@ -63,11 +63,18 @@ export async function PATCH(req: Request, { params }: Params) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { ok: false, error: "Invalid special payload.", fieldErrors: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        {
+          ok: false,
+          error: "Invalid special payload.",
+          fieldErrors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
       );
     }
-    if (Number.isNaN(new Date(parsed.data.startsAt).getTime()) || Number.isNaN(new Date(parsed.data.endsAt).getTime())) {
+    if (
+      Number.isNaN(new Date(parsed.data.startsAt).getTime()) ||
+      Number.isNaN(new Date(parsed.data.endsAt).getTime())
+    ) {
       return NextResponse.json({ ok: false, error: "Invalid start or end date." }, { status: 400 });
     }
 

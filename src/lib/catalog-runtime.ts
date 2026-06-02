@@ -20,7 +20,7 @@ export function getCatalogMode(): CatalogMode {
   if (wantsDemoCatalog) {
     if (isProductionCatalogRuntime() && !allowProductionDemoCatalog()) {
       throw new Error(
-        "Demo catalog mode is disabled for production launches. Remove DEMO_CATALOG_MODE/FORCE_CATALOG_FALLBACK or explicitly set ALLOW_PRODUCTION_DEMO_CATALOG=true for a temporary non-launch environment."
+        "Demo catalog mode is disabled for production launches. Remove DEMO_CATALOG_MODE/FORCE_CATALOG_FALLBACK or explicitly set ALLOW_PRODUCTION_DEMO_CATALOG=true for a temporary non-launch environment.",
       );
     }
 
@@ -46,7 +46,7 @@ export function isLocalSqliteCatalogRuntime() {
   return Boolean(
     !isProductionCatalogRuntime() &&
       (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
-        process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+        process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:")),
   );
 }
 

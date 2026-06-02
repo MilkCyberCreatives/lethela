@@ -47,4 +47,3 @@ Route::middleware(['auth'])->group(function () {
 ## Starter Files
 
 A lightweight Laravel starter has been added under `laravel-dashboard-template/`. Copy those files into a new Laravel app after authentication is installed, then wire the placeholder arrays to Eloquent models.
-

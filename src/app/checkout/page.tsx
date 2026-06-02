@@ -3,7 +3,11 @@
 
 import { useCart } from "@/store/cart";
 import { formatZAR } from "@/lib/format";
-import { DEFAULT_DELIVERY_FEE_CENTS, EXTRA_DELIVERY_FEE_PER_KM_CENTS, INCLUDED_DELIVERY_RADIUS_KM } from "@/lib/pricing";
+import {
+  DEFAULT_DELIVERY_FEE_CENTS,
+  EXTRA_DELIVERY_FEE_PER_KM_CENTS,
+  INCLUDED_DELIVERY_RADIUS_KM,
+} from "@/lib/pricing";
 import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
 import Link from "next/link";
 import Footer from "@/components/Footer";
@@ -21,11 +25,15 @@ export default function CheckoutPage() {
   const checkoutTrackedRef = useRef("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [destinationSuburb, setDestinationSuburb] = useState(() => readPreferredLocation()?.label || "Klipfontein View, Midrand");
-  const [destinationPoint, setDestinationPoint] = useState<{ lat: number; lng: number } | null>(() => {
-    const saved = readPreferredLocation();
-    return saved?.lat != null && saved?.lng != null ? { lat: saved.lat, lng: saved.lng } : null;
-  });
+  const [destinationSuburb, setDestinationSuburb] = useState(
+    () => readPreferredLocation()?.label || "Klipfontein View, Midrand",
+  );
+  const [destinationPoint, setDestinationPoint] = useState<{ lat: number; lng: number } | null>(
+    () => {
+      const saved = readPreferredLocation();
+      return saved?.lat != null && saved?.lng != null ? { lat: saved.lat, lng: saved.lng } : null;
+    },
+  );
   const [deliveryQuote, setDeliveryQuote] = useState({
     baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
     deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
@@ -61,10 +69,10 @@ export default function CheckoutPage() {
           params.set("destinationLat", String(destinationPoint.lat));
           params.set("destinationLng", String(destinationPoint.lng));
         }
-        const response = await fetch(
-          `/api/checkout/delivery-quote?${params.toString()}`,
-          { cache: "no-store", signal: controller.signal }
-        );
+        const response = await fetch(`/api/checkout/delivery-quote?${params.toString()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
         const json = await response.json();
         if (!response.ok || !json.ok) {
           return;
@@ -107,7 +115,7 @@ export default function CheckoutPage() {
         destinationSuburb,
         vendorSlug: items[0]?.vendorSlug || null,
       }),
-    [deliveryFee, destinationSuburb, items, subtotal, total]
+    [deliveryFee, destinationSuburb, items, subtotal, total],
   );
 
   useEffect(() => {
@@ -117,7 +125,7 @@ export default function CheckoutPage() {
         id: item.itemId,
         qty: item.qty,
         price: item.priceCents,
-      }))
+      })),
     );
     if (checkoutTrackedRef.current === signature) return;
     checkoutTrackedRef.current = signature;
@@ -169,12 +177,12 @@ export default function CheckoutPage() {
             name: i.name,
             priceCents: i.priceCents,
             qty: i.qty,
-            image: i.image ?? null
+            image: i.image ?? null,
           })),
           subtotalCents: subtotal,
           deliveryCents: deliveryFee,
-          totalCents: total
-        })
+          totalCents: total,
+        }),
       });
       const json = await res.json();
       if (!res.ok || !json.ok) {
@@ -196,7 +204,11 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-bold">Checkout</h1>
         {items.length === 0 ? (
           <p className="mt-4 text-white/70">
-            Your cart is empty. <Link href="/" className="underline">Browse restaurants</Link>.
+            Your cart is empty.{" "}
+            <Link href="/" className="underline">
+              Browse restaurants
+            </Link>
+            .
           </p>
         ) : (
           <>
@@ -236,7 +248,9 @@ export default function CheckoutPage() {
               <div className="flex justify-between">
                 <span>
                   Delivery
-                  {deliveryQuote.distanceKm != null ? ` (${deliveryQuote.distanceKm.toFixed(2)} km from store)` : ""}
+                  {deliveryQuote.distanceKm != null
+                    ? ` (${deliveryQuote.distanceKm.toFixed(2)} km from store)`
+                    : ""}
                 </span>
                 <span>{formatZAR(deliveryFee)}</span>
               </div>
@@ -253,14 +267,24 @@ export default function CheckoutPage() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Button className="bg-lethela-primary" disabled={loading} onClick={payOzow}>
-                {loading ? "Redirecting..." : isOzowSandbox ? "Pay with Ozow (sandbox)" : "Pay with Ozow"}
+                {loading
+                  ? "Redirecting..."
+                  : isOzowSandbox
+                    ? "Pay with Ozow (sandbox)"
+                    : "Pay with Ozow"}
               </Button>
-              <Button asChild variant="outline" className="border-white/30 text-white hover:border-white/60">
+              <Button
+                asChild
+                variant="outline"
+                className="border-white/30 text-white hover:border-white/60"
+              >
                 <a
                   href={whatsappLink}
                   target="_blank"
                   rel="noreferrer"
-                  onClick={() => trackWhatsAppClick("checkout", { item_count: items.length, total_cents: total })}
+                  onClick={() =>
+                    trackWhatsAppClick("checkout", { item_count: items.length, total_cents: total })
+                  }
                 >
                   Order via WhatsApp
                 </a>
@@ -272,11 +296,14 @@ export default function CheckoutPage() {
 
             {error ? <p className="mt-3 text-sm text-red-200">{error}</p> : null}
             <p className="mt-2 text-xs text-white/70">
-              Prefer not to pay online? Use <span className="font-semibold">Order via WhatsApp</span> and we will confirm manually.
+              Prefer not to pay online? Use{" "}
+              <span className="font-semibold">Order via WhatsApp</span> and we will confirm
+              manually.
             </p>
 
             <p className="mt-3 text-xs text-white/60">
-              For local dev, set <code>OZOW_SITE_CODE</code> and <code>OZOW_PRIVATE_KEY</code> in <code>.env.local</code>.
+              For local dev, set <code>OZOW_SITE_CODE</code> and <code>OZOW_PRIVATE_KEY</code> in{" "}
+              <code>.env.local</code>.
             </p>
           </>
         )}

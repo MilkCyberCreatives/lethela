@@ -52,8 +52,8 @@ export default function VendorSignInForm() {
           <p className="text-xs uppercase tracking-[0.16em] text-white/65">Vendor access</p>
           <h1 className="mt-2 text-3xl font-semibold">Sign in to manage your store</h1>
           <p className="mt-3 text-sm text-white/75">
-            Use the email and password from your vendor application. Admin approval is still required before the store
-            goes live.
+            Use the email and password from your vendor application. Admin approval is still
+            required before the store goes live.
           </p>
 
           <form className="mt-6 space-y-3" onSubmit={submit}>
@@ -77,7 +77,11 @@ export default function VendorSignInForm() {
               onChange={(event) => setSlug(event.target.value)}
               className="bg-white text-black"
             />
-            <Button type="submit" disabled={submitting} className="w-full bg-lethela-primary text-white hover:opacity-90">
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-lethela-primary text-white hover:opacity-90"
+            >
               {submitting ? "Signing in..." : "Open vendor dashboard"}
             </Button>
           </form>
@@ -93,7 +97,12 @@ export default function VendorSignInForm() {
             </p>
             <p>
               Need help with approval?{" "}
-              <a href={whatsappHref} target="_blank" rel="noreferrer" className="underline underline-offset-4">
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-4"
+              >
                 WhatsApp support
               </a>
             </p>

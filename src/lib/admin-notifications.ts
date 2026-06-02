@@ -46,15 +46,21 @@ function adminNotificationEmails() {
 }
 
 function adminWhatsAppRecipients() {
-  return splitCsv(process.env.ADMIN_NOTIFICATION_WHATSAPP_TO).map(normalizeWhatsAppRecipient).filter(Boolean);
+  return splitCsv(process.env.ADMIN_NOTIFICATION_WHATSAPP_TO)
+    .map(normalizeWhatsAppRecipient)
+    .filter(Boolean);
 }
 
 function notificationsBaseUrl() {
   return absoluteUrl("/admin");
 }
 
-function buildPlainTextMessage(application: AdminVendorApplicationNotification, pendingCount: number) {
-  const location = [application.suburb, application.city].filter(Boolean).join(", ") || "Location not provided";
+function buildPlainTextMessage(
+  application: AdminVendorApplicationNotification,
+  pendingCount: number,
+) {
+  const location =
+    [application.suburb, application.city].filter(Boolean).join(", ") || "Location not provided";
   return [
     `New vendor application received on ${SITE_NAME}.`,
     "",
@@ -70,7 +76,8 @@ function buildPlainTextMessage(application: AdminVendorApplicationNotification, 
 }
 
 function buildHtmlMessage(application: AdminVendorApplicationNotification, pendingCount: number) {
-  const location = [application.suburb, application.city].filter(Boolean).join(", ") || "Location not provided";
+  const location =
+    [application.suburb, application.city].filter(Boolean).join(", ") || "Location not provided";
   return `
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
       <h2 style="margin:0 0 12px">New vendor application received</h2>
@@ -90,7 +97,7 @@ function buildHtmlMessage(application: AdminVendorApplicationNotification, pendi
 
 async function sendResendEmailNotification(
   application: AdminVendorApplicationNotification,
-  pendingCount: number
+  pendingCount: number,
 ) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.ADMIN_NOTIFICATION_EMAIL_FROM?.trim();
@@ -123,7 +130,7 @@ async function sendResendEmailNotification(
 
 async function sendTwilioWhatsAppNotification(
   application: AdminVendorApplicationNotification,
-  pendingCount: number
+  pendingCount: number,
 ) {
   const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim();
   const authToken = process.env.TWILIO_AUTH_TOKEN?.trim();
@@ -139,24 +146,27 @@ async function sendTwilioWhatsAppNotification(
 
   await Promise.all(
     recipients.map(async (to) => {
-      const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/x-www-form-urlencoded",
+      const response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            To: to,
+            From: from,
+            Body: body,
+          }).toString(),
         },
-        body: new URLSearchParams({
-          To: to,
-          From: from,
-          Body: body,
-        }).toString(),
-      });
+      );
 
       if (!response.ok) {
         const text = await response.text().catch(() => "");
         throw new Error(text || "Failed to send admin WhatsApp notification.");
       }
-    })
+    }),
   );
 
   return { delivered: true as const, recipients: recipients.length };
@@ -165,7 +175,11 @@ async function sendTwilioWhatsAppNotification(
 export function getAdminNotificationChannelStatus() {
   return {
     email: {
-      enabled: Boolean(process.env.RESEND_API_KEY?.trim() && process.env.ADMIN_NOTIFICATION_EMAIL_FROM?.trim() && adminNotificationEmails().length > 0),
+      enabled: Boolean(
+        process.env.RESEND_API_KEY?.trim() &&
+          process.env.ADMIN_NOTIFICATION_EMAIL_FROM?.trim() &&
+          adminNotificationEmails().length > 0,
+      ),
       recipients: adminNotificationEmails().length,
     },
     whatsapp: {
@@ -173,7 +187,7 @@ export function getAdminNotificationChannelStatus() {
         process.env.TWILIO_ACCOUNT_SID?.trim() &&
           process.env.TWILIO_AUTH_TOKEN?.trim() &&
           normalizeWhatsAppSender(process.env.TWILIO_WHATSAPP_FROM) &&
-          adminWhatsAppRecipients().length > 0
+          adminWhatsAppRecipients().length > 0,
       ),
       recipients: adminWhatsAppRecipients().length,
     },
@@ -182,13 +196,15 @@ export function getAdminNotificationChannelStatus() {
         process.env.PUSHER_APP_ID?.trim() &&
           process.env.PUSHER_KEY?.trim() &&
           process.env.PUSHER_SECRET?.trim() &&
-          process.env.NEXT_PUBLIC_PUSHER_KEY?.trim()
+          process.env.NEXT_PUBLIC_PUSHER_KEY?.trim(),
       ),
     },
   };
 }
 
-export async function notifyAdminsOfVendorApplication(application: AdminVendorApplicationNotification) {
+export async function notifyAdminsOfVendorApplication(
+  application: AdminVendorApplicationNotification,
+) {
   const pendingCount = await prisma.vendor.count({ where: { status: "PENDING" } });
   const channels = getAdminNotificationChannelStatus();
   const tasks: Promise<unknown>[] = [];
@@ -204,8 +220,8 @@ export async function notifyAdminsOfVendorApplication(application: AdminVendorAp
           pendingCount,
           at: new Date().toISOString(),
         }),
-        1500
-      )
+        1500,
+      ),
     );
   }
 

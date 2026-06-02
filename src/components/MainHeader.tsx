@@ -15,7 +15,9 @@ export default function MainHeader() {
   const status = sessionState?.status ?? "unauthenticated";
   const user = session?.user;
   const userImage =
-    user && "image" in user && typeof user.image === "string" && user.image.trim().length > 0 ? user.image : null;
+    user && "image" in user && typeof user.image === "string" && user.image.trim().length > 0
+      ? user.image
+      : null;
   const initials = (user?.name || user?.email || "U")
     .split(" ")
     .map((part) => part[0])
@@ -46,7 +48,10 @@ export default function MainHeader() {
           <Link href="/" className="hover:underline hover:text-lethela-primary font-medium">
             Home
           </Link>
-          <Link href="/vendors/register" className="hover:underline hover:text-lethela-primary font-medium">
+          <Link
+            href="/vendors/register"
+            className="hover:underline hover:text-lethela-primary font-medium"
+          >
             Become a Vendor
           </Link>
           <Link href="/rider" className="hover:underline hover:text-lethela-primary font-medium">
@@ -59,26 +64,35 @@ export default function MainHeader() {
           {status === "authenticated" && user ? (
             <div className="flex items-center gap-3">
               {user.role === "ADMIN" ? <AdminAlertsLink /> : null}
-              <Link href="/profile" className="flex items-center gap-2 rounded-full border border-black/10 px-3 py-2 hover:border-lethela-primary">
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 rounded-full border border-black/10 px-3 py-2 hover:border-lethela-primary"
+              >
                 <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-lethela-primary/10 text-xs font-semibold text-lethela-primary">
                   {userImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={userImage} alt={user.name || user.email || "Profile"} className="h-full w-full object-cover" />
+                    <img
+                      src={userImage}
+                      alt={user.name || user.email || "Profile"}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     initials
                   )}
                 </span>
                 <span className="font-medium">{user.name || "Profile"}</span>
               </Link>
-              <Button variant="outline" className="border-black/20 text-black hover:bg-black/5" onClick={() => void handleSignOut()}>
+              <Button
+                variant="outline"
+                className="border-black/20 text-black hover:bg-black/5"
+                onClick={() => void handleSignOut()}
+              >
                 Sign Out
               </Button>
             </div>
           ) : (
             <Link href="/signin">
-              <Button className="bg-lethela-primary text-white hover:opacity-90">
-                Sign In
-              </Button>
+              <Button className="bg-lethela-primary text-white hover:opacity-90">Sign In</Button>
             </Link>
           )}
         </nav>
@@ -87,18 +101,12 @@ export default function MainHeader() {
           <CartButton />
           <Sheet>
             <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                className="border-black/20 text-black hover:bg-black/5"
-              >
+              <Button variant="outline" className="border-black/20 text-black hover:bg-black/5">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
 
-            <SheetContent
-              side="right"
-              className="bg-lethela-secondary text-white w-[260px] pt-12"
-            >
+            <SheetContent side="right" className="bg-lethela-secondary text-white w-[260px] pt-12">
               <nav className="flex flex-col gap-4 text-lg">
                 <Link href="/" className="hover:underline">
                   Home

@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   if (!limited.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many recommendation requests. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
     );
   }
 

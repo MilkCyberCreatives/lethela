@@ -13,10 +13,13 @@ export default function AgeGate({ onClose }: { onClose?: () => void }) {
       <div className="rounded-xl bg-[#0E1236] border border-white/10 p-6 max-w-md w-full">
         <h2 className="text-xl font-bold">Are you 18 or older?</h2>
         <p className="text-sm text-white/70 mt-2">
-          Alcohol may only be sold to persons 18 years or older. By continuing, you confirm you are of legal drinking age.
+          Alcohol may only be sold to persons 18 years or older. By continuing, you confirm you are
+          of legal drinking age.
         </p>
         <div className="mt-4 flex gap-3">
-          <Button onClick={accept} className="bg-lethela-primary">Yes, I am 18+</Button>
+          <Button onClick={accept} className="bg-lethela-primary">
+            Yes, I am 18+
+          </Button>
           <button
             className="inline-flex items-center rounded-md px-4 py-2 border border-white/20 text-sm"
             onClick={onClose}

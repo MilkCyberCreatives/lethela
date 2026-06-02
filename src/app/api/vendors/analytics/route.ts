@@ -155,11 +155,7 @@ export async function GET() {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to load analytics.";
-    const isAuthError =
-      /vendor|sign in|membership|approval|role|access/i.test(message);
-    return NextResponse.json(
-      { ok: false, error: message },
-      { status: isAuthError ? 401 : 500 }
-    );
+    const isAuthError = /vendor|sign in|membership|approval|role|access/i.test(message);
+    return NextResponse.json({ ok: false, error: message }, { status: isAuthError ? 401 : 500 });
   }
 }

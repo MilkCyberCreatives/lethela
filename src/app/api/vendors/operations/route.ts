@@ -36,94 +36,95 @@ export async function GET() {
     since7.setDate(since7.getDate() - 6);
     since7.setHours(0, 0, 0, 0);
 
-    const [vendor, orders, products, sections, items, hours, specials, lateFlags, members] = await Promise.all([
-      prisma.vendor.findUnique({
-        where: { id: vendorId },
-        select: {
-          id: true,
-          slug: true,
-        name: true,
-        status: true,
-        isActive: true,
-        ownerId: true,
-        phone: true,
-          address: true,
-          suburb: true,
-          city: true,
-          province: true,
-          latitude: true,
-          longitude: true,
-          rating: true,
-          kycIdUrl: true,
-          kycProofUrl: true,
-        },
-      }),
-      prisma.order.findMany({
-        where: { vendorId, createdAt: { gte: since30 } },
-        orderBy: { createdAt: "desc" },
-        select: {
-          publicId: true,
-          status: true,
-          paymentStatus: true,
-          subtotalCents: true,
-          deliveryFeeCents: true,
-          totalCents: true,
-          createdAt: true,
-          items: { select: { qty: true } },
-        },
-      }),
-      prisma.product.findMany({
-        where: { vendorId },
-        select: { id: true, name: true, inStock: true, updatedAt: true },
-      }),
-      prisma.menuSection.findMany({
-        where: { vendorId },
-        select: { id: true, title: true },
-      }),
-      prisma.item.findMany({
-        where: { vendorId },
-        orderBy: { updatedAt: "desc" },
-        select: { id: true, name: true, draft: true, updatedAt: true },
-      }),
-      prisma.operatingHour.findMany({
-        where: { vendorId, closed: false },
-        select: { day: true },
-      }),
-      prisma.special.findMany({
-        where: { vendorId },
-        orderBy: { startsAt: "asc" },
-        select: { id: true, title: true, draft: true, startsAt: true, endsAt: true },
-      }),
-      prisma.lateOrderFlag.findMany({
-        where: { vendorId },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        select: {
-          id: true,
-          orderPublic: true,
-          etaMinutes: true,
-          createdAt: true,
-          resolved: true,
-          aiMessage: true,
-        },
-      }),
-      prisma.vendorMember.findMany({
-        where: { vendorId },
-        orderBy: { createdAt: "asc" },
-        select: {
-          id: true,
-          role: true,
-          createdAt: true,
-          userId: true,
-          user: {
-            select: {
-              email: true,
-              name: true,
+    const [vendor, orders, products, sections, items, hours, specials, lateFlags, members] =
+      await Promise.all([
+        prisma.vendor.findUnique({
+          where: { id: vendorId },
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            status: true,
+            isActive: true,
+            ownerId: true,
+            phone: true,
+            address: true,
+            suburb: true,
+            city: true,
+            province: true,
+            latitude: true,
+            longitude: true,
+            rating: true,
+            kycIdUrl: true,
+            kycProofUrl: true,
+          },
+        }),
+        prisma.order.findMany({
+          where: { vendorId, createdAt: { gte: since30 } },
+          orderBy: { createdAt: "desc" },
+          select: {
+            publicId: true,
+            status: true,
+            paymentStatus: true,
+            subtotalCents: true,
+            deliveryFeeCents: true,
+            totalCents: true,
+            createdAt: true,
+            items: { select: { qty: true } },
+          },
+        }),
+        prisma.product.findMany({
+          where: { vendorId },
+          select: { id: true, name: true, inStock: true, updatedAt: true },
+        }),
+        prisma.menuSection.findMany({
+          where: { vendorId },
+          select: { id: true, title: true },
+        }),
+        prisma.item.findMany({
+          where: { vendorId },
+          orderBy: { updatedAt: "desc" },
+          select: { id: true, name: true, draft: true, updatedAt: true },
+        }),
+        prisma.operatingHour.findMany({
+          where: { vendorId, closed: false },
+          select: { day: true },
+        }),
+        prisma.special.findMany({
+          where: { vendorId },
+          orderBy: { startsAt: "asc" },
+          select: { id: true, title: true, draft: true, startsAt: true, endsAt: true },
+        }),
+        prisma.lateOrderFlag.findMany({
+          where: { vendorId },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          select: {
+            id: true,
+            orderPublic: true,
+            etaMinutes: true,
+            createdAt: true,
+            resolved: true,
+            aiMessage: true,
+          },
+        }),
+        prisma.vendorMember.findMany({
+          where: { vendorId },
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            role: true,
+            createdAt: true,
+            userId: true,
+            user: {
+              select: {
+                email: true,
+                name: true,
+              },
             },
           },
-        },
-      }),
-    ]);
+        }),
+      ]);
 
     if (!vendor) {
       return NextResponse.json({ ok: false, error: "Vendor not found." }, { status: 404 });
@@ -142,7 +143,9 @@ export async function GET() {
       failedCents: failedOrders.reduce((sum, order) => sum + order.totalCents, 0),
       last7DaysCents: recentPaidOrders.reduce((sum, order) => sum + order.totalCents, 0),
       averagePaidOrderCents: paidOrders.length
-        ? Math.round(paidOrders.reduce((sum, order) => sum + order.totalCents, 0) / paidOrders.length)
+        ? Math.round(
+            paidOrders.reduce((sum, order) => sum + order.totalCents, 0) / paidOrders.length,
+          )
         : 0,
       paidOrdersCount: paidOrders.length,
       pendingOrdersCount: pendingSettlementOrders.length,
@@ -157,7 +160,8 @@ export async function GET() {
       })),
     };
 
-    const missingProfile = !vendor.phone || !vendor.address || !vendor.city || !vendor.suburb || !vendor.province;
+    const missingProfile =
+      !vendor.phone || !vendor.address || !vendor.city || !vendor.suburb || !vendor.province;
     const lowStockProducts = products.filter((product) => !product.inStock);
     const draftItems = items.filter((item) => item.draft);
     const upcomingDraftSpecials = specials.filter((special) => special.draft);
@@ -223,7 +227,9 @@ export async function GET() {
             id: "late-orders",
             tone: "danger",
             title: `${unresolvedLateFlags.length} late order flag(s) need attention`,
-            body: unresolvedLateFlags[0]?.aiMessage || "Recent deliveries have exceeded ETA and need follow-up.",
+            body:
+              unresolvedLateFlags[0]?.aiMessage ||
+              "Recent deliveries have exceeded ETA and need follow-up.",
             href: "/vendors/dashboard?tab=orders",
           }
         : null,
@@ -258,7 +264,13 @@ export async function GET() {
 
     const onTimeRate =
       completedOrders.length > 0
-        ? Math.max(0, Math.round(((completedOrders.length - unresolvedLateFlags.length) / completedOrders.length) * 100))
+        ? Math.max(
+            0,
+            Math.round(
+              ((completedOrders.length - unresolvedLateFlags.length) / completedOrders.length) *
+                100,
+            ),
+          )
         : 100;
     const paymentSuccessRate =
       orders.length > 0 ? Math.round((paidOrders.length / orders.length) * 100) : 100;
@@ -270,7 +282,7 @@ export async function GET() {
       Boolean(vendor.phone && vendor.address && vendor.city && vendor.suburb),
     ];
     const menuReadinessPct = Math.round(
-      (menuReadinessChecks.filter(Boolean).length / menuReadinessChecks.length) * 100
+      (menuReadinessChecks.filter(Boolean).length / menuReadinessChecks.length) * 100,
     );
 
     const experience = {
@@ -292,10 +304,18 @@ export async function GET() {
           : `Menu readiness is ${menuReadinessPct}%, so some storefront essentials are still missing.`,
       ],
       concerns: [
-        unresolvedLateFlags.length > 0 ? `${unresolvedLateFlags.length} late delivery flag(s) are unresolved.` : null,
-        pendingSettlementOrders.length > 0 ? `${pendingSettlementOrders.length} order(s) still show pending payment.` : null,
-        lowStockProducts.length > 0 ? `${lowStockProducts.length} product(s) are out of stock.` : null,
-        draftItems.length > 0 ? `${draftItems.length} customer-facing item(s) are still in draft.` : null,
+        unresolvedLateFlags.length > 0
+          ? `${unresolvedLateFlags.length} late delivery flag(s) are unresolved.`
+          : null,
+        pendingSettlementOrders.length > 0
+          ? `${pendingSettlementOrders.length} order(s) still show pending payment.`
+          : null,
+        lowStockProducts.length > 0
+          ? `${lowStockProducts.length} product(s) are out of stock.`
+          : null,
+        draftItems.length > 0
+          ? `${draftItems.length} customer-facing item(s) are still in draft.`
+          : null,
       ].filter(Boolean),
     };
 

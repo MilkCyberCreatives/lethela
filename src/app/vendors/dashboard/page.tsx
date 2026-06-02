@@ -48,9 +48,12 @@ const BulkImportProducts = dynamic(() => import("@/components/dashboard/BulkImpo
 const AutomationsPanel = dynamic(() => import("@/components/dashboard/AutomationsPanel"), {
   loading: () => <DashboardPanelSkeleton lines={4} />,
 });
-const AdvancedAutomationsPanel = dynamic(() => import("@/components/dashboard/AdvancedAutomationsPanel"), {
-  loading: () => <DashboardPanelSkeleton lines={5} />,
-});
+const AdvancedAutomationsPanel = dynamic(
+  () => import("@/components/dashboard/AdvancedAutomationsPanel"),
+  {
+    loading: () => <DashboardPanelSkeleton lines={5} />,
+  },
+);
 
 type SearchParams = Promise<{ tab?: string }> | { tab?: string };
 type DashboardTab =
@@ -126,7 +129,8 @@ function SupportCard() {
         </a>
       </p>
       <p className="mt-3 text-xs text-white/60">
-        Use the tabs to manage products, orders, hours, specials, and store settings without a long landing page.
+        Use the tabs to manage products, orders, hours, specials, and store settings without a long
+        landing page.
       </p>
     </div>
   );
@@ -151,7 +155,8 @@ export default async function VendorDashboardPage({
     vendorSlug = session.vendorSlug;
     vendorRole = session.role;
   } catch (error: unknown) {
-    authError = error instanceof Error ? error.message : "You do not have access to the vendor dashboard.";
+    authError =
+      error instanceof Error ? error.message : "You do not have access to the vendor dashboard.";
   }
 
   if (authError || !vendorId) {
@@ -161,11 +166,28 @@ export default async function VendorDashboardPage({
         <section className="container py-12">
           <div className="max-w-2xl rounded-2xl border border-white/15 bg-white/5 p-6">
             <h1 className="text-2xl font-bold">Dashboard access blocked</h1>
-            <p className="mt-3 text-sm text-white/80">{authError || "Unable to resolve vendor access."}</p>
+            <p className="mt-3 text-sm text-white/80">
+              {authError || "Unable to resolve vendor access."}
+            </p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <Link href="/vendors/register" className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Go to vendor registration</Link>
-              <Link href="/vendors/signin" className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Vendor sign in</Link>
-              <Link href="/admin" className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Open admin approvals</Link>
+              <Link
+                href="/vendors/register"
+                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+              >
+                Go to vendor registration
+              </Link>
+              <Link
+                href="/vendors/signin"
+                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+              >
+                Vendor sign in
+              </Link>
+              <Link
+                href="/admin"
+                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+              >
+                Open admin approvals
+              </Link>
             </div>
           </div>
         </section>
@@ -197,7 +219,16 @@ export default async function VendorDashboardPage({
         kycIdUrl: true,
         kycProofUrl: true,
         updatedAt: true,
-        _count: { select: { products: true, orders: true, specials: true, hours: true, sections: true, items: true } },
+        _count: {
+          select: {
+            products: true,
+            orders: true,
+            specials: true,
+            hours: true,
+            sections: true,
+            items: true,
+          },
+        },
       },
     }),
     prisma.order.findMany({
@@ -238,23 +269,29 @@ export default async function VendorDashboardPage({
     Boolean(vendor?._count.products && vendor._count.products >= 5),
     Boolean(vendor?._count.hours),
   ];
-  const progressPct = Math.round((progressChecks.filter(Boolean).length / progressChecks.length) * 100);
+  const progressPct = Math.round(
+    (progressChecks.filter(Boolean).length / progressChecks.length) * 100,
+  );
   const revenue30 = orders.reduce(
     (sum, order) =>
       countsTowardRevenue(order.paymentStatus, order.status) ? sum + order.totalCents : sum,
-    0
+    0,
   );
   const ordersToday = orders.filter((order) => new Date(order.createdAt) >= today).length;
-  const pendingPayments = orders.filter((order) => String(order.paymentStatus).toUpperCase() === "PENDING").length;
+  const pendingPayments = orders.filter(
+    (order) => String(order.paymentStatus).toUpperCase() === "PENDING",
+  ).length;
   const inStock = products.filter((product) => product.inStock).length;
   const publishedSpecials = specials.filter((item) => !item.draft).length;
   const unresolvedLateCount = lateFlags.length;
   const topProducts = Object.entries(
-    orders.flatMap((order) => order.items).reduce<Record<string, number>>((acc, item) => {
-      const key = item.product?.name || "Unknown item";
-      acc[key] = (acc[key] || 0) + item.qty;
-      return acc;
-    }, {})
+    orders
+      .flatMap((order) => order.items)
+      .reduce<Record<string, number>>((acc, item) => {
+        const key = item.product?.name || "Unknown item";
+        acc[key] = (acc[key] || 0) + item.qty;
+        return acc;
+      }, {}),
   )
     .sort((left, right) => right[1] - left[1])
     .slice(0, 3);
@@ -262,7 +299,9 @@ export default async function VendorDashboardPage({
   const issues = [
     !vendor?.phone ? "Add a phone or WhatsApp number." : null,
     !vendor?.address ? "Add your full street address." : null,
-    vendor?.latitude == null || vendor?.longitude == null ? "Add store coordinates for map tracking." : null,
+    vendor?.latitude == null || vendor?.longitude == null
+      ? "Add store coordinates for map tracking."
+      : null,
     !vendor?._count.hours ? "Set your trading hours." : null,
     !vendor?._count.sections ? "Create menu sections for the public restaurant page." : null,
     !vendor?._count.items ? "Add customer-facing menu items and publish them." : null,
@@ -276,23 +315,57 @@ export default async function VendorDashboardPage({
         <div className="rounded-2xl border border-white/15 bg-white/5 p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-white/65">Vendor control center</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-white/65">
+                Vendor control center
+              </p>
               <h1 className="mt-1 text-2xl font-bold">{vendor?.name || "Vendor Dashboard"}</h1>
               <p className="mt-2 text-sm text-white/75">
-                {vendor?.suburb && vendor?.city ? `${vendor.suburb}, ${vendor.city}` : "Location not set"}
+                {vendor?.suburb && vendor?.city
+                  ? `${vendor.suburb}, ${vendor.city}`
+                  : "Location not set"}
               </p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full border border-white/20 px-3 py-1">{vendor?.status || "PENDING"}</span>
-                <span className="rounded-full border border-white/20 px-3 py-1">{vendorRole || "STAFF"}</span>
-                <span className="rounded-full border border-white/20 px-3 py-1">{progressPct}% ready</span>
-                <span className="rounded-full border border-white/20 px-3 py-1">{vendor?.isActive ? "Store live" : "Store paused"}</span>
+                <span className="rounded-full border border-white/20 px-3 py-1">
+                  {vendor?.status || "PENDING"}
+                </span>
+                <span className="rounded-full border border-white/20 px-3 py-1">
+                  {vendorRole || "STAFF"}
+                </span>
+                <span className="rounded-full border border-white/20 px-3 py-1">
+                  {progressPct}% ready
+                </span>
+                <span className="rounded-full border border-white/20 px-3 py-1">
+                  {vendor?.isActive ? "Store live" : "Store paused"}
+                </span>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {vendorSlug ? <Link href={`/vendors/${vendorSlug}`} className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">View public profile</Link> : null}
-              <Link href="/vendors/dashboard?tab=menu" className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Manage menu</Link>
-              <Link href="/vendors/dashboard?tab=specials&action=create" className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Create special</Link>
-              <Link href="/vendors/dashboard?tab=orders" className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Open orders</Link>
+              {vendorSlug ? (
+                <Link
+                  href={`/vendors/${vendorSlug}`}
+                  className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+                >
+                  View public profile
+                </Link>
+              ) : null}
+              <Link
+                href="/vendors/dashboard?tab=menu"
+                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+              >
+                Manage menu
+              </Link>
+              <Link
+                href="/vendors/dashboard?tab=specials&action=create"
+                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+              >
+                Create special
+              </Link>
+              <Link
+                href="/vendors/dashboard?tab=orders"
+                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+              >
+                Open orders
+              </Link>
             </div>
           </div>
         </div>
@@ -300,61 +373,105 @@ export default async function VendorDashboardPage({
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Revenue" value={money(revenue30)} hint="Last 30 days" />
           <MetricCard label="Orders today" value={String(ordersToday)} hint="Live activity" />
-          <MetricCard label="Products live" value={`${inStock}/${products.length || 0}`} hint="In stock now" />
+          <MetricCard
+            label="Products live"
+            value={`${inStock}/${products.length || 0}`}
+            hint="In stock now"
+          />
           <MetricCard label="Open days" value={`${hours.length}/7`} hint="Trading schedule" />
-          <MetricCard label="Specials live" value={String(publishedSpecials)} hint="Published promos" />
-          <MetricCard label="Late flags" value={String(unresolvedLateCount)} hint="Needs follow-up" />
+          <MetricCard
+            label="Specials live"
+            value={String(publishedSpecials)}
+            hint="Published promos"
+          />
+          <MetricCard
+            label="Late flags"
+            value={String(unresolvedLateCount)}
+            hint="Needs follow-up"
+          />
         </div>
 
         <div className="grid gap-4 xl:grid-cols-3">
           <InfoCard title="Important right now">
-            {issues.length > 0 ? issues.slice(0, 3).map((issue) => (
-              <div key={issue} className="rounded-lg border border-amber-200/20 bg-amber-300/10 px-3 py-2 text-sm text-amber-50">{issue}</div>
-            )) : <div className="rounded-lg border border-white/10 bg-black/10 px-3 py-2 text-sm text-white/70">No urgent issues detected.</div>}
+            {issues.length > 0 ? (
+              issues.slice(0, 3).map((issue) => (
+                <div
+                  key={issue}
+                  className="rounded-lg border border-amber-200/20 bg-amber-300/10 px-3 py-2 text-sm text-amber-50"
+                >
+                  {issue}
+                </div>
+              ))
+            ) : (
+              <div className="rounded-lg border border-white/10 bg-black/10 px-3 py-2 text-sm text-white/70">
+                No urgent issues detected.
+              </div>
+            )}
           </InfoCard>
           <InfoCard title="Best sellers">
-            {topProducts.length > 0 ? topProducts.map(([name, qty], index) => (
-              <div key={name} className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-sm">
-                <span>{index + 1}. {name}</span>
-                <span className="font-semibold">{qty} sold</span>
+            {topProducts.length > 0 ? (
+              topProducts.map(([name, qty], index) => (
+                <div
+                  key={name}
+                  className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-sm"
+                >
+                  <span>
+                    {index + 1}. {name}
+                  </span>
+                  <span className="font-semibold">{qty} sold</span>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-lg border border-white/10 bg-black/10 px-3 py-2 text-sm text-white/60">
+                Sales data appears here once orders start coming in.
               </div>
-            )) : <div className="rounded-lg border border-white/10 bg-black/10 px-3 py-2 text-sm text-white/60">Sales data appears here once orders start coming in.</div>}
+            )}
           </InfoCard>
           <InfoCard title="Launch readiness">
             <MiniStat label="Profile completion" value={`${progressPct}%`} />
             <MiniStat label="Menu sections" value={String(vendor?._count.sections ?? 0)} />
             <MiniStat label="Menu items" value={String(vendor?._count.items ?? 0)} />
-            <MiniStat label="Store status" value={vendor?.isActive ? "Accepting orders" : "Paused"} />
+            <MiniStat
+              label="Store status"
+              value={vendor?.isActive ? "Accepting orders" : "Paused"}
+            />
           </InfoCard>
         </div>
       </div>
 
       <div className="grid content-start gap-4">
-          <InfoCard title="Store overview">
-            <MiniStat label="Products" value={String(vendor?._count.products ?? 0)} />
-            <MiniStat label="Menu items" value={String(vendor?._count.items ?? 0)} />
-            <MiniStat label="Sections" value={String(vendor?._count.sections ?? 0)} />
-            <MiniStat label="Orders" value={String(vendor?._count.orders ?? 0)} />
-            <MiniStat label="Specials" value={String(vendor?._count.specials ?? 0)} />
-            <MiniStat label="Pending payments" value={String(pendingPayments)} />
-          </InfoCard>
+        <InfoCard title="Store overview">
+          <MiniStat label="Products" value={String(vendor?._count.products ?? 0)} />
+          <MiniStat label="Menu items" value={String(vendor?._count.items ?? 0)} />
+          <MiniStat label="Sections" value={String(vendor?._count.sections ?? 0)} />
+          <MiniStat label="Orders" value={String(vendor?._count.orders ?? 0)} />
+          <MiniStat label="Specials" value={String(vendor?._count.specials ?? 0)} />
+          <MiniStat label="Pending payments" value={String(pendingPayments)} />
+        </InfoCard>
         <InfoCard title="Next promo">
           <div className="rounded-lg border border-white/10 px-3 py-3 text-sm">
             <div className="font-semibold">{nextPromo ? nextPromo.title : "No upcoming promo"}</div>
             <div className="mt-1 text-xs text-white/65">
-              {nextPromo ? new Date(nextPromo.startsAt).toLocaleString() : "Create a future special to plan demand ahead."}
+              {nextPromo
+                ? new Date(nextPromo.startsAt).toLocaleString()
+                : "Create a future special to plan demand ahead."}
             </div>
           </div>
         </InfoCard>
         {lateFlags.length > 0 ? (
           <InfoCard title="Attention needed">
             {lateFlags.map((flag) => (
-              <div key={flag.orderPublic} className="rounded-lg border border-white/10 px-3 py-2 text-sm">
+              <div
+                key={flag.orderPublic}
+                className="rounded-lg border border-white/10 px-3 py-2 text-sm"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-semibold">{flag.orderPublic}</span>
                   <span className="text-xs text-white/55">ETA {flag.etaMinutes} min</span>
                 </div>
-                <p className="mt-1 text-xs text-white/65">{flag.aiMessage || "Late delivery attention needed."}</p>
+                <p className="mt-1 text-xs text-white/65">
+                  {flag.aiMessage || "Late delivery attention needed."}
+                </p>
               </div>
             ))}
           </InfoCard>
@@ -382,7 +499,13 @@ export default async function VendorDashboardPage({
       break;
     case "menu":
       title = "Menu";
-      content = <div className="grid gap-4"><MenuManager /><ProductsManager /><BulkImportProducts /></div>;
+      content = (
+        <div className="grid gap-4">
+          <MenuManager />
+          <ProductsManager />
+          <BulkImportProducts />
+        </div>
+      );
       break;
     case "payouts":
       title = "Payouts";
@@ -414,7 +537,15 @@ export default async function VendorDashboardPage({
       break;
     case "automations":
       title = "Automations";
-      content = <div className="grid gap-4"><div className="grid gap-4 xl:grid-cols-2"><AutomationsPanel /><AdvancedAutomationsPanel /></div><InsightsCard /></div>;
+      content = (
+        <div className="grid gap-4">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <AutomationsPanel />
+            <AdvancedAutomationsPanel />
+          </div>
+          <InsightsCard />
+        </div>
+      );
       break;
     case "support":
       title = "Support";
@@ -433,7 +564,11 @@ export default async function VendorDashboardPage({
             <div className="border-b border-white/10 pb-4">
               <p className="text-xs uppercase tracking-[0.14em] text-white/55">Dashboard</p>
               <h2 className="mt-2 text-lg font-semibold">{vendor?.name || "Vendor"}</h2>
-              <p className="mt-1 text-xs text-white/60">{vendor?.suburb && vendor?.city ? `${vendor.suburb}, ${vendor.city}` : "Location not set"}</p>
+              <p className="mt-1 text-xs text-white/60">
+                {vendor?.suburb && vendor?.city
+                  ? `${vendor.suburb}, ${vendor.city}`
+                  : "Location not set"}
+              </p>
             </div>
             <nav className="mt-4 grid gap-2">
               {tabs.map((item) => (
@@ -443,7 +578,9 @@ export default async function VendorDashboardPage({
                   className={`rounded-xl border px-3 py-3 transition-colors duration-200 ${activeTab === item.tab ? "border-lethela-primary/70 bg-lethela-primary/12" : "border-white/10 bg-black/10 hover:border-lethela-primary/50 hover:bg-white/10"}`}
                 >
                   <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <span className={`h-2 w-2 rounded-full ${activeTab === item.tab ? "bg-lethela-primary" : "bg-white/25"}`} />
+                    <span
+                      className={`h-2 w-2 rounded-full ${activeTab === item.tab ? "bg-lethela-primary" : "bg-white/25"}`}
+                    />
                     {item.label}
                   </div>
                   <div className="mt-1 text-xs text-white/55">{item.hint}</div>
@@ -455,12 +592,27 @@ export default async function VendorDashboardPage({
           <div className="rounded-2xl border border-white/10 bg-[#0b112a] p-4 lg:h-full lg:overflow-hidden">
             <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-lethela-primary/85">Current view</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-lethela-primary/85">
+                  Current view
+                </p>
                 <h2 className="mt-1 text-xl font-semibold">{title}</h2>
               </div>
-              {activeTab !== "overview" ? <Link href="/vendors/dashboard?tab=overview" className="rounded-full border border-white/25 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary">Back to overview</Link> : null}
+              {activeTab !== "overview" ? (
+                <Link
+                  href="/vendors/dashboard?tab=overview"
+                  className="rounded-full border border-white/25 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+                >
+                  Back to overview
+                </Link>
+              ) : null}
             </div>
-            <div className={activeTab === "overview" ? "lg:h-[calc(100%-73px)] lg:overflow-hidden" : "lg:h-[calc(100%-73px)] lg:overflow-y-auto lg:pr-1"}>
+            <div
+              className={
+                activeTab === "overview"
+                  ? "lg:h-[calc(100%-73px)] lg:overflow-hidden"
+                  : "lg:h-[calc(100%-73px)] lg:overflow-y-auto lg:pr-1"
+              }
+            >
               {content}
             </div>
           </div>

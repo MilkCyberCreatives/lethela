@@ -39,7 +39,10 @@ export async function DELETE(_req: Request, { params }: Params) {
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error.message || "Delete failed" }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: error.message || "Delete failed" },
+      { status: 404 },
+    );
   }
 }
 
@@ -53,7 +56,10 @@ export async function PATCH(req: Request, { params }: Params) {
     const parsed = ProductPatchSchema.safeParse(raw);
     if (!parsed.success) {
       const fieldErrors = parsed.error.flatten().fieldErrors;
-      return NextResponse.json({ ok: false, error: "Invalid payload", fieldErrors }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Invalid payload", fieldErrors },
+        { status: 400 },
+      );
     }
 
     const data = parsed.data;
@@ -62,7 +68,7 @@ export async function PATCH(req: Request, { params }: Params) {
       if (!moderation.allowed) {
         return NextResponse.json(
           { ok: false, error: "Content not allowed", reasons: moderation.reasons ?? [] },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -73,7 +79,10 @@ export async function PATCH(req: Request, { params }: Params) {
         select: { id: true },
       });
       if (existing && existing.id !== id) {
-        return NextResponse.json({ ok: false, error: "Slug already exists for this vendor" }, { status: 409 });
+        return NextResponse.json(
+          { ok: false, error: "Slug already exists for this vendor" },
+          { status: 409 },
+        );
       }
     }
 
@@ -83,6 +92,9 @@ export async function PATCH(req: Request, { params }: Params) {
     });
     return NextResponse.json({ ok: true, product });
   } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error.message || "Update failed" }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: error.message || "Update failed" },
+      { status: 404 },
+    );
   }
 }

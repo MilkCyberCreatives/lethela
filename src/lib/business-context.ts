@@ -173,7 +173,15 @@ export function supportFaq(): SupportFaqItem[] {
     {
       q: "What can vendors do in the dashboard?",
       a: "Approved vendors can use the dashboard for overview, menu management, product imports, orders, analytics, profile details, hours, specials, automations, and support.",
-      tags: ["dashboard", "vendor dashboard", "menu", "analytics", "orders", "specials", "automations"],
+      tags: [
+        "dashboard",
+        "vendor dashboard",
+        "menu",
+        "analytics",
+        "orders",
+        "specials",
+        "automations",
+      ],
     },
     {
       q: "Where do vendors manage their menu?",

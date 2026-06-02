@@ -13,7 +13,12 @@ export type ProductLite = {
   priceCents: number;
   image?: string | null;
   isAlcohol?: boolean;
-  vendor?: { id: string; name: string | null; slug?: string | null; deliveryFee?: number | null } | null;
+  vendor?: {
+    id: string;
+    name: string | null;
+    slug?: string | null;
+    deliveryFee?: number | null;
+  } | null;
   description?: string | null;
   category?: string | null;
 };
@@ -45,14 +50,17 @@ export default function ProductCard({ p }: { p: ProductLite }) {
           <div className="min-w-0">
             <h3 className="truncate font-semibold">{p.name}</h3>
             <p className="truncate text-xs text-white/70">
-              {p.vendor?.name ? `${p.vendor.name} • ` : ""}
-              R {(p.priceCents / 100).toFixed(2)}
+              {p.vendor?.name ? `${p.vendor.name} • ` : ""}R {(p.priceCents / 100).toFixed(2)}
             </p>
           </div>
-          {p.isAlcohol ? <span className="rounded bg-white/10 px-2 py-1 text-[10px]">18+</span> : null}
+          {p.isAlcohol ? (
+            <span className="rounded bg-white/10 px-2 py-1 text-[10px]">18+</span>
+          ) : null}
         </div>
 
-        {p.description ? <p className="mt-2 line-clamp-2 text-xs text-white/70">{p.description}</p> : null}
+        {p.description ? (
+          <p className="mt-2 line-clamp-2 text-xs text-white/70">{p.description}</p>
+        ) : null}
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="text-[11px] text-white/55">Save or rate this meal</span>
@@ -73,7 +81,7 @@ export default function ProductCard({ p }: { p: ProductLite }) {
                   priceCents: p.priceCents,
                   image: p.image || undefined,
                 },
-                1
+                1,
               );
               void trackVisitorEvent({
                 type: "product_add",

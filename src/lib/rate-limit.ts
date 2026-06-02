@@ -10,9 +10,7 @@ type RateLimitConfig = {
   headers: Headers;
 };
 
-type RateLimitResult =
-  | { ok: true }
-  | { ok: false; retryAfterSec: number };
+type RateLimitResult = { ok: true } | { ok: false; retryAfterSec: number };
 
 type Bucket = {
   count: number;
@@ -33,7 +31,9 @@ function getBuckets() {
 
 function ensureRateLimitTable() {
   if (!rateLimitBuckets.__lethelaRateLimitTableReady) {
-    rateLimitBuckets.__lethelaRateLimitTableReady = prisma.$executeRawUnsafe(`
+    rateLimitBuckets.__lethelaRateLimitTableReady = prisma
+      .$executeRawUnsafe(
+        `
       CREATE TABLE IF NOT EXISTS app_rate_limits (
         bucket_id TEXT PRIMARY KEY,
         scope_key TEXT NOT NULL,
@@ -42,11 +42,14 @@ function ensureRateLimitTable() {
         reset_at BIGINT NOT NULL,
         updated_at BIGINT NOT NULL
       )
-    `).then(async () => {
-      await prisma.$executeRawUnsafe(
-        "CREATE INDEX IF NOT EXISTS app_rate_limits_reset_at_idx ON app_rate_limits(reset_at)"
-      );
-    }).then(() => undefined);
+    `,
+      )
+      .then(async () => {
+        await prisma.$executeRawUnsafe(
+          "CREATE INDEX IF NOT EXISTS app_rate_limits_reset_at_idx ON app_rate_limits(reset_at)",
+        );
+      })
+      .then(() => undefined);
   }
 
   return rateLimitBuckets.__lethelaRateLimitTableReady;
@@ -59,7 +62,12 @@ function clientIdentifier(headers: Headers) {
   return `${forwardedFor || realIp || "unknown-ip"}::${userAgent.slice(0, 120)}`;
 }
 
-function fallbackCheckRateLimit({ key, limit, windowMs, headers }: RateLimitConfig): RateLimitResult {
+function fallbackCheckRateLimit({
+  key,
+  limit,
+  windowMs,
+  headers,
+}: RateLimitConfig): RateLimitResult {
   const now = Date.now();
   const buckets = getBuckets();
   const bucketKey = `${key}::${clientIdentifier(headers)}`;
@@ -82,7 +90,12 @@ function fallbackCheckRateLimit({ key, limit, windowMs, headers }: RateLimitConf
   return { ok: true };
 }
 
-export async function checkRateLimit({ key, limit, windowMs, headers }: RateLimitConfig): Promise<RateLimitResult> {
+export async function checkRateLimit({
+  key,
+  limit,
+  windowMs,
+  headers,
+}: RateLimitConfig): Promise<RateLimitResult> {
   if (!prismaRuntimeInfo.scalable) {
     return fallbackCheckRateLimit({ key, limit, windowMs, headers });
   }
@@ -112,7 +125,7 @@ export async function checkRateLimit({ key, limit, windowMs, headers }: RateLimi
         RETURNING count, reset_at
       `,
       1000,
-      "Rate limit check timed out"
+      "Rate limit check timed out",
     );
 
     const row = rows[0];

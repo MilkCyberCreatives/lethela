@@ -19,30 +19,38 @@ export async function POST(req: Request) {
   };
 
   if (!vendorId || !Array.isArray(items) || items.length === 0) {
-    return NextResponse.json({ ok: false, error: "vendorId and items[] required" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "vendorId and items[] required" },
+      { status: 400 },
+    );
   }
 
   const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
   if (!vendor) return NextResponse.json({ ok: false, error: "Vendor not found" }, { status: 404 });
 
-  const productIds = items.map(i => i.productId);
+  const productIds = items.map((i) => i.productId);
   const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
   if (products.length !== productIds.length) {
-    return NextResponse.json({ ok: false, error: "One or more products not found" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "One or more products not found" },
+      { status: 400 },
+    );
   }
 
   let subtotalCents = 0;
   const lineMap: Record<string, number> = {};
   for (const it of items) {
-    const p = products.find(pp => pp.id === it.productId)!;
+    const p = products.find((pp) => pp.id === it.productId)!;
     subtotalCents += p.priceCents * Math.max(1, it.qty);
     lineMap[p.id] = p.priceCents;
   }
 
   let distanceKm: number | null = null;
   if (
-    typeof vendor.latitude === "number" && typeof vendor.longitude === "number" &&
-    typeof customerLat === "number" && typeof customerLng === "number"
+    typeof vendor.latitude === "number" &&
+    typeof vendor.longitude === "number" &&
+    typeof customerLat === "number" &&
+    typeof customerLng === "number"
   ) {
     distanceKm = haversineKm(vendor.latitude, vendor.longitude, customerLat, customerLng);
   }
@@ -62,7 +70,7 @@ export async function POST(req: Request) {
       deliveryFeeCents,
       totalCents,
       items: {
-        create: items.map(it => ({
+        create: items.map((it) => ({
           productId: it.productId,
           qty: Math.max(1, it.qty),
           priceCents: lineMap[it.productId],
@@ -82,7 +90,7 @@ export async function POST(req: Request) {
       subtotalCents: order.subtotalCents,
       deliveryFeeCents: order.deliveryFeeCents,
       totalCents: order.totalCents,
-      items: order.items.map(li => ({
+      items: order.items.map((li) => ({
         productId: li.productId,
         qty: li.qty,
         priceCents: li.priceCents,

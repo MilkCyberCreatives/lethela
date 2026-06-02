@@ -6,7 +6,17 @@ import { ChevronLeft, ChevronRight, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categoryToSlug } from "@/lib/categories";
 
-const CATEGORIES = ["Kota", "Chips", "Burger", "Mogodu", "Alcohol", "Groceries", "Braai", "Pizza", "Chicken"];
+const CATEGORIES = [
+  "Kota",
+  "Chips",
+  "Burger",
+  "Mogodu",
+  "Alcohol",
+  "Groceries",
+  "Braai",
+  "Pizza",
+  "Chicken",
+];
 
 export default function CategoryCarousel() {
   const scroller = useRef<HTMLDivElement>(null);
@@ -20,10 +30,20 @@ export default function CategoryCarousel() {
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-xl font-semibold">Popular categories</h3>
         <div className="hidden gap-2 md:flex">
-          <Button variant="outline" className="border-white/20" onClick={() => scrollBy(-240)} aria-label="Scroll categories left">
+          <Button
+            variant="outline"
+            className="border-white/20"
+            onClick={() => scrollBy(-240)}
+            aria-label="Scroll categories left"
+          >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <Button variant="outline" className="border-white/20" onClick={() => scrollBy(240)} aria-label="Scroll categories right">
+          <Button
+            variant="outline"
+            className="border-white/20"
+            onClick={() => scrollBy(240)}
+            aria-label="Scroll categories right"
+          >
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>

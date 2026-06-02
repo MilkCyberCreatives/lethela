@@ -57,8 +57,12 @@ export async function PATCH(req: Request, { params }: Params) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { ok: false, error: "Invalid menu item payload.", fieldErrors: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        {
+          ok: false,
+          error: "Invalid menu item payload.",
+          fieldErrors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
       );
     }
 

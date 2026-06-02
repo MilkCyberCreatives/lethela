@@ -79,7 +79,7 @@ export async function getUserMealFeedback(userId: string): Promise<ProductFeedba
     comments: Object.fromEntries(
       reviews
         .filter((item) => typeof item.comment === "string" && item.comment.trim().length > 0)
-        .map((item) => [item.productId, String(item.comment || "").trim()])
+        .map((item) => [item.productId, String(item.comment || "").trim()]),
     ),
   };
 }
@@ -87,9 +87,8 @@ export async function getUserMealFeedback(userId: string): Promise<ProductFeedba
 export async function upsertPushPreference(
   visitorId: string,
   userId: string | null | undefined,
-  input: PushPreferenceInput
-)
-{
+  input: PushPreferenceInput,
+) {
   const existing = await prisma.pushPreference.findUnique({
     where: { visitorId },
     select: {
@@ -105,7 +104,8 @@ export async function upsertPushPreference(
     userId: userId || null,
     marketingEnabled: input.marketingEnabled ?? existing?.marketingEnabled ?? false,
     orderUpdatesEnabled: input.orderUpdatesEnabled ?? existing?.orderUpdatesEnabled ?? true,
-    recommendationsEnabled: input.recommendationsEnabled ?? existing?.recommendationsEnabled ?? true,
+    recommendationsEnabled:
+      input.recommendationsEnabled ?? existing?.recommendationsEnabled ?? true,
     adminAlertsEnabled: input.adminAlertsEnabled ?? existing?.adminAlertsEnabled ?? false,
   };
 
@@ -125,7 +125,10 @@ export async function upsertPushPreference(
   });
 }
 
-export async function getUserExperienceSnapshot(userId: string, visitorId?: string | null): Promise<UserExperienceSnapshot> {
+export async function getUserExperienceSnapshot(
+  userId: string,
+  visitorId?: string | null,
+): Promise<UserExperienceSnapshot> {
   const [favorites, orders, reviews, pushPreference] = await Promise.all([
     prisma.userFavoriteProduct.findMany({
       where: { userId },
@@ -189,7 +192,9 @@ export async function getUserExperienceSnapshot(userId: string, visitorId?: stri
   ]);
 
   const averageRating =
-    reviews.length > 0 ? Number((reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length).toFixed(1)) : null;
+    reviews.length > 0
+      ? Number((reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length).toFixed(1))
+      : null;
 
   return {
     favorites: favorites.map((item) => ({

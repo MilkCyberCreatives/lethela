@@ -83,7 +83,9 @@ export default function RiderDashboardClient() {
   async function load() {
     setLoading(true);
     const response = await fetch("/api/riders/me", { cache: "no-store" });
-    const json = (await response.json().catch(() => ({ ok: false, error: "Failed to load rider dashboard." }))) as RiderMeResponse;
+    const json = (await response
+      .json()
+      .catch(() => ({ ok: false, error: "Failed to load rider dashboard." }))) as RiderMeResponse;
     setData(json);
     setLoading(false);
   }
@@ -100,12 +102,19 @@ export default function RiderDashboardClient() {
       { label: "Ops approval complete", complete: Boolean(data?.readiness?.approved) },
       { label: "Smartphone confirmed", complete: Boolean(application?.hasSmartphone) },
       { label: "Bank account confirmed", complete: Boolean(application?.hasBankAccount) },
-      { label: "Secure dispatch links configured", complete: Boolean(data?.readiness?.canReceiveDispatch) },
+      {
+        label: "Secure dispatch links configured",
+        complete: Boolean(data?.readiness?.canReceiveDispatch),
+      },
     ];
   }, [data]);
 
   if (loading) {
-    return <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 text-sm text-white/70">Loading rider dashboard...</div>;
+    return (
+      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 text-sm text-white/70">
+        Loading rider dashboard...
+      </div>
+    );
   }
 
   if (!data?.ok) {
@@ -118,7 +127,9 @@ export default function RiderDashboardClient() {
           </span>
           <div>
             <h1 className="text-2xl font-bold">Rider sign-in required</h1>
-            <p className="mt-1 text-sm text-white/65">{data?.error || "Sign in with a rider account to view this dashboard."}</p>
+            <p className="mt-1 text-sm text-white/65">
+              {data?.error || "Sign in with a rider account to view this dashboard."}
+            </p>
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-3">
@@ -145,7 +156,9 @@ export default function RiderDashboardClient() {
       <section className="rounded-lg border border-white/10 bg-[#0C1132] p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">Rider workspace</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
+              Rider workspace
+            </p>
             <h1 className="mt-2 text-2xl font-bold md:text-3xl">Delivery dashboard</h1>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/68">
               {application
@@ -168,9 +181,24 @@ export default function RiderDashboardClient() {
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Status" value={application?.status?.replaceAll("_", " ") || "No application"} note="Ops onboarding state" icon={ShieldCheck} />
-          <Metric label="Area" value={data.readiness?.area || "Not set"} note="Primary dispatch zone" icon={MapPin} />
-          <Metric label="Open orders" value={orders.length} note="Paid orders available for dispatch" icon={PackageCheck} />
+          <Metric
+            label="Status"
+            value={application?.status?.replaceAll("_", " ") || "No application"}
+            note="Ops onboarding state"
+            icon={ShieldCheck}
+          />
+          <Metric
+            label="Area"
+            value={data.readiness?.area || "Not set"}
+            note="Primary dispatch zone"
+            icon={MapPin}
+          />
+          <Metric
+            label="Open orders"
+            value={orders.length}
+            note="Paid orders available for dispatch"
+            icon={PackageCheck}
+          />
           <Metric
             label="Est. delivery fees"
             value={money(orders.reduce((sum, order) => sum + order.deliveryFeeCents, 0))}
@@ -191,12 +219,21 @@ export default function RiderDashboardClient() {
           </div>
           <div className="mt-4 grid gap-3">
             {!data.readiness?.approved ? (
-              <EmptyPanel title="Approval required" text="Riders can see dispatch orders after ops approves the application." />
+              <EmptyPanel
+                title="Approval required"
+                text="Riders can see dispatch orders after ops approves the application."
+              />
             ) : orders.length === 0 ? (
-              <EmptyPanel title="No active paid orders" text="Paid orders in preparing or delivery states will appear here." />
+              <EmptyPanel
+                title="No active paid orders"
+                text="Paid orders in preparing or delivery states will appear here."
+              />
             ) : (
               orders.map((order) => (
-                <article key={order.ref} className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                <article
+                  key={order.ref}
+                  className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold">{order.ref}</p>
@@ -216,9 +253,13 @@ export default function RiderDashboardClient() {
                         <Link href={order.consoleUrl}>Open rider console</Link>
                       </Button>
                     ) : (
-                      <span className="text-xs text-amber-100">Rider console secret is not configured.</span>
+                      <span className="text-xs text-amber-100">
+                        Rider console secret is not configured.
+                      </span>
                     )}
-                    <span className="text-xs text-white/60">Delivery fee: {money(order.deliveryFeeCents)}</span>
+                    <span className="text-xs text-white/60">
+                      Delivery fee: {money(order.deliveryFeeCents)}
+                    </span>
                   </div>
                 </article>
               ))
@@ -236,8 +277,13 @@ export default function RiderDashboardClient() {
           </div>
           <div className="mt-4 grid gap-3">
             {checklist.map((item) => (
-              <div key={item.label} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                <CheckCircle2 className={`h-4 w-4 ${item.complete ? "text-lethela-primary" : "text-white/30"}`} />
+              <div
+                key={item.label}
+                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3"
+              >
+                <CheckCircle2
+                  className={`h-4 w-4 ${item.complete ? "text-lethela-primary" : "text-white/30"}`}
+                />
                 <span className="text-sm text-white/75">{item.label}</span>
               </div>
             ))}
@@ -251,7 +297,10 @@ export default function RiderDashboardClient() {
             <CalendarDays className="h-5 w-5 text-lethela-primary" />
             <h2 className="text-lg font-semibold">Availability</h2>
           </div>
-          <p className="mt-3 text-sm text-white/65">{application?.availableHours || "Availability will appear after your rider application is submitted."}</p>
+          <p className="mt-3 text-sm text-white/65">
+            {application?.availableHours ||
+              "Availability will appear after your rider application is submitted."}
+          </p>
         </section>
 
         <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
@@ -262,7 +311,9 @@ export default function RiderDashboardClient() {
           {application ? (
             <div className="mt-3 space-y-2 text-sm text-white/65">
               <p>
-                <span className={`rounded-full border px-3 py-1 text-xs ${statusClass(application.status)}`}>
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs ${statusClass(application.status)}`}
+                >
                   {application.status.replaceAll("_", " ")}
                 </span>
               </p>
@@ -271,11 +322,20 @@ export default function RiderDashboardClient() {
                 {application.vehicleRegistration ? ` (${application.vehicleRegistration})` : ""}
               </p>
               <p>Licence: {application.licenseCode}</p>
-              <p>Emergency: {application.emergencyContactName} ({application.emergencyContactPhone})</p>
-              {application.aiSummary ? <p className="rounded-lg border border-white/10 bg-white/[0.04] p-3">{application.aiSummary}</p> : null}
+              <p>
+                Emergency: {application.emergencyContactName} ({application.emergencyContactPhone})
+              </p>
+              {application.aiSummary ? (
+                <p className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                  {application.aiSummary}
+                </p>
+              ) : null}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-white/65">Submit the rider application with the same email as your account to link this dashboard.</p>
+            <p className="mt-3 text-sm text-white/65">
+              Submit the rider application with the same email as your account to link this
+              dashboard.
+            </p>
           )}
         </section>
       </div>

@@ -51,14 +51,15 @@ export async function GET(req: NextRequest) {
   }
 
   const take = Math.min(200, Math.max(1, Number(req.nextUrl.searchParams.get("take") || 100)));
-  const [items, pendingCount, underReviewCount, approvedCount, rejectedCount, totalCount] = await Promise.all([
-    listRiderApplications(rawStatus, take),
-    countRiderApplications("PENDING"),
-    countRiderApplications("UNDER_REVIEW"),
-    countRiderApplications("APPROVED"),
-    countRiderApplications("REJECTED"),
-    countRiderApplications(),
-  ]);
+  const [items, pendingCount, underReviewCount, approvedCount, rejectedCount, totalCount] =
+    await Promise.all([
+      listRiderApplications(rawStatus, take),
+      countRiderApplications("PENDING"),
+      countRiderApplications("UNDER_REVIEW"),
+      countRiderApplications("APPROVED"),
+      countRiderApplications("REJECTED"),
+      countRiderApplications(),
+    ]);
 
   return NextResponse.json({
     ok: true,

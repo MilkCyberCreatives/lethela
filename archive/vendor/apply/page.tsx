@@ -35,14 +35,27 @@ export default function VendorApplyPage() {
       <form onSubmit={submit} className="mt-6 space-y-4">
         <div>
           <label className="text-sm">Email</label>
-          <Input value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-white text-black" />
+          <Input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="bg-white text-black"
+          />
         </div>
         <div>
           <label className="text-sm">Passcode</label>
-          <Input value={passcode} onChange={(e) => setPasscode(e.target.value)} required type="password" className="bg-white text-black" />
+          <Input
+            value={passcode}
+            onChange={(e) => setPasscode(e.target.value)}
+            required
+            type="password"
+            className="bg-white text-black"
+          />
         </div>
         {err && <p className="text-sm text-red-300">{err}</p>}
-        <Button type="submit" className="bg-lethela-primary">Continue</Button>
+        <Button type="submit" className="bg-lethela-primary">
+          Continue
+        </Button>
       </form>
     </main>
   );

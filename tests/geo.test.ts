@@ -17,4 +17,3 @@ test("geocodeSuburb returns null for unknown areas when maps lookup is unavailab
   const point = await geocodeSuburb("Some Unknown Area 987654");
   assert.equal(point, null);
 });
-

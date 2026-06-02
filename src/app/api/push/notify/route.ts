@@ -11,17 +11,19 @@ async function resolveSegmentVisitorIds(segment: CampaignSegment) {
   }
 
   if (segment === "LOYAL") {
-    const rows = await prisma.visitor.findMany({
-      where: {
-        events: {
-          some: {
-            type: { in: ["recommendation_click", "vendor_click", "product_add", "push_opt_in"] },
+    const rows = await prisma.visitor
+      .findMany({
+        where: {
+          events: {
+            some: {
+              type: { in: ["recommendation_click", "vendor_click", "product_add", "push_opt_in"] },
+            },
           },
         },
-      },
-      select: { id: true },
-      take: 500,
-    }).catch(() => []);
+        select: { id: true },
+        take: 500,
+      })
+      .catch(() => []);
     return rows.map((row) => row.id);
   }
 
@@ -49,7 +51,9 @@ async function resolveSegmentVisitorIds(segment: CampaignSegment) {
     distinct: ["userId"],
     take: 500,
   });
-  const orderedUserIds = visitorsWithOrders.map((row) => row.userId).filter((value): value is string => Boolean(value));
+  const orderedUserIds = visitorsWithOrders
+    .map((row) => row.userId)
+    .filter((value): value is string => Boolean(value));
   const rows = await prisma.pushPreference.findMany({
     where: orderedUserIds.length > 0 ? { userId: { notIn: orderedUserIds } } : undefined,
     select: { visitorId: true },
@@ -79,12 +83,16 @@ export async function POST(req: NextRequest) {
   const title = String(body.title || "").trim();
   const message = String(body.body || "").trim();
   const url = String(body.url || "/").trim() || "/";
-  const segment = (String(body.segment || "ALL").trim().toUpperCase() || "ALL") as CampaignSegment;
+  const segment = (String(body.segment || "ALL")
+    .trim()
+    .toUpperCase() || "ALL") as CampaignSegment;
   if (!title || !message) {
     return NextResponse.json({ ok: false, error: "Missing title or body." }, { status: 400 });
   }
 
-  const segmentedVisitorIds = body.visitorId ? [body.visitorId.trim()] : await resolveSegmentVisitorIds(segment);
+  const segmentedVisitorIds = body.visitorId
+    ? [body.visitorId.trim()]
+    : await resolveSegmentVisitorIds(segment);
   const subscriptions = await prisma.pushSubscription.findMany({
     where: {
       ...(segmentedVisitorIds ? { visitorId: { in: segmentedVisitorIds } } : {}),
@@ -133,7 +141,7 @@ export async function POST(req: NextRequest) {
           });
         }
       }
-    })
+    }),
   );
 
   await prisma.pushCampaign.create({

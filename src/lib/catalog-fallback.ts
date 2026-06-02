@@ -341,7 +341,7 @@ const sectionsBySlug: Record<string, CatalogSection[]> = {
       ],
     },
   ],
-  "bento": [
+  bento: [
     {
       id: "section-bento-main",
       title: "Sushi",

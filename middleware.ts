@@ -31,7 +31,10 @@ export function middleware(req: NextRequest) {
     const token = req.cookies.get("vendor_session")?.value;
     if (!token) {
       if (isVendorApi) {
-        return withVisitorCookie(req, NextResponse.json({ ok: false, error: "Not signed in as vendor." }, { status: 401 }));
+        return withVisitorCookie(
+          req,
+          NextResponse.json({ ok: false, error: "Not signed in as vendor." }, { status: 401 }),
+        );
       }
       const url = req.nextUrl.clone();
       url.pathname = "/vendors/register";
@@ -43,5 +46,7 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|txt|xml|webmanifest)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|txt|xml|webmanifest)$).*)",
+  ],
 };

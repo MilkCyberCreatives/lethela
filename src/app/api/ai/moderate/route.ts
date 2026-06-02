@@ -13,11 +13,14 @@ export async function POST(req: Request) {
   if (!limited.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many moderation requests. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
     );
   }
 
-  const { name, description } = (await req.json().catch(() => ({}))) as { name: string; description?: string | null };
+  const { name, description } = (await req.json().catch(() => ({}))) as {
+    name: string;
+    description?: string | null;
+  };
   if (!name) return NextResponse.json({ ok: false, error: "name required" }, { status: 400 });
   const out = await aiModerateProduct(name, description);
   return NextResponse.json(out);

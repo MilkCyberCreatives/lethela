@@ -70,7 +70,7 @@ export async function POST(req: Request) {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json(
       { ok: false, error: "Durable storage is not configured for uploads." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 

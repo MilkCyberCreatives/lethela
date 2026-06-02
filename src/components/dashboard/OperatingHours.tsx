@@ -93,7 +93,7 @@ export default function OperatingHours() {
       return current.map((hour) =>
         hour.day >= 1 && hour.day <= 5
           ? { ...hour, openMin: monday.openMin, closeMin: monday.closeMin, closed: monday.closed }
-          : hour
+          : hour,
       );
     });
     setStatus("Applied Monday settings to weekdays.");
@@ -136,7 +136,10 @@ export default function OperatingHours() {
 
       <div className="grid gap-2">
         {hours.map((hour, index) => (
-          <div key={hour.day} className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+          <div
+            key={hour.day}
+            className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3"
+          >
             <div className="w-10 text-sm font-medium">{DAYS[hour.day]}</div>
             <label className="flex items-center gap-2">
               <input
@@ -145,8 +148,8 @@ export default function OperatingHours() {
                 onChange={(event) =>
                   setHours((current) =>
                     current.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, closed: event.target.checked } : item
-                    )
+                      itemIndex === index ? { ...item, closed: event.target.checked } : item,
+                    ),
                   )
                 }
               />
@@ -160,8 +163,10 @@ export default function OperatingHours() {
                   onChange={(event) =>
                     setHours((current) =>
                       current.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, openMin: parseTime(event.target.value) } : item
-                      )
+                        itemIndex === index
+                          ? { ...item, openMin: parseTime(event.target.value) }
+                          : item,
+                      ),
                     )
                   }
                 />
@@ -172,8 +177,10 @@ export default function OperatingHours() {
                   onChange={(event) =>
                     setHours((current) =>
                       current.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, closeMin: parseTime(event.target.value) } : item
-                      )
+                        itemIndex === index
+                          ? { ...item, closeMin: parseTime(event.target.value) }
+                          : item,
+                      ),
                     )
                   }
                 />

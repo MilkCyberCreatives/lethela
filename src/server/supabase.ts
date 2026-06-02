@@ -5,7 +5,7 @@ export function hasStorageConfig() {
   return Boolean(
     process.env.SUPABASE_URL?.trim() &&
       process.env.SUPABASE_SERVICE_ROLE?.trim() &&
-      process.env.SUPABASE_BUCKET?.trim()
+      process.env.SUPABASE_BUCKET?.trim(),
   );
 }
 

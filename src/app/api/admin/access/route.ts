@@ -24,14 +24,17 @@ export async function POST(req: NextRequest) {
   if (!configuredKey) {
     return NextResponse.json(
       { ok: false, error: "Admin approval key is not configured." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const body = await req.json().catch(() => ({}));
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: "Enter a valid admin approval key." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Enter a valid admin approval key." },
+      { status: 400 },
+    );
   }
 
   if (!keysMatch(parsed.data.adminKey, configuredKey)) {
@@ -50,7 +53,8 @@ export async function POST(req: NextRequest) {
         data: { role: "ADMIN" },
       });
       promoted = true;
-      message = "Admin access enabled. Sign out and sign back in once to refresh your admin session.";
+      message =
+        "Admin access enabled. Sign out and sign back in once to refresh your admin session.";
     }
   }
 

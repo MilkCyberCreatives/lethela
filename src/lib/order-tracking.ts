@@ -1,4 +1,9 @@
-export type TrackingOrderStatus = "PLACED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELED";
+export type TrackingOrderStatus =
+  | "PLACED"
+  | "PREPARING"
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "CANCELED";
 
 export type TrackingPoint = { lat: number; lng: number };
 
@@ -45,7 +50,9 @@ const STATUS_DETAIL: Record<TrackingOrderStatus, string> = {
 };
 
 export function normalizeTrackingStatus(input: string | null | undefined): TrackingOrderStatus {
-  const upper = String(input || "").trim().toUpperCase();
+  const upper = String(input || "")
+    .trim()
+    .toUpperCase();
   if (upper === "ACCEPTED") return "PREPARING";
   if (upper === "PICKED_UP" || upper === "ON_THE_WAY") return "OUT_FOR_DELIVERY";
   if (
@@ -123,7 +130,10 @@ export function buildTrackingSnapshot(order: TrackingShape) {
     const latRatio = Math.abs(totalLat) > 0.00001 ? travelledLat / totalLat : 0;
     const lngRatio = Math.abs(totalLng) > 0.00001 ? travelledLng / totalLng : 0;
     const routeRatio = [latRatio, lngRatio].filter((value) => Number.isFinite(value));
-    const ratio = routeRatio.length > 0 ? routeRatio.reduce((sum, value) => sum + value, 0) / routeRatio.length : 0;
+    const ratio =
+      routeRatio.length > 0
+        ? routeRatio.reduce((sum, value) => sum + value, 0) / routeRatio.length
+        : 0;
     liveProgress = Math.max(baseProgress, Math.min(96, 62 + Math.max(0, ratio) * 34));
   }
 

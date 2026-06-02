@@ -92,7 +92,11 @@ export default function UserProfileForm() {
               <div className="aspect-square overflow-hidden rounded-2xl border border-white/10 bg-black/15">
                 {image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={image} alt={name || "User profile"} className="h-full w-full object-cover" />
+                  <img
+                    src={image}
+                    alt={name || "User profile"}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-white/45">
                     No profile photo yet
@@ -101,7 +105,9 @@ export default function UserProfileForm() {
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full border border-white/15 px-3 py-1">{profile?.role || "USER"}</span>
+                <span className="rounded-full border border-white/15 px-3 py-1">
+                  {profile?.role || "USER"}
+                </span>
                 {profile?.createdAt ? (
                   <span className="rounded-full border border-white/15 px-3 py-1">
                     Joined {new Date(profile.createdAt).toLocaleDateString()}

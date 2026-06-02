@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, Clock, FileCheck2, ShieldCheck, Store, Truck, WalletCards } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  FileCheck2,
+  ShieldCheck,
+  Store,
+  Truck,
+  WalletCards,
+} from "lucide-react";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import VendorSignupForm from "@/components/VendorSignupForm";
@@ -42,7 +50,11 @@ const DASHBOARD_MODULES = [
   { title: "Orders", text: "Accept and update customer orders from your dashboard.", icon: Truck },
   { title: "Menu", text: "Add products, prices, stock status and menu sections.", icon: Store },
   { title: "Payouts", text: "Keep track of settlements and delivery fees.", icon: WalletCards },
-  { title: "Documents", text: "Keep owner and business documents ready for review.", icon: FileCheck2 },
+  {
+    title: "Documents",
+    text: "Keep owner and business documents ready for review.",
+    icon: FileCheck2,
+  },
 ];
 
 const READINESS = [
@@ -60,13 +72,15 @@ export default function VendorRegisterPage() {
       <section className="border-b border-white/10 bg-[#080B27]">
         <div className="container grid gap-8 py-10 lg:grid-cols-[1.15fr,0.85fr] lg:py-14">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">Vendor onboarding</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
+              Vendor onboarding
+            </p>
             <h1 className="mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-5xl">
               Become a Lethela vendor.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 md:text-base">
-              Lethela helps local food and grocery businesses reach more customers. Complete the application below and
-              we will review your store before it goes live.
+              Lethela helps local food and grocery businesses reach more customers. Complete the
+              application below and we will review your store before it goes live.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -86,9 +100,14 @@ export default function VendorRegisterPage() {
               {READINESS.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <article key={item.label} className="rounded-lg border border-white/10 bg-white/[0.045] p-4">
+                  <article
+                    key={item.label}
+                    className="rounded-lg border border-white/10 bg-white/[0.045] p-4"
+                  >
                     <Icon className="h-5 w-5 text-lethela-primary" />
-                    <p className="mt-3 text-xs uppercase tracking-[0.14em] text-white/50">{item.label}</p>
+                    <p className="mt-3 text-xs uppercase tracking-[0.14em] text-white/50">
+                      {item.label}
+                    </p>
                     <p className="mt-1 text-lg font-semibold">{item.value}</p>
                   </article>
                 );
@@ -97,10 +116,15 @@ export default function VendorRegisterPage() {
           </div>
 
           <aside className="rounded-lg border border-white/10 bg-[#0C1132] p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/60">Before you apply</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
+              Before you apply
+            </h2>
             <ul className="mt-4 space-y-3 text-sm text-white/76">
               {CHECKLIST.map((item) => (
-                <li key={item} className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-3">
+                <li
+                  key={item}
+                  className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-3"
+                >
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-lethela-primary" />
                   <span>{item}</span>
                 </li>
@@ -131,13 +155,16 @@ export default function VendorRegisterPage() {
               <h2 className="mt-2 text-2xl font-semibold">Manage your store from one place</h2>
             </div>
             <p className="max-w-xl text-sm leading-6 text-white/62">
-              Approved vendors can update products, manage orders, set trading hours and keep store information up to
-              date.
+              Approved vendors can update products, manage orders, set trading hours and keep store
+              information up to date.
             </p>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             {STEPS.map((step, index) => (
-              <article key={step.title} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+              <article
+                key={step.title}
+                className="rounded-lg border border-white/10 bg-white/[0.035] p-4"
+              >
                 <p className="text-xs font-semibold text-lethela-primary">Step {index + 1}</p>
                 <h3 className="mt-2 font-semibold">{step.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-white/62">{step.text}</p>
@@ -148,7 +175,10 @@ export default function VendorRegisterPage() {
             {DASHBOARD_MODULES.map((module) => {
               const Icon = module.icon;
               return (
-                <article key={module.title} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                <article
+                  key={module.title}
+                  className="rounded-lg border border-white/10 bg-white/[0.035] p-4"
+                >
                   <Icon className="h-5 w-5 text-lethela-primary" />
                   <h3 className="mt-3 font-semibold">{module.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-white/62">{module.text}</p>

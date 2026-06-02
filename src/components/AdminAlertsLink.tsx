@@ -58,7 +58,11 @@ export default function AdminAlertsLink() {
     const onVendorApplication = (event: AdminNotificationEvent) => {
       if (!active) return;
       setPendingCount(Number(event.totalPendingApprovals ?? event.pendingCount ?? 0));
-      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+      if (
+        typeof window !== "undefined" &&
+        "Notification" in window &&
+        Notification.permission === "granted"
+      ) {
         new Notification(event.title || "New vendor application", {
           body: event.body || "An application is waiting for admin approval.",
         });
@@ -108,7 +112,9 @@ export default function AdminAlertsLink() {
           {pendingCount}
         </span>
       ) : null}
-      {pushHint ? <span className="hidden text-[10px] text-black/60 lg:inline">{pushHint}</span> : null}
+      {pushHint ? (
+        <span className="hidden text-[10px] text-black/60 lg:inline">{pushHint}</span>
+      ) : null}
     </Link>
   );
 }

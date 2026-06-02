@@ -92,7 +92,7 @@ export default function MenuManager() {
       setItemForm((current) =>
         current.sectionId || nextSections.length === 0
           ? current
-          : { ...current, sectionId: nextSections[0].id }
+          : { ...current, sectionId: nextSections[0].id },
       );
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "Failed to load menu.");
@@ -158,7 +158,12 @@ export default function MenuManager() {
 
   async function saveItem() {
     const priceCents = Math.round(Number(itemForm.price || "0") * 100);
-    if (!itemForm.sectionId || !itemForm.name.trim() || !Number.isFinite(priceCents) || priceCents < 100) {
+    if (
+      !itemForm.sectionId ||
+      !itemForm.name.trim() ||
+      !Number.isFinite(priceCents) ||
+      priceCents < 100
+    ) {
       setStatus("Choose a section, enter an item name, and use a price of at least R1.");
       return;
     }
@@ -307,9 +312,12 @@ export default function MenuManager() {
     <DashCard title="Public Menu Manager">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-lethela-primary/20 bg-[#141b43] px-4 py-4">
         <div>
-          <div className="text-sm font-semibold text-white">This controls the customer-facing menu.</div>
+          <div className="text-sm font-semibold text-white">
+            This controls the customer-facing menu.
+          </div>
           <p className="mt-1 text-xs text-white/70">
-            Published items appear on your restaurant page. Draft items stay hidden until you are ready.
+            Published items appear on your restaurant page. Draft items stay hidden until you are
+            ready.
           </p>
         </div>
         <Link
@@ -325,7 +333,10 @@ export default function MenuManager() {
         <SummaryCard label="Menu items" value={String(summary.items)} />
         <SummaryCard label="Published" value={String(summary.live)} />
         <SummaryCard label="Drafts" value={String(summary.drafts)} />
-        <SummaryCard label="Avg price" value={summary.averagePrice ? formatMoney(summary.averagePrice) : "R0.00"} />
+        <SummaryCard
+          label="Avg price"
+          value={summary.averagePrice ? formatMoney(summary.averagePrice) : "R0.00"}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[0.92fr,1.08fr]">
@@ -482,12 +493,16 @@ export default function MenuManager() {
             <div className="text-sm text-white/70">Loading menu...</div>
           ) : sections.length === 0 ? (
             <div className="rounded-xl border border-dashed border-white/15 bg-black/10 px-4 py-6 text-sm text-white/70">
-              No menu sections yet. Start with a section like Breakfast, Kota, Mogodu, Drinks, or Specials.
+              No menu sections yet. Start with a section like Breakfast, Kota, Mogodu, Drinks, or
+              Specials.
             </div>
           ) : (
             <div className="space-y-4">
               {sections.map((section) => (
-                <div key={section.id} className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                <div
+                  key={section.id}
+                  className="rounded-2xl border border-white/10 bg-black/10 p-4"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="text-base font-semibold text-white">{section.title}</div>
@@ -546,7 +561,9 @@ export default function MenuManager() {
                               ) : null}
                               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/60">
                                 <span>{formatMoney(item.priceCents)}</span>
-                                {item.tags.length > 0 ? <span>| {item.tags.join(", ")}</span> : null}
+                                {item.tags.length > 0 ? (
+                                  <span>| {item.tags.join(", ")}</span>
+                                ) : null}
                                 <span>| Updated {new Date(item.updatedAt).toLocaleString()}</span>
                               </div>
                             </div>

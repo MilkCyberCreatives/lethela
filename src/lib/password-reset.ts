@@ -16,11 +16,7 @@ function base64UrlDecode(value: string) {
 }
 
 function passwordResetSecret() {
-  return (
-    process.env.PASSWORD_RESET_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim() ||
-    ""
-  );
+  return process.env.PASSWORD_RESET_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim() || "";
 }
 
 function signValue(value: string) {
@@ -31,11 +27,7 @@ function signValue(value: string) {
 }
 
 export function passwordResetFingerprint(passwordHash: string) {
-  return crypto
-    .createHash("sha256")
-    .update(passwordHash, "utf8")
-    .digest("hex")
-    .slice(0, 16);
+  return crypto.createHash("sha256").update(passwordHash, "utf8").digest("hex").slice(0, 16);
 }
 
 export function createPasswordResetToken(input: {

@@ -30,7 +30,9 @@ function sign(payload: string) {
 }
 
 export function createOrderTrackingToken(ref: string, ttlSec = TRACKING_TOKEN_TTL_SEC) {
-  const cleanRef = String(ref || "").trim().toUpperCase();
+  const cleanRef = String(ref || "")
+    .trim()
+    .toUpperCase();
   const exp = Math.floor(Date.now() / 1000) + Math.max(60, ttlSec);
   const payload = `${TRACKING_TOKEN_VERSION}.${cleanRef}.${exp}`;
   return `${payload}.${sign(payload)}`;
@@ -46,7 +48,9 @@ export function verifyOrderTrackingToken(token: string | null | undefined, ref: 
   const [version, tokenRef, expRaw, signature] = parts;
   if (version !== TRACKING_TOKEN_VERSION) return false;
 
-  const cleanRef = String(ref || "").trim().toUpperCase();
+  const cleanRef = String(ref || "")
+    .trim()
+    .toUpperCase();
   if (tokenRef !== cleanRef) return false;
 
   const exp = Number(expRaw);
@@ -64,9 +68,11 @@ export function verifyOrderTrackingToken(token: string | null | undefined, ref: 
 }
 
 export function getOrderRealtimeChannel(ref: string) {
-  const cleanRef = String(ref || "").trim().toUpperCase();
+  const cleanRef = String(ref || "")
+    .trim()
+    .toUpperCase();
   const digest = base64UrlEncode(
-    crypto.createHmac("sha256", trackingSecret()).update(`order-channel:${cleanRef}`).digest()
+    crypto.createHmac("sha256", trackingSecret()).update(`order-channel:${cleanRef}`).digest(),
   ).slice(0, 24);
   return `order-${digest}`;
 }

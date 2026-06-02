@@ -38,7 +38,7 @@ function sanitizeMessages(messages: AIMessage[]) {
       (message): message is AIMessage =>
         Boolean(message) &&
         (message.role === "user" || message.role === "assistant") &&
-        typeof message.content === "string"
+        typeof message.content === "string",
     )
     .map((message) => ({
       role: message.role,
@@ -110,7 +110,11 @@ function buildFollowUps(mode: AssistantMode, latestUserMessage: string, hasResul
     return ["How do vendors join?", "How do riders apply?", "Order via WhatsApp"];
   }
   if (/vendor|dashboard|store|menu/i.test(latestUserMessage)) {
-    return ["How do vendors join?", "What can vendors do in the dashboard?", "Need WhatsApp support"];
+    return [
+      "How do vendors join?",
+      "What can vendors do in the dashboard?",
+      "Need WhatsApp support",
+    ];
   }
   return ["Popular tonight", "Track order LET-12345", "Order via WhatsApp"];
 }
@@ -138,7 +142,7 @@ async function getTrackedOrderSummary(id: string) {
           select: { name: true, latitude: true, longitude: true },
         },
       },
-    })
+    }),
   ).catch(() => null);
 
   if (!order) return null;
@@ -157,7 +161,9 @@ async function getTrackedOrderSummary(id: string) {
         ? { lat: order.customerLat, lng: order.customerLng }
         : null,
     rider:
-      order.riderLat != null && order.riderLng != null ? { lat: order.riderLat, lng: order.riderLng } : null,
+      order.riderLat != null && order.riderLng != null
+        ? { lat: order.riderLat, lng: order.riderLng }
+        : null,
   });
 
   return {
@@ -216,7 +222,7 @@ export async function POST(req: Request) {
   if (!limited.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many AI chat requests. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
     );
   }
 
@@ -230,7 +236,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "No usable messages." }, { status: 400 });
   }
 
-  const latestUserMessage = [...clean].reverse().find((message) => message.role === "user")?.content ?? "";
+  const latestUserMessage =
+    [...clean].reverse().find((message) => message.role === "user")?.content ?? "";
   const lower = latestUserMessage.toLowerCase();
   const knowledge = relevantKnowledge(latestUserMessage);
 
@@ -241,7 +248,8 @@ export async function POST(req: Request) {
       return NextResponse.json({
         ok: true,
         mode: "tracking" as AssistantMode,
-        reply: "Share your order reference in the format LET-12345 and I will pull up the latest tracking status.",
+        reply:
+          "Share your order reference in the format LET-12345 and I will pull up the latest tracking status.",
         followUps: buildFollowUps("tracking", latestUserMessage),
       });
     }
@@ -252,7 +260,11 @@ export async function POST(req: Request) {
         ok: true,
         mode: "tracking" as AssistantMode,
         reply: `I could not find ${orderId}. Double-check the reference and try again, or use WhatsApp support if you need urgent help.`,
-        followUps: ["Try another order reference", "Open Track Order page", "Contact support on WhatsApp"],
+        followUps: [
+          "Try another order reference",
+          "Open Track Order page",
+          "Contact support on WhatsApp",
+        ],
       });
     }
 
@@ -267,9 +279,12 @@ export async function POST(req: Request) {
   }
 
   const recommendationIntent =
-    /recommend|suggest|hungry|what should i eat|popular|kota|chips|burger|pizza|grocer|groceries|vegan|halaal|chicken|dinner|lunch|breakfast/i.test(lower);
+    /recommend|suggest|hungry|what should i eat|popular|kota|chips|burger|pizza|grocer|groceries|vegan|halaal|chicken|dinner|lunch|breakfast/i.test(
+      lower,
+    );
   if (recommendationIntent) {
-    const broadPrompt = /popular tonight|popular|what should i eat|hungry|dinner|lunch|breakfast/.test(lower);
+    const broadPrompt =
+      /popular tonight|popular|what should i eat|hungry|dinner|lunch|breakfast/.test(lower);
     const recommendationRows: SearchResult[] = broadPrompt
       ? ((await aiRecommend(null)).results || []).slice(0, 6).map((item, index) => ({
           id: `recommend-${index}`,
@@ -294,17 +309,21 @@ export async function POST(req: Request) {
       reply,
       results,
       followUps: buildFollowUps("recommendations", latestUserMessage, results.length > 0),
-      cta: results[0]?.slug ? { label: "Open top pick", href: `/vendors/${results[0].slug}` } : undefined,
+      cta: results[0]?.slug
+        ? { label: "Open top pick", href: `/vendors/${results[0].slug}` }
+        : undefined,
     });
   }
 
   const supportIntent =
     /refund|refunds|cancel|cancellation|coverage|available|alcohol|beer|wine|cider|contact|help|support|delivery|time|eta|whatsapp|cash|offline|vendor|rider|dashboard|menu|payment|ozow|apply/i.test(
-      lower
+      lower,
     );
   if (supportIntent) {
     const ranked = rankSupportSources(latestUserMessage);
-    const answer = supportReplyFromSources(ranked) || "I can help with ordering, Ozow checkout, WhatsApp orders, tracking, vendor onboarding, rider onboarding, and dashboard questions.";
+    const answer =
+      supportReplyFromSources(ranked) ||
+      "I can help with ordering, Ozow checkout, WhatsApp orders, tracking, vendor onboarding, rider onboarding, and dashboard questions.";
 
     return NextResponse.json({
       ok: true,
@@ -331,7 +350,9 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     mode: "general" as AssistantMode,
-    reply: reply || "I can help with orders, tracking, WhatsApp checkout, vendor onboarding, and rider onboarding.",
+    reply:
+      reply ||
+      "I can help with orders, tracking, WhatsApp checkout, vendor onboarding, and rider onboarding.",
     followUps: buildFollowUps("general", latestUserMessage),
   });
 }

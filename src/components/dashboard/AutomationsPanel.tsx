@@ -24,7 +24,9 @@ export default function AutomationsPanel() {
         Run automations now
       </button>
       {out ? (
-        <pre className="mt-2 whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-2 text-xs">{out}</pre>
+        <pre className="mt-2 whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-2 text-xs">
+          {out}
+        </pre>
       ) : null}
     </DashCard>
   );

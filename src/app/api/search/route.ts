@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { searchCatalog } from "@/lib/search";
 
 async function runSearch(rawQuery: string) {
-  const text = String(rawQuery || "").trim().slice(0, 180);
+  const text = String(rawQuery || "")
+    .trim()
+    .slice(0, 180);
 
   if (!text) {
     return NextResponse.json({
@@ -13,7 +15,10 @@ async function runSearch(rawQuery: string) {
     });
   }
 
-  const tokens = text.split(/[,\s]+/).filter(Boolean).slice(0, 8);
+  const tokens = text
+    .split(/[,\s]+/)
+    .filter(Boolean)
+    .slice(0, 8);
   const results = await searchCatalog(text, { limit: 10 });
 
   return NextResponse.json({

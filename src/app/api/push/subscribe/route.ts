@@ -14,7 +14,10 @@ export async function POST(req: Request) {
     headers: req.headers,
   });
   if (!limited.ok) {
-    return NextResponse.json({ ok: false, error: "Too many subscription attempts." }, { status: 429 });
+    return NextResponse.json(
+      { ok: false, error: "Too many subscription attempts." },
+      { status: 429 },
+    );
   }
 
   const body = (await req.json().catch(() => ({}))) as {
@@ -30,7 +33,10 @@ export async function POST(req: Request) {
   const authKey = String(body.subscription?.keys?.auth || "").trim();
 
   if (!visitorId || !endpoint || !p256dh || !authKey) {
-    return NextResponse.json({ ok: false, error: "Invalid push subscription payload." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid push subscription payload." },
+      { status: 400 },
+    );
   }
 
   let userId: string | undefined;

@@ -42,9 +42,7 @@ export const useCart = create<CartState>()(
         if (existing) {
           set({
             items: nextItemsBase.map((cartItem) =>
-              cartItem.itemId === item.itemId
-                ? { ...cartItem, qty: cartItem.qty + qty }
-                : cartItem
+              cartItem.itemId === item.itemId ? { ...cartItem, qty: cartItem.qty + qty } : cartItem,
             ),
             vendorLockedTo: item.vendorId,
           });
@@ -85,7 +83,8 @@ export const useCart = create<CartState>()(
       clear: () => set({ items: [], vendorLockedTo: null }),
       subtotal: () => get().items.reduce((sum, i) => sum + i.priceCents * i.qty, 0),
       count: () => get().items.reduce((sum, i) => sum + i.qty, 0),
-      deliveryTotal: () => get().items.reduce((sum, i) => sum + i.qty * DELIVERY_FEE_PER_ITEM_CENTS, 0),
+      deliveryTotal: () =>
+        get().items.reduce((sum, i) => sum + i.qty * DELIVERY_FEE_PER_ITEM_CENTS, 0),
     }),
     {
       name: "lethela_cart",

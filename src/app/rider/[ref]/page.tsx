@@ -81,7 +81,7 @@ export default function RiderOrderPage({ params }: { params: { ref: string } }) 
         setSharingLocation(false);
         setError(`Location error: ${err.message}`);
       },
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 },
     );
   }
 
@@ -109,7 +109,9 @@ export default function RiderOrderPage({ params }: { params: { ref: string } }) 
           Order ref: <span className="font-mono">{ref}</span>
         </p>
         <p className="mt-2 text-sm text-white/60">
-          {riderToken ? "Secure rider link active." : "Missing rider token. Updates will be rejected until a valid link is used."}
+          {riderToken
+            ? "Secure rider link active."
+            : "Missing rider token. Updates will be rejected until a valid link is used."}
         </p>
 
         {notice ? (
@@ -125,7 +127,12 @@ export default function RiderOrderPage({ params }: { params: { ref: string } }) 
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {STAGES.map((stage) => (
-            <Button key={stage} className="bg-lethela-primary" disabled={sending || !riderToken} onClick={() => updateStatus(stage)}>
+            <Button
+              key={stage}
+              className="bg-lethela-primary"
+              disabled={sending || !riderToken}
+              onClick={() => updateStatus(stage)}
+            >
               {stage.replaceAll("_", " ")}
             </Button>
           ))}
@@ -135,7 +142,12 @@ export default function RiderOrderPage({ params }: { params: { ref: string } }) 
           <Button className="bg-lethela-primary" onClick={startShare} disabled={!riderToken}>
             {sharingLocation ? "Sharing location" : "Start sharing location"}
           </Button>
-          <Button variant="outline" className="border-white/20" onClick={stopShare} disabled={!sharingLocation}>
+          <Button
+            variant="outline"
+            className="border-white/20"
+            onClick={stopShare}
+            disabled={!sharingLocation}
+          >
             Stop
           </Button>
           <div className="flex items-center text-sm text-white/70">

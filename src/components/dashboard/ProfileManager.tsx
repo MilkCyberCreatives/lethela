@@ -194,8 +194,7 @@ export default function ProfileManager() {
   }
 
   const health = profileHealth(vendor);
-  const progressPct =
-    health.total > 0 ? Math.round((health.completed / health.total) * 100) : 0;
+  const progressPct = health.total > 0 ? Math.round((health.completed / health.total) * 100) : 0;
 
   return (
     <DashCard title="Store Profile">
@@ -208,11 +207,7 @@ export default function ProfileManager() {
               <div className="aspect-[16/10] overflow-hidden rounded-xl border border-white/10 bg-black/20">
                 {form.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={form.image}
-                    alt={form.name}
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={form.image} alt={form.name} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-white/45">
                     No store logo yet
@@ -228,9 +223,7 @@ export default function ProfileManager() {
                   Status: {vendor?.status || "UNKNOWN"}
                 </span>
                 {vendor?.halaal ? (
-                  <span className="rounded-full border border-white/15 px-3 py-1">
-                    Halaal
-                  </span>
+                  <span className="rounded-full border border-white/15 px-3 py-1">Halaal</span>
                 ) : null}
                 <span className="rounded-full border border-white/15 px-3 py-1">
                   {form.isActive ? "Accepting orders" : "Store paused"}
@@ -258,7 +251,7 @@ export default function ProfileManager() {
                 value={form.name}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, name: event.target.value } : current
+                    current ? { ...current, name: event.target.value } : current,
                   )
                 }
               />
@@ -268,7 +261,7 @@ export default function ProfileManager() {
                 value={form.phone}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, phone: event.target.value } : current
+                    current ? { ...current, phone: event.target.value } : current,
                   )
                 }
               />
@@ -278,7 +271,7 @@ export default function ProfileManager() {
                 value={form.address}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, address: event.target.value } : current
+                    current ? { ...current, address: event.target.value } : current,
                   )
                 }
               />
@@ -288,7 +281,7 @@ export default function ProfileManager() {
                 value={form.suburb}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, suburb: event.target.value } : current
+                    current ? { ...current, suburb: event.target.value } : current,
                   )
                 }
               />
@@ -298,7 +291,7 @@ export default function ProfileManager() {
                 value={form.city}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, city: event.target.value } : current
+                    current ? { ...current, city: event.target.value } : current,
                   )
                 }
               />
@@ -308,7 +301,7 @@ export default function ProfileManager() {
                 value={form.province}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, province: event.target.value } : current
+                    current ? { ...current, province: event.target.value } : current,
                   )
                 }
               />
@@ -318,7 +311,7 @@ export default function ProfileManager() {
                 value={form.cuisineInput}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, cuisineInput: event.target.value } : current
+                    current ? { ...current, cuisineInput: event.target.value } : current,
                   )
                 }
               />
@@ -330,7 +323,7 @@ export default function ProfileManager() {
                 value={form.deliveryFee}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, deliveryFee: event.target.value } : current
+                    current ? { ...current, deliveryFee: event.target.value } : current,
                   )
                 }
               />
@@ -343,7 +336,7 @@ export default function ProfileManager() {
                 value={form.etaMins}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, etaMins: event.target.value } : current
+                    current ? { ...current, etaMins: event.target.value } : current,
                   )
                 }
               />
@@ -355,7 +348,7 @@ export default function ProfileManager() {
                 value={form.latitude}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, latitude: event.target.value } : current
+                    current ? { ...current, latitude: event.target.value } : current,
                   )
                 }
               />
@@ -367,7 +360,7 @@ export default function ProfileManager() {
                 value={form.longitude}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, longitude: event.target.value } : current
+                    current ? { ...current, longitude: event.target.value } : current,
                   )
                 }
               />
@@ -377,7 +370,7 @@ export default function ProfileManager() {
                 value={form.image}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, image: event.target.value } : current
+                    current ? { ...current, image: event.target.value } : current,
                   )
                 }
               />
@@ -387,7 +380,7 @@ export default function ProfileManager() {
                 value={form.kycIdUrl}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, kycIdUrl: event.target.value } : current
+                    current ? { ...current, kycIdUrl: event.target.value } : current,
                   )
                 }
               />
@@ -397,7 +390,7 @@ export default function ProfileManager() {
                 value={form.kycProofUrl}
                 onChange={(event) =>
                   setForm((current) =>
-                    current ? { ...current, kycProofUrl: event.target.value } : current
+                    current ? { ...current, kycProofUrl: event.target.value } : current,
                   )
                 }
               />
@@ -407,7 +400,7 @@ export default function ProfileManager() {
                   checked={form.halaal}
                   onChange={(event) =>
                     setForm((current) =>
-                      current ? { ...current, halaal: event.target.checked } : current
+                      current ? { ...current, halaal: event.target.checked } : current,
                     )
                   }
                 />
@@ -419,7 +412,7 @@ export default function ProfileManager() {
                   checked={form.isActive}
                   onChange={(event) =>
                     setForm((current) =>
-                      current ? { ...current, isActive: event.target.checked } : current
+                      current ? { ...current, isActive: event.target.checked } : current,
                     )
                   }
                 />
@@ -440,14 +433,10 @@ export default function ProfileManager() {
 
                 try {
                   const url = await uploadImage(file);
-                  setForm((current) =>
-                    current ? { ...current, image: url } : current
-                  );
+                  setForm((current) => (current ? { ...current, image: url } : current));
                   setStatus("Store logo uploaded.");
                 } catch (error: unknown) {
-                  setStatus(
-                    error instanceof Error ? error.message : "Image upload failed."
-                  );
+                  setStatus(error instanceof Error ? error.message : "Image upload failed.");
                 }
               }}
             />

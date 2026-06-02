@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import LegalPageShell from "@/components/legal/LegalPageShell";
-import { LEGAL_INFO_OFFICER_NAME, LEGAL_LAST_UPDATED, LEGAL_SUPPORT_EMAIL, LEGAL_WHATSAPP_LINK } from "@/lib/legal";
+import {
+  LEGAL_INFO_OFFICER_NAME,
+  LEGAL_LAST_UPDATED,
+  LEGAL_SUPPORT_EMAIL,
+  LEGAL_WHATSAPP_LINK,
+} from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "POPIA Notice",
@@ -27,7 +32,12 @@ export default function PopiaPage() {
     <LegalPageShell
       title="POPIA Notice"
       intro="This notice explains the main data protection commitments Lethela applies under the Protection of Personal Information Act (POPIA)."
-      note={<>Last updated: {LEGAL_LAST_UPDATED}. Use this page as the platform-facing POPIA summary for customers, vendors and riders.</>}
+      note={
+        <>
+          Last updated: {LEGAL_LAST_UPDATED}. Use this page as the platform-facing POPIA summary for
+          customers, vendors and riders.
+        </>
+      }
     >
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
         <h2 className="text-lg font-semibold text-white">How we process information</h2>

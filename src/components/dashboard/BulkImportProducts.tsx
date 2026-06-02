@@ -44,7 +44,10 @@ export default function BulkImportProducts() {
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<string>("");
 
-  const previewCount = useMemo(() => parse(csv).filter((row) => row.name && row.slug).length, [csv]);
+  const previewCount = useMemo(
+    () => parse(csv).filter((row) => row.name && row.slug).length,
+    [csv],
+  );
 
   async function importRows() {
     setBusy(true);
@@ -95,7 +98,10 @@ export default function BulkImportProducts() {
           }),
         });
         const createJson = await createResponse.json();
-        setLog((current) => `${current}Imported ${row.name}: ${createJson.ok ? "ok" : createJson.error}\n`);
+        setLog(
+          (current) =>
+            `${current}Imported ${row.name}: ${createJson.ok ? "ok" : createJson.error}\n`,
+        );
       }
       setLog((current) => `${current}Import completed.`);
     } catch (error: any) {
@@ -107,7 +113,9 @@ export default function BulkImportProducts() {
 
   return (
     <DashCard title="Bulk Import (CSV)">
-      <p className="mb-2 text-xs text-white/70">Columns: name, slug, description, price, image, isAlcohol</p>
+      <p className="mb-2 text-xs text-white/70">
+        Columns: name, slug, description, price, image, isAlcohol
+      </p>
       <textarea
         className="h-40 w-full rounded bg-white p-2 text-sm text-black"
         value={csv}

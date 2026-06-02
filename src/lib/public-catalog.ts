@@ -15,14 +15,18 @@ type PublicVendorSource = {
 
 export function parseCuisineList(value: unknown) {
   if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+    return value.filter(
+      (item): item is string => typeof item === "string" && item.trim().length > 0,
+    );
   }
 
   if (typeof value === "string") {
     try {
       const parsed = JSON.parse(value || "[]");
       return Array.isArray(parsed)
-        ? parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+        ? parsed.filter(
+            (item): item is string => typeof item === "string" && item.trim().length > 0,
+          )
         : [];
     } catch {
       return [];
@@ -38,7 +42,10 @@ export function getPublicVendorImage(image: string | null | undefined, hasAlcoho
   return hasAlcohol ? "/vendors/vegan.jpg" : "/vendors/grill.jpg";
 }
 
-export function getPublicVendorBadge(source: Pick<PublicVendorSource, "halaal">, hasAlcohol: boolean) {
+export function getPublicVendorBadge(
+  source: Pick<PublicVendorSource, "halaal">,
+  hasAlcohol: boolean,
+) {
   if (source.halaal) return "Halaal";
   if (hasAlcohol) return "18+ available";
   return null;
@@ -50,7 +57,7 @@ export function getPublicVendorEta(baseEtaMin: number | null | undefined) {
 }
 
 export function buildPublicVendorCard(
-  source: PublicVendorSource & { distanceKm?: number | null; baseEtaMin?: number | null }
+  source: PublicVendorSource & { distanceKm?: number | null; baseEtaMin?: number | null },
 ): Vendor {
   const hasAlcohol = (source.products ?? []).some((product) => Boolean(product.isAlcohol));
   const cuisines = parseCuisineList(source.cuisine);
@@ -60,7 +67,9 @@ export function buildPublicVendorCard(
     .filter((rating) => Number.isFinite(rating));
   const averageRating =
     reviewValues.length > 0
-      ? Number((reviewValues.reduce((sum, rating) => sum + rating, 0) / reviewValues.length).toFixed(1))
+      ? Number(
+          (reviewValues.reduce((sum, rating) => sum + rating, 0) / reviewValues.length).toFixed(1),
+        )
       : null;
 
   return {

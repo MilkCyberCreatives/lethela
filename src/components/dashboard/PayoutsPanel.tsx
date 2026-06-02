@@ -72,11 +72,20 @@ export default function PayoutsPanel() {
         </div>
         {error ? <p className="mt-3 text-xs text-red-200">{error}</p> : null}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <StatCard label="Available" value={loading ? "..." : money(payouts?.availableCents ?? 0)} />
+          <StatCard
+            label="Available"
+            value={loading ? "..." : money(payouts?.availableCents ?? 0)}
+          />
           <StatCard label="Pending" value={loading ? "..." : money(payouts?.pendingCents ?? 0)} />
           <StatCard label="Failed" value={loading ? "..." : money(payouts?.failedCents ?? 0)} />
-          <StatCard label="Last 7 days" value={loading ? "..." : money(payouts?.last7DaysCents ?? 0)} />
-          <StatCard label="Avg paid order" value={loading ? "..." : money(payouts?.averagePaidOrderCents ?? 0)} />
+          <StatCard
+            label="Last 7 days"
+            value={loading ? "..." : money(payouts?.last7DaysCents ?? 0)}
+          />
+          <StatCard
+            label="Avg paid order"
+            value={loading ? "..." : money(payouts?.averagePaidOrderCents ?? 0)}
+          />
         </div>
       </DashCard>
 
@@ -88,9 +97,13 @@ export default function PayoutsPanel() {
             <StatusRow label="Failed or cancelled" count={payouts?.failedOrdersCount ?? 0} />
           </div>
           <div className="mt-4 rounded-xl border border-white/10 bg-black/15 px-4 py-4 text-sm">
-            <div className="text-xs uppercase tracking-[0.12em] text-white/55">Next estimated payout</div>
+            <div className="text-xs uppercase tracking-[0.12em] text-white/55">
+              Next estimated payout
+            </div>
             <div className="mt-2 text-lg font-semibold text-white">
-              {loading || !payouts ? "..." : new Date(payouts.nextEstimatedPayoutAt).toLocaleString()}
+              {loading || !payouts
+                ? "..."
+                : new Date(payouts.nextEstimatedPayoutAt).toLocaleString()}
             </div>
             <div className="mt-1 text-xs text-white/60">
               {payouts?.latestPaidAt
@@ -126,7 +139,9 @@ export default function PayoutsPanel() {
                         {new Date(settlement.createdAt).toLocaleString()}
                       </td>
                       <td className="py-3 pr-4 text-white/65">{settlement.itemsCount}</td>
-                      <td className="py-3 font-semibold text-white">{money(settlement.amountCents)}</td>
+                      <td className="py-3 font-semibold text-white">
+                        {money(settlement.amountCents)}
+                      </td>
                     </tr>
                   ))
                 ) : (

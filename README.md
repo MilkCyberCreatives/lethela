@@ -16,12 +16,14 @@ Open `http://localhost:3000`.
 Copy `.env.example` to `.env.local` and fill values you need.
 
 Core:
+
 - `NEXT_PUBLIC_SITE_URL`
 - `NEXTAUTH_URL`
 - `NEXTAUTH_SECRET`
 - `DATABASE_URL`
 
 SEO + marketing:
+
 - `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`
 - `NEXT_PUBLIC_BING_SITE_VERIFICATION`
 - `NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION`

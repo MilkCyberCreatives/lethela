@@ -10,14 +10,18 @@ function resolveAfter<T>(ms: number, value: T) {
   });
 }
 
-export async function withQueryTimeout<T>(promise: Promise<T>, fallback: T, ms = DEFAULT_QUERY_TIMEOUT_MS): Promise<T> {
+export async function withQueryTimeout<T>(
+  promise: Promise<T>,
+  fallback: T,
+  ms = DEFAULT_QUERY_TIMEOUT_MS,
+): Promise<T> {
   const guarded = promise.catch(() => fallback);
   return Promise.race([guarded, resolveAfter(ms, fallback)]);
 }
 
 export async function runBoundedDbQuery<T>(
   query: (db: QueryClient) => Promise<T>,
-  ms = DEFAULT_QUERY_TIMEOUT_MS
+  ms = DEFAULT_QUERY_TIMEOUT_MS,
 ): Promise<T> {
   if (prismaRuntimeInfo.provider !== "postgresql") {
     return withTimeoutOrThrow(query(prisma), ms, "Database query timed out");
@@ -30,7 +34,11 @@ export async function runBoundedDbQuery<T>(
   });
 }
 
-export async function withTimeoutOrThrow<T>(promise: Promise<T>, ms = DEFAULT_QUERY_TIMEOUT_MS, message = "Operation timed out"): Promise<T> {
+export async function withTimeoutOrThrow<T>(
+  promise: Promise<T>,
+  ms = DEFAULT_QUERY_TIMEOUT_MS,
+  message = "Operation timed out",
+): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) => {

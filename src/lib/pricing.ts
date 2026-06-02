@@ -72,7 +72,14 @@ export async function quoteDelivery({
 
   const distanceKm =
     originPoint && destinationPoint
-      ? Number(haversineKm(originPoint.lat, originPoint.lng, destinationPoint.lat, destinationPoint.lng).toFixed(2))
+      ? Number(
+          haversineKm(
+            originPoint.lat,
+            originPoint.lng,
+            destinationPoint.lat,
+            destinationPoint.lng,
+          ).toFixed(2),
+        )
       : null;
 
   return {
@@ -91,6 +98,6 @@ export function etaMinutes(distanceKm?: number | null, baseKitchenMin = 15) {
   const dist = distanceKm ?? 3;
   const travel = Math.round(dist * 4.5);
   const hour = new Date().getHours();
-  const rush = (hour >= 18 && hour <= 20) ? 1.25 : hour >= 12 && hour <= 13 ? 1.15 : 1;
+  const rush = hour >= 18 && hour <= 20 ? 1.25 : hour >= 12 && hour <= 13 ? 1.15 : 1;
   return Math.max(12, Math.round((baseKitchenMin + travel) * rush));
 }

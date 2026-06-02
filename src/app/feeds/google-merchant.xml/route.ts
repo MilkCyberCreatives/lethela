@@ -50,21 +50,27 @@ export async function GET() {
     dbProducts.length > 0
       ? dbProducts
       : shouldPreferCatalogFallback()
-        ? getFallbackProducts().slice(0, 5000).map((product) => ({
-            ...product,
-            inStock: true,
-            vendor: {
-              name: product.vendor.name,
-              slug: product.vendor.slug,
-            },
-          }))
+        ? getFallbackProducts()
+            .slice(0, 5000)
+            .map((product) => ({
+              ...product,
+              inStock: true,
+              vendor: {
+                name: product.vendor.name,
+                slug: product.vendor.slug,
+              },
+            }))
         : [];
 
   const itemsXml = products
     .map((product) => {
-      const url = product.vendor?.slug ? absoluteUrl(`/vendors/${product.vendor.slug}`) : absoluteUrl("/");
+      const url = product.vendor?.slug
+        ? absoluteUrl(`/vendors/${product.vendor.slug}`)
+        : absoluteUrl("/");
       const title = xmlEscape(product.name);
-      const description = xmlEscape(product.description || `${product.name} from ${product.vendor?.name || SITE_NAME}`);
+      const description = xmlEscape(
+        product.description || `${product.name} from ${product.vendor?.name || SITE_NAME}`,
+      );
       const brand = xmlEscape(product.vendor?.name || SITE_NAME);
       const availability = product.inStock ? "in stock" : "out of stock";
       const condition = "new";

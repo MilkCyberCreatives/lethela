@@ -60,7 +60,11 @@ function isLinkedVisitor(visitorId: string, userId: string) {
   return expiresAt > Date.now();
 }
 
-async function ensureVisitorRecord(visitorId: string, preferredArea: string | null | undefined, userAgent: string | null) {
+async function ensureVisitorRecord(
+  visitorId: string,
+  preferredArea: string | null | undefined,
+  userAgent: string | null,
+) {
   await prisma.visitor.upsert({
     where: { id: visitorId },
     create: {
@@ -101,7 +105,10 @@ export async function POST(req: Request) {
   const visitorId = (await cookies()).get(VISITOR_COOKIE_NAME)?.value?.trim() || "";
   const type = String(body.type || "").trim();
   if (!visitorId || !ALLOWED_EVENT_TYPES.has(type)) {
-    return NextResponse.json({ ok: false, error: "Invalid visitor event payload." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid visitor event payload." },
+      { status: 400 },
+    );
   }
 
   if (process.env.NODE_ENV !== "production" && prismaRuntimeInfo.provider === "sqlite") {

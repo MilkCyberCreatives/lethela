@@ -64,7 +64,7 @@ export async function GET(req: Request) {
           },
           take,
           orderBy: { updatedAt: "desc" },
-        })
+        }),
       ).catch(() => []);
 
   const items =
@@ -88,14 +88,24 @@ export async function GET(req: Request) {
     : items;
 
   const alcoholFiltered =
-    alcohol === "true" ? filtered.filter((item) => item.isAlcohol) : alcohol === "false" ? filtered.filter((item) => !item.isAlcohol) : filtered;
+    alcohol === "true"
+      ? filtered.filter((item) => item.isAlcohol)
+      : alcohol === "false"
+        ? filtered.filter((item) => !item.isAlcohol)
+        : filtered;
 
   return NextResponse.json(
-    { ok: true, catalogMode: getCatalogMode(), items: alcoholFiltered.slice(0, take), suburb, total: alcoholFiltered.length },
+    {
+      ok: true,
+      catalogMode: getCatalogMode(),
+      items: alcoholFiltered.slice(0, take),
+      suburb,
+      total: alcoholFiltered.length,
+    },
     {
       headers: {
         "cache-control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
       },
-    }
+    },
   );
 }

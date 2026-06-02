@@ -50,11 +50,17 @@ function lexicalScore(tokens: string[], text: string) {
 }
 
 function searchWhereClauses(query: string, tokens: string[]) {
-  const terms = Array.from(new Set([query, ...tokens].map((value) => value.trim()).filter(Boolean)));
+  const terms = Array.from(
+    new Set([query, ...tokens].map((value) => value.trim()).filter(Boolean)),
+  );
   return terms;
 }
 
-function scoreAndLimitRows(rows: Array<Omit<SearchHit, "score"> & { searchText: string; dbScore?: number }>, tokens: string[], limit: number) {
+function scoreAndLimitRows(
+  rows: Array<Omit<SearchHit, "score"> & { searchText: string; dbScore?: number }>,
+  tokens: string[],
+  limit: number,
+) {
   return rows
     .map((row) => {
       const lexical = lexicalScore(tokens, row.searchText);
@@ -96,7 +102,11 @@ async function ensurePostgresSearchIndexes() {
   return searchIndexState.__lethelaSearchIndexesReady;
 }
 
-async function searchPostgres(query: string, tokens: string[], limit: number): Promise<SearchHit[]> {
+async function searchPostgres(
+  query: string,
+  tokens: string[],
+  limit: number,
+): Promise<SearchHit[]> {
   await ensurePostgresSearchIndexes();
   const candidateLimit = Math.max(24, Math.min(120, limit * 6));
 
@@ -204,7 +214,11 @@ async function searchPostgres(query: string, tokens: string[], limit: number): P
   return scoreAndLimitRows(rows, tokens, limit);
 }
 
-async function searchFallback(query: string, tokens: string[], limit: number): Promise<SearchHit[]> {
+async function searchFallback(
+  query: string,
+  tokens: string[],
+  limit: number,
+): Promise<SearchHit[]> {
   const fallbackSources = getFallbackSearchSources();
   const fallbackVendorRows = fallbackSources.vendors as any;
   const fallbackProductRows = fallbackSources.products as any;
@@ -228,7 +242,11 @@ async function searchFallback(query: string, tokens: string[], limit: number): P
         id: product.id,
         kind: "product" as const,
         title: product.name,
-        searchText: [product.name, product.description ?? "", product.vendor?.name ?? product.vendorName ?? ""].join(" "),
+        searchText: [
+          product.name,
+          product.description ?? "",
+          product.vendor?.name ?? product.vendorName ?? "",
+        ].join(" "),
         image: product.image ?? null,
         slug: product.vendor?.slug ?? product.vendorSlug ?? null,
         vendorName: product.vendor?.name ?? product.vendorName ?? null,

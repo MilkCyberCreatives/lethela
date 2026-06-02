@@ -11,33 +11,35 @@ import { withSentryRoute } from "@/server/withSentryRoute";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { DEMO_ORDER_REF } from "@/lib/demo-order";
 
-const BodySchema = z.object({
-  vendorId: z.string().min(1),
-  vendorSlug: z.string().min(1).optional().default(""),
-  destinationSuburb: z.string().trim().min(2).max(140).optional(),
-  destinationLat: z.number().min(-90).max(90).optional(),
-  destinationLng: z.number().min(-180).max(180).optional(),
-  items: z.array(
-    z.object({
-      itemId: z.string(),
-      name: z.string(),
-      priceCents: z.number().int().nonnegative(),
-      qty: z.number().int().positive(),
-      image: z.string().trim().max(1000).optional().nullable()
-    })
-  ),
-  subtotalCents: z.number().int().nonnegative(),
-  deliveryCents: z.number().int().nonnegative(),
-  totalCents: z.number().int().positive()
-}).refine(
-  (data) =>
-    Boolean(data.destinationSuburb?.trim()) ||
-    (typeof data.destinationLat === "number" && typeof data.destinationLng === "number"),
-  {
-    message: "Destination suburb or coordinates are required.",
-    path: ["destinationSuburb"],
-  }
-);
+const BodySchema = z
+  .object({
+    vendorId: z.string().min(1),
+    vendorSlug: z.string().min(1).optional().default(""),
+    destinationSuburb: z.string().trim().min(2).max(140).optional(),
+    destinationLat: z.number().min(-90).max(90).optional(),
+    destinationLng: z.number().min(-180).max(180).optional(),
+    items: z.array(
+      z.object({
+        itemId: z.string(),
+        name: z.string(),
+        priceCents: z.number().int().nonnegative(),
+        qty: z.number().int().positive(),
+        image: z.string().trim().max(1000).optional().nullable(),
+      }),
+    ),
+    subtotalCents: z.number().int().nonnegative(),
+    deliveryCents: z.number().int().nonnegative(),
+    totalCents: z.number().int().positive(),
+  })
+  .refine(
+    (data) =>
+      Boolean(data.destinationSuburb?.trim()) ||
+      (typeof data.destinationLat === "number" && typeof data.destinationLng === "number"),
+    {
+      message: "Destination suburb or coordinates are required.",
+      path: ["destinationSuburb"],
+    },
+  );
 
 function isLocalSqliteRuntime() {
   return (
@@ -57,7 +59,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   if (!limited.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many checkout requests. Please try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
     );
   }
 
@@ -84,7 +86,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
 
     return NextResponse.json(
       { ok: false, error: "OZOW_SITE_CODE or OZOW_PRIVATE_KEY not set" },
-      { status: 500 }
+      { status: 500 },
     );
   }
   const {
@@ -138,7 +140,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   if (unresolvedIds.length > 0) {
     return NextResponse.json(
       { ok: false, error: "Some cart items are unavailable. Please refresh your cart." },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
@@ -159,7 +161,9 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     vendor,
     destinationSuburb,
     destinationPoint:
-      destinationLat != null && destinationLng != null ? { lat: destinationLat, lng: destinationLng } : null,
+      destinationLat != null && destinationLng != null
+        ? { lat: destinationLat, lng: destinationLng }
+        : null,
     baseFeeCents: vendor.deliveryFee,
   });
   const resolvedDeliveryCents = deliveryQuote.deliveryCents;
@@ -168,14 +172,17 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   if (!deliveryQuote.originResolved) {
     return NextResponse.json(
       { ok: false, error: "Vendor delivery location is incomplete." },
-      { status: 422 }
+      { status: 422 },
     );
   }
 
   if (!deliveryQuote.destinationResolved) {
     return NextResponse.json(
-      { ok: false, error: "We could not verify that delivery address. Please review checkout before paying." },
-      { status: 422 }
+      {
+        ok: false,
+        error: "We could not verify that delivery address. Please review checkout before paying.",
+      },
+      { status: 422 },
     );
   }
 
@@ -192,7 +199,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
         deliveryCents: resolvedDeliveryCents,
         totalCents,
       },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
@@ -205,8 +212,11 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
 
   if (!destinationPoint) {
     return NextResponse.json(
-      { ok: false, error: "We could not verify that delivery address. Please review checkout before paying." },
-      { status: 422 }
+      {
+        ok: false,
+        error: "We could not verify that delivery address. Please review checkout before paying.",
+      },
+      { status: 422 },
     );
   }
 
@@ -224,15 +234,15 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       status: "PLACED",
       paymentStatus: "PENDING",
       ozowReference,
-        customerLat: destinationPoint?.lat ?? null,
-        customerLng: destinationPoint?.lng ?? null,
-        items: {
-          create: normalizedItems.map((item) => ({
-            productId: item.productId,
-            qty: item.qty,
-            priceCents: item.priceCents,
-          })),
-        },
+      customerLat: destinationPoint?.lat ?? null,
+      customerLng: destinationPoint?.lng ?? null,
+      items: {
+        create: normalizedItems.map((item) => ({
+          productId: item.productId,
+          qty: item.qty,
+          priceCents: item.priceCents,
+        })),
+      },
     },
     select: { id: true, ozowReference: true, publicId: true },
   });

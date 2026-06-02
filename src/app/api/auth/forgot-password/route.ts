@@ -10,7 +10,10 @@ import {
 import { checkRateLimit } from "@/lib/rate-limit";
 
 const BodySchema = z.object({
-  email: z.string().email().transform((value) => value.toLowerCase().trim()),
+  email: z
+    .string()
+    .email()
+    .transform((value) => value.toLowerCase().trim()),
 });
 
 export async function POST(req: NextRequest) {
@@ -23,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!rateLimit.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many reset attempts. Please try again later." },
-      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
     );
   }
 
@@ -58,14 +61,15 @@ export async function POST(req: NextRequest) {
     if (process.env.NODE_ENV !== "production") {
       return NextResponse.json({
         ok: true,
-        message: "Password reset email is not configured. Use the reset link below for local testing.",
+        message:
+          "Password reset email is not configured. Use the reset link below for local testing.",
         resetUrl,
       });
     }
 
     return NextResponse.json(
       { ok: false, error: "Password reset email is not configured." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 

@@ -41,8 +41,12 @@ export async function PATCH(req: Request) {
     const parsed = MealFeedbackSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { ok: false, error: "Invalid meal feedback payload.", fieldErrors: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        {
+          ok: false,
+          error: "Invalid meal feedback payload.",
+          fieldErrors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
       );
     }
     return NextResponse.json({ ok: true, feedback: emptyFeedback });
@@ -57,8 +61,12 @@ export async function PATCH(req: Request) {
   const parsed = MealFeedbackSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: "Invalid meal feedback payload.", fieldErrors: parsed.error.flatten().fieldErrors },
-      { status: 400 }
+      {
+        ok: false,
+        error: "Invalid meal feedback payload.",
+        fieldErrors: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 },
     );
   }
 

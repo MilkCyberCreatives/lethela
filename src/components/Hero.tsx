@@ -97,7 +97,9 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
-  const [activeArea, setActiveArea] = useState<string | null>(() => readPreferredLocation()?.label || initialArea || null);
+  const [activeArea, setActiveArea] = useState<string | null>(
+    () => readPreferredLocation()?.label || initialArea || null,
+  );
   const [nearbyVendors, setNearbyVendors] = useState<NearbyVendor[]>(initialNearbyVendors);
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const seededNearbyRef = useRef(false);
@@ -278,7 +280,9 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
 
   async function handleUseCurrentLocation() {
     if (!("geolocation" in navigator)) {
-      setLocationNotice("Location services are not available on this device. Enter your area instead.");
+      setLocationNotice(
+        "Location services are not available on this device. Enter your area instead.",
+      );
       return;
     }
 
@@ -296,7 +300,7 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
 
       const response = await fetch(
         `/api/maps/reverse-geocode?lat=${position.coords.latitude}&lng=${position.coords.longitude}`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
       const json = await response.json().catch(() => ({}));
       if (!response.ok || !json?.ok || !json?.suburb) {
@@ -314,14 +318,16 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
         accuracyMeters: position.coords.accuracy,
       });
       if (!savedLocation) {
-        setLocationNotice("We found your position but could not save it. Enter your suburb manually instead.");
+        setLocationNotice(
+          "We found your position but could not save it. Enter your suburb manually instead.",
+        );
         return;
       }
 
       setLocationNotice(
         position.coords.accuracy && Number.isFinite(position.coords.accuracy)
           ? `Showing options for ${savedLocation.label}. Accuracy about ${Math.round(position.coords.accuracy)} m.`
-          : `Showing options for ${savedLocation.label}.`
+          : `Showing options for ${savedLocation.label}.`,
       );
       pushDataLayerEvent("use_my_location", {
         preferred_area: savedLocation.label,
@@ -330,7 +336,9 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
       setShowLocationPicker(false);
       router.refresh();
     } catch {
-      setLocationNotice("Location permission was denied or unavailable. Enter your suburb manually instead.");
+      setLocationNotice(
+        "Location permission was denied or unavailable. Enter your suburb manually instead.",
+      );
     } finally {
       setLocationLoading(false);
     }
@@ -343,7 +351,10 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
         className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-25"
         style={{ backgroundImage: "url('/hero.jpg')" }}
       />
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80" />
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80"
+      />
 
       <div className="relative container grid gap-10 py-12 md:grid-cols-2 md:py-20">
         <div className="flex flex-col justify-center">
@@ -351,7 +362,11 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
             Lethela - <span className="text-lethela-primary">Siyashesha</span>
           </h1>
           <p className="mt-4 text-white/80 max-w-xl">
-            Fast deliveries in <span className="font-semibold text-white">{activeArea || initialArea || "Klipfontein View, Midrand 1685"}</span>.
+            Fast deliveries in{" "}
+            <span className="font-semibold text-white">
+              {activeArea || initialArea || "Klipfontein View, Midrand 1685"}
+            </span>
+            .
           </p>
 
           <div className="mt-6 flex flex-col gap-3" ref={acRef}>
@@ -398,7 +413,13 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
                         <>
                           {suggestion.image ? (
                             <div className="relative h-8 w-8 overflow-hidden rounded">
-                              <Image alt="" src={suggestion.image} fill sizes="32px" className="object-cover" />
+                              <Image
+                                alt=""
+                                src={suggestion.image}
+                                fill
+                                sizes="32px"
+                                className="object-cover"
+                              />
                             </div>
                           ) : (
                             <div className="h-8 w-8 rounded bg-white/10" />
@@ -411,7 +432,9 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
                                 : `Product${suggestion.vendorName ? ` - ${suggestion.vendorName}` : ""}`}
                             </div>
                           </div>
-                          <span className="text-[10px] text-white/50">~{(suggestion.score * 100).toFixed(0)}%</span>
+                          <span className="text-[10px] text-white/50">
+                            ~{(suggestion.score * 100).toFixed(0)}%
+                          </span>
                         </>
                       );
 
@@ -508,20 +531,29 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
                       >
                         <div className="text-sm font-medium text-white">{result.title}</div>
                         <div className="mt-1 text-xs text-white/70">
-                          {result.subtitle || result.vendor || (result.kind === "vendor" ? "Vendor" : "Product")}
+                          {result.subtitle ||
+                            result.vendor ||
+                            (result.kind === "vendor" ? "Vendor" : "Product")}
                         </div>
                         {typeof result.priceCents === "number" ? (
-                          <div className="mt-2 text-xs font-medium text-white/85">{formatZAR(result.priceCents)}</div>
+                          <div className="mt-2 text-xs font-medium text-white/85">
+                            {formatZAR(result.priceCents)}
+                          </div>
                         ) : null}
                       </Link>
                     );
                   })}
                 </div>
               ) : (
-                <p className="mt-2 text-xs text-white/75">{resp.error || "No matching options found yet."}</p>
+                <p className="mt-2 text-xs text-white/75">
+                  {resp.error || "No matching options found yet."}
+                </p>
               )}
               {resp.ok ? (
-                <Link href={`/search?q=${encodeURIComponent(q)}`} className="mt-3 inline-flex text-xs underline">
+                <Link
+                  href={`/search?q=${encodeURIComponent(q)}`}
+                  className="mt-3 inline-flex text-xs underline"
+                >
                   View full results
                 </Link>
               ) : null}
@@ -532,7 +564,9 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
         <div className="hidden md:flex items-center justify-center">
           <div className="card-glass w-full max-w-md rounded-2xl p-6 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30">
             <p className="text-sm text-white/80">
-              {activeArea ? `Nearby options in ${activeArea}.` : "Set your area to see nearby options."}
+              {activeArea
+                ? `Nearby options in ${activeArea}.`
+                : "Set your area to see nearby options."}
             </p>
             <div className="mt-3 min-h-28 rounded-xl bg-white/10 p-4">
               {!activeArea ? (
@@ -560,8 +594,12 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
-                        <div className="text-xs font-medium text-white">{vendor.eta || "20-25 min"}</div>
-                        {vendor.badge ? <div className="text-[10px] text-white/55">{vendor.badge}</div> : null}
+                        <div className="text-xs font-medium text-white">
+                          {vendor.eta || "20-25 min"}
+                        </div>
+                        {vendor.badge ? (
+                          <div className="text-[10px] text-white/55">{vendor.badge}</div>
+                        ) : null}
                       </div>
                     </Link>
                   ))}

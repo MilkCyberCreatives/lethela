@@ -13,9 +13,9 @@ export async function GET(_req: NextRequest, { params }: { params: { ref: string
       paymentStatus: true,
       createdAt: true,
       vendor: {
-        select: { id: true, name: true, suburb: true }
-      }
-    }
+        select: { id: true, name: true, suburb: true },
+      },
+    },
   });
 
   if (!order) {

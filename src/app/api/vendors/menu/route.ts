@@ -56,8 +56,12 @@ export async function POST(req: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { ok: false, error: "Invalid section payload.", fieldErrors: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        {
+          ok: false,
+          error: "Invalid section payload.",
+          fieldErrors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
       );
     }
 
@@ -85,7 +89,9 @@ export async function POST(req: Request) {
 function parseTags(value: string) {
   try {
     const parsed = JSON.parse(value || "[]");
-    return Array.isArray(parsed) ? parsed.filter((tag): tag is string => typeof tag === "string") : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((tag): tag is string => typeof tag === "string")
+      : [];
   } catch {
     return [];
   }

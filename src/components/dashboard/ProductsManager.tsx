@@ -309,7 +309,11 @@ export default function ProductsManager() {
             <div className="md:col-span-2">
               <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={form.image} alt={form.name || "Product preview"} className="h-44 w-full object-cover" />
+                <img
+                  src={form.image}
+                  alt={form.name || "Product preview"}
+                  className="h-44 w-full object-cover"
+                />
               </div>
             </div>
           ) : null}
@@ -319,7 +323,9 @@ export default function ProductsManager() {
             placeholder="Description"
             rows={3}
             value={form.description}
-            onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, description: event.target.value }))
+            }
           />
 
           <div className="flex items-center gap-2">
@@ -343,7 +349,9 @@ export default function ProductsManager() {
             <input
               type="checkbox"
               checked={form.isAlcohol}
-              onChange={(event) => setForm((current) => ({ ...current, isAlcohol: event.target.checked }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, isAlcohol: event.target.checked }))
+              }
             />
             Alcohol (18+)
           </label>
@@ -352,7 +360,9 @@ export default function ProductsManager() {
             <input
               type="checkbox"
               checked={form.inStock}
-              onChange={(event) => setForm((current) => ({ ...current, inStock: event.target.checked }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, inStock: event.target.checked }))
+              }
             />
             In stock
           </label>
@@ -441,7 +451,11 @@ export default function ProductsManager() {
                 <div className="mt-1 truncate text-xs text-white/70">{product.slug}</div>
                 {product.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={product.image} alt="" className="mt-2 h-28 w-full rounded object-cover" />
+                  <img
+                    src={product.image}
+                    alt=""
+                    className="mt-2 h-28 w-full rounded object-cover"
+                  />
                 ) : null}
                 <div className="mt-2 line-clamp-3 text-sm">{product.description}</div>
                 <div className="mt-3 flex items-center justify-between text-xs text-white/70">

@@ -28,8 +28,8 @@ export default function AdvancedAutomationsPanel() {
   return (
     <DashCard title="Advanced Automations">
       <p className="text-sm text-white/80">
-        Run deep automations: stock safety, alcohol compliance, smart hours, promo drafting, upsell combos, late-order
-        alerts, fraud signals, and daily health summaries.
+        Run deep automations: stock safety, alcohol compliance, smart hours, promo drafting, upsell
+        combos, late-order alerts, fraud signals, and daily health summaries.
       </p>
 
       <button

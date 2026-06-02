@@ -80,7 +80,10 @@ export default function VendorCarousel() {
         <ChevronRight className="h-5 w-5" />
       </button>
 
-      <div ref={trackRef} className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pr-4 md:pr-8">
+      <div
+        ref={trackRef}
+        className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pr-4 md:pr-8"
+      >
         {FEATURED_VENDORS.map((vendor) => (
           <Link
             key={vendor.slug}
@@ -88,7 +91,13 @@ export default function VendorCarousel() {
             className="w-[320px] shrink-0 snap-start overflow-hidden rounded-xl border border-white/10 bg-[#0E1236] text-white transition-transform duration-200 hover:-translate-y-1 hover:border-lethela-primary/60 md:w-[360px]"
           >
             <div className="relative h-[160px] w-full overflow-hidden bg-black/30">
-              <Image src={vendor.img} alt={vendor.name} fill sizes="(min-width: 768px) 360px, 320px" className="object-cover" />
+              <Image
+                src={vendor.img}
+                alt={vendor.name}
+                fill
+                sizes="(min-width: 768px) 360px, 320px"
+                className="object-cover"
+              />
             </div>
 
             <div className="flex flex-col gap-3 p-4">

@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, { params }: Params) {
           },
         },
       },
-    })
+    }),
   ).catch(() => null);
 
   if (!order) {
@@ -61,19 +61,24 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
 
   const trackingToken =
-    req.nextUrl.searchParams.get("t")?.trim() ||
-    req.headers.get("x-tracking-token")?.trim() ||
-    "";
-  const hasDetailedTracking = verifyOrderTrackingToken(trackingToken, order.ozowReference || order.publicId);
+    req.nextUrl.searchParams.get("t")?.trim() || req.headers.get("x-tracking-token")?.trim() || "";
+  const hasDetailedTracking = verifyOrderTrackingToken(
+    trackingToken,
+    order.ozowReference || order.publicId,
+  );
 
   const destination =
-    order.customerLat != null && order.customerLng != null ? { lat: order.customerLat, lng: order.customerLng } : null;
+    order.customerLat != null && order.customerLng != null
+      ? { lat: order.customerLat, lng: order.customerLng }
+      : null;
   const vendorPoint =
     order.vendor?.latitude != null && order.vendor?.longitude != null
       ? { lat: order.vendor.latitude, lng: order.vendor.longitude }
       : null;
   const riderPoint =
-    order.riderLat != null && order.riderLng != null ? { lat: order.riderLat, lng: order.riderLng } : null;
+    order.riderLat != null && order.riderLng != null
+      ? { lat: order.riderLat, lng: order.riderLng }
+      : null;
 
   const items = (() => {
     try {
@@ -117,7 +122,9 @@ export async function GET(req: NextRequest, { params }: Params) {
               simulated: !riderPoint,
             }
           : null,
-      channel: hasDetailedTracking ? getOrderRealtimeChannel(order.ozowReference || order.publicId) : null,
+      channel: hasDetailedTracking
+        ? getOrderRealtimeChannel(order.ozowReference || order.publicId)
+        : null,
       tracking,
     },
   });

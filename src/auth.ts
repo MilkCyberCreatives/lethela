@@ -64,7 +64,9 @@ export const authOptions: NextAuthOptions = {
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
 
-        const user = (await findLocalSqliteUserByEmail(email)) ?? (await prisma.user.findUnique({ where: { email } }));
+        const user =
+          (await findLocalSqliteUserByEmail(email)) ??
+          (await prisma.user.findUnique({ where: { email } }));
         if (!user || !user.passwordHash || !isAppRole(user.role)) return null;
 
         const ok = await compare(password, user.passwordHash);

@@ -6,7 +6,10 @@ import { prisma } from "@/lib/db";
 
 const BootstrapOwnerSchema = z.object({
   adminKey: z.string().trim().optional(),
-  email: z.string().email().transform((value) => value.trim().toLowerCase()),
+  email: z
+    .string()
+    .email()
+    .transform((value) => value.trim().toLowerCase()),
   password: z.string().min(12).max(200),
   name: z.string().trim().min(2).max(120).default("Lethela Owner"),
 });
@@ -14,21 +17,31 @@ const BootstrapOwnerSchema = z.object({
 function keysMatch(provided: string, expected: string) {
   const providedBuffer = Buffer.from(provided, "utf8");
   const expectedBuffer = Buffer.from(expected, "utf8");
-  return providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+  return (
+    providedBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(providedBuffer, expectedBuffer)
+  );
 }
 
 export async function POST(req: NextRequest) {
   const configuredKey = process.env.ADMIN_APPROVAL_KEY?.trim();
   if (!configuredKey) {
-    return NextResponse.json({ ok: false, error: "Admin approval key is not configured." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Admin approval key is not configured." },
+      { status: 400 },
+    );
   }
 
   const body = await req.json().catch(() => ({}));
   const parsed = BootstrapOwnerSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: "Invalid owner bootstrap payload.", fieldErrors: parsed.error.flatten().fieldErrors },
-      { status: 400 }
+      {
+        ok: false,
+        error: "Invalid owner bootstrap payload.",
+        fieldErrors: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 },
     );
   }
 

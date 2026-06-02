@@ -181,7 +181,7 @@ export async function aiSearch(q: string): Promise<AIResult> {
       !lower ||
       item.title.toLowerCase().includes(lower) ||
       (item.vendor ?? "").toLowerCase().includes(lower) ||
-      (item.subtitle ?? "").toLowerCase().includes(lower)
+      (item.subtitle ?? "").toLowerCase().includes(lower),
   );
   return { ok: true, results: filtered.length ? filtered : all.slice(0, 3) };
 }
@@ -191,7 +191,7 @@ export async function aiSearch(q: string): Promise<AIResult> {
 async function openAIRecommend(
   base: AIResult["results"],
   suburb: string | null,
-  profile: VisitorProfile
+  profile: VisitorProfile,
 ): Promise<AIResult["results"] | null> {
   if (!OPENAI_API_KEY || profile.eventCount === 0) return null;
 
@@ -202,7 +202,9 @@ async function openAIRecommend(
     `Top keywords: ${Object.keys(profile.keywordScores).join(", ") || "none"}`,
     `Recent queries: ${profile.recentQueries.join(" | ") || "none"}`,
     "Return strict JSON as an array of slugs in the best order.",
-    JSON.stringify(base.map((item) => ({ slug: item.slug, title: item.title, subtitle: item.subtitle }))),
+    JSON.stringify(
+      base.map((item) => ({ slug: item.slug, title: item.title, subtitle: item.subtitle })),
+    ),
   ].join("\n");
 
   try {
@@ -247,7 +249,10 @@ function heuristicRecommend(base: AIResult["results"], profile: VisitorProfile |
   });
 }
 
-export async function aiRecommend(suburb: string | null, profile: VisitorProfile | null = null): Promise<AIResult> {
+export async function aiRecommend(
+  suburb: string | null,
+  profile: VisitorProfile | null = null,
+): Promise<AIResult> {
   const normalizedSuburb = suburb?.split(",")[0]?.trim() || suburb?.trim() || null;
   const liveRows = shouldUseCatalogFallbackBeforeQuery()
     ? []
@@ -278,7 +283,7 @@ export async function aiRecommend(suburb: string | null, profile: VisitorProfile
               take: 40,
             },
           },
-        })
+        }),
       ).catch(() => []);
 
   const base: AIResult["results"] =
@@ -413,7 +418,10 @@ function mockModerate(text: string): ModerationResult {
   return { ok: true, allowed: true };
 }
 
-export async function aiModerateProduct(name: string, description?: string | null): Promise<ModerationResult> {
+export async function aiModerateProduct(
+  name: string,
+  description?: string | null,
+): Promise<ModerationResult> {
   const text = [name, description ?? ""].join("\n").slice(0, 4000);
   if (OPENAI_API_KEY) {
     try {

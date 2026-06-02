@@ -6,11 +6,7 @@ type RiderConsolePayload = {
 };
 
 function riderConsoleSecret() {
-  return (
-    process.env.RIDER_CONSOLE_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim() ||
-    ""
-  );
+  return process.env.RIDER_CONSOLE_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim() || "";
 }
 
 function encode(value: string) {
@@ -22,7 +18,10 @@ function decode(value: string) {
 }
 
 function sign(value: string) {
-  return crypto.createHmac("sha256", riderConsoleSecret()).update(value, "utf8").digest("base64url");
+  return crypto
+    .createHmac("sha256", riderConsoleSecret())
+    .update(value, "utf8")
+    .digest("base64url");
 }
 
 export function createRiderConsoleToken(ref: string, expiresInHours = 12) {
@@ -32,7 +31,9 @@ export function createRiderConsoleToken(ref: string, expiresInHours = 12) {
   }
 
   const payload: RiderConsolePayload = {
-    ref: String(ref || "").trim().toUpperCase(),
+    ref: String(ref || "")
+      .trim()
+      .toUpperCase(),
     exp: Date.now() + expiresInHours * 60 * 60 * 1000,
   };
   const encoded = encode(JSON.stringify(payload));

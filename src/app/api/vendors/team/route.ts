@@ -4,7 +4,10 @@ import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
 
 const TeamMemberSchema = z.object({
-  email: z.string().email().transform((value) => value.toLowerCase().trim()),
+  email: z
+    .string()
+    .email()
+    .transform((value) => value.toLowerCase().trim()),
   role: z.enum(["MANAGER", "STAFF"]),
   name: z.string().trim().max(120).optional(),
 });
@@ -66,7 +69,7 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         { ok: false, error: "Enter a valid staff email and role." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -96,7 +99,7 @@ export async function POST(req: Request) {
     if (user.id === vendor.ownerId) {
       return NextResponse.json(
         { ok: false, error: "The store owner already has full access." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

@@ -24,12 +24,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const body = await req.json().catch(() => ({}));
   const parsed = StatusSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: "Invalid rider status payload." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid rider status payload." },
+      { status: 400 },
+    );
   }
 
   const item = await updateRiderApplicationStatus(
     String(id || "").trim(),
-    parsed.data.status as RiderApplicationStatus
+    parsed.data.status as RiderApplicationStatus,
   );
   if (!item) {
     return NextResponse.json({ ok: false, error: "Rider application not found." }, { status: 404 });

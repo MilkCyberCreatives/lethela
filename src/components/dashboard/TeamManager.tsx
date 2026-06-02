@@ -84,7 +84,7 @@ export default function TeamManager() {
         throw new Error(json.error || "Failed to update role.");
       }
       setMembers((current) =>
-        current.map((member) => (member.id === memberId ? { ...member, role: nextRole } : member))
+        current.map((member) => (member.id === memberId ? { ...member, role: nextRole } : member)),
       );
     } catch (updateError: unknown) {
       setError(updateError instanceof Error ? updateError.message : "Failed to update role.");
@@ -103,7 +103,9 @@ export default function TeamManager() {
       }
       setMembers((current) => current.filter((member) => member.id !== memberId));
     } catch (deleteError: unknown) {
-      setError(deleteError instanceof Error ? deleteError.message : "Failed to remove team member.");
+      setError(
+        deleteError instanceof Error ? deleteError.message : "Failed to remove team member.",
+      );
     }
   }
 

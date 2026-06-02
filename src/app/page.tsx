@@ -125,7 +125,11 @@ export default async function HomePage() {
       </ScrollReveal>
 
       <ScrollReveal delay={160}>
-        <Suspense fallback={<section className="container py-10 text-white/70">Loading products...</section>}>
+        <Suspense
+          fallback={
+            <section className="container py-10 text-white/70">Loading products...</section>
+          }
+        >
           <ProductsGrid suburb={address} initialItems={products} />
         </Suspense>
       </ScrollReveal>

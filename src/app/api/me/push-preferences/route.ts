@@ -23,7 +23,10 @@ async function resolvePreferenceContext() {
 export async function GET() {
   const { visitorId, userId } = await resolvePreferenceContext();
   if (!visitorId && !userId) {
-    return NextResponse.json({ ok: false, error: "No active visitor or user session." }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "No active visitor or user session." },
+      { status: 401 },
+    );
   }
 
   const preference = visitorId
@@ -52,15 +55,22 @@ export async function GET() {
 export async function PATCH(req: Request) {
   const { visitorId, userId } = await resolvePreferenceContext();
   if (!visitorId && !userId) {
-    return NextResponse.json({ ok: false, error: "No active visitor or user session." }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "No active visitor or user session." },
+      { status: 401 },
+    );
   }
 
   const body = await req.json().catch(() => ({}));
   const parsed = PushPreferenceSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: "Invalid push preferences payload.", fieldErrors: parsed.error.flatten().fieldErrors },
-      { status: 400 }
+      {
+        ok: false,
+        error: "Invalid push preferences payload.",
+        fieldErrors: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 },
     );
   }
 

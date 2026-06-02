@@ -61,12 +61,15 @@ export async function getVisitorProfile(visitorId?: string | null): Promise<Visi
   const vendorScores = new Map<string, number>();
   const keywordScores = new Map<string, number>();
   const recentQueries: string[] = [];
-  const recentUserId = visitor.events.find((event) => typeof event.userId === "string" && event.userId)?.userId || null;
+  const recentUserId =
+    visitor.events.find((event) => typeof event.userId === "string" && event.userId)?.userId ||
+    null;
 
   for (const event of visitor.events) {
     if (event.vendorSlug) {
       const current = vendorScores.get(event.vendorSlug) ?? 0;
-      const weight = event.type === "vendor_click" ? 4 : event.type === "recommendation_click" ? 5 : 2;
+      const weight =
+        event.type === "vendor_click" ? 4 : event.type === "recommendation_click" ? 5 : 2;
       vendorScores.set(event.vendorSlug, current + weight);
     }
 
@@ -130,14 +133,20 @@ export async function getVisitorProfile(visitorId?: string | null): Promise<Visi
     : [[], []];
 
   for (const item of favoriteProducts) {
-    vendorScores.set(item.product.vendor.slug, (vendorScores.get(item.product.vendor.slug) ?? 0) + 6);
+    vendorScores.set(
+      item.product.vendor.slug,
+      (vendorScores.get(item.product.vendor.slug) ?? 0) + 6,
+    );
     for (const token of tokenize(item.product.name)) {
       keywordScores.set(token, (keywordScores.get(token) ?? 0) + 3);
     }
   }
 
   for (const item of reviewedProducts) {
-    vendorScores.set(item.product.vendor.slug, (vendorScores.get(item.product.vendor.slug) ?? 0) + item.rating);
+    vendorScores.set(
+      item.product.vendor.slug,
+      (vendorScores.get(item.product.vendor.slug) ?? 0) + item.rating,
+    );
     for (const token of tokenize(item.product.name)) {
       keywordScores.set(token, (keywordScores.get(token) ?? 0) + Math.max(2, item.rating - 1));
     }
@@ -153,7 +162,7 @@ export async function getVisitorProfile(visitorId?: string | null): Promise<Visi
     keywordScores: Object.fromEntries(
       Array.from(keywordScores.entries())
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
+        .slice(0, 10),
     ),
     recentQueries: recentQueries.slice(0, 6),
     eventCount: visitor.events.length + favoriteProducts.length + reviewedProducts.length,

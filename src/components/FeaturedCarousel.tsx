@@ -21,7 +21,10 @@ export default function FeaturedCarousel({ title, items, className, autoMs = 400
 
   const cardWidth = useMemo(() => {
     if (typeof window === "undefined") return 0;
-    const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const viewportWidth = Math.max(
+      document.documentElement.clientWidth || 0,
+      window.innerWidth || 0,
+    );
     return viewportWidth < 768 ? Math.round(viewportWidth * 0.75) : Math.round(viewportWidth * 0.3);
   }, []);
 
@@ -103,7 +106,9 @@ export default function FeaturedCarousel({ title, items, className, autoMs = 400
             <div className="flex items-center justify-between gap-4 p-4">
               <div className="min-w-0">
                 <h3 className="truncate font-semibold">{item.name}</h3>
-                <p className="truncate text-xs text-white/70">{item.sub || "Open now • Delivery available"}</p>
+                <p className="truncate text-xs text-white/70">
+                  {item.sub || "Open now • Delivery available"}
+                </p>
               </div>
               {item.cta ? (
                 <a
@@ -145,7 +150,11 @@ export default function FeaturedCarousel({ title, items, className, autoMs = 400
         </div>
       </div>
 
-      <div className="mt-4 flex justify-center gap-2" role="tablist" aria-label="Carousel pagination">
+      <div
+        className="mt-4 flex justify-center gap-2"
+        role="tablist"
+        aria-label="Carousel pagination"
+      >
         {items.map((_, index) => (
           <button
             key={index}

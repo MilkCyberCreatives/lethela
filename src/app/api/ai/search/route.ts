@@ -4,7 +4,9 @@ import { searchCatalog } from "@/lib/search";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 async function runSearch(rawQuery: string) {
-  const query = String(rawQuery || "").trim().slice(0, 180);
+  const query = String(rawQuery || "")
+    .trim()
+    .slice(0, 180);
   if (!query) {
     return NextResponse.json({ ok: true, results: [], q: "" });
   }
@@ -38,7 +40,7 @@ export async function GET(req: Request) {
   if (!limited.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many search requests. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
     );
   }
 
@@ -56,7 +58,7 @@ export async function POST(req: Request) {
   if (!limited.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many search requests. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
     );
   }
 

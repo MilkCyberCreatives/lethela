@@ -44,7 +44,12 @@ function sha512(input: string) {
 }
 
 function buildOzowHash(parts: Array<string | undefined>) {
-  return sha512(parts.map((part) => part ?? "").join("").toLowerCase()).toUpperCase();
+  return sha512(
+    parts
+      .map((part) => part ?? "")
+      .join("")
+      .toLowerCase(),
+  ).toUpperCase();
 }
 
 function clamp(value: string, maxLength: number) {
@@ -99,7 +104,7 @@ export function buildOzowRedirectUrl({
   cancelUrl,
   errorUrl,
   notifyUrl,
-  isTest = true
+  isTest = true,
 }: CreateUrlArgs) {
   const countryCode = "ZA";
   const currencyCode = "ZAR";
@@ -142,7 +147,7 @@ export function buildOzowRedirectUrl({
     ErrorUrl: resolvedErrorUrl,
     NotifyUrl: notifyUrl,
     IsTest: testFlag,
-    HashCheck: hash
+    HashCheck: hash,
   });
 
   // Sandbox host (same path usually used in production; this is fine for dev)

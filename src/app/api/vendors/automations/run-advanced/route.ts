@@ -264,7 +264,9 @@ async function runLateOrderAlert(vendorId: string) {
         orderId: order.id,
         orderPublic: order.publicId,
         etaMinutes: etaMins,
-        aiMessage: String(aiMessage || "").trim().slice(0, 300),
+        aiMessage: String(aiMessage || "")
+          .trim()
+          .slice(0, 300),
       },
     });
 
@@ -295,8 +297,7 @@ async function runFraudSignal(vendorId: string) {
 
   const locations = canceled
     .map(
-      (item) =>
-        `(${item.customerLat?.toFixed(4) ?? "?"},${item.customerLng?.toFixed(4) ?? "?"})`
+      (item) => `(${item.customerLat?.toFixed(4) ?? "?"},${item.customerLng?.toFixed(4) ?? "?"})`,
     )
     .join(" ");
 
@@ -312,7 +313,9 @@ async function runFraudSignal(vendorId: string) {
     },
   ] as const);
 
-  return `Fraud monitor: ${String(fraudNote || "").trim().slice(0, 200)}`;
+  return `Fraud monitor: ${String(fraudNote || "")
+    .trim()
+    .slice(0, 200)}`;
 }
 
 async function runDailyHealth(vendorId: string) {
@@ -351,7 +354,9 @@ async function runDailyHealth(vendorId: string) {
     },
   ] as const);
 
-  return `Daily health: ${String(health || "").trim().slice(0, 400)}`;
+  return `Daily health: ${String(health || "")
+    .trim()
+    .slice(0, 400)}`;
 }
 
 export async function POST() {
@@ -375,7 +380,7 @@ export async function POST() {
         ok: false,
         error: error instanceof Error ? error.message : "Auth error",
       },
-      { status: 401 }
+      { status: 401 },
     );
   }
 }

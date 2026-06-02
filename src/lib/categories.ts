@@ -23,7 +23,9 @@ export function categoryToSlug(category: TownshipCategory | string) {
 }
 
 export function slugToCategory(slug: string): TownshipCategory | null {
-  const match = TOWNSHIP_CATEGORIES.find((category) => categoryToSlug(category) === categoryToSlug(slug));
+  const match = TOWNSHIP_CATEGORIES.find(
+    (category) => categoryToSlug(category) === categoryToSlug(slug),
+  );
   return match ?? null;
 }
 
@@ -39,7 +41,8 @@ export function inferProductCategory(input: {
   if (/chip|fries|atchar chips/.test(haystack)) return "Chips";
   if (/burger|beef burger|chicken burger/.test(haystack)) return "Burger";
   if (/mogodu|tripe/.test(haystack)) return "Mogodu";
-  if (/egg|milk|bread|maize|rice|oil|beans|sugar|salt|flour|grocer/.test(haystack)) return "Groceries";
+  if (/egg|milk|bread|maize|rice|oil|beans|sugar|salt|flour|grocer/.test(haystack))
+    return "Groceries";
   if (/wing|drumstick/.test(haystack)) return "Wings";
   if (/braai|nyama|wors|chops/.test(haystack)) return "Braai";
   if (/pizza/.test(haystack)) return "Pizza";

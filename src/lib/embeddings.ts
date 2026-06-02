@@ -43,7 +43,11 @@ function hashStr(s: string) {
 
 function localEmbedOne(text: string, dim = 256): Vector {
   const v = new Array(dim).fill(0);
-  const tokens = text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+  const tokens = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
   for (const t of tokens) {
     const idx = hashStr(t) % dim;
     v[idx] += 1;

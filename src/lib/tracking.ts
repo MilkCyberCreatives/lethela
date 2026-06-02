@@ -21,7 +21,7 @@ export function recordVendorClick(
     name?: string;
     rating?: number;
     cuisines?: string[];
-  }
+  },
 ) {
   try {
     const m = getVendorClicks();

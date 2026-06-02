@@ -28,7 +28,11 @@ export default async function SuccessPage({ searchParams }: { searchParams: Sear
 
   return (
     <PageShell contentClassName="max-w-2xl">
-      <CheckoutSuccessContent refId={cleanRef} trackingToken={trackingToken} isSandbox={process.env.OZOW_IS_TEST === "true"} />
+      <CheckoutSuccessContent
+        refId={cleanRef}
+        trackingToken={trackingToken}
+        isSandbox={process.env.OZOW_IS_TEST === "true"}
+      />
     </PageShell>
   );
 }

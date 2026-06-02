@@ -76,7 +76,7 @@ export default async function CategoryPage({ params }: PageProps) {
               },
             },
           },
-        })
+        }),
       ).catch(() => []);
 
   const items =
@@ -87,7 +87,7 @@ export default async function CategoryPage({ params }: PageProps) {
               name: item.name,
               description: item.description,
               isAlcohol: item.isAlcohol,
-            }) === resolvedCategory
+            }) === resolvedCategory,
         )
       : shouldPreferCatalogFallback()
         ? getFallbackCategoryProducts(resolvedCategory)
@@ -109,7 +109,8 @@ export default async function CategoryPage({ params }: PageProps) {
       <section className="container py-10">
         <h1 className="text-3xl font-bold md:text-4xl">{titleForCategory(resolvedCategory)}</h1>
         <p className="mt-2 text-sm text-white/75">
-          Browse local {resolvedCategory.toLowerCase()} listings, specials and fast delivery options.
+          Browse local {resolvedCategory.toLowerCase()} listings, specials and fast delivery
+          options.
         </p>
 
         {items.length === 0 ? (

@@ -134,7 +134,10 @@ export default function AIChatWidget() {
     };
   }, [open]);
 
-  const lastAssistant = useMemo(() => [...msgs].reverse().find((msg) => msg.role === "assistant"), [msgs]);
+  const lastAssistant = useMemo(
+    () => [...msgs].reverse().find((msg) => msg.role === "assistant"),
+    [msgs],
+  );
   const followUps = lastAssistant?.meta?.followUps || [];
 
   function appendAssistant(content: string, meta?: AssistantReply) {
@@ -167,7 +170,7 @@ export default function AIChatWidget() {
         response.ok
           ? json.reply || "I can help with orders, tracking, recommendations, and support."
           : "The assistant is temporarily unavailable. Please try again.",
-        response.ok ? json : undefined
+        response.ok ? json : undefined,
       );
     } catch {
       appendAssistant("Network error. Please try again, or use WhatsApp support if it is urgent.");
@@ -206,11 +209,7 @@ export default function AIChatWidget() {
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div className="font-semibold">Lethela Assistant</div>
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={resetThread}
-                className="text-xs underline"
-              >
+              <button type="button" onClick={resetThread} className="text-xs underline">
                 Reset
               </button>
               <a href={whatsappLink} target="_blank" rel="noreferrer" className="text-xs underline">
@@ -350,7 +349,10 @@ function AssistantMeta({ meta }: { meta: AssistantReply }) {
         <div className="space-y-1">
           <div className="text-xs text-white/60">Sources</div>
           {meta.sources.map((source, index) => (
-            <div key={`${source.q}-${index}`} className="rounded border border-white/10 bg-white/5 p-2 text-xs">
+            <div
+              key={`${source.q}-${index}`}
+              className="rounded border border-white/10 bg-white/5 p-2 text-xs"
+            >
               <div className="font-medium">{source.q}</div>
               {source.snippet ? <div className="mt-1 text-white/80">{source.snippet}</div> : null}
             </div>
@@ -360,7 +362,12 @@ function AssistantMeta({ meta }: { meta: AssistantReply }) {
 
       {meta.cta ? (
         meta.cta.external ? (
-          <a href={meta.cta.href} target="_blank" rel="noreferrer" className="inline-block text-xs underline">
+          <a
+            href={meta.cta.href}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block text-xs underline"
+          >
             {meta.cta.label}
           </a>
         ) : (

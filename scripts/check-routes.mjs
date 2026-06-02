@@ -3,10 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const roots = [
-  path.join(process.cwd(), "src", "app"),
-  path.join(process.cwd(), "app"),
-];
+const roots = [path.join(process.cwd(), "src", "app"), path.join(process.cwd(), "app")];
 
 const CATCHALL_RE = /^\[\.\.\.(.+)\]$/; // e.g. "[...nextauth]"
 
@@ -52,7 +49,6 @@ function scanRoot(root) {
   for (const p of all) {
     const stat = fs.statSync(p);
     if (!stat.isFile()) continue;
-    const ext = path.extname(p);
     const base = path.basename(p);
     // Only consider route-bearing files
     if (base !== "page.tsx" && base !== "route.ts") continue;
@@ -72,7 +68,9 @@ for (const root of roots) {
     console.log(`\n❌ Offending routes under: ${root}`);
     for (const o of offenders) {
       console.log(`  - ${o.rel}`);
-      console.log(`    ↳ catch-all segment: ${o.offendingSegment}  | remainder after it: ${o.remainder}`);
+      console.log(
+        `    ↳ catch-all segment: ${o.offendingSegment}  | remainder after it: ${o.remainder}`,
+      );
     }
     totalOffenders += offenders.length;
   }

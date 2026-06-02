@@ -26,4 +26,3 @@ Recommended next steps:
 - Protect each dashboard method with policies or role middleware.
 - Replace placeholder arrays in `DashboardController` with Eloquent queries.
 - Keep the Lethela navy/red styling as the base theme.
-

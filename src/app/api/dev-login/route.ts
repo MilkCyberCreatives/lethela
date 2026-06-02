@@ -14,10 +14,7 @@ export async function POST(req: Request) {
   const { email, slug } = body as { email?: string; slug?: string };
 
   if (!email || !slug) {
-    return NextResponse.json(
-      { ok: false, error: "Missing email or slug" },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: "Missing email or slug" }, { status: 400 });
   }
 
   const normalizedEmail = email.toLowerCase().trim();
@@ -30,7 +27,7 @@ export async function POST(req: Request) {
   if (!vendor) {
     return NextResponse.json(
       { ok: false, error: "Vendor not found for that slug" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 

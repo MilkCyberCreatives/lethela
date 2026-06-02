@@ -5,7 +5,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
-import { pushDataLayerEvent, registerPushSubscription, trackVisitorEvent, unregisterPushSubscription } from "@/lib/visitor";
+import {
+  pushDataLayerEvent,
+  registerPushSubscription,
+  trackVisitorEvent,
+  unregisterPushSubscription,
+} from "@/lib/visitor";
 import { useCart } from "@/store/cart";
 
 type ExperienceSnapshot = {
@@ -65,7 +70,9 @@ export default function ProfileExperiencePanel() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [pushPermission, setPushPermission] = useState<string>(
-    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported"
+    typeof window !== "undefined" && "Notification" in window
+      ? Notification.permission
+      : "unsupported",
   );
 
   const favoriteCountLabel = useMemo(() => snapshot?.favorites.length ?? 0, [snapshot]);
@@ -113,7 +120,7 @@ export default function ProfileExperiencePanel() {
                 ...json.preferences,
               },
             }
-          : current
+          : current,
       );
       setStatus("Preferences updated.");
     } catch (error: unknown) {
@@ -165,7 +172,7 @@ export default function ProfileExperiencePanel() {
           priceCents: item.priceCents,
           image: item.image,
         },
-        item.qty
+        item.qty,
       );
     }
     void trackVisitorEvent({
@@ -197,7 +204,9 @@ export default function ProfileExperiencePanel() {
           </div>
           {!loading && snapshot ? (
             <div className="flex flex-wrap gap-2 text-xs text-white/70">
-              <span className="rounded-full border border-white/15 px-3 py-1">{favoriteCountLabel} saved meals</span>
+              <span className="rounded-full border border-white/15 px-3 py-1">
+                {favoriteCountLabel} saved meals
+              </span>
               <span className="rounded-full border border-white/15 px-3 py-1">
                 {snapshot.reviewSummary.averageRating != null
                   ? `${snapshot.reviewSummary.averageRating.toFixed(1)} avg rating`
@@ -216,7 +225,9 @@ export default function ProfileExperiencePanel() {
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr,1fr]">
             <section className="space-y-4">
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/65">Saved meals</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/65">
+                  Saved meals
+                </h3>
                 {snapshot.favorites.length === 0 ? (
                   <p className="mt-3 text-sm text-white/65">Your saved meals will appear here.</p>
                 ) : (
@@ -229,15 +240,27 @@ export default function ProfileExperiencePanel() {
                       >
                         {favorite.productImage ? (
                           <div className="relative h-14 w-14 overflow-hidden rounded-lg">
-                            <Image src={favorite.productImage} alt={favorite.productName} fill sizes="56px" className="object-cover" />
+                            <Image
+                              src={favorite.productImage}
+                              alt={favorite.productName}
+                              fill
+                              sizes="56px"
+                              className="object-cover"
+                            />
                           </div>
                         ) : (
                           <div className="h-14 w-14 rounded-lg bg-white/10" />
                         )}
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-medium text-white">{favorite.productName}</div>
-                          <div className="truncate text-xs text-white/65">{favorite.vendorName}</div>
-                          <div className="mt-1 text-xs text-white/80">{formatZAR(favorite.priceCents)}</div>
+                          <div className="truncate text-sm font-medium text-white">
+                            {favorite.productName}
+                          </div>
+                          <div className="truncate text-xs text-white/65">
+                            {favorite.vendorName}
+                          </div>
+                          <div className="mt-1 text-xs text-white/80">
+                            {formatZAR(favorite.priceCents)}
+                          </div>
                         </div>
                       </Link>
                     ))}
@@ -246,13 +269,20 @@ export default function ProfileExperiencePanel() {
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/65">Recent orders</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/65">
+                  Recent orders
+                </h3>
                 {snapshot.recentOrders.length === 0 ? (
-                  <p className="mt-3 text-sm text-white/65">Your confirmed orders will appear here.</p>
+                  <p className="mt-3 text-sm text-white/65">
+                    Your confirmed orders will appear here.
+                  </p>
                 ) : (
                   <div className="mt-3 space-y-3">
                     {snapshot.recentOrders.map((order) => (
-                      <div key={order.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                      <div
+                        key={order.id}
+                        className="rounded-xl border border-white/10 bg-white/[0.04] p-4"
+                      >
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <div className="text-sm font-medium text-white">{order.vendorName}</div>
@@ -261,7 +291,9 @@ export default function ProfileExperiencePanel() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-medium text-white">{formatZAR(order.totalCents)}</div>
+                            <div className="text-sm font-medium text-white">
+                              {formatZAR(order.totalCents)}
+                            </div>
                             <div className="mt-2 flex flex-wrap justify-end gap-2">
                               <Button
                                 type="button"
@@ -271,7 +303,10 @@ export default function ProfileExperiencePanel() {
                               >
                                 Reorder
                               </Button>
-                              <Link href={`/orders/${order.publicId}`} className="rounded border border-white/20 px-3 py-2 text-xs text-white">
+                              <Link
+                                href={`/orders/${order.publicId}`}
+                                className="rounded border border-white/20 px-3 py-2 text-xs text-white"
+                              >
                                 Track
                               </Link>
                             </div>
@@ -279,7 +314,10 @@ export default function ProfileExperiencePanel() {
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/70">
                           {order.items.slice(0, 4).map((item, index) => (
-                            <span key={`${order.id}-${index}`} className="rounded-full border border-white/10 px-3 py-1">
+                            <span
+                              key={`${order.id}-${index}`}
+                              className="rounded-full border border-white/10 px-3 py-1"
+                            >
                               {item.qty}x {item.name}
                             </span>
                           ))}
@@ -293,10 +331,15 @@ export default function ProfileExperiencePanel() {
 
             <section className="space-y-4">
               <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/65">Push preferences</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/65">
+                  Push preferences
+                </h3>
                 <div className="mt-4 space-y-3">
                   {preferenceLabels.map((item) => (
-                    <label key={item.key} className="flex items-center justify-between gap-4 text-sm text-white/85">
+                    <label
+                      key={item.key}
+                      className="flex items-center justify-between gap-4 text-sm text-white/85"
+                    >
                       <span>{item.label}</span>
                       <input
                         type="checkbox"

@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildTrackingSnapshot, getSimulatedRiderPoint, normalizeTrackingStatus } from "../src/lib/order-tracking";
+import {
+  buildTrackingSnapshot,
+  getSimulatedRiderPoint,
+  normalizeTrackingStatus,
+} from "../src/lib/order-tracking";
 
 test("normalizeTrackingStatus maps legacy values into tracking states", () => {
   assert.equal(normalizeTrackingStatus("accepted"), "PREPARING");

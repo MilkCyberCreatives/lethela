@@ -26,7 +26,7 @@ export default function ScrollReveal({
           }
         }
       },
-      { threshold: 0.14, rootMargin: "0px 0px -10% 0px" }
+      { threshold: 0.14, rootMargin: "0px 0px -10% 0px" },
     );
 
     observer.observe(target);
@@ -34,7 +34,11 @@ export default function ScrollReveal({
   }, []);
 
   return (
-    <div ref={ref} className={`scroll-reveal ${className || ""}`} style={{ transitionDelay: `${delay}ms` }}>
+    <div
+      ref={ref}
+      className={`scroll-reveal ${className || ""}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
       {children}
     </div>
   );

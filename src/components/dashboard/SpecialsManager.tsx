@@ -96,7 +96,7 @@ export default function SpecialsManager() {
       (productsJson.items || []).map((item: { id: string; name: string }) => ({
         id: item.id,
         name: item.name,
-      }))
+      })),
     );
     setSpecials(specialsJson.specials || []);
   }
@@ -280,12 +280,16 @@ export default function SpecialsManager() {
           min={1}
           max={90}
           value={form.discountPct}
-          onChange={(event) => setForm((current) => ({ ...current, discountPct: Number(event.target.value) }))}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, discountPct: Number(event.target.value) }))
+          }
         />
         <select
           className="rounded bg-white px-3 py-2 text-black"
           value={form.productId}
-          onChange={(event) => setForm((current) => ({ ...current, productId: event.target.value }))}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, productId: event.target.value }))
+          }
         >
           <option value="">Applies to all products</option>
           {products.map((product) => (
@@ -313,13 +317,17 @@ export default function SpecialsManager() {
           placeholder="Description"
           rows={2}
           value={form.description}
-          onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, description: event.target.value }))
+          }
         />
         <label className="inline-flex items-center gap-2 text-sm text-white/85 md:col-span-2">
           <input
             type="checkbox"
             checked={form.draft}
-            onChange={(event) => setForm((current) => ({ ...current, draft: event.target.checked }))}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, draft: event.target.checked }))
+            }
           />
           Save as draft until I am ready to publish it
         </label>
@@ -349,14 +357,17 @@ export default function SpecialsManager() {
       </div>
 
       <div className="mt-4 grid gap-2">
-        {specials.length === 0 ? <div className="text-sm text-white/70">No specials scheduled yet.</div> : null}
+        {specials.length === 0 ? (
+          <div className="text-sm text-white/70">No specials scheduled yet.</div>
+        ) : null}
         {specials.map((special) => {
           const phase = getSpecialPhase(special);
           return (
             <div key={special.id} className="rounded border border-white/10 bg-white/5 p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="font-semibold">
-                  {special.title} <span className="text-white/70">({special.discountPct}% off)</span>
+                  {special.title}{" "}
+                  <span className="text-white/70">({special.discountPct}% off)</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs">
                   <span className="rounded-full border border-white/20 px-2 py-1">
@@ -384,10 +395,15 @@ export default function SpecialsManager() {
                 </div>
               </div>
               <div className="mt-1 text-xs text-white/70">
-                {new Date(special.startsAt).toLocaleString()} to {new Date(special.endsAt).toLocaleString()}
+                {new Date(special.startsAt).toLocaleString()} to{" "}
+                {new Date(special.endsAt).toLocaleString()}
               </div>
-              {special.product ? <div className="mt-1 text-xs">Product: {special.product.name}</div> : null}
-              {special.description ? <div className="mt-1 text-xs">{special.description}</div> : null}
+              {special.product ? (
+                <div className="mt-1 text-xs">Product: {special.product.name}</div>
+              ) : null}
+              {special.description ? (
+                <div className="mt-1 text-xs">{special.description}</div>
+              ) : null}
             </div>
           );
         })}

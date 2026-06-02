@@ -13,12 +13,14 @@ export async function POST(req: Request) {
   if (!limited.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many semantic search requests. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
     );
   }
 
   const { q } = await req.json().catch(() => ({ q: "" }));
-  const query = String(q || "").trim().slice(0, 180);
+  const query = String(q || "")
+    .trim()
+    .slice(0, 180);
 
   if (!query) {
     return NextResponse.json({ ok: true, q: "", results: [] });

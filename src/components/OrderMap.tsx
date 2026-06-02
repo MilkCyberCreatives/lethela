@@ -18,7 +18,7 @@ type Props = {
 function midpoint(points: TrackingPoint[]) {
   const totals = points.reduce(
     (acc, point) => ({ lat: acc.lat + point.lat, lng: acc.lng + point.lng }),
-    { lat: 0, lng: 0 }
+    { lat: 0, lng: 0 },
   );
   return {
     lat: totals.lat / points.length,
@@ -39,7 +39,9 @@ export default function OrderMap({ rider, vendor, dest, compact = false }: Props
     return (
       <div className="rounded-lg border border-white/10 bg-black/20 p-4">
         <div className="font-semibold">Map unavailable</div>
-        <p className="mt-1 text-sm text-white/60">Add `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` to enable live map tracking.</p>
+        <p className="mt-1 text-sm text-white/60">
+          Add `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` to enable live map tracking.
+        </p>
       </div>
     );
   }

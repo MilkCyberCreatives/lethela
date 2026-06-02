@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/server/db";
-import {
-  passwordResetFingerprint,
-  readPasswordResetToken,
-} from "@/lib/password-reset";
+import { passwordResetFingerprint, readPasswordResetToken } from "@/lib/password-reset";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 const BodySchema = z
@@ -29,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!rateLimit.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many reset submissions. Please try again later." },
-      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
     );
   }
 
@@ -41,7 +38,10 @@ export async function POST(req: NextRequest) {
 
   const payload = readPasswordResetToken(parsed.data.token);
   if (!payload) {
-    return NextResponse.json({ ok: false, error: "Reset link is invalid or expired." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Reset link is invalid or expired." },
+      { status: 400 },
+    );
   }
 
   const user = await prisma.user.findUnique({
@@ -50,11 +50,17 @@ export async function POST(req: NextRequest) {
   });
 
   if (!user?.passwordHash || user.email.toLowerCase() !== payload.email.toLowerCase()) {
-    return NextResponse.json({ ok: false, error: "Reset link is invalid or expired." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Reset link is invalid or expired." },
+      { status: 400 },
+    );
   }
 
   if (passwordResetFingerprint(user.passwordHash) !== payload.pw) {
-    return NextResponse.json({ ok: false, error: "Reset link is invalid or expired." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Reset link is invalid or expired." },
+      { status: 400 },
+    );
   }
 
   const passwordHash = await hash(parsed.data.password, 10);

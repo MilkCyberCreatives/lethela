@@ -22,14 +22,17 @@ function formatR(valueCents: number) {
 }
 
 export function getOrderWhatsAppPhone() {
-  const envPhone = process.env.NEXT_PUBLIC_WHATSAPP_ORDER_PHONE || process.env.NEXT_PUBLIC_WHATSAPP_PHONE;
+  const envPhone =
+    process.env.NEXT_PUBLIC_WHATSAPP_ORDER_PHONE || process.env.NEXT_PUBLIC_WHATSAPP_PHONE;
   const fallback = "27723908919";
   return sanitizePhone(envPhone || fallback);
 }
 
 export function buildWhatsAppOrderMessage(payload: WhatsAppOrderPayload) {
   const destination = payload.destinationSuburb?.trim() || "Klipfontein View, Midrand";
-  const lines = payload.items.map((item) => `- ${item.qty} x ${item.name} (${formatR(item.priceCents * item.qty)})`);
+  const lines = payload.items.map(
+    (item) => `- ${item.qty} x ${item.name} (${formatR(item.priceCents * item.qty)})`,
+  );
 
   return [
     "Hello Lethela, I would like to place this order via WhatsApp.",

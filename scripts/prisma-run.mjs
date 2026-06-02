@@ -2,11 +2,15 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 function resolveProvider() {
-  const configured = String(process.env.DATABASE_PROVIDER || "").trim().toLowerCase();
+  const configured = String(process.env.DATABASE_PROVIDER || "")
+    .trim()
+    .toLowerCase();
   if (configured === "postgresql") return "postgresql";
   if (configured === "sqlite") return "sqlite";
 
-  const url = String(process.env.DATABASE_URL || "").trim().toLowerCase();
+  const url = String(process.env.DATABASE_URL || "")
+    .trim()
+    .toLowerCase();
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
     return "postgresql";
   }

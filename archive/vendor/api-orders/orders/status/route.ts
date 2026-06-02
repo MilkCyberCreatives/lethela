@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
     if (o) {
       // Simple ETA string based on stored distance
-      const min = Math.max(12, Math.round(15 + ((o.distanceKm ?? 3) * 4.5)));
+      const min = Math.max(12, Math.round(15 + (o.distanceKm ?? 3) * 4.5));
       return NextResponse.json({
         ok: true,
         order: {

@@ -35,8 +35,7 @@ export default function ResetPasswordForm() {
       const json = await response.json().catch(() => ({}));
       if (!response.ok || !json.ok) {
         const fieldError =
-          json?.error?.fieldErrors?.confirmPassword?.[0] ||
-          json?.error?.fieldErrors?.password?.[0];
+          json?.error?.fieldErrors?.confirmPassword?.[0] || json?.error?.fieldErrors?.password?.[0];
         setError(fieldError || json?.error || "Could not reset password.");
         return;
       }

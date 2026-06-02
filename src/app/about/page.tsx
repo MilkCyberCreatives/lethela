@@ -58,18 +58,20 @@ export default function AboutPage() {
           </h1>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
-            Lethela is a South African delivery and logistics platform built for speed, fairness, and local context.
-            Phase 1 focuses on food delivery. Phase 2 expands to logistics, removals, convenience, and more.
+            Lethela is a South African delivery and logistics platform built for speed, fairness,
+            and local context. Phase 1 focuses on food delivery. Phase 2 expands to logistics,
+            removals, convenience, and more.
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
-            Our stack is AI-native. Vendors can launch faster with generated menu descriptions, pricing suggestions,
-            promo timing insights, and operations automation. Riders get smoother onboarding. Customers get better
-            discovery and support.
+            Our stack is AI-native. Vendors can launch faster with generated menu descriptions,
+            pricing suggestions, promo timing insights, and operations automation. Riders get
+            smoother onboarding. Customers get better discovery and support.
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
-            Siyashesha means &quot;we are fast.&quot; That is our promise across onboarding, support, and delivery.
+            Siyashesha means &quot;we are fast.&quot; That is our promise across onboarding,
+            support, and delivery.
           </p>
 
           <div className="mt-8 text-xs text-white/60">
@@ -86,7 +88,8 @@ export default function AboutPage() {
           <div>
             <div className="mb-1 text-base font-semibold text-white">Vendors</div>
             <div>
-              Menu management, operating hours, specials, driver tracking, and AI-assisted growth tools in one place.
+              Menu management, operating hours, specials, driver tracking, and AI-assisted growth
+              tools in one place.
             </div>
           </div>
 
@@ -98,7 +101,8 @@ export default function AboutPage() {
           <div>
             <div className="mb-1 text-base font-semibold text-white">Customers</div>
             <div>
-              Search in plain language, get smarter recommendations, and track orders with less friction.
+              Search in plain language, get smarter recommendations, and track orders with less
+              friction.
             </div>
           </div>
         </div>

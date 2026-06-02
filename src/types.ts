@@ -7,7 +7,7 @@ export type Vendor = {
   badge: string | null;
   rating: number;
   cuisines: string[];
-  eta: string;          // display string
-  distanceKm?: number;  // for AI ETA/rerank
-  baseEtaMin?: number;  // vendor-prep baseline
+  eta: string; // display string
+  distanceKm?: number; // for AI ETA/rerank
+  baseEtaMin?: number; // vendor-prep baseline
 };

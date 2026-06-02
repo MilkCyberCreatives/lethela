@@ -109,15 +109,20 @@ export default function RiderApplyForm() {
         <div>
           <h2 className="text-xl font-semibold">Rider Application</h2>
           <p className="mt-1 text-sm text-white/70">
-            Complete your details once. Operations reviews your application and contacts you on WhatsApp.
+            Complete your details once. Operations reviews your application and contacts you on
+            WhatsApp.
           </p>
         </div>
-        <span className="rounded-full border border-white/25 px-3 py-1 text-xs text-white/80">~3 minute setup</span>
+        <span className="rounded-full border border-white/25 px-3 py-1 text-xs text-white/80">
+          ~3 minute setup
+        </span>
       </div>
 
       <form className="mt-5 space-y-6" onSubmit={handleSubmit}>
         <section className="rounded-xl border border-white/10 p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Identity</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">
+            Identity
+          </h3>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <input
               className="rounded bg-white px-3 py-2 text-black"
@@ -160,13 +165,17 @@ export default function RiderApplyForm() {
               placeholder="License code* (e.g. A1, B, C1)"
               required
               value={form.licenseCode}
-              onChange={(event) => setForm((state) => ({ ...state, licenseCode: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, licenseCode: event.target.value }))
+              }
             />
           </div>
         </section>
 
         <section className="rounded-xl border border-white/10 p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Delivery Details</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">
+            Delivery Details
+          </h3>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <input
               className="rounded bg-white px-3 py-2 text-black"
@@ -186,7 +195,9 @@ export default function RiderApplyForm() {
             <select
               className="rounded bg-white px-3 py-2 text-black"
               value={form.vehicleType}
-              onChange={(event) => setForm((state) => ({ ...state, vehicleType: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, vehicleType: event.target.value }))
+              }
             >
               <option value="BIKE">Bike</option>
               <option value="SCOOTER">Scooter</option>
@@ -196,47 +207,61 @@ export default function RiderApplyForm() {
               className="rounded bg-white px-3 py-2 text-black"
               placeholder="Vehicle registration (optional)"
               value={form.vehicleRegistration}
-              onChange={(event) => setForm((state) => ({ ...state, vehicleRegistration: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, vehicleRegistration: event.target.value }))
+              }
             />
             <input
               className="rounded bg-white px-3 py-2 text-black md:col-span-2"
               placeholder="Availability* (e.g. weekdays 17:00-22:00)"
               required
               value={form.availableHours}
-              onChange={(event) => setForm((state) => ({ ...state, availableHours: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, availableHours: event.target.value }))
+              }
             />
             <textarea
               className="rounded bg-white px-3 py-2 text-black md:col-span-2"
               placeholder="Delivery experience (optional)"
               rows={3}
               value={form.experience}
-              onChange={(event) => setForm((state) => ({ ...state, experience: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, experience: event.target.value }))
+              }
             />
           </div>
         </section>
 
         <section className="rounded-xl border border-white/10 p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Safety And Contact</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">
+            Safety And Contact
+          </h3>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <input
               className="rounded bg-white px-3 py-2 text-black"
               placeholder="Emergency contact name*"
               required
               value={form.emergencyContactName}
-              onChange={(event) => setForm((state) => ({ ...state, emergencyContactName: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, emergencyContactName: event.target.value }))
+              }
             />
             <input
               className="rounded bg-white px-3 py-2 text-black"
               placeholder="Emergency contact phone*"
               required
               value={form.emergencyContactPhone}
-              onChange={(event) => setForm((state) => ({ ...state, emergencyContactPhone: event.target.value }))}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, emergencyContactPhone: event.target.value }))
+              }
             />
             <label className="inline-flex items-center gap-2 text-sm text-white/80">
               <input
                 type="checkbox"
                 checked={form.hasSmartphone}
-                onChange={(event) => setForm((state) => ({ ...state, hasSmartphone: event.target.checked }))}
+                onChange={(event) =>
+                  setForm((state) => ({ ...state, hasSmartphone: event.target.checked }))
+                }
               />
               I have a smartphone with mobile data
             </label>
@@ -244,7 +269,9 @@ export default function RiderApplyForm() {
               <input
                 type="checkbox"
                 checked={form.hasBankAccount}
-                onChange={(event) => setForm((state) => ({ ...state, hasBankAccount: event.target.checked }))}
+                onChange={(event) =>
+                  setForm((state) => ({ ...state, hasBankAccount: event.target.checked }))
+                }
               />
               I have a valid bank account for payouts
             </label>
@@ -252,7 +279,9 @@ export default function RiderApplyForm() {
               <input
                 type="checkbox"
                 checked={form.acceptTerms}
-                onChange={(event) => setForm((state) => ({ ...state, acceptTerms: event.target.checked }))}
+                onChange={(event) =>
+                  setForm((state) => ({ ...state, acceptTerms: event.target.checked }))
+                }
               />
               I confirm my details are correct and I can legally work and deliver in South Africa.
             </label>

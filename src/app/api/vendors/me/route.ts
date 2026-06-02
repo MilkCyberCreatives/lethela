@@ -85,8 +85,12 @@ export async function PATCH(req: Request) {
     const parsed = VendorProfileSchema.safeParse(normalizedBody);
     if (!parsed.success) {
       return NextResponse.json(
-        { ok: false, error: "Invalid profile payload.", fieldErrors: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        {
+          ok: false,
+          error: "Invalid profile payload.",
+          fieldErrors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
       );
     }
 

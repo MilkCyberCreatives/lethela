@@ -31,7 +31,9 @@ function normalizeCuisine(value: unknown) {
   if (typeof value === "string") {
     try {
       const parsed = JSON.parse(value || "[]");
-      return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+      return Array.isArray(parsed)
+        ? parsed.filter((item): item is string => typeof item === "string")
+        : [];
     } catch {
       return [];
     }
@@ -48,7 +50,7 @@ function formatMinutes(totalMinutes: number) {
 
 function getVendorHoursState(
   hours: Array<{ day: number; openMin: number; closeMin: number; closed: boolean }>,
-  isActive: boolean
+  isActive: boolean,
 ) {
   const now = new Date();
   const todayIndex = now.getDay();
@@ -189,7 +191,9 @@ export default async function VendorProfilePage({ params }: PageProps) {
           "@type": "Offer",
           priceCurrency: "ZAR",
           price: (product.priceCents / 100).toFixed(2),
-          availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          availability: product.inStock
+            ? "https://schema.org/InStock"
+            : "https://schema.org/OutOfStock",
         },
       },
     })),
@@ -206,18 +210,24 @@ export default async function VendorProfilePage({ params }: PageProps) {
           <div className="space-y-4">
             <div>
               <p className="text-xs uppercase tracking-[0.16em] text-white/65">Vendor profile</p>
-              <h1 className="mt-1 text-3xl font-semibold leading-tight md:text-4xl">{vendor.name}</h1>
+              <h1 className="mt-1 text-3xl font-semibold leading-tight md:text-4xl">
+                {vendor.name}
+              </h1>
               <p className="mt-3 max-w-2xl text-sm text-white/78">
                 Fast local delivery with AI-assisted ordering and live availability updates.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2 text-xs">
-              {location ? <span className="rounded-full border border-white/20 px-3 py-1">{location}</span> : null}
+              {location ? (
+                <span className="rounded-full border border-white/20 px-3 py-1">{location}</span>
+              ) : null}
               <span className="rounded-full border border-white/20 px-3 py-1">
                 {hoursState.isOpenNow ? "Open now" : "Currently closed"}
               </span>
-              <span className="rounded-full border border-white/20 px-3 py-1">Today: {hoursState.todayLabel}</span>
+              <span className="rounded-full border border-white/20 px-3 py-1">
+                Today: {hoursState.todayLabel}
+              </span>
               <span className="rounded-full border border-white/20 px-3 py-1">
                 Delivery from {formatZAR(vendor.deliveryFee)} within 1 km
               </span>
@@ -225,12 +235,24 @@ export default async function VendorProfilePage({ params }: PageProps) {
                 ETA {vendor.etaMins}-{vendor.etaMins + 10} min
               </span>
               <span className="rounded-full border border-white/20 px-3 py-1">
-                {trust.averageRating != null ? `${trust.averageRating.toFixed(1)} rating` : `${vendor.rating.toFixed(1)} rating`}
+                {trust.averageRating != null
+                  ? `${trust.averageRating.toFixed(1)} rating`
+                  : `${vendor.rating.toFixed(1)} rating`}
               </span>
-              <span className="rounded-full border border-white/20 px-3 py-1">{trust.reviewCount} reviews</span>
-              <span className="rounded-full border border-white/20 px-3 py-1">{trust.orderCount} delivered orders</span>
-              {vendor.halaal ? <span className="rounded-full border border-white/20 px-3 py-1">Halaal</span> : null}
-              {vendor.phone ? <span className="rounded-full border border-white/20 px-3 py-1">{vendor.phone}</span> : null}
+              <span className="rounded-full border border-white/20 px-3 py-1">
+                {trust.reviewCount} reviews
+              </span>
+              <span className="rounded-full border border-white/20 px-3 py-1">
+                {trust.orderCount} delivered orders
+              </span>
+              {vendor.halaal ? (
+                <span className="rounded-full border border-white/20 px-3 py-1">Halaal</span>
+              ) : null}
+              {vendor.phone ? (
+                <span className="rounded-full border border-white/20 px-3 py-1">
+                  {vendor.phone}
+                </span>
+              ) : null}
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -260,7 +282,9 @@ export default async function VendorProfilePage({ params }: PageProps) {
 
             {vendor.specials.length > 0 ? (
               <div className="rounded-2xl border border-lethela-primary/40 bg-lethela-primary/10 p-4">
-                <div className="text-xs uppercase tracking-[0.14em] text-white/70">Live specials</div>
+                <div className="text-xs uppercase tracking-[0.14em] text-white/70">
+                  Live specials
+                </div>
                 <ul className="mt-2 space-y-1 text-sm text-white">
                   {vendor.specials.map((special) => (
                     <li key={special.id}>
@@ -273,13 +297,20 @@ export default async function VendorProfilePage({ params }: PageProps) {
 
             {vendorHours.length > 0 ? (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-xs uppercase tracking-[0.14em] text-white/65">Opening hours</div>
+                <div className="text-xs uppercase tracking-[0.14em] text-white/65">
+                  Opening hours
+                </div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   {vendorHours.map((entry) => (
-                    <div key={entry.day} className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-sm">
+                    <div
+                      key={entry.day}
+                      className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-sm"
+                    >
                       <span className="text-white/80">{DAY_LABELS[entry.day]}</span>
                       <span className="text-white/70">
-                        {entry.closed ? "Closed" : `${formatMinutes(entry.openMin)} - ${formatMinutes(entry.closeMin)}`}
+                        {entry.closed
+                          ? "Closed"
+                          : `${formatMinutes(entry.openMin)} - ${formatMinutes(entry.closeMin)}`}
                       </span>
                     </div>
                   ))}
@@ -374,7 +405,10 @@ export default async function VendorProfilePage({ params }: PageProps) {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {trust.recentReviews.map((review, index) => (
-              <article key={`${review.userName}-${index}`} className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <article
+                key={`${review.userName}-${index}`}
+                className="rounded-xl border border-white/10 bg-white/5 p-4"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-sm font-medium text-white">{review.userName}</div>

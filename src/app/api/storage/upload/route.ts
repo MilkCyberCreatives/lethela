@@ -27,7 +27,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   ) {
     return NextResponse.json(
       { ok: false, error: "Path must be a safe admin-uploads/* location." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -37,12 +37,15 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   const supa = createAdminClient();
   const bucket = process.env.SUPABASE_BUCKET?.trim();
   if (!bucket) {
-    return NextResponse.json({ ok: false, error: "SUPABASE_BUCKET is not configured." }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "SUPABASE_BUCKET is not configured." },
+      { status: 500 },
+    );
   }
 
   const { data, error } = await supa.storage.from(bucket).upload(filename, buffer, {
     contentType: file.type || "application/octet-stream",
-    upsert: false
+    upsert: false,
   });
 
   if (error) {

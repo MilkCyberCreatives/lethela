@@ -93,7 +93,8 @@ export async function getVendorSession(): Promise<VendorSessionState> {
   }
 
   const status = String(vendor.status || "").toUpperCase();
-  const isApproved = vendor.isActive && (status === "ACTIVE" || status === "APPROVED" || status === "");
+  const isApproved =
+    vendor.isActive && (status === "ACTIVE" || status === "APPROVED" || status === "");
 
   return {
     userId: user.id,
@@ -107,9 +108,7 @@ export async function getVendorSession(): Promise<VendorSessionState> {
   };
 }
 
-export async function requireVendor(
-  minRole: VendorRoleType = "STAFF"
-): Promise<AuthedVendor> {
+export async function requireVendor(minRole: VendorRoleType = "STAFF"): Promise<AuthedVendor> {
   const session = await getVendorSession();
   const isApproved = session.isApproved;
   if (!isApproved) {

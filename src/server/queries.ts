@@ -12,28 +12,28 @@ export async function getVendorBySlug(slug: string) {
   }
 
   const vendorQuery = prisma.vendor.findUnique({
-      where: { slug },
-      include: {
-        products: {
-          where: { inStock: true },
-          orderBy: { updatedAt: "desc" },
-          take: 80,
-        },
-        specials: {
-          where: { endsAt: { gte: new Date() } },
-          orderBy: { startsAt: "asc" },
-          take: 4,
-        },
-        sections: {
-          orderBy: { sortOrder: "asc" },
-          include: { items: { where: { draft: false }, orderBy: { name: "asc" } } },
-        },
-        hours: {
-          orderBy: { day: "asc" },
-        },
-        items: true,
+    where: { slug },
+    include: {
+      products: {
+        where: { inStock: true },
+        orderBy: { updatedAt: "desc" },
+        take: 80,
       },
-    });
+      specials: {
+        where: { endsAt: { gte: new Date() } },
+        orderBy: { startsAt: "asc" },
+        take: 4,
+      },
+      sections: {
+        orderBy: { sortOrder: "asc" },
+        include: { items: { where: { draft: false }, orderBy: { name: "asc" } } },
+      },
+      hours: {
+        orderBy: { day: "asc" },
+      },
+      items: true,
+    },
+  });
 
   type VendorRecord = Awaited<typeof vendorQuery>;
 
@@ -42,7 +42,8 @@ export async function getVendorBySlug(slug: string) {
   if (!vendor) return allowFallback ? fallback : null;
 
   const status = String(vendor.status || "").toUpperCase();
-  const isPublicVendor = vendor.isActive && (status === "ACTIVE" || status === "APPROVED" || status === "");
+  const isPublicVendor =
+    vendor.isActive && (status === "ACTIVE" || status === "APPROVED" || status === "");
   if (!isPublicVendor) return null;
 
   const cuisine = Array.isArray(vendor.cuisine)
@@ -50,7 +51,9 @@ export async function getVendorBySlug(slug: string) {
     : (() => {
         try {
           const parsed = JSON.parse(vendor.cuisine || "[]");
-          return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+          return Array.isArray(parsed)
+            ? parsed.filter((item): item is string => typeof item === "string")
+            : [];
         } catch {
           return [];
         }
@@ -66,7 +69,9 @@ export async function getVendorBySlug(slug: string) {
           : (() => {
               try {
                 const parsed = JSON.parse(String(item.tags || "[]"));
-                return Array.isArray(parsed) ? parsed.filter((tag): tag is string => typeof tag === "string") : [];
+                return Array.isArray(parsed)
+                  ? parsed.filter((tag): tag is string => typeof tag === "string")
+                  : [];
               } catch {
                 return [];
               }

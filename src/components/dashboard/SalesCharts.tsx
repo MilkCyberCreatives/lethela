@@ -135,12 +135,17 @@ export default function SalesCharts() {
     const totalOrders = data.series.reduce((sum, point) => sum + point.orders, 0);
     const totalRevenueCents = data.series.reduce((sum, point) => sum + point.revenueCents, 0);
     const totalSubtotalCents = data.series.reduce((sum, point) => sum + point.subtotalCents, 0);
-    const totalDeliveryFeeCents = data.series.reduce((sum, point) => sum + point.deliveryFeeCents, 0);
+    const totalDeliveryFeeCents = data.series.reduce(
+      (sum, point) => sum + point.deliveryFeeCents,
+      0,
+    );
     const avgOrderValueCents = totalOrders > 0 ? Math.round(totalRevenueCents / totalOrders) : 0;
     const bestDay =
       [...data.series].sort((left, right) => right.revenueCents - left.revenueCents)[0] || null;
     const weakestDay =
-      [...data.series].filter((point) => point.orders > 0).sort((left, right) => left.revenueCents - right.revenueCents)[0] || null;
+      [...data.series]
+        .filter((point) => point.orders > 0)
+        .sort((left, right) => left.revenueCents - right.revenueCents)[0] || null;
 
     return {
       totalOrders,
@@ -164,7 +169,7 @@ export default function SalesCharts() {
         paidRevenue: point.paidRevenueCents / 100,
         pendingRevenue: point.pendingRevenueCents / 100,
       })),
-    [data.series]
+    [data.series],
   );
 
   const weekdayData = useMemo(
@@ -174,7 +179,7 @@ export default function SalesCharts() {
         revenue: point.revenueCents / 100,
         avgOrder: point.avgOrderCents / 100,
       })),
-    [data.weekdaySeries]
+    [data.weekdaySeries],
   );
 
   return (
@@ -215,7 +220,11 @@ export default function SalesCharts() {
             <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
               <div className="text-xs uppercase tracking-[0.12em] text-white/60">Best day</div>
               <div className="mt-2 text-xl font-semibold text-white">
-                {loading ? "..." : metrics.bestDay ? formatShortDate(metrics.bestDay.date) : "No sales"}
+                {loading
+                  ? "..."
+                  : metrics.bestDay
+                    ? formatShortDate(metrics.bestDay.date)
+                    : "No sales"}
               </div>
             </div>
           </div>
@@ -252,7 +261,13 @@ export default function SalesCharts() {
                     borderRadius: 12,
                   }}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#B5001B" fill="rgba(181,0,27,0.22)" strokeWidth={2.5} />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#B5001B"
+                  fill="rgba(181,0,27,0.22)"
+                  strokeWidth={2.5}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -287,7 +302,13 @@ export default function SalesCharts() {
         <DashCard title="Sales Mix">
           <div className="mb-3 flex items-center justify-between text-xs text-white/60">
             <span>Food subtotal versus delivery revenue.</span>
-            <span>{loading ? "..." : metrics.weakestDay ? `Softest day ${formatShortDate(metrics.weakestDay.date)}` : "Awaiting sales"}</span>
+            <span>
+              {loading
+                ? "..."
+                : metrics.weakestDay
+                  ? `Softest day ${formatShortDate(metrics.weakestDay.date)}`
+                  : "Awaiting sales"}
+            </span>
           </div>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -389,12 +410,16 @@ export default function SalesCharts() {
                       </td>
                       <td className="py-3 pr-4 text-white/68">{order.itemsCount}</td>
                       <td className="py-3 pr-4">
-                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${statusTone(order.status)}`}>
+                        <span
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${statusTone(order.status)}`}
+                        >
                           {order.status}
                         </span>
                       </td>
                       <td className="py-3 pr-4">
-                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${statusTone(order.paymentStatus)}`}>
+                        <span
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${statusTone(order.paymentStatus)}`}
+                        >
                           {order.paymentStatus}
                         </span>
                       </td>

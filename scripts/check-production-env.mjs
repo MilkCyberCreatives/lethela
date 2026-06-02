@@ -1,12 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const PLACEHOLDER_PATTERNS = [
-  /^replace-with/i,
-  /^your-/i,
-  /^example$/i,
-  /^example\./i,
-];
+const PLACEHOLDER_PATTERNS = [/^replace-with/i, /^your-/i, /^example$/i, /^example\./i];
 
 function parseEnvFile(contents) {
   const result = {};
@@ -77,7 +72,9 @@ function read(key, values) {
 }
 
 function isTruthy(value) {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   return normalized === "1" || normalized === "true" || normalized === "yes";
 }
 
@@ -111,7 +108,7 @@ if (nodeEnv && nodeEnv !== "production") {
 
 const publicSiteUrl = requireNonPlaceholder(
   "NEXT_PUBLIC_SITE_URL",
-  "must be set to your public canonical HTTPS domain."
+  "must be set to your public canonical HTTPS domain.",
 );
 if (publicSiteUrl && !isHttpsUrl(publicSiteUrl)) {
   errors.push("NEXT_PUBLIC_SITE_URL: must be a valid HTTPS URL.");
@@ -119,7 +116,7 @@ if (publicSiteUrl && !isHttpsUrl(publicSiteUrl)) {
 
 const nextAuthUrl = requireNonPlaceholder(
   "NEXTAUTH_URL",
-  "must be set to your public canonical HTTPS domain."
+  "must be set to your public canonical HTTPS domain.",
 );
 if (nextAuthUrl && !isHttpsUrl(nextAuthUrl)) {
   errors.push("NEXTAUTH_URL: must be a valid HTTPS URL.");
@@ -136,7 +133,7 @@ requireNonPlaceholder("ADMIN_APPROVAL_KEY", "must be set for admin browser acces
 
 const databaseProvider = requireNonPlaceholder(
   "DATABASE_PROVIDER",
-  "must be set to postgresql for a live deployment."
+  "must be set to postgresql for a live deployment.",
 );
 if (databaseProvider && databaseProvider !== "postgresql") {
   errors.push("DATABASE_PROVIDER: must be exactly 'postgresql' for production.");
@@ -144,7 +141,7 @@ if (databaseProvider && databaseProvider !== "postgresql") {
 
 const databaseUrl = requireNonPlaceholder(
   "DATABASE_URL",
-  "must point to your production PostgreSQL database."
+  "must point to your production PostgreSQL database.",
 );
 
 if (databaseUrl) {
@@ -152,12 +149,19 @@ if (databaseUrl) {
   if (!(normalizedUrl.startsWith("postgres://") || normalizedUrl.startsWith("postgresql://"))) {
     errors.push("DATABASE_URL: must be a PostgreSQL connection string for production.");
   }
-  if (/^file:\.\.?\//.test(databaseUrl) || databaseUrl === "file:./dev.db" || isAbsoluteSqliteUrl(databaseUrl)) {
+  if (
+    /^file:\.\.?\//.test(databaseUrl) ||
+    databaseUrl === "file:./dev.db" ||
+    isAbsoluteSqliteUrl(databaseUrl)
+  ) {
     errors.push("DATABASE_URL: SQLite is no longer an accepted production database profile.");
   }
 }
 
-requireNonPlaceholder("GOOGLE_MAPS_API_KEY", "must be set for server-side geocoding and delivery quotes.");
+requireNonPlaceholder(
+  "GOOGLE_MAPS_API_KEY",
+  "must be set for server-side geocoding and delivery quotes.",
+);
 requireNonPlaceholder("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", "must be set for live browser maps.");
 
 requireNonPlaceholder("SUPABASE_URL", "must be set for durable uploads.");
@@ -165,7 +169,7 @@ requireNonPlaceholder("SUPABASE_SERVICE_ROLE", "must be set for durable uploads.
 requireNonPlaceholder("SUPABASE_BUCKET", "must be set for durable uploads.");
 const storageBucketUrl = requireNonPlaceholder(
   "STORAGE_BUCKET_URL",
-  "should be set so uploaded media resolves to an absolute public URL."
+  "should be set so uploaded media resolves to an absolute public URL.",
 );
 if (storageBucketUrl && !isHttpsUrl(storageBucketUrl)) {
   errors.push("STORAGE_BUCKET_URL: must be a valid HTTPS URL.");
@@ -181,25 +185,42 @@ if (ozowIsTest && ozowIsTest !== "false") {
 
 const nextPublicOzowIsTest = requireNonPlaceholder(
   "NEXT_PUBLIC_OZOW_IS_TEST",
-  "must be set to false in production."
+  "must be set to false in production.",
 );
 if (nextPublicOzowIsTest && nextPublicOzowIsTest !== "false") {
   errors.push("NEXT_PUBLIC_OZOW_IS_TEST: must be exactly 'false' for live checkout.");
 }
 
-if (isTruthy(read("DEMO_CATALOG_MODE", values)) || isTruthy(read("FORCE_CATALOG_FALLBACK", values))) {
-  errors.push("DEMO_CATALOG_MODE/FORCE_CATALOG_FALLBACK: demo catalog mode must be disabled for a live launch.");
+if (
+  isTruthy(read("DEMO_CATALOG_MODE", values)) ||
+  isTruthy(read("FORCE_CATALOG_FALLBACK", values))
+) {
+  errors.push(
+    "DEMO_CATALOG_MODE/FORCE_CATALOG_FALLBACK: demo catalog mode must be disabled for a live launch.",
+  );
 }
 
 if (isTruthy(read("ALLOW_PRODUCTION_DEMO_CATALOG", values))) {
   warnings.push("ALLOW_PRODUCTION_DEMO_CATALOG: should be unset for a real launch.");
 }
 
-warnIfMissing("PASSWORD_RESET_SECRET", "recommended so password reset does not rely on NEXTAUTH_SECRET.");
-warnIfMissing("PASSWORD_RESET_EMAIL_FROM", "recommended if you want public password reset emails to work.");
-warnIfMissing("RESEND_API_KEY", "recommended if you want email notifications and password reset emails.");
+warnIfMissing(
+  "PASSWORD_RESET_SECRET",
+  "recommended so password reset does not rely on NEXTAUTH_SECRET.",
+);
+warnIfMissing(
+  "PASSWORD_RESET_EMAIL_FROM",
+  "recommended if you want public password reset emails to work.",
+);
+warnIfMissing(
+  "RESEND_API_KEY",
+  "recommended if you want email notifications and password reset emails.",
+);
 warnIfMissing("ADMIN_NOTIFICATION_EMAILS", "recommended if admins should receive email alerts.");
-warnIfMissing("ADMIN_NOTIFICATION_EMAIL_FROM", "recommended if admins should receive email alerts.");
+warnIfMissing(
+  "ADMIN_NOTIFICATION_EMAIL_FROM",
+  "recommended if admins should receive email alerts.",
+);
 warnIfMissing("PUSHER_APP_ID", "recommended if you want realtime updates.");
 warnIfMissing("PUSHER_KEY", "recommended if you want realtime updates.");
 warnIfMissing("PUSHER_SECRET", "recommended if you want realtime updates.");
@@ -212,7 +233,9 @@ warnIfMissing("NEXT_PUBLIC_SUPPORT_EMAIL", "recommended for legal and support pa
 
 notes.push("Production scale now assumes PostgreSQL and durable object storage.");
 notes.push("Order tracking references should be treated as secrets.");
-notes.push("Server-action origins are derived from NEXT_PUBLIC_SITE_URL, NEXTAUTH_URL, and VERCEL_URL.");
+notes.push(
+  "Server-action origins are derived from NEXT_PUBLIC_SITE_URL, NEXTAUTH_URL, and VERCEL_URL.",
+);
 
 console.log(`Checking production environment from ${source}`);
 console.log("");

@@ -7,7 +7,7 @@ export type Vendor = {
   cuisine: string[];
   rating: number;
   deliveryFee: number; // in ZAR
-  etaMins: number;     // estimated minutes
+  etaMins: number; // estimated minutes
   halaal?: boolean;
-  image?: string;      // optional hero image
+  image?: string; // optional hero image
 };

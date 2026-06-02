@@ -23,7 +23,10 @@ export default function MarketingScripts() {
 
       {!gtmId && ga4Id ? (
         <>
-          <Script src={`https://www.googletagmanager.com/gtag/js?id=${ga4Id}`} strategy="afterInteractive" />
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${ga4Id}`}
+            strategy="afterInteractive"
+          />
           <Script
             id="ga4-init"
             strategy="afterInteractive"

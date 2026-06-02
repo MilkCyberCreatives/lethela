@@ -9,7 +9,10 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 const RegisterVendorSchema = z.object({
   name: z.string().trim().min(2).max(120),
-  email: z.string().email().transform((value) => value.trim().toLowerCase()),
+  email: z
+    .string()
+    .email()
+    .transform((value) => value.trim().toLowerCase()),
   password: z.string().min(8).max(200),
   phone: z.string().trim().min(8).max(40),
   address: z.string().trim().min(6).max(240),
@@ -37,7 +40,10 @@ function slugify(input: string) {
 
 function isApprovedVendor(status: string | null | undefined, isActive: boolean) {
   const normalizedStatus = String(status || "").toUpperCase();
-  return isActive && (normalizedStatus === "ACTIVE" || normalizedStatus === "APPROVED" || normalizedStatus === "");
+  return (
+    isActive &&
+    (normalizedStatus === "ACTIVE" || normalizedStatus === "APPROVED" || normalizedStatus === "")
+  );
 }
 
 function isLocalSqliteRuntime() {
@@ -65,15 +71,15 @@ export async function GET() {
   const slug = cookieStore.get("vendor_slug")?.value?.trim();
 
   if (!email && !slug) {
-    return NextResponse.json({ ok: false, error: "No vendor application found in this session." }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: "No vendor application found in this session." },
+      { status: 404 },
+    );
   }
 
   const vendor = await prisma.vendor.findFirst({
     where: {
-      OR: [
-        ...(slug ? [{ slug }] : []),
-        ...(email ? [{ email }] : []),
-      ],
+      OR: [...(slug ? [{ slug }] : []), ...(email ? [{ email }] : [])],
     },
     select: {
       id: true,
@@ -87,7 +93,10 @@ export async function GET() {
   });
 
   if (!vendor) {
-    return NextResponse.json({ ok: false, error: "Vendor application not found." }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: "Vendor application not found." },
+      { status: 404 },
+    );
   }
 
   return NextResponse.json({
@@ -107,7 +116,7 @@ export async function POST(req: Request) {
   if (!rateLimit.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many vendor applications. Please try again later." },
-      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
     );
   }
 
@@ -128,7 +137,9 @@ export async function POST(req: Request) {
         ? 30
         : Number(raw.etaMins),
     deliveryFeeCents:
-      raw?.deliveryFeeCents === undefined || raw?.deliveryFeeCents === null || raw?.deliveryFeeCents === ""
+      raw?.deliveryFeeCents === undefined ||
+      raw?.deliveryFeeCents === null ||
+      raw?.deliveryFeeCents === ""
         ? 1000
         : Number(raw.deliveryFeeCents),
     kycIdUrl: raw?.kycIdUrl ? String(raw.kycIdUrl).trim() : null,
@@ -146,8 +157,12 @@ export async function POST(req: Request) {
   const parsed = RegisterVendorSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: "Invalid vendor registration data", fieldErrors: parsed.error.flatten().fieldErrors },
-      { status: 400 }
+      {
+        ok: false,
+        error: "Invalid vendor registration data",
+        fieldErrors: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 },
     );
   }
 
@@ -164,7 +179,8 @@ export async function POST(req: Request) {
     const response = NextResponse.json({
       ok: true,
       pending: true,
-      message: "Application submitted locally. An admin must approve your vendor before it goes live.",
+      message:
+        "Application submitted locally. An admin must approve your vendor before it goes live.",
       vendor,
     });
     attachVendorSession(response, {
@@ -192,14 +208,17 @@ export async function POST(req: Request) {
     const passwordMatches = await compare(payload.password, existingUser.passwordHash);
     if (!passwordMatches) {
       return NextResponse.json(
-        { ok: false, error: "This email already has an account. Sign in with the correct password to continue." },
-        { status: 409 }
+        {
+          ok: false,
+          error:
+            "This email already has an account. Sign in with the correct password to continue.",
+        },
+        { status: 409 },
       );
     }
   }
 
-  const passwordHash =
-    existingUser?.passwordHash || (await hash(payload.password, 10));
+  const passwordHash = existingUser?.passwordHash || (await hash(payload.password, 10));
 
   const user = existingUser
     ? await prisma.user.update({
@@ -242,7 +261,7 @@ export async function POST(req: Request) {
   if (existingByEmail?.ownerId && existingByEmail.ownerId !== user.id) {
     return NextResponse.json(
       { ok: false, error: "This vendor profile is already linked to another owner account." },
-      { status: 409 }
+      { status: 409 },
     );
   }
 

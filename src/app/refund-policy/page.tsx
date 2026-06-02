@@ -4,7 +4,8 @@ import { LEGAL_LAST_UPDATED, LEGAL_WHATSAPP_LINK } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Refunds and Cancellations",
-  description: "How Lethela handles cancellations, missing items, damaged orders and refund requests.",
+  description:
+    "How Lethela handles cancellations, missing items, damaged orders and refund requests.",
   alternates: {
     canonical: "/refund-policy",
   },
@@ -24,7 +25,12 @@ export default function RefundPolicyPage() {
     <LegalPageShell
       title="Refunds and Cancellations"
       intro="This policy explains the practical approach Lethela applies to order issues, cancellations and refund handling."
-      note={<>Last updated: {LEGAL_LAST_UPDATED}. Report order issues as quickly as possible so the team can investigate while the order is still recent.</>}
+      note={
+        <>
+          Last updated: {LEGAL_LAST_UPDATED}. Report order issues as quickly as possible so the team
+          can investigate while the order is still recent.
+        </>
+      }
     >
       <PolicyItem
         title="Before preparation or acceptance"

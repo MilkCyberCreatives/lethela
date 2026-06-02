@@ -30,7 +30,9 @@ export default function FeedbackPanel() {
       }
       setExperience(json.experience);
     } catch (loadError: unknown) {
-      setError(loadError instanceof Error ? loadError.message : "Failed to load customer experience.");
+      setError(
+        loadError instanceof Error ? loadError.message : "Failed to load customer experience.",
+      );
     } finally {
       setLoading(false);
     }
@@ -45,7 +47,8 @@ export default function FeedbackPanel() {
       <DashCard title="Customer Experience">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-white/70">
-            Ratings and feedback signals based on live store performance and customer-facing readiness.
+            Ratings and feedback signals based on live store performance and customer-facing
+            readiness.
           </p>
           <button
             type="button"
@@ -58,11 +61,26 @@ export default function FeedbackPanel() {
         </div>
         {error ? <p className="mt-3 text-xs text-red-200">{error}</p> : null}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <StatCard label="Store rating" value={loading ? "..." : `${experience?.rating.toFixed(1) ?? "0.0"} / 5`} />
-          <StatCard label="Orders (30d)" value={loading ? "..." : String(experience?.orderCount30 ?? 0)} />
-          <StatCard label="On-time signal" value={loading ? "..." : `${experience?.onTimeRate ?? 0}%`} />
-          <StatCard label="Payment success" value={loading ? "..." : `${experience?.paymentSuccessRate ?? 0}%`} />
-          <StatCard label="Menu readiness" value={loading ? "..." : `${experience?.menuReadinessPct ?? 0}%`} />
+          <StatCard
+            label="Store rating"
+            value={loading ? "..." : `${experience?.rating.toFixed(1) ?? "0.0"} / 5`}
+          />
+          <StatCard
+            label="Orders (30d)"
+            value={loading ? "..." : String(experience?.orderCount30 ?? 0)}
+          />
+          <StatCard
+            label="On-time signal"
+            value={loading ? "..." : `${experience?.onTimeRate ?? 0}%`}
+          />
+          <StatCard
+            label="Payment success"
+            value={loading ? "..." : `${experience?.paymentSuccessRate ?? 0}%`}
+          />
+          <StatCard
+            label="Menu readiness"
+            value={loading ? "..." : `${experience?.menuReadinessPct ?? 0}%`}
+          />
         </div>
       </DashCard>
 
@@ -70,7 +88,10 @@ export default function FeedbackPanel() {
         <DashCard title="What is going well">
           <div className="space-y-3">
             {(experience?.highlights || []).map((item) => (
-              <div key={item} className="rounded-xl border border-emerald-200/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-50">
+              <div
+                key={item}
+                className="rounded-xl border border-emerald-200/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-50"
+              >
                 {item}
               </div>
             ))}
@@ -85,7 +106,10 @@ export default function FeedbackPanel() {
         <DashCard title="Needs attention">
           <div className="space-y-3">
             {(experience?.concerns || []).map((item) => (
-              <div key={item} className="rounded-xl border border-amber-200/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-50">
+              <div
+                key={item}
+                className="rounded-xl border border-amber-200/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-50"
+              >
                 {item}
               </div>
             ))}

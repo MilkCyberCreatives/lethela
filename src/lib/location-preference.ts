@@ -27,12 +27,12 @@ function normalizeNumber(value: unknown) {
 }
 
 function buildLabel(suburb: string, city?: string | null) {
-  return [normalizeText(suburb), normalizeText(city || "")]
-    .filter(Boolean)
-    .join(", ");
+  return [normalizeText(suburb), normalizeText(city || "")].filter(Boolean).join(", ");
 }
 
-function normalizeLocation(input: Partial<PreferredLocation> & { label?: string; suburb?: string }) {
+function normalizeLocation(
+  input: Partial<PreferredLocation> & { label?: string; suburb?: string },
+) {
   const suburb = normalizeText(input.suburb || input.label || "");
   const city = normalizeText(input.city || "");
   const label = normalizeText(input.label || buildLabel(suburb, city) || suburb);
@@ -45,7 +45,10 @@ function normalizeLocation(input: Partial<PreferredLocation> & { label?: string;
     lat: normalizeNumber(input.lat),
     lng: normalizeNumber(input.lng),
     source: input.source || "manual",
-    accuracyMeters: typeof input.accuracyMeters === "number" && Number.isFinite(input.accuracyMeters) ? input.accuracyMeters : undefined,
+    accuracyMeters:
+      typeof input.accuracyMeters === "number" && Number.isFinite(input.accuracyMeters)
+        ? input.accuracyMeters
+        : undefined,
     savedAt: input.savedAt || new Date().toISOString(),
   } satisfies PreferredLocation;
 }
@@ -66,7 +69,9 @@ function readCookie(name: string) {
   return match?.[1] ? decodeURIComponent(match[1]) : "";
 }
 
-export function persistPreferredLocation(input: Partial<PreferredLocation> & { label?: string; suburb?: string }) {
+export function persistPreferredLocation(
+  input: Partial<PreferredLocation> & { label?: string; suburb?: string },
+) {
   const location = normalizeLocation(input);
   if (!location) return null;
 

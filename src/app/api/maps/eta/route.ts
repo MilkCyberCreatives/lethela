@@ -6,7 +6,10 @@ export async function GET(req: NextRequest) {
   const destinationQuery = req.nextUrl.searchParams.get("dest");
 
   if (!originRaw || !destinationQuery) {
-    return NextResponse.json({ ok: false, error: "Missing origin or dest parameter." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Missing origin or dest parameter." },
+      { status: 400 },
+    );
   }
 
   const [latRaw, lngRaw] = originRaw.split(",");

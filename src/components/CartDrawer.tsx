@@ -7,7 +7,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
 import { readPreferredLocation } from "@/lib/location-preference";
-import { DEFAULT_DELIVERY_FEE_CENTS, EXTRA_DELIVERY_FEE_PER_KM_CENTS, INCLUDED_DELIVERY_RADIUS_KM } from "@/lib/pricing";
+import {
+  DEFAULT_DELIVERY_FEE_CENTS,
+  EXTRA_DELIVERY_FEE_PER_KM_CENTS,
+  INCLUDED_DELIVERY_RADIUS_KM,
+} from "@/lib/pricing";
 import { useUIStore } from "@/store/ui";
 import { trackWhatsAppClick } from "@/lib/visitor";
 import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
@@ -30,7 +34,8 @@ export default function CartDrawer() {
     extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   });
   const [quoteLoading, setQuoteLoading] = useState(false);
-  const [preferredLocation, setPreferredLocation] = useState<ReturnType<typeof readPreferredLocation>>(null);
+  const [preferredLocation, setPreferredLocation] =
+    useState<ReturnType<typeof readPreferredLocation>>(null);
   const visibleItems = useMemo(() => (mounted ? items : []), [items, mounted]);
   const subtotal = mounted ? cartSubtotal : 0;
   const destinationSuburb = preferredLocation?.label || "Klipfontein View, Midrand";
@@ -87,10 +92,10 @@ export default function CartDrawer() {
           params.set("destinationLat", String(preferredLocation.lat));
           params.set("destinationLng", String(preferredLocation.lng));
         }
-        const response = await fetch(
-          `/api/checkout/delivery-quote?${params.toString()}`,
-          { cache: "no-store", signal: controller.signal }
-        );
+        const response = await fetch(`/api/checkout/delivery-quote?${params.toString()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
         const json = await response.json();
         if (!response.ok || !json.ok) {
           return;
@@ -134,7 +139,9 @@ export default function CartDrawer() {
 
   return (
     <>
-      {open ? <div className="fixed inset-0 z-[98] bg-black/60" aria-hidden onClick={closeCart} /> : null}
+      {open ? (
+        <div className="fixed inset-0 z-[98] bg-black/60" aria-hidden onClick={closeCart} />
+      ) : null}
 
       <aside
         className={`fixed right-0 top-0 z-[99] h-full w-full max-w-md transform border-l border-white/10 bg-lethela-secondary text-white transition-transform ${
@@ -146,7 +153,11 @@ export default function CartDrawer() {
       >
         <div className="flex items-center justify-between border-b border-white/10 p-4">
           <h2 className="text-lg font-semibold">Your cart</h2>
-          <button aria-label="Close cart" className="rounded-md p-2 hover:bg-white/10" onClick={closeCart}>
+          <button
+            aria-label="Close cart"
+            className="rounded-md p-2 hover:bg-white/10"
+            onClick={closeCart}
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -156,10 +167,19 @@ export default function CartDrawer() {
             <p className="text-white/80">Your cart is empty.</p>
           ) : (
             visibleItems.map((item) => (
-              <div key={item.itemId} className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
+              <div
+                key={item.itemId}
+                className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3"
+              >
                 {item.image ? (
                   <div className="relative h-16 w-16 overflow-hidden rounded">
-                    <Image src={item.image} alt={item.name} fill sizes="64px" className="object-cover" />
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
                   </div>
                 ) : (
                   <div className="h-16 w-16 rounded bg-white/10" />
@@ -169,7 +189,9 @@ export default function CartDrawer() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-medium">{item.name}</div>
-                      <div className="text-xs text-white/70">R {(item.priceCents / 100).toFixed(2)}</div>
+                      <div className="text-xs text-white/70">
+                        R {(item.priceCents / 100).toFixed(2)}
+                      </div>
                     </div>
                     <button className="text-xs underline" onClick={() => remove(item.itemId)}>
                       Remove
@@ -185,7 +207,11 @@ export default function CartDrawer() {
                       -
                     </button>
                     <span className="text-sm">{item.qty}</span>
-                    <button className="h-7 w-7 rounded border border-white/20" onClick={() => inc(item.itemId)} aria-label="Increase quantity">
+                    <button
+                      className="h-7 w-7 rounded border border-white/20"
+                      onClick={() => inc(item.itemId)}
+                      aria-label="Increase quantity"
+                    >
                       +
                     </button>
                   </div>
@@ -204,7 +230,9 @@ export default function CartDrawer() {
             <div className="flex items-center justify-between text-white/80">
               <span>
                 Delivery
-                {deliveryQuote.distanceKm != null ? ` (${deliveryQuote.distanceKm.toFixed(2)} km)` : ""}
+                {deliveryQuote.distanceKm != null
+                  ? ` (${deliveryQuote.distanceKm.toFixed(2)} km)`
+                  : ""}
               </span>
               <span>R {(delivery / 100).toFixed(2)}</span>
             </div>
@@ -220,12 +248,21 @@ export default function CartDrawer() {
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button asChild className="flex-1 bg-lethela-primary" disabled={visibleItems.length === 0}>
+            <Button
+              asChild
+              className="flex-1 bg-lethela-primary"
+              disabled={visibleItems.length === 0}
+            >
               <Link href="/checkout" onClick={closeCart}>
                 Checkout
               </Link>
             </Button>
-            <Button asChild variant="outline" className="border-white/20 text-white" disabled={visibleItems.length === 0}>
+            <Button
+              asChild
+              variant="outline"
+              className="border-white/20 text-white"
+              disabled={visibleItems.length === 0}
+            >
               <a
                 href={whatsappLink}
                 target="_blank"
@@ -238,7 +275,12 @@ export default function CartDrawer() {
                 WhatsApp order
               </a>
             </Button>
-            <Button variant="outline" className="border-white/20 text-white" onClick={clear} disabled={visibleItems.length === 0}>
+            <Button
+              variant="outline"
+              className="border-white/20 text-white"
+              onClick={clear}
+              disabled={visibleItems.length === 0}
+            >
               Clear
             </Button>
           </div>

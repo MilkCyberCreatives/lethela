@@ -7,7 +7,10 @@ import { createRiderApplication } from "@/lib/rider-applications";
 
 const RiderApplySchema = z.object({
   fullName: z.string().trim().min(3).max(120),
-  email: z.string().email().transform((value) => value.trim().toLowerCase()),
+  email: z
+    .string()
+    .email()
+    .transform((value) => value.trim().toLowerCase()),
   phone: z.string().trim().min(8).max(40),
   idNumberLast4: z
     .string()
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
   if (!rateLimit.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many applications submitted. Please try again later." },
-      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
     );
   }
 
@@ -52,8 +55,12 @@ export async function POST(req: Request) {
   const parsed = RiderApplySchema.safeParse(raw);
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: "Invalid rider application data", fieldErrors: parsed.error.flatten().fieldErrors },
-      { status: 400 }
+      {
+        ok: false,
+        error: "Invalid rider application data",
+        fieldErrors: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 },
     );
   }
 

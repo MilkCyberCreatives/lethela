@@ -7,7 +7,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const id = String(searchParams.get("id") || "").trim().toUpperCase();
+  const id = String(searchParams.get("id") || "")
+    .trim()
+    .toUpperCase();
   if (!id) {
     return NextResponse.json({ ok: false, error: "Order id is required" }, { status: 400 });
   }
@@ -26,7 +28,7 @@ export async function GET(req: Request) {
           select: { name: true, latitude: true, longitude: true },
         },
       },
-    })
+    }),
   ).catch(() => null);
 
   if (!order) {
@@ -47,7 +49,9 @@ export async function GET(req: Request) {
         ? { lat: order.customerLat, lng: order.customerLng }
         : null,
     rider:
-      order.riderLat != null && order.riderLng != null ? { lat: order.riderLat, lng: order.riderLng } : null,
+      order.riderLat != null && order.riderLng != null
+        ? { lat: order.riderLat, lng: order.riderLng }
+        : null,
   });
 
   return NextResponse.json({

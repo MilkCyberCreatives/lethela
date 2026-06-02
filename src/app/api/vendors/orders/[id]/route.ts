@@ -19,7 +19,10 @@ export async function PATCH(req: Request, { params }: Params) {
     const parsed = StatusSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ ok: false, error: "Invalid order status payload" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Invalid order status payload" },
+        { status: 400 },
+      );
     }
 
     const order = await prisma.order.findFirst({

@@ -7,7 +7,9 @@ export default function VendorDashboard() {
   return (
     <main className="container py-8">
       <h1 className="text-2xl font-bold">Vendor dashboard</h1>
-      <p className="text-white/70 mt-1">Signed in as <span className="text-white">{email}</span></p>
+      <p className="text-white/70 mt-1">
+        Signed in as <span className="text-white">{email}</span>
+      </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link href="/vendor/products" className="card-glass rounded-xl p-5 hover:bg-white/10">

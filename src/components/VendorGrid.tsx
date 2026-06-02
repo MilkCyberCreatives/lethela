@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { getVendorClicks } from "@/lib/tracking";
 import { readPreferredLocation } from "@/lib/location-preference";
 
-type ApiResponse = { ok: boolean; total: number; items: (Vendor & { baseEtaMin?: number; distanceKm?: number })[] };
+type ApiResponse = {
+  ok: boolean;
+  total: number;
+  items: (Vendor & { baseEtaMin?: number; distanceKm?: number })[];
+};
 
 export default function VendorGrid({
   suburb,
@@ -103,7 +107,9 @@ export default function VendorGrid({
       <div className="mb-3 flex items-end justify-between">
         <div>
           <h2 className="text-xl font-semibold">Popular near {activeSuburb ?? "you"}</h2>
-          {!activeSuburb ? <p className="text-xs text-white/60">Tip: set your suburb to improve results.</p> : null}
+          {!activeSuburb ? (
+            <p className="text-xs text-white/60">Tip: set your suburb to improve results.</p>
+          ) : null}
         </div>
         {error ? (
           <Button variant="outline" className="border-white/20" onClick={() => void load()}>
@@ -115,7 +121,10 @@ export default function VendorGrid({
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-52 animate-pulse rounded-2xl border border-white/10 bg-white/5" />
+            <div
+              key={i}
+              className="h-52 animate-pulse rounded-2xl border border-white/10 bg-white/5"
+            />
           ))}
         </div>
       ) : error ? (

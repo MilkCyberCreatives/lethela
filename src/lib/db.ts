@@ -54,7 +54,9 @@ function resolveSqliteUrl(value: string) {
 }
 
 function inferProvider(url?: string | null): DatabaseProvider {
-  const value = String(url || "").trim().toLowerCase();
+  const value = String(url || "")
+    .trim()
+    .toLowerCase();
   if (value.startsWith("postgres://") || value.startsWith("postgresql://")) {
     return "postgresql";
   }
@@ -74,18 +76,23 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
   const isProductionRuntime = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
   const isProductionBuild = process.env.NEXT_PHASE === "phase-production-build";
   const isDeployedBuild = Boolean(process.env.VERCEL);
-  const shouldEnforceProductionDatabase = isProductionRuntime && (!isProductionBuild || isDeployedBuild);
+  const shouldEnforceProductionDatabase =
+    isProductionRuntime && (!isProductionBuild || isDeployedBuild);
 
   if (configuredUrl) {
-    if (provider === "sqlite" && shouldEnforceProductionDatabase && isRelativeSqliteUrl(configuredUrl)) {
+    if (
+      provider === "sqlite" &&
+      shouldEnforceProductionDatabase &&
+      isRelativeSqliteUrl(configuredUrl)
+    ) {
       throw new Error(
-        "DATABASE_URL must point to a persistent production database. Relative SQLite paths are not allowed in production."
+        "DATABASE_URL must point to a persistent production database. Relative SQLite paths are not allowed in production.",
       );
     }
 
     if (shouldEnforceProductionDatabase && provider !== "postgresql") {
       throw new Error(
-        "Production deployments must use PostgreSQL for scale and multi-instance safety. Set DATABASE_PROVIDER=postgresql."
+        "Production deployments must use PostgreSQL for scale and multi-instance safety. Set DATABASE_PROVIDER=postgresql.",
       );
     }
 
@@ -102,7 +109,7 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
 
   if (isProductionRuntime) {
     throw new Error(
-      "DATABASE_URL must be configured for production deployments. Refusing to start with a bundled or temporary database."
+      "DATABASE_URL must be configured for production deployments. Refusing to start with a bundled or temporary database.",
     );
   }
 

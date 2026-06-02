@@ -9,11 +9,20 @@ export default function VendorCard({ v }: { v: Vendor }) {
   return (
     <Link
       href={`/vendors/${v.slug}`}
-      onClick={() => recordVendorClick(v.id, v.slug, { name: v.name, rating: v.rating, cuisines: v.cuisines })}
+      onClick={() =>
+        recordVendorClick(v.id, v.slug, { name: v.name, rating: v.rating, cuisines: v.cuisines })
+      }
       className="group overflow-hidden rounded-2xl border border-white/10 bg-lethela-secondary transition"
     >
       <div className="relative aspect-[16/10]">
-        <Image src={v.cover} alt={v.name} fill sizes="(min-width:1024px) 33vw, 50vw" className="object-cover" priority={false} />
+        <Image
+          src={v.cover}
+          alt={v.name}
+          fill
+          sizes="(min-width:1024px) 33vw, 50vw"
+          className="object-cover"
+          priority={false}
+        />
         {v.badge ? (
           <div className="absolute right-3 top-3 rounded-full bg-lethela-primary px-3 py-1 text-xs font-semibold">
             {v.badge}

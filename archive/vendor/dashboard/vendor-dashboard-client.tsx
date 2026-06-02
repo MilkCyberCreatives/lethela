@@ -50,30 +50,38 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
         header: true,
         skipEmptyLines: true,
         complete: (res) => resolve(res.data as any[]),
-        error: reject
+        error: reject,
       });
     });
   }
 
   async function importCsv() {
-    if (!csvFile) { alert("Choose a CSV first"); return; }
+    if (!csvFile) {
+      alert("Choose a CSV first");
+      return;
+    }
     setImporting(true);
     try {
       const rows = await parseCsv(csvFile);
       // expected columns: section, name, description, price, tags (comma), image(optional)
-      const payload = rows.map((r) => ({
-        section: String(r.section || "Menu").trim(),
-        name: String(r.name || "").trim(),
-        description: r.description ? String(r.description) : null,
-        price: Number(String(r.price || "0").replace(/[^0-9.]/g, "")),
-        tags: String(r.tags || "").split(",").map((s)=>s.trim()).filter(Boolean),
-        image: r.image ? String(r.image) : null
-      })).filter((r) => r.name && Number.isFinite(r.price) && r.price > 0);
+      const payload = rows
+        .map((r) => ({
+          section: String(r.section || "Menu").trim(),
+          name: String(r.name || "").trim(),
+          description: r.description ? String(r.description) : null,
+          price: Number(String(r.price || "0").replace(/[^0-9.]/g, "")),
+          tags: String(r.tags || "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+          image: r.image ? String(r.image) : null,
+        }))
+        .filter((r) => r.name && Number.isFinite(r.price) && r.price > 0);
 
       const res = await fetch("/api/vendor/menu/import", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ vendorId: vendor.id, rows: payload })
+        body: JSON.stringify({ vendorId: vendor.id, rows: payload }),
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json?.error || "Import failed");
@@ -88,15 +96,26 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
   return (
     <main className="container py-10">
       <h1 className="text-2xl font-bold">Vendor dashboard</h1>
-      <p className="mt-1 text-white/70">{vendor.name} • <span className="uppercase">{vendor.status}</span> • {vendor.suburb}</p>
+      <p className="mt-1 text-white/70">
+        {vendor.name} • <span className="uppercase">{vendor.status}</span> • {vendor.suburb}
+      </p>
 
       <section className="mt-6 rounded-lg border border-white/10 p-4">
         <h2 className="text-lg font-semibold">KYC documents</h2>
         <div className="mt-3 flex gap-3">
-          <Button className="bg-lethela-primary" disabled={uploading} onClick={()=>uploadKyc("id")}>
+          <Button
+            className="bg-lethela-primary"
+            disabled={uploading}
+            onClick={() => uploadKyc("id")}
+          >
             {uploading ? "Uploading..." : "Upload ID"}
           </Button>
-          <Button variant="outline" className="border-white/20" disabled={uploading} onClick={()=>uploadKyc("proof")}>
+          <Button
+            variant="outline"
+            className="border-white/20"
+            disabled={uploading}
+            onClick={() => uploadKyc("proof")}
+          >
             Upload Proof of Address
           </Button>
         </div>
@@ -105,12 +124,14 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
 
       <section className="mt-6 rounded-lg border border-white/10 p-4">
         <h2 className="text-lg font-semibold">Menu import (CSV → draft)</h2>
-        <p className="mt-1 text-sm text-white/70">Columns: <code>section,name,description,price,tags,image</code></p>
+        <p className="mt-1 text-sm text-white/70">
+          Columns: <code>section,name,description,price,tags,image</code>
+        </p>
         <input
           type="file"
           accept=".csv"
           className="mt-3 block text-sm"
-          onChange={(e)=>setCsvFile(e.target.files?.[0] || null)}
+          onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
         />
         <div className="mt-3 flex gap-3">
           <Button className="bg-lethela-primary" disabled={importing} onClick={importCsv}>

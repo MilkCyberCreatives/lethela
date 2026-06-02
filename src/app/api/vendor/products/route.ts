@@ -43,7 +43,10 @@ export async function GET() {
     });
     return NextResponse.json({ ok: true, items });
   } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error.message || "Not signed in as vendor" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: error.message || "Not signed in as vendor" },
+      { status: 401 },
+    );
   }
 }
 
@@ -54,7 +57,10 @@ export async function POST(req: Request) {
     const parsed = ProductInputSchema.safeParse(raw);
     if (!parsed.success) {
       const fieldErrors = parsed.error.flatten().fieldErrors;
-      return NextResponse.json({ ok: false, error: "Invalid payload", fieldErrors }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Invalid payload", fieldErrors },
+        { status: 400 },
+      );
     }
 
     const body = parsed.data;
@@ -62,7 +68,7 @@ export async function POST(req: Request) {
     if (!moderation.allowed) {
       return NextResponse.json(
         { ok: false, error: "Content not allowed", reasons: moderation.reasons ?? [] },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -71,7 +77,10 @@ export async function POST(req: Request) {
       select: { id: true },
     });
     if (existing) {
-      return NextResponse.json({ ok: false, error: "Slug already exists for this vendor" }, { status: 409 });
+      return NextResponse.json(
+        { ok: false, error: "Slug already exists for this vendor" },
+        { status: 409 },
+      );
     }
 
     const product = await prisma.product.create({
@@ -90,6 +99,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, product });
   } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error.message || "Failed to create product" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: error.message || "Failed to create product" },
+      { status: 401 },
+    );
   }
 }

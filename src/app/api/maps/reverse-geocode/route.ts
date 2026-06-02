@@ -6,7 +6,10 @@ export async function GET(req: NextRequest) {
   const lng = Number(req.nextUrl.searchParams.get("lng"));
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return NextResponse.json({ ok: false, error: "Valid lat and lng are required." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Valid lat and lng are required." },
+      { status: 400 },
+    );
   }
 
   const area = await reverseGeocodePoint({ lat, lng });

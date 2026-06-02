@@ -8,7 +8,13 @@ import { checkRateLimit } from "@/lib/rate-limit";
 const VendorLoginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(200),
-  slug: z.string().trim().min(2).max(120).transform((value) => value.toLowerCase()).optional(),
+  slug: z
+    .string()
+    .trim()
+    .min(2)
+    .max(120)
+    .transform((value) => value.toLowerCase())
+    .optional(),
 });
 
 export async function POST(req: Request) {
@@ -21,7 +27,7 @@ export async function POST(req: Request) {
   if (!rateLimit.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many sign-in attempts. Please try again later." },
-      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } }
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
     );
   }
 
@@ -30,7 +36,10 @@ export async function POST(req: Request) {
   const parsed = VendorLoginSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: "Enter a valid vendor email and password." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Enter a valid vendor email and password." },
+      { status: 400 },
+    );
   }
 
   const email = parsed.data.email.toLowerCase().trim();
@@ -44,7 +53,10 @@ export async function POST(req: Request) {
   });
 
   if (!user) {
-    return NextResponse.json({ ok: false, error: "Vendor account not found for this email." }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: "Vendor account not found for this email." },
+      { status: 404 },
+    );
   }
 
   // Local/dev convenience: allow seeded demo users without a password hash to sign in.
@@ -59,18 +71,10 @@ export async function POST(req: Request) {
   const vendorWhere = parsed.data.slug
     ? {
         slug: parsed.data.slug,
-        OR: [
-          { ownerId: user.id },
-          { members: { some: { userId: user.id } } },
-          { email },
-        ],
+        OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }, { email }],
       }
     : {
-        OR: [
-          { ownerId: user.id },
-          { members: { some: { userId: user.id } } },
-          { email },
-        ],
+        OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }, { email }],
       };
 
   const vendor = await prisma.vendor.findFirst({
@@ -94,8 +98,11 @@ export async function POST(req: Request) {
 
   if (!vendor) {
     return NextResponse.json(
-      { ok: false, error: "No vendor profile is linked to this account yet. Apply first on the vendor page." },
-      { status: 404 }
+      {
+        ok: false,
+        error: "No vendor profile is linked to this account yet. Apply first on the vendor page.",
+      },
+      { status: 404 },
     );
   }
 

@@ -32,7 +32,9 @@ export default function LocationPicker({ className, onSaved }: LocationPickerPro
     setMessage(null);
 
     try {
-      const pointResponse = await fetch(`/api/maps/geocode?q=${encodeURIComponent(query)}`, { cache: "no-store" });
+      const pointResponse = await fetch(`/api/maps/geocode?q=${encodeURIComponent(query)}`, {
+        cache: "no-store",
+      });
 
       const pointJson = await pointResponse.json().catch(() => ({}));
       let label = query;
@@ -42,7 +44,7 @@ export default function LocationPicker({ className, onSaved }: LocationPickerPro
       if (pointResponse.ok && pointJson?.ok && pointJson?.point) {
         const reverseResponse = await fetch(
           `/api/maps/reverse-geocode?lat=${pointJson.point.lat}&lng=${pointJson.point.lng}`,
-          { cache: "no-store" }
+          { cache: "no-store" },
         );
         const reverseJson = await reverseResponse.json().catch(() => ({}));
         if (reverseResponse.ok && reverseJson?.ok) {
@@ -93,7 +95,11 @@ export default function LocationPicker({ className, onSaved }: LocationPickerPro
           onChange={(e) => setSuburb(e.target.value)}
           className="bg-white text-black"
         />
-        <Button onClick={() => void save()} className="bg-lethela-primary hover:opacity-90" disabled={!suburb.trim() || saving}>
+        <Button
+          onClick={() => void save()}
+          className="bg-lethela-primary hover:opacity-90"
+          disabled={!suburb.trim() || saving}
+        >
           {saving ? "Saving..." : "Save"}
         </Button>
       </div>

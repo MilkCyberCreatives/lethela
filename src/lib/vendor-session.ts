@@ -20,7 +20,8 @@ export type VendorSessionPayload = VendorSessionInput & {
 type CookieTarget = Awaited<ReturnType<typeof cookies>>;
 
 function getVendorSessionSecret() {
-  const configuredSecret = process.env.VENDOR_SESSION_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim();
+  const configuredSecret =
+    process.env.VENDOR_SESSION_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim();
   if (configuredSecret) {
     return configuredSecret;
   }
@@ -39,7 +40,10 @@ function decodeBase64Url(value: string) {
 }
 
 function sign(encodedPayload: string) {
-  return crypto.createHmac("sha256", getVendorSessionSecret()).update(encodedPayload).digest("base64url");
+  return crypto
+    .createHmac("sha256", getVendorSessionSecret())
+    .update(encodedPayload)
+    .digest("base64url");
 }
 
 function cookieOptions(maxAge: number) {
@@ -52,7 +56,10 @@ function cookieOptions(maxAge: number) {
   };
 }
 
-export function createVendorSessionToken(input: VendorSessionInput, maxAge = THIRTY_DAYS_IN_SECONDS) {
+export function createVendorSessionToken(
+  input: VendorSessionInput,
+  maxAge = THIRTY_DAYS_IN_SECONDS,
+) {
   const payload: VendorSessionPayload = {
     ...input,
     email: input.email.toLowerCase().trim(),
@@ -110,9 +117,13 @@ export function parseVendorSessionToken(token?: string | null): VendorSessionPay
 export function attachVendorSession(
   response: NextResponse,
   input: VendorSessionInput,
-  maxAge = THIRTY_DAYS_IN_SECONDS
+  maxAge = THIRTY_DAYS_IN_SECONDS,
 ) {
-  response.cookies.set(VENDOR_SESSION_COOKIE, createVendorSessionToken(input, maxAge), cookieOptions(maxAge));
+  response.cookies.set(
+    VENDOR_SESSION_COOKIE,
+    createVendorSessionToken(input, maxAge),
+    cookieOptions(maxAge),
+  );
   response.cookies.set("vendor_email", input.email.toLowerCase().trim(), cookieOptions(maxAge));
   response.cookies.set("vendor_slug", input.vendorSlug, cookieOptions(maxAge));
 }
@@ -126,7 +137,11 @@ export function clearVendorSession(response: NextResponse) {
   response.cookies.set("vendor_user_id", "", expiredCookie);
 }
 
-export async function setVendorTrackingCookies(cookieStore: CookieTarget, email: string, vendorSlug: string) {
+export async function setVendorTrackingCookies(
+  cookieStore: CookieTarget,
+  email: string,
+  vendorSlug: string,
+) {
   const normalizedEmail = email.toLowerCase().trim();
   const options = cookieOptions(THIRTY_DAYS_IN_SECONDS);
   cookieStore.set("vendor_email", normalizedEmail, options);

@@ -50,7 +50,8 @@ export default function RiderPage() {
               Deliver with Lethela - <span className="text-lethela-primary">Siyashesha</span>
             </h1>
             <p className="mt-4 max-w-2xl text-sm text-white/80 md:text-base">
-              Flexible hours with local demand zones, live order flow, and clear operations support from day one.
+              Flexible hours with local demand zones, live order flow, and clear operations support
+              from day one.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
@@ -69,7 +70,10 @@ export default function RiderPage() {
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {FLOW.map((step, index) => (
-                <article key={step.title} className="rounded-xl border border-white/15 bg-white/5 p-3">
+                <article
+                  key={step.title}
+                  className="rounded-xl border border-white/15 bg-white/5 p-3"
+                >
                   <p className="text-xs font-semibold text-lethela-primary">Step {index + 1}</p>
                   <h2 className="mt-1 text-sm font-semibold">{step.title}</h2>
                   <p className="mt-1 text-xs text-white/70">{step.text}</p>
@@ -79,7 +83,9 @@ export default function RiderPage() {
           </div>
 
           <aside className="rounded-2xl border border-white/15 bg-white/5 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">What you need</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">
+              What you need
+            </h2>
             <ul className="mt-3 space-y-2 text-sm text-white/80">
               {REQUIREMENTS.map((item) => (
                 <li key={item} className="rounded-lg border border-white/10 px-3 py-2">

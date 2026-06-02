@@ -10,6 +10,7 @@ This runbook is for taking the current application live without changing the pro
 - Going forward, dashboard and backend operations should move toward Laravel as documented in `docs/LARAVEL_BACKEND_DIRECTION.md`.
 
 Relevant code:
+
 - `prisma/schema.prisma`
 - `src/lib/db.ts`
 
@@ -35,11 +36,13 @@ ADMIN_APPROVAL_KEY=replace-with-a-long-random-secret
 ```
 
 Notes:
+
 - `VENDOR_SESSION_SECRET` can fall back to `NEXTAUTH_SECRET`, but a dedicated secret is better.
 - `RIDER_CONSOLE_SECRET` can fall back to `NEXTAUTH_SECRET`, but a dedicated secret is better.
 - `ADMIN_APPROVAL_KEY` is used for browser-level admin enablement and first-admin bootstrap through `/owner-access`.
 
 Relevant code:
+
 - `src/lib/vendor-session.ts`
 - `src/lib/rider-console.ts`
 - `src/app/api/admin/access/route.ts`
@@ -52,11 +55,13 @@ DATABASE_URL=postgresql://postgres:password@db.example.com:5432/lethela?schema=p
 ```
 
 Notes:
+
 - Production now requires PostgreSQL.
 - SQLite is still supported for local development only.
 - Use a managed PostgreSQL instance or a dedicated production Postgres server.
 
 Relevant code:
+
 - `src/lib/db.ts`
 
 ### Maps
@@ -67,10 +72,12 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=replace-with-your-browser-key
 ```
 
 Notes:
+
 - Server-side geocoding and delivery quote resolution use `GOOGLE_MAPS_API_KEY`.
 - Live map rendering uses `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
 
 Relevant code:
+
 - `src/lib/geo.ts`
 - `src/components/OrderMap.tsx`
 
@@ -84,11 +91,13 @@ STORAGE_BUCKET_URL=https://your-project.supabase.co/storage/v1/object/public/upl
 ```
 
 Notes:
+
 - Production uploads now require durable storage.
 - If storage is missing in production, uploads intentionally fail instead of writing to local disk.
 - `STORAGE_BUCKET_URL` is strongly recommended so generated URLs are stable and absolute.
 
 Relevant code:
+
 - `src/server/supabase.ts`
 - `src/app/api/upload/route.ts`
 
@@ -102,10 +111,12 @@ NEXT_PUBLIC_OZOW_IS_TEST=false
 ```
 
 Notes:
+
 - Use live Ozow credentials for launch.
 - Both `OZOW_IS_TEST` and `NEXT_PUBLIC_OZOW_IS_TEST` should be `false` in production.
 
 Relevant code:
+
 - `src/app/api/payments/ozow/create/route.ts`
 - `src/app/api/payments/ozow/notify/route.ts`
 - `src/app/checkout/page.tsx`
@@ -127,6 +138,7 @@ TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 ```
 
 Relevant code:
+
 - `src/lib/admin-notifications.ts`
 - `src/lib/password-reset.ts`
 
@@ -145,6 +157,7 @@ WEB_PUSH_SUBJECT=mailto:support@example.com
 ```
 
 Relevant code:
+
 - `src/lib/pusher-server.ts`
 - `src/lib/pusher-client.ts`
 - `src/lib/web-push.ts`
@@ -168,6 +181,7 @@ NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION=
 ```
 
 Relevant code:
+
 - `src/app/layout.tsx`
 - `src/components/MarketingScripts.tsx`
 
@@ -187,6 +201,7 @@ NEXT_PUBLIC_WHATSAPP_ORDER_PHONE=27723908919
 ```
 
 Relevant code:
+
 - `src/lib/legal.ts`
 - `src/lib/whatsapp-order.ts`
 
@@ -197,6 +212,7 @@ OPENAI_API_KEY=replace-with-openai-key
 ```
 
 Relevant code:
+
 - `src/lib/ai.ts`
 - `src/lib/embeddings.ts`
 
@@ -234,6 +250,7 @@ npm run start
 6. Open `/admin`.
 
 Relevant code:
+
 - `src/app/api/admin/access/route.ts`
 - `src/lib/admin-auth.ts`
 
@@ -259,6 +276,7 @@ Then verify the live deployment:
 7. Confirm `catalog.activeVendors` and `catalog.activeProducts` are sensible for your launch state.
 
 Relevant code:
+
 - `src/app/api/ops/health/route.ts`
 
 ## Launch Smoke Test
@@ -286,6 +304,7 @@ Run this exact flow on the live site:
 - Production launches now intentionally reject demo catalog mode unless `ALLOW_PRODUCTION_DEMO_CATALOG=true` is set for a temporary non-launch environment.
 
 Relevant code:
+
 - `src/app/api/orders/[ref]/route.ts`
 - `next.config.mjs`
 - `src/lib/site.ts`
