@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { getCatalogMode } from "@/lib/catalog-runtime";
+import { withQueryTimeout } from "@/lib/query-timeout";
 import { countRiderApplications } from "@/lib/rider-applications";
 import { hasWebPushConfig } from "@/lib/web-push";
 import { hasStorageConfig } from "@/server/supabase";
@@ -12,19 +13,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
 
-  const [activeVendors, activeProducts, pendingVendors, pendingRiders, underReviewRiders, paidOrders24h] = await Promise.all([
-    prisma.vendor.count({ where: { isActive: true, status: "ACTIVE" } }),
-    prisma.product.count({ where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } } }),
-    prisma.vendor.count({ where: { status: "PENDING" } }),
-    countRiderApplications("PENDING"),
-    countRiderApplications("UNDER_REVIEW"),
-    prisma.order.count({
-      where: {
-        paymentStatus: { in: ["PAID", "SUCCESS"] },
-        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-      },
-    }),
-  ]);
+  const [activeVendors, activeProducts, pendingVendors, pendingRiders, underReviewRiders, paidOrders24h] =
+    await Promise.all([
+      withQueryTimeout(prisma.vendor.count({ where: { isActive: true, status: "ACTIVE" } }), 0),
+      withQueryTimeout(prisma.product.count({ where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } } }), 0),
+      withQueryTimeout(prisma.vendor.count({ where: { status: "PENDING" } }), 0),
+      withQueryTimeout(countRiderApplications("PENDING"), 0),
+      withQueryTimeout(countRiderApplications("UNDER_REVIEW"), 0),
+      withQueryTimeout(
+        prisma.order.count({
+          where: {
+            paymentStatus: { in: ["PAID", "SUCCESS"] },
+            createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+          },
+        }),
+        0
+      ),
+    ]);
 
   return NextResponse.json({
     ok: true,

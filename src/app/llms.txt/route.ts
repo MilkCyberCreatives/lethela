@@ -19,6 +19,7 @@ export async function GET() {
     `- Vendor Dashboard: ${absoluteUrl("/vendors/dashboard")}`,
     `- Rider Onboarding: ${absoluteUrl("/rider")}`,
     `- Track Order: ${absoluteUrl("/track")}`,
+    `- AI index: ${absoluteUrl("/ai.txt")}`,
     "",
     "## Core Topics",
     "- Food delivery in South Africa",
@@ -42,6 +43,7 @@ export async function GET() {
     "- JSON-LD FAQPage schema",
     "- Dynamic sitemap.xml",
     "- robots.txt",
+    "- ai.txt",
     "",
   ].join("\n");
 
