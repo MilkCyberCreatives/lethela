@@ -160,10 +160,10 @@ export default function VendorSignupForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-white/15 bg-lethela-secondary p-5 md:p-6">
+    <div className="rounded-lg border border-white/10 bg-[#0C1132] p-5 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Vendor Application</h2>
+          <h2 className="text-xl font-semibold">Vendor application</h2>
           <p className="mt-1 text-sm text-white/70">
             Fill in your profile and operations details once. Admin approval unlocks your dashboard.
           </p>
@@ -175,22 +175,24 @@ export default function VendorSignupForm() {
             .
           </p>
         </div>
-        <span className="rounded-full border border-white/25 px-3 py-1 text-xs text-white/80">~2 minute setup</span>
+        <span className="rounded-full border border-lethela-primary/30 bg-lethela-primary/10 px-3 py-1 text-xs text-red-100">
+          Owner reviewed
+        </span>
       </div>
 
       <form className="mt-5 space-y-6" onSubmit={submit}>
-        <section className="rounded-xl border border-white/10 p-4">
+        <section className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
           <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Business Details</h3>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               placeholder="Business name*"
               required
               value={form.name}
               onChange={(event) => setForm((state) => ({ ...state, name: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               placeholder="Business email*"
               type="email"
               required
@@ -198,7 +200,7 @@ export default function VendorSignupForm() {
               onChange={(event) => setForm((state) => ({ ...state, email: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               type="password"
               placeholder="Create password*"
               required
@@ -207,7 +209,7 @@ export default function VendorSignupForm() {
               onChange={(event) => setForm((state) => ({ ...state, password: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               type="password"
               placeholder="Confirm password*"
               required
@@ -216,14 +218,14 @@ export default function VendorSignupForm() {
               onChange={(event) => setForm((state) => ({ ...state, confirmPassword: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               placeholder="Phone / WhatsApp*"
               required
               value={form.phone}
               onChange={(event) => setForm((state) => ({ ...state, phone: event.target.value }))}
             />
             <select
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               value={form.province}
               onChange={(event) => setForm((state) => ({ ...state, province: event.target.value }))}
             >
@@ -234,21 +236,21 @@ export default function VendorSignupForm() {
               ))}
             </select>
             <input
-              className="rounded bg-white px-3 py-2 text-black md:col-span-2"
+              className="rounded-lg bg-white px-3 py-2 text-black md:col-span-2"
               placeholder="Street address*"
               required
               value={form.address}
               onChange={(event) => setForm((state) => ({ ...state, address: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               placeholder="Suburb*"
               required
               value={form.suburb}
               onChange={(event) => setForm((state) => ({ ...state, suburb: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               placeholder="City*"
               required
               value={form.city}
@@ -257,18 +259,18 @@ export default function VendorSignupForm() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/10 p-4">
+        <section className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
           <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Operations Setup</h3>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <input
-              className="rounded bg-white px-3 py-2 text-black md:col-span-2"
+              className="rounded-lg bg-white px-3 py-2 text-black md:col-span-2"
               placeholder="Cuisines* (comma separated)"
               required
               value={form.cuisineInput}
               onChange={(event) => setForm((state) => ({ ...state, cuisineInput: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               type="number"
               min={0}
               max={200}
@@ -279,7 +281,7 @@ export default function VendorSignupForm() {
               onChange={(event) => setForm((state) => ({ ...state, deliveryFeeCents: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               type="number"
               min={10}
               max={120}
@@ -289,13 +291,13 @@ export default function VendorSignupForm() {
               onChange={(event) => setForm((state) => ({ ...state, etaMins: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               placeholder="Latitude (optional)"
               value={form.latitude}
               onChange={(event) => setForm((state) => ({ ...state, latitude: event.target.value }))}
             />
             <input
-              className="rounded bg-white px-3 py-2 text-black"
+              className="rounded-lg bg-white px-3 py-2 text-black"
               placeholder="Longitude (optional)"
               value={form.longitude}
               onChange={(event) => setForm((state) => ({ ...state, longitude: event.target.value }))}
@@ -311,7 +313,7 @@ export default function VendorSignupForm() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/10 p-4">
+        <section className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
           <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/70">Compliance</h3>
           <div className="mt-3 grid gap-3">
             <p className="text-sm text-white/75">
