@@ -43,6 +43,16 @@ function isRelativeSqliteUrl(value: string) {
   return /^file:\.\.?\//.test(value) || value === "file:./dev.db";
 }
 
+function resolveSqliteUrl(value: string) {
+  if (!isRelativeSqliteUrl(value)) return value;
+
+  const relativePath = value.slice("file:".length);
+  const preferredBase = fs.existsSync(path.join(process.cwd(), "prisma"))
+    ? path.join(process.cwd(), "prisma")
+    : process.cwd();
+  return toSqliteFileUrl(path.resolve(preferredBase, relativePath));
+}
+
 function inferProvider(url?: string | null): DatabaseProvider {
   const value = String(url || "").trim().toLowerCase();
   if (value.startsWith("postgres://") || value.startsWith("postgresql://")) {
@@ -82,7 +92,7 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
     return {
       source: "env",
       provider,
-      url: configuredUrl,
+      url: provider === "sqlite" ? resolveSqliteUrl(configuredUrl) : configuredUrl,
       seedPath: null,
       persistent: provider === "postgresql" || !isRelativeSqliteUrl(configuredUrl),
       scalable: provider === "postgresql",

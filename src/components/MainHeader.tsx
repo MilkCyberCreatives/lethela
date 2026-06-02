@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -33,13 +32,13 @@ export default function MainHeader() {
     <header className="sticky top-0 z-50 surface-header">
       <div className="container flex h-20 items-center justify-between text-sm text-black">
         <Link href="/" className="flex items-center gap-3">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/lethelalogo.svg"
             alt="Lethela - Siyashesha"
             width={170}
             height={40}
-            className="h-auto w-[132px] md:w-[170px]"
-            priority
+            className="h-10 w-auto"
           />
         </Link>
 

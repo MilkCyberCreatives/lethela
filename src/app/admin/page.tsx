@@ -126,10 +126,12 @@ export default function AdminPage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [pushPermission, setPushPermission] = useState<string>(
-    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported"
-  );
+  const [pushPermission, setPushPermission] = useState<string>("unsupported");
   const adminKeyRef = useRef("");
+
+  useEffect(() => {
+    setPushPermission(typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported");
+  }, []);
 
   useEffect(() => {
     adminKeyRef.current = adminKey.trim();

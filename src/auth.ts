@@ -6,6 +6,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/server/db";
 import { compare } from "bcryptjs";
 import { z } from "zod";
+import { findLocalSqliteUserByEmail } from "@/lib/local-sqlite-auth";
 
 type AppRole = "USER" | "VENDOR" | "RIDER" | "ADMIN";
 
@@ -63,7 +64,7 @@ export const authOptions: NextAuthOptions = {
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = (await findLocalSqliteUserByEmail(email)) ?? (await prisma.user.findUnique({ where: { email } }));
         if (!user || !user.passwordHash || !isAppRole(user.role)) return null;
 
         const ok = await compare(password, user.passwordHash);
