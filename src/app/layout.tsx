@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/next-script-for-ga */
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Suspense } from "react";
 import MarketingScripts from "@/components/MarketingScripts";
 import Providers from "@/components/Providers";
@@ -181,6 +183,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           </Suspense>
           {children}
         </Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
