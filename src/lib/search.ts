@@ -1,8 +1,8 @@
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { getFallbackSearchSources } from "@/lib/catalog-fallback";
-import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
 import { getPublicVendorImage } from "@/lib/public-catalog";
-import { runBoundedDbQuery } from "@/lib/query-timeout";
+import { runBoundedDbQuery, withQueryTimeout } from "@/lib/query-timeout";
 
 export type SearchHit = {
   id: string;
@@ -36,15 +36,29 @@ function tokenize(value: string) {
     .slice(0, 12);
 }
 
+function expandToken(token: string) {
+  const terms = new Set([token]);
+  if (token.endsWith("ies") && token.length > 4) terms.add(`${token.slice(0, -3)}y`);
+  if (token.endsWith("es") && token.length > 3) terms.add(token.slice(0, -2));
+  if (token.endsWith("s") && token.length > 3) terms.add(token.slice(0, -1));
+  if (token === "grocery") terms.add("groceries");
+  if (token === "groceries") terms.add("grocery");
+  return Array.from(terms);
+}
+
 function lexicalScore(tokens: string[], text: string) {
   if (!tokens.length) return 0;
   const lower = text.toLowerCase();
   let score = 0;
   for (const token of tokens) {
-    if (lower === token) score += 1.2;
-    else if (lower.startsWith(token)) score += 1;
-    else if (lower.includes(` ${token}`)) score += 0.7;
-    else if (lower.includes(token)) score += 0.5;
+    const tokenScore = expandToken(token).reduce((best, term) => {
+      if (lower === term) return Math.max(best, 1.2);
+      if (lower.startsWith(term)) return Math.max(best, 1);
+      if (lower.includes(` ${term}`)) return Math.max(best, 0.7);
+      if (lower.includes(term)) return Math.max(best, 0.5);
+      return best;
+    }, 0);
+    score += tokenScore;
   }
   return score / tokens.length;
 }
@@ -75,7 +89,9 @@ function scoreAndLimitRows(
         subtitle: row.subtitle,
         priceCents: row.priceCents,
         isAlcohol: row.isAlcohol,
-        score: dbScore > 0 ? dbScore * 0.7 + lexical * 0.3 : lexical,
+        score:
+          (dbScore > 0 ? dbScore * 0.7 + lexical * 0.3 : lexical) +
+          (row.kind === "product" && lexical > 0 ? 0.05 : 0),
       } satisfies SearchHit;
     })
     .sort((left, right) => right.score - left.score)
@@ -222,7 +238,7 @@ async function searchFallback(
   const fallbackSources = getFallbackSearchSources();
   const fallbackVendorRows = fallbackSources.vendors as any;
   const fallbackProductRows = fallbackSources.products as any;
-  const allowFallback = shouldPreferCatalogFallback();
+  const allowFallback = shouldUseCatalogFallbackBeforeQuery();
 
   if (allowFallback) {
     const rows = [
@@ -230,7 +246,12 @@ async function searchFallback(
         id: vendor.id,
         kind: "vendor" as const,
         title: vendor.name,
-        searchText: [vendor.name, vendor.suburb ?? "", vendor.city ?? ""].join(" "),
+        searchText: [
+          vendor.name,
+          vendor.suburb ?? "",
+          vendor.city ?? "",
+          ...(vendor.cuisine ?? []),
+        ].join(" "),
         image: getPublicVendorImage(vendor.image ?? null, false),
         slug: vendor.slug,
         vendorName: vendor.name,
@@ -272,44 +293,47 @@ async function searchFallback(
     { vendor: { is: { name: { contains: term } } } },
   ]);
 
-  const [vendors, products] = await Promise.all([
-    prisma.vendor.findMany({
-      where: {
-        isActive: true,
-        status: "ACTIVE",
-        OR: vendorOr,
-      },
-      take: candidateLimit,
-      orderBy: { updatedAt: "desc" },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        suburb: true,
-        city: true,
-        image: true,
-      },
-    }),
-    prisma.product.findMany({
-      where: {
-        vendor: {
+  const [vendors, products] = await withQueryTimeout(
+    Promise.all([
+      prisma.vendor.findMany({
+        where: {
           isActive: true,
           status: "ACTIVE",
+          OR: vendorOr,
         },
-        OR: productOr,
-      },
-      take: candidateLimit,
-      orderBy: { updatedAt: "desc" },
-      include: {
-        vendor: {
-          select: {
-            name: true,
-            slug: true,
+        take: candidateLimit,
+        orderBy: { updatedAt: "desc" },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          suburb: true,
+          city: true,
+          image: true,
+        },
+      }),
+      prisma.product.findMany({
+        where: {
+          vendor: {
+            isActive: true,
+            status: "ACTIVE",
+          },
+          OR: productOr,
+        },
+        take: candidateLimit,
+        orderBy: { updatedAt: "desc" },
+        include: {
+          vendor: {
+            select: {
+              name: true,
+              slug: true,
+            },
           },
         },
-      },
-    }),
-  ]);
+      }),
+    ]),
+    [[], []],
+  );
 
   const rows = [
     ...vendors.map((vendor: any) => ({

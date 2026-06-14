@@ -1,7 +1,8 @@
 // src/lib/authz.ts
-import { prisma } from "@/lib/db";
+import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { getCookie } from "@/lib/cookie-helpers";
 import { parseVendorSessionToken } from "@/lib/vendor-session";
+import { findSqliteVendorSession } from "@/lib/sqlite-vendor-auth";
 
 export type VendorRoleType = "OWNER" | "MANAGER" | "STAFF";
 
@@ -41,23 +42,29 @@ export async function getVendorSession(): Promise<VendorSessionState> {
     throw new Error("Vendor session expired. Please sign in again.");
   }
 
-  const [user, vendor] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: parsed.userId },
-      select: { id: true, email: true },
-    }),
-    prisma.vendor.findUnique({
-      where: { id: parsed.vendorId },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        status: true,
-        isActive: true,
-        ownerId: true,
-      },
-    }),
-  ]);
+  const sqliteSession =
+    prismaRuntimeInfo.provider === "sqlite"
+      ? await findSqliteVendorSession(parsed.userId, parsed.vendorId)
+      : null;
+  const [user, vendor] = sqliteSession
+    ? [sqliteSession.user, sqliteSession.vendor]
+    : await Promise.all([
+        prisma.user.findUnique({
+          where: { id: parsed.userId },
+          select: { id: true, email: true },
+        }),
+        prisma.vendor.findUnique({
+          where: { id: parsed.vendorId },
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            status: true,
+            isActive: true,
+            ownerId: true,
+          },
+        }),
+      ]);
 
   if (!user || !vendor) {
     throw new Error("Vendor session is no longer valid. Please sign in again.");
@@ -67,17 +74,19 @@ export async function getVendorSession(): Promise<VendorSessionState> {
     throw new Error("Vendor session does not match current account data. Please sign in again.");
   }
 
-  let membership = await prisma.vendorMember.findUnique({
-    where: {
-      vendorId_userId: {
-        vendorId: vendor.id,
-        userId: user.id,
-      },
-    },
-    select: { role: true },
-  });
+  let membership = sqliteSession
+    ? sqliteSession.membership
+    : await prisma.vendorMember.findUnique({
+        where: {
+          vendorId_userId: {
+            vendorId: vendor.id,
+            userId: user.id,
+          },
+        },
+        select: { role: true },
+      });
 
-  if (!membership && vendor.ownerId === user.id) {
+  if (!membership && vendor.ownerId === user.id && prismaRuntimeInfo.provider !== "sqlite") {
     membership = await prisma.vendorMember.create({
       data: {
         vendorId: vendor.id,

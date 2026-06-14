@@ -1,11 +1,14 @@
 // /src/server/queries.ts
 import { prisma } from "@/server/db";
 import { getFallbackVendorProfile, type CatalogSection } from "@/lib/catalog-fallback";
-import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import {
+  shouldFallbackWhenCatalogEmpty,
+  shouldUseCatalogFallbackBeforeQuery,
+} from "@/lib/catalog-runtime";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
 export async function getVendorBySlug(slug: string) {
-  const allowFallback = shouldPreferCatalogFallback();
+  const allowFallback = shouldUseCatalogFallbackBeforeQuery();
   const fallback = getFallbackVendorProfile(slug);
   if (fallback && allowFallback) {
     return fallback;
@@ -39,7 +42,7 @@ export async function getVendorBySlug(slug: string) {
 
   const vendor = await withQueryTimeout<VendorRecord | null>(vendorQuery, null);
 
-  if (!vendor) return allowFallback ? fallback : null;
+  if (!vendor) return allowFallback || shouldFallbackWhenCatalogEmpty() ? fallback : null;
 
   const status = String(vendor.status || "").toUpperCase();
   const isPublicVendor =

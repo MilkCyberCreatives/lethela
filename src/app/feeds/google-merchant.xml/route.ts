@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getFallbackProducts } from "@/lib/catalog-fallback";
-import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import {
+  shouldFallbackWhenCatalogEmpty,
+  shouldUseCatalogFallbackBeforeQuery,
+} from "@/lib/catalog-runtime";
+import { withQueryTimeout } from "@/lib/query-timeout";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 
 export const revalidate = 900;
@@ -22,10 +26,11 @@ function imageUrl(value: string | null) {
 }
 
 export async function GET() {
-  const dbProducts = shouldPreferCatalogFallback()
+  const preferFallback = shouldUseCatalogFallbackBeforeQuery();
+  const dbProducts = preferFallback
     ? []
-    : await prisma.product
-        .findMany({
+    : await withQueryTimeout(
+        prisma.product.findMany({
           where: {
             inStock: true,
             vendor: {
@@ -43,13 +48,14 @@ export async function GET() {
           },
           orderBy: { updatedAt: "desc" },
           take: 5000,
-        })
-        .catch(() => []);
+        }),
+        [],
+      );
 
   const products =
     dbProducts.length > 0
       ? dbProducts
-      : shouldPreferCatalogFallback()
+      : preferFallback || shouldFallbackWhenCatalogEmpty()
         ? getFallbackProducts()
             .slice(0, 5000)
             .map((product) => ({

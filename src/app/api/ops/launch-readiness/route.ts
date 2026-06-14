@@ -3,7 +3,8 @@ import { requireAdminRequest } from "@/lib/admin-auth";
 import { getCatalogMode } from "@/lib/catalog-runtime";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { hasWebPushConfig } from "@/lib/web-push";
-import { hasStorageConfig } from "@/server/supabase";
+import { hasStorageConfig, storageProvider } from "@/server/supabase";
+import { getSqliteReadinessCounts } from "@/lib/sqlite-readiness";
 import { prisma, prismaRuntimeInfo } from "@/server/db";
 
 function configured(name: string) {
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
 
+  const sqliteCounts = await getSqliteReadinessCounts();
   const [
     activeVendors,
     activeProducts,
@@ -37,34 +39,42 @@ export async function GET(req: NextRequest) {
     pendingRiders,
     approvedRiders,
     users,
-  ] = await Promise.all([
-    withQueryTimeout(prisma.vendor.count({ where: { isActive: true, status: "ACTIVE" } }), 0),
-    withQueryTimeout(
-      prisma.product.count({
-        where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } },
-      }),
-      0,
-    ),
-    withQueryTimeout(
-      prisma.order.count({ where: { paymentStatus: { in: ["PAID", "SUCCESS"] } } }),
-      0,
-    ),
-    withQueryTimeout(prisma.vendor.count({ where: { status: "PENDING" } }), 0),
-    withQueryTimeout(
-      prisma.riderApplication.count({ where: { status: { in: ["PENDING", "UNDER_REVIEW"] } } }),
-      0,
-    ),
-    withQueryTimeout(prisma.riderApplication.count({ where: { status: "APPROVED" } }), 0),
-    withQueryTimeout(prisma.user.count(), 0),
-  ]);
+  ] = sqliteCounts
+    ? [
+        sqliteCounts.activeVendors,
+        sqliteCounts.activeProducts,
+        sqliteCounts.paidOrders,
+        sqliteCounts.pendingVendors,
+        sqliteCounts.pendingRiders + sqliteCounts.underReviewRiders,
+        sqliteCounts.approvedRiders,
+        sqliteCounts.users,
+      ]
+    : await Promise.all([
+        withQueryTimeout(prisma.vendor.count({ where: { isActive: true, status: "ACTIVE" } }), 0),
+        withQueryTimeout(
+          prisma.product.count({
+            where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } },
+          }),
+          0,
+        ),
+        withQueryTimeout(
+          prisma.order.count({ where: { paymentStatus: { in: ["PAID", "SUCCESS"] } } }),
+          0,
+        ),
+        withQueryTimeout(prisma.vendor.count({ where: { status: "PENDING" } }), 0),
+        withQueryTimeout(
+          prisma.riderApplication.count({ where: { status: { in: ["PENDING", "UNDER_REVIEW"] } } }),
+          0,
+        ),
+        withQueryTimeout(prisma.riderApplication.count({ where: { status: "APPROVED" } }), 0),
+        withQueryTimeout(prisma.user.count(), 0),
+      ]);
 
   const checks = [
     item(
       "Production database",
-      prismaRuntimeInfo.provider === "postgresql" &&
-        prismaRuntimeInfo.persistent &&
-        prismaRuntimeInfo.scalable,
-      `provider=${prismaRuntimeInfo.provider || "unknown"}`,
+      prismaRuntimeInfo.persistent,
+      `provider=${prismaRuntimeInfo.provider || "unknown"}, scalable=${prismaRuntimeInfo.scalable}`,
     ),
     item(
       "Canonical URL",
@@ -97,7 +107,7 @@ export async function GET(req: NextRequest) {
       configured("GOOGLE_MAPS_API_KEY") && configured("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"),
       "Server and browser map keys",
     ),
-    item("Durable uploads", hasStorageConfig(), "Supabase storage configured"),
+    item("Durable uploads", hasStorageConfig(), `${storageProvider()} storage configured`),
     item(
       "Active catalog",
       getCatalogMode() === "live" && activeVendors > 0 && activeProducts > 0,

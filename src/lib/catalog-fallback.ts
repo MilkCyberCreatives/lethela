@@ -405,6 +405,7 @@ export function getFallbackSearchSources() {
       name: vendor.name,
       suburb: vendor.suburb,
       city: vendor.city,
+      cuisine: vendor.cuisine,
     })),
     products: catalogProducts.map((product) => ({
       id: product.id,

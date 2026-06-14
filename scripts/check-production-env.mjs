@@ -133,10 +133,10 @@ requireNonPlaceholder("ADMIN_APPROVAL_KEY", "must be set for admin browser acces
 
 const databaseProvider = requireNonPlaceholder(
   "DATABASE_PROVIDER",
-  "must be set to postgresql for a live deployment.",
+  "must be set to sqlite or postgresql for a live deployment.",
 );
-if (databaseProvider && databaseProvider !== "postgresql") {
-  errors.push("DATABASE_PROVIDER: must be exactly 'postgresql' for production.");
+if (databaseProvider && !["sqlite", "postgresql"].includes(databaseProvider)) {
+  errors.push("DATABASE_PROVIDER: must be either 'sqlite' or 'postgresql'.");
 }
 
 const databaseUrl = requireNonPlaceholder(
@@ -144,17 +144,19 @@ const databaseUrl = requireNonPlaceholder(
   "must point to your production PostgreSQL database.",
 );
 
-if (databaseUrl) {
+if (databaseUrl && databaseProvider === "postgresql") {
   const normalizedUrl = databaseUrl.toLowerCase();
   if (!(normalizedUrl.startsWith("postgres://") || normalizedUrl.startsWith("postgresql://"))) {
     errors.push("DATABASE_URL: must be a PostgreSQL connection string for production.");
   }
-  if (
-    /^file:\.\.?\//.test(databaseUrl) ||
-    databaseUrl === "file:./dev.db" ||
-    isAbsoluteSqliteUrl(databaseUrl)
-  ) {
-    errors.push("DATABASE_URL: SQLite is no longer an accepted production database profile.");
+}
+
+if (databaseUrl && databaseProvider === "sqlite") {
+  if (/^file:\.\.?\//.test(databaseUrl) || databaseUrl === "file:./dev.db") {
+    errors.push("DATABASE_URL: production SQLite must use an absolute persistent path.");
+  }
+  if (!databaseUrl.startsWith("file:") || !isAbsoluteSqliteUrl(databaseUrl)) {
+    errors.push("DATABASE_URL: production SQLite must look like file:/absolute/path/lethela.db.");
   }
 }
 
@@ -164,15 +166,25 @@ requireNonPlaceholder(
 );
 requireNonPlaceholder("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", "must be set for live browser maps.");
 
-requireNonPlaceholder("SUPABASE_URL", "must be set for durable uploads.");
-requireNonPlaceholder("SUPABASE_SERVICE_ROLE", "must be set for durable uploads.");
-requireNonPlaceholder("SUPABASE_BUCKET", "must be set for durable uploads.");
-const storageBucketUrl = requireNonPlaceholder(
-  "STORAGE_BUCKET_URL",
-  "should be set so uploaded media resolves to an absolute public URL.",
-);
-if (storageBucketUrl && !isHttpsUrl(storageBucketUrl)) {
-  errors.push("STORAGE_BUCKET_URL: must be a valid HTTPS URL.");
+const uploadStorage = read("UPLOAD_STORAGE", values) || "local";
+if (!["local", "supabase"].includes(uploadStorage)) {
+  errors.push("UPLOAD_STORAGE: must be either 'local' or 'supabase'.");
+}
+
+if (uploadStorage === "supabase") {
+  requireNonPlaceholder("SUPABASE_URL", "must be set for Supabase uploads.");
+  requireNonPlaceholder("SUPABASE_SERVICE_ROLE", "must be set for Supabase uploads.");
+  requireNonPlaceholder("SUPABASE_BUCKET", "must be set for Supabase uploads.");
+  const storageBucketUrl = requireNonPlaceholder(
+    "STORAGE_BUCKET_URL",
+    "should be set so uploaded media resolves to an absolute public URL.",
+  );
+  if (storageBucketUrl && !isHttpsUrl(storageBucketUrl)) {
+    errors.push("STORAGE_BUCKET_URL: must be a valid HTTPS URL.");
+  }
+} else {
+  requireNonPlaceholder("STORAGE_LOCAL_DIR", "must be set to a persistent absolute upload folder.");
+  requireNonPlaceholder("STORAGE_PUBLIC_PATH", "must be set to the public upload URL path.");
 }
 
 requireNonPlaceholder("OZOW_SITE_CODE", "must be set for live payments.");
@@ -246,7 +258,8 @@ warnIfMissing("SENTRY_DSN", "recommended for production error monitoring.");
 warnIfMissing("SENTRY_ENVIRONMENT", "recommended for production error monitoring.");
 warnIfMissing("NEXT_PUBLIC_SUPPORT_EMAIL", "recommended for legal and support pages.");
 
-notes.push("Production scale now assumes PostgreSQL and durable object storage.");
+notes.push("SQLite is acceptable only on a single persistent server with backups.");
+notes.push("PostgreSQL or managed object storage is still recommended once traffic grows.");
 notes.push("Order tracking references should be treated as secrets.");
 notes.push(
   "Server-action origins are derived from NEXT_PUBLIC_SITE_URL, NEXTAUTH_URL, and VERCEL_URL.",

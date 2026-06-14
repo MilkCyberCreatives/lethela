@@ -1,23 +1,67 @@
 import { PrismaClient } from "@prisma/client";
+import fs from "node:fs";
+import path from "node:path";
 import { hash } from "bcryptjs";
+
+function loadLocalEnv() {
+  for (const file of [".env.local", ".env"]) {
+    const filePath = path.resolve(process.cwd(), file);
+    if (!fs.existsSync(filePath)) continue;
+
+    for (const rawLine of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+      const separatorIndex = line.indexOf("=");
+      if (separatorIndex <= 0) continue;
+      const key = line.slice(0, separatorIndex).trim();
+      if (process.env[key]) continue;
+      let value = line.slice(separatorIndex + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      process.env[key] = value;
+    }
+  }
+}
+
+loadLocalEnv();
 
 const prisma = new PrismaClient();
 
 async function main() {
   const demoPasswordHash = await hash("DemoVendor123!", 10);
+  const adminPasswordHash = await hash("AdminDemo123!", 10);
 
   const demoUser = await prisma.user.upsert({
     where: { email: "demo@lethela.co.za" },
     update: {
       name: "Demo User",
-      role: "USER",
+      role: "VENDOR",
       passwordHash: demoPasswordHash,
     },
     create: {
       email: "demo@lethela.co.za",
       name: "Demo User",
-      role: "USER",
+      role: "VENDOR",
       passwordHash: demoPasswordHash,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "admin@lethela.co.za" },
+    update: {
+      name: "Lethela Admin",
+      role: "ADMIN",
+      passwordHash: adminPasswordHash,
+    },
+    create: {
+      email: "admin@lethela.co.za",
+      name: "Lethela Admin",
+      role: "ADMIN",
+      passwordHash: adminPasswordHash,
     },
   });
 
@@ -176,6 +220,45 @@ async function main() {
       where: { vendorId_slug: { vendorId: product.vendorId, slug: product.slug } },
       update: product,
       create: product,
+    });
+  }
+
+  const existingRider = await prisma.riderApplication.findUnique({
+    where: { id: "rider-demo-approved" },
+  });
+  const riderData = {
+    fullName: "Demo Rider",
+    email: "rider@lethela.co.za",
+    phone: "+27 72 390 8919",
+    idNumberLast4: "0000",
+    licenseCode: "A1",
+    suburb: "Klipfontein View",
+    city: "Midrand",
+    vehicleType: "Scooter",
+    vehicleRegistration: "LET 001 GP",
+    availableHours: "Weekdays 08:00-18:00",
+    emergencyContactName: "Lethela Ops",
+    emergencyContactPhone: "+27 72 390 8919",
+    hasSmartphone: true,
+    hasBankAccount: true,
+    experience: "Seed rider for launch-readiness and dashboard verification.",
+    aiSummary: "Approved seed rider available for launch smoke tests.",
+    status: "APPROVED",
+  };
+
+  if (existingRider) {
+    await prisma.riderApplication.update({
+      where: { id: "rider-demo-approved" },
+      data: {
+        ...riderData,
+      },
+    });
+  } else {
+    await prisma.riderApplication.create({
+      data: {
+        id: "rider-demo-approved",
+        ...riderData,
+      },
     });
   }
 

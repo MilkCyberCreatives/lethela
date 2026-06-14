@@ -4,7 +4,8 @@ import { getCatalogMode } from "@/lib/catalog-runtime";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { countRiderApplications } from "@/lib/rider-applications";
 import { hasWebPushConfig } from "@/lib/web-push";
-import { hasStorageConfig } from "@/server/supabase";
+import { hasStorageConfig, storageProvider } from "@/server/supabase";
+import { getSqliteReadinessCounts } from "@/lib/sqlite-readiness";
 import { prisma, prismaRuntimeInfo } from "@/server/db";
 
 export async function GET(req: NextRequest) {
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
 
+  const sqliteCounts = await getSqliteReadinessCounts();
   const [
     activeVendors,
     activeProducts,
@@ -20,40 +22,49 @@ export async function GET(req: NextRequest) {
     pendingRiders,
     underReviewRiders,
     paidOrders24h,
-  ] = await Promise.all([
-    withQueryTimeout(prisma.vendor.count({ where: { isActive: true, status: "ACTIVE" } }), 0),
-    withQueryTimeout(
-      prisma.product.count({
-        where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } },
-      }),
-      0,
-    ),
-    withQueryTimeout(prisma.vendor.count({ where: { status: "PENDING" } }), 0),
-    withQueryTimeout(countRiderApplications("PENDING"), 0),
-    withQueryTimeout(countRiderApplications("UNDER_REVIEW"), 0),
-    withQueryTimeout(
-      prisma.order.count({
-        where: {
-          paymentStatus: { in: ["PAID", "SUCCESS"] },
-          createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        },
-      }),
-      0,
-    ),
-  ]);
+  ] = sqliteCounts
+    ? [
+        sqliteCounts.activeVendors,
+        sqliteCounts.activeProducts,
+        sqliteCounts.pendingVendors,
+        sqliteCounts.pendingRiders,
+        sqliteCounts.underReviewRiders,
+        sqliteCounts.paidOrders24h,
+      ]
+    : await Promise.all([
+        withQueryTimeout(prisma.vendor.count({ where: { isActive: true, status: "ACTIVE" } }), 0),
+        withQueryTimeout(
+          prisma.product.count({
+            where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } },
+          }),
+          0,
+        ),
+        withQueryTimeout(prisma.vendor.count({ where: { status: "PENDING" } }), 0),
+        withQueryTimeout(countRiderApplications("PENDING"), 0),
+        withQueryTimeout(countRiderApplications("UNDER_REVIEW"), 0),
+        withQueryTimeout(
+          prisma.order.count({
+            where: {
+              paymentStatus: { in: ["PAID", "SUCCESS"] },
+              createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+            },
+          }),
+          0,
+        ),
+      ]);
 
   return NextResponse.json({
     ok: true,
     environment: process.env.NODE_ENV,
     services: {
       db: {
-        ok: prismaRuntimeInfo.persistent && prismaRuntimeInfo.scalable,
+        ok: prismaRuntimeInfo.persistent,
         source: prismaRuntimeInfo.source,
         provider: prismaRuntimeInfo.provider,
         persistent: prismaRuntimeInfo.persistent,
         scalable: prismaRuntimeInfo.scalable,
       },
-      storage: hasStorageConfig(),
+      storage: { ok: hasStorageConfig(), provider: storageProvider() },
       maps: Boolean(
         process.env.GOOGLE_MAPS_API_KEY?.trim() ||
           process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim(),

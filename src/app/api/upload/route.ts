@@ -1,11 +1,9 @@
 import { randomUUID } from "crypto";
-import { mkdirSync, writeFileSync } from "fs";
-import { join } from "path";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getCookie } from "@/lib/cookie-helpers";
 import { parseVendorSessionToken } from "@/lib/vendor-session";
-import { createAdminClient, hasStorageConfig, publicUrl } from "@/server/supabase";
+import { uploadStoredFile } from "@/server/supabase";
 
 export const runtime = "nodejs";
 
@@ -47,38 +45,17 @@ export async function POST(req: Request) {
     : `vendor-uploads/${vendorSession!.vendorId}`;
   const filename = `${scope}/${randomUUID()}.${extension}`;
 
-  if (hasStorageConfig()) {
-    const supa = createAdminClient();
-    const bucket = process.env.SUPABASE_BUCKET!.trim();
-    const { data, error } = await supa.storage.from(bucket).upload(filename, buffer, {
+  try {
+    const uploaded = await uploadStoredFile({
+      path: filename,
+      buffer,
       contentType: file.type,
-      upsert: false,
     });
-
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
-
-    const { data: publicData } = supa.storage.from(bucket).getPublicUrl(filename);
-    return NextResponse.json({
-      ok: true,
-      path: data?.path,
-      url: publicData?.publicUrl || publicUrl(filename),
-    });
-  }
-
-  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ ok: true, path: uploaded.path, url: uploaded.url });
+  } catch (error) {
     return NextResponse.json(
-      { ok: false, error: "Durable storage is not configured for uploads." },
+      { ok: false, error: error instanceof Error ? error.message : "Upload failed." },
       { status: 500 },
     );
   }
-
-  const dir = join(process.cwd(), "public", "uploads");
-  mkdirSync(dir, { recursive: true });
-  const localFilename = `${randomUUID()}.${extension}`;
-  const filepath = join(dir, localFilename);
-  writeFileSync(filepath, buffer);
-
-  return NextResponse.json({ ok: true, url: `/uploads/${localFilename}` });
 }

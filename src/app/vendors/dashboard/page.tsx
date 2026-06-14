@@ -3,7 +3,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import MainHeader from "@/components/MainHeader";
 import { requireVendor } from "@/lib/authz";
-import { prisma } from "@/lib/db";
+import { prisma, prismaRuntimeInfo } from "@/lib/db";
+import { getSqliteVendorDashboardData } from "@/lib/sqlite-vendor-dashboard";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 const InsightsCard = dynamic(() => import("@/components/dashboard/InsightsCard"), {
@@ -206,67 +207,80 @@ export default async function VendorDashboardPage({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [vendor, orders, products, hours, specials, lateFlags] = await Promise.all([
-    prisma.vendor.findUnique({
-      where: { id: vendorId },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        status: true,
-        isActive: true,
-        suburb: true,
-        city: true,
-        phone: true,
-        address: true,
-        latitude: true,
-        longitude: true,
-        kycIdUrl: true,
-        kycProofUrl: true,
-        updatedAt: true,
-        _count: {
+  const sqliteDashboard =
+    prismaRuntimeInfo.provider === "sqlite"
+      ? await getSqliteVendorDashboardData(vendorId, since)
+      : null;
+  const [vendor, orders, products, hours, specials, lateFlags] = sqliteDashboard
+    ? [
+        sqliteDashboard.vendor,
+        sqliteDashboard.orders,
+        sqliteDashboard.products,
+        sqliteDashboard.hours,
+        sqliteDashboard.specials,
+        sqliteDashboard.lateFlags,
+      ]
+    : await Promise.all([
+        prisma.vendor.findUnique({
+          where: { id: vendorId },
           select: {
-            products: true,
-            orders: true,
-            specials: true,
-            hours: true,
-            sections: true,
-            items: true,
+            id: true,
+            name: true,
+            slug: true,
+            status: true,
+            isActive: true,
+            suburb: true,
+            city: true,
+            phone: true,
+            address: true,
+            latitude: true,
+            longitude: true,
+            kycIdUrl: true,
+            kycProofUrl: true,
+            updatedAt: true,
+            _count: {
+              select: {
+                products: true,
+                orders: true,
+                specials: true,
+                hours: true,
+                sections: true,
+                items: true,
+              },
+            },
           },
-        },
-      },
-    }),
-    prisma.order.findMany({
-      where: { vendorId, createdAt: { gte: since } },
-      orderBy: { createdAt: "desc" },
-      select: {
-        createdAt: true,
-        status: true,
-        paymentStatus: true,
-        totalCents: true,
-        items: { select: { qty: true, product: { select: { name: true } } } },
-      },
-    }),
-    prisma.product.findMany({
-      where: { vendorId },
-      select: { name: true, inStock: true },
-    }),
-    prisma.operatingHour.findMany({
-      where: { vendorId, closed: false },
-      select: { day: true },
-    }),
-    prisma.special.findMany({
-      where: { vendorId },
-      orderBy: { startsAt: "asc" },
-      select: { title: true, startsAt: true, endsAt: true, draft: true },
-    }),
-    prisma.lateOrderFlag.findMany({
-      where: { vendorId, resolved: false },
-      take: 3,
-      orderBy: { createdAt: "desc" },
-      select: { orderPublic: true, etaMinutes: true, aiMessage: true },
-    }),
-  ]);
+        }),
+        prisma.order.findMany({
+          where: { vendorId, createdAt: { gte: since } },
+          orderBy: { createdAt: "desc" },
+          select: {
+            createdAt: true,
+            status: true,
+            paymentStatus: true,
+            totalCents: true,
+            items: { select: { qty: true, product: { select: { name: true } } } },
+          },
+        }),
+        prisma.product.findMany({
+          where: { vendorId },
+          select: { name: true, inStock: true },
+        }),
+        prisma.operatingHour.findMany({
+          where: { vendorId, closed: false },
+          select: { day: true },
+        }),
+        prisma.special.findMany({
+          where: { vendorId },
+          orderBy: { startsAt: "asc" },
+          select: { title: true, startsAt: true, endsAt: true, draft: true },
+        }),
+        prisma.lateOrderFlag.findMany({
+          where: { vendorId, resolved: false },
+          take: 3,
+          orderBy: { createdAt: "desc" },
+          select: { orderPublic: true, etaMinutes: true, aiMessage: true },
+        }),
+      ]);
 
   const progressChecks = [
     Boolean(vendor?.phone && vendor?.address && vendor?.city && vendor?.suburb),

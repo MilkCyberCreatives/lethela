@@ -4,9 +4,9 @@ This runbook is for taking the current application live without changing the pro
 
 ## Hosting Requirements
 
-- Use a production-grade PostgreSQL database.
-- The application now treats PostgreSQL as the required production database profile for scale and multi-instance safety.
-- Local development can still use SQLite for convenience, but that is a dev-only profile.
+- Beginner-simple launch path: use SQLite on one persistent server with automated backups.
+- PostgreSQL is still recommended once traffic grows or the app runs on multiple instances.
+- Do not use relative SQLite paths in production.
 - Going forward, dashboard and backend operations should move toward Laravel as documented in `docs/LARAVEL_BACKEND_DIRECTION.md`.
 
 Relevant code:
@@ -50,15 +50,15 @@ Relevant code:
 ### Database
 
 ```env
-DATABASE_PROVIDER=postgresql
-DATABASE_URL=postgresql://postgres:password@db.example.com:5432/lethela?schema=public
+DATABASE_PROVIDER=sqlite
+DATABASE_URL=file:/var/lethela/data/lethela.db
 ```
 
 Notes:
 
-- Production now requires PostgreSQL.
-- SQLite is still supported for local development only.
-- Use a managed PostgreSQL instance or a dedicated production Postgres server.
+- SQLite is simplest for a beginner launch, but only on a single persistent server.
+- Use an absolute path and back it up daily.
+- If you deploy on Vercel/serverless or need multiple app instances, use PostgreSQL.
 
 Relevant code:
 
@@ -84,17 +84,16 @@ Relevant code:
 ### Storage
 
 ```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE=replace-with-service-role-key
-SUPABASE_BUCKET=uploads
-STORAGE_BUCKET_URL=https://your-project.supabase.co/storage/v1/object/public/uploads
+UPLOAD_STORAGE=local
+STORAGE_LOCAL_DIR=/var/lethela/public/uploads
+STORAGE_PUBLIC_PATH=/uploads
 ```
 
 Notes:
 
-- Production uploads now require durable storage.
-- If storage is missing in production, uploads intentionally fail instead of writing to local disk.
-- `STORAGE_BUCKET_URL` is strongly recommended so generated URLs are stable and absolute.
+- Local uploads are the simplest option on one persistent server.
+- If you deploy on Vercel/serverless, local uploads are not durable; use managed object storage.
+- Supabase remains supported but is optional.
 
 Relevant code:
 

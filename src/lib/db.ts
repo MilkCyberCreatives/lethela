@@ -90,12 +90,6 @@ function resolvePrismaRuntimeInfo(): PrismaRuntimeInfo {
       );
     }
 
-    if (shouldEnforceProductionDatabase && provider !== "postgresql") {
-      throw new Error(
-        "Production deployments must use PostgreSQL for scale and multi-instance safety. Set DATABASE_PROVIDER=postgresql.",
-      );
-    }
-
     return {
       source: "env",
       provider,

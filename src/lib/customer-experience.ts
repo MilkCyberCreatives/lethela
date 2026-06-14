@@ -1,4 +1,6 @@
 import { prisma } from "@/server/db";
+import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
+import { withQueryTimeout } from "@/lib/query-timeout";
 
 export type ProductFeedbackMap = {
   favorites: string[];
@@ -248,46 +250,65 @@ export async function getUserExperienceSnapshot(
 }
 
 export async function getVendorTrustSnapshot(vendorId: string) {
-  const [reviewAgg, reviewCount, orderCount, recentReviews] = await Promise.all([
-    prisma.userProductReview.aggregate({
-      where: { vendorId },
-      _avg: { rating: true },
-    }),
-    prisma.userProductReview.count({
-      where: { vendorId },
-    }),
-    prisma.order.count({
-      where: {
-        vendorId,
-        paymentStatus: { in: ["PAID", "SUCCESS"] },
-      },
-    }),
-    prisma.userProductReview.findMany({
-      where: {
-        vendorId,
-        comment: {
-          not: null,
+  const emptyTrust = {
+    averageRating: null,
+    reviewCount: 0,
+    orderCount: 0,
+    recentReviews: [],
+  };
+
+  if (shouldUseCatalogFallbackBeforeQuery()) {
+    return emptyTrust;
+  }
+
+  const [reviewAgg, reviewCount, orderCount, recentReviews] = await withQueryTimeout(
+    Promise.all([
+      prisma.userProductReview.aggregate({
+        where: { vendorId },
+        _avg: { rating: true },
+      }),
+      prisma.userProductReview.count({
+        where: { vendorId },
+      }),
+      prisma.order.count({
+        where: {
+          vendorId,
+          paymentStatus: { in: ["PAID", "SUCCESS"] },
         },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 4,
-      select: {
-        rating: true,
-        comment: true,
-        updatedAt: true,
-        user: {
-          select: {
-            name: true,
+      }),
+      prisma.userProductReview.findMany({
+        where: {
+          vendorId,
+          comment: {
+            not: null,
           },
         },
-        product: {
-          select: {
-            name: true,
+        orderBy: { updatedAt: "desc" },
+        take: 4,
+        select: {
+          rating: true,
+          comment: true,
+          updatedAt: true,
+          user: {
+            select: {
+              name: true,
+            },
+          },
+          product: {
+            select: {
+              name: true,
+            },
           },
         },
-      },
-    }),
-  ]);
+      }),
+    ]),
+    [
+      { _avg: { rating: null } },
+      emptyTrust.reviewCount,
+      emptyTrust.orderCount,
+      emptyTrust.recentReviews,
+    ],
+  );
 
   return {
     averageRating: reviewAgg._avg.rating != null ? Number(reviewAgg._avg.rating.toFixed(1)) : null,

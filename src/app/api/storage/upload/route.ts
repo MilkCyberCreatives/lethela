@@ -1,6 +1,6 @@
 // /src/app/api/storage/upload/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/server/supabase";
+import { uploadStoredFile } from "@/server/supabase";
 import { withSentryRoute } from "@/server/withSentryRoute";
 import { requireAdminRequest } from "@/lib/admin-auth";
 
@@ -34,24 +34,17 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   const arrayBuf = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuf);
 
-  const supa = createAdminClient();
-  const bucket = process.env.SUPABASE_BUCKET?.trim();
-  if (!bucket) {
+  try {
+    const uploaded = await uploadStoredFile({
+      path: filename,
+      buffer,
+      contentType: file.type || "application/octet-stream",
+    });
+    return NextResponse.json({ ok: true, path: uploaded.path, url: uploaded.url });
+  } catch (error) {
     return NextResponse.json(
-      { ok: false, error: "SUPABASE_BUCKET is not configured." },
+      { ok: false, error: error instanceof Error ? error.message : "Upload failed." },
       { status: 500 },
     );
   }
-
-  const { data, error } = await supa.storage.from(bucket).upload(filename, buffer, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
-  });
-
-  if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  }
-
-  const { data: pub } = supa.storage.from(bucket).getPublicUrl(filename);
-  return NextResponse.json({ ok: true, path: data?.path, url: pub?.publicUrl });
 });

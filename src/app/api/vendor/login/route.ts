@@ -1,9 +1,10 @@
 import { compare } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/db";
+import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { attachVendorSession } from "@/lib/vendor-session";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { findSqliteVendorLogin } from "@/lib/sqlite-vendor-auth";
 
 const VendorLoginSchema = z.object({
   email: z.string().email(),
@@ -43,14 +44,20 @@ export async function POST(req: Request) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: {
-      id: true,
-      email: true,
-      passwordHash: true,
-    },
-  });
+  const sqliteLogin =
+    prismaRuntimeInfo.provider === "sqlite"
+      ? await findSqliteVendorLogin(email, parsed.data.slug)
+      : null;
+  const user =
+    sqliteLogin?.user ||
+    (await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+      },
+    }));
 
   if (!user) {
     return NextResponse.json(
@@ -68,33 +75,62 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Incorrect password." }, { status: 401 });
   }
 
-  const vendorWhere = parsed.data.slug
+  const baseVendorWhere = parsed.data.slug ? { slug: parsed.data.slug } : {};
+  let vendor = sqliteLogin?.vendor
     ? {
-        slug: parsed.data.slug,
-        OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }, { email }],
+        ...sqliteLogin.vendor,
+        members: [{ role: sqliteLogin.vendor.role }],
       }
-    : {
-        OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }, { email }],
-      };
+    : await prisma.vendor.findFirst({
+        where: {
+          ...baseVendorWhere,
+          OR: [{ ownerId: user.id }, { email }],
+        },
+        orderBy: { updatedAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          email: true,
+          status: true,
+          isActive: true,
+          ownerId: true,
+          members: {
+            where: { userId: user.id },
+            select: { role: true },
+            take: 1,
+          },
+        },
+      });
 
-  const vendor = await prisma.vendor.findFirst({
-    where: vendorWhere,
-    orderBy: [{ updatedAt: "desc" }],
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      email: true,
-      status: true,
-      isActive: true,
-      ownerId: true,
-      members: {
-        where: { userId: user.id },
-        select: { role: true },
-        take: 1,
+  if (!vendor && prismaRuntimeInfo.provider !== "sqlite") {
+    const membership = await prisma.vendorMember.findFirst({
+      where: {
+        userId: user.id,
+        vendor: baseVendorWhere,
       },
-    },
-  });
+      orderBy: { createdAt: "desc" },
+      select: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            email: true,
+            status: true,
+            isActive: true,
+            ownerId: true,
+            members: {
+              where: { userId: user.id },
+              select: { role: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+    vendor = membership?.vendor || null;
+  }
 
   if (!vendor) {
     return NextResponse.json(
