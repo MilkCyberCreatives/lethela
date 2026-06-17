@@ -12,6 +12,7 @@ import { formatZAR } from "@/lib/format";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 import { buildPageMetadata } from "@/lib/seo";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
+import { DEFAULT_DELIVERY_FEE_CENTS, DELIVERY_PRICING_WORDING } from "@/lib/pricing";
 import { getVendorTrustSnapshot } from "@/lib/customer-experience";
 import { getVendorBySlug as getVendorProfile } from "@/server/queries";
 
@@ -59,8 +60,8 @@ function getVendorHoursState(
 
   if (!today) {
     return {
-      isOpenNow: isActive,
-      todayLabel: "Hours not set",
+      isOpenNow: false,
+      todayLabel: "Trading hours not yet available",
     };
   }
 
@@ -140,6 +141,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
   const vendorHours: OperatingHourView[] =
     "hours" in vendor && Array.isArray(vendor.hours) ? (vendor.hours as OperatingHourView[]) : [];
   const hoursState = getVendorHoursState(vendorHours, vendor.isActive);
+  const hasReviews = trust.reviewCount > 0 && trust.averageRating != null;
   const whatsappText = [
     `Hello Lethela, I would like to order from ${vendor.name}.`,
     location ? `Area: ${location}` : null,
@@ -229,22 +231,28 @@ export default async function VendorProfilePage({ params }: PageProps) {
                 Today: {hoursState.todayLabel}
               </span>
               <span className="rounded-full border border-white/20 px-3 py-1">
-                Delivery from {formatZAR(vendor.deliveryFee)} within 1 km
+                Delivery from {formatZAR(DEFAULT_DELIVERY_FEE_CENTS)}
               </span>
               <span className="rounded-full border border-white/20 px-3 py-1">
                 ETA {vendor.etaMins}-{vendor.etaMins + 10} min
               </span>
               <span className="rounded-full border border-white/20 px-3 py-1">
-                {trust.averageRating != null
-                  ? `${trust.averageRating.toFixed(1)} rating`
-                  : `${vendor.rating.toFixed(1)} rating`}
+                {hasReviews ? `${trust.averageRating!.toFixed(1)} rating` : "New vendor"}
               </span>
-              <span className="rounded-full border border-white/20 px-3 py-1">
-                {trust.reviewCount} reviews
-              </span>
-              <span className="rounded-full border border-white/20 px-3 py-1">
-                {trust.orderCount} delivered orders
-              </span>
+              {hasReviews ? (
+                <span className="rounded-full border border-white/20 px-3 py-1">
+                  {trust.reviewCount} reviews
+                </span>
+              ) : (
+                <span className="rounded-full border border-white/20 px-3 py-1">
+                  No ratings yet
+                </span>
+              )}
+              {trust.orderCount > 0 ? (
+                <span className="rounded-full border border-white/20 px-3 py-1">
+                  {trust.orderCount} delivered orders
+                </span>
+              ) : null}
               {vendor.halaal ? (
                 <span className="rounded-full border border-white/20 px-3 py-1">Halaal</span>
               ) : null}
@@ -254,6 +262,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
                 </span>
               ) : null}
             </div>
+            <p className="text-xs text-white/60">{DELIVERY_PRICING_WORDING}</p>
 
             <div className="flex flex-wrap gap-3">
               <a

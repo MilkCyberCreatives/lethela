@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 };
 
 const REQUIREMENTS = [
-  "Valid South African ID and deliverable license code",
-  "Reliable transport (bike, scooter, or car)",
+  "Valid South African ID and valid licence where required for scooter or car deliveries",
+  "Reliable transport (walking, bicycle, scooter, or car)",
   "Smartphone with GPS and mobile data",
   "WhatsApp and bank account for communication and payouts",
 ];
@@ -51,7 +51,8 @@ export default function RiderPage() {
             </h1>
             <p className="mt-4 max-w-2xl text-sm text-white/80 md:text-base">
               Flexible hours with local demand zones, live order flow, and clear operations support
-              from day one.
+              from day one. Final onboarding and payout terms are confirmed during operations
+              approval.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
@@ -97,6 +98,10 @@ export default function RiderPage() {
                 +27 72 390 8919
               </a>
             </p>
+            <div className="mt-4 rounded-lg border border-lethela-primary/25 bg-lethela-primary/10 p-3 text-xs leading-5 text-white/78">
+              Operations will confirm safety requirements, equipment and payout details before
+              launch shifts begin.
+            </div>
           </aside>
         </div>
       </section>

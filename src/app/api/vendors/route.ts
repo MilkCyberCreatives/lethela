@@ -9,6 +9,7 @@ import {
 } from "@/lib/catalog-runtime";
 import { buildPublicVendorCard } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
+import { canReadSqliteCatalog, getSqliteCatalogVendors } from "@/lib/sqlite-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,9 @@ export async function GET(req: Request) {
         slug: string;
         cover: string;
         badge: string | null;
-        rating: number;
+        rating: number | null;
+        reviewCount?: number;
+        deliveryFeeCents?: number;
         cuisines: string[];
         eta: string;
         distanceKm?: number;
@@ -33,7 +36,13 @@ export async function GET(req: Request) {
       }>
     | undefined;
 
-  if (shouldUseCatalogFallbackBeforeQuery()) {
+  if (canReadSqliteCatalog()) {
+    items = (await getSqliteCatalogVendors({ suburb, take })) ?? [];
+    items = items.map((vendor) => {
+      const etaBase = aiPredictETA(vendor.distanceKm ?? 3, vendor.baseEtaMin, hour);
+      return { ...vendor, eta: `${etaBase}-${etaBase + 5} min` };
+    });
+  } else if (shouldUseCatalogFallbackBeforeQuery()) {
     const fallback = getFallbackVendorCards().slice(0, take);
     items = fallback.map((vendor) => {
       const etaBase = aiPredictETA(vendor.distanceKm, vendor.baseEtaMin, hour);
@@ -76,7 +85,7 @@ export async function GET(req: Request) {
           id: vendor.id,
           name: vendor.name,
           slug: vendor.slug,
-          rating: vendor.rating,
+          rating: vendor.rating ?? 0,
           cuisine: vendor.cuisine,
           halaal: vendor.halaal,
           image: vendor.image,

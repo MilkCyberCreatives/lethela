@@ -9,6 +9,7 @@ type PublicVendorSource = {
   halaal?: boolean | null;
   image?: string | null;
   etaMins?: number | null;
+  deliveryFee?: number | null;
   products?: Array<{ isAlcohol?: boolean | null }>;
   reviews?: Array<{ rating?: number | null }>;
 };
@@ -78,10 +79,14 @@ export function buildPublicVendorCard(
     slug: source.slug,
     cover: getPublicVendorImage(source.image, hasAlcohol),
     badge: getPublicVendorBadge(source, hasAlcohol),
-    rating: averageRating ?? (Number.isFinite(source.rating) ? Number(source.rating) : 4.4),
+    rating: averageRating,
+    reviewCount: reviewValues.length,
+    deliveryFeeCents: DEFAULT_CARD_DELIVERY_FEE_CENTS,
     cuisines,
     eta: getPublicVendorEta(baseEtaMin),
     distanceKm: source.distanceKm ?? undefined,
     baseEtaMin: baseEtaMin ?? undefined,
   };
 }
+
+const DEFAULT_CARD_DELIVERY_FEE_CENTS = 1000;

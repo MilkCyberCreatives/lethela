@@ -43,7 +43,16 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const params = await Promise.resolve(searchParams);
   const query = parseQuery(params.q).slice(0, 180);
   const results = query.length >= 2 ? await searchCatalog(query, { limit: 30 }) : [];
-  const suggestions = ["kota", "burger", "chips", "groceries", "sushi", "curry"];
+  const suggestions = [
+    "kota",
+    "chips",
+    "chicken",
+    "groceries",
+    "alcohol",
+    "braai",
+    "breakfast",
+    "mogodu",
+  ];
 
   const itemListSchema =
     query.length >= 2
@@ -89,7 +98,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             defaultValue={query}
             required
             minLength={2}
-            placeholder="Search kota, groceries, burgers, curry..."
+            placeholder="Search kota, chips, chicken, groceries, alcohol..."
             className="min-h-12 w-full rounded-md border border-white/20 bg-white px-4 text-base text-black outline-none ring-lethela-primary/40 transition focus:ring-4"
           />
           <button

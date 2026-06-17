@@ -9,8 +9,13 @@ type WhatsAppOrderPayload = {
   subtotalCents: number;
   deliveryCents: number;
   totalCents: number;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  deliveryAddress?: string | null;
   destinationSuburb?: string | null;
+  orderReference?: string | null;
   vendorSlug?: string | null;
+  vendorName?: string | null;
 };
 
 function sanitizePhone(raw: string) {
@@ -30,6 +35,8 @@ export function getOrderWhatsAppPhone() {
 
 export function buildWhatsAppOrderMessage(payload: WhatsAppOrderPayload) {
   const destination = payload.destinationSuburb?.trim() || "Klipfontein View, Midrand";
+  const orderReference =
+    payload.orderReference?.trim() || `WA-${Date.now().toString(36).toUpperCase()}`;
   const lines = payload.items.map(
     (item) => `- ${item.qty} x ${item.name} (${formatR(item.priceCents * item.qty)})`,
   );
@@ -37,8 +44,14 @@ export function buildWhatsAppOrderMessage(payload: WhatsAppOrderPayload) {
   return [
     "Hello Lethela, I would like to place this order via WhatsApp.",
     "",
+    payload.customerName ? `Customer name: ${payload.customerName}` : "Customer name: ",
+    payload.customerPhone ? `Customer phone: ${payload.customerPhone}` : "Customer phone: ",
+    `Order reference: ${orderReference}`,
     `Area: ${destination}`,
-    payload.vendorSlug ? `Vendor: ${payload.vendorSlug}` : null,
+    `Delivery address: ${payload.deliveryAddress?.trim() || destination}`,
+    payload.vendorName || payload.vendorSlug
+      ? `Vendor: ${payload.vendorName || payload.vendorSlug}`
+      : "Vendor: ",
     "",
     "Items:",
     ...lines,

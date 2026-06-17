@@ -7,9 +7,12 @@ import {
 } from "../src/lib/order-tracking";
 
 test("normalizeTrackingStatus maps legacy values into tracking states", () => {
-  assert.equal(normalizeTrackingStatus("accepted"), "PREPARING");
-  assert.equal(normalizeTrackingStatus("picked_up"), "OUT_FOR_DELIVERY");
-  assert.equal(normalizeTrackingStatus("unknown"), "PLACED");
+  assert.equal(normalizeTrackingStatus("placed"), "PENDING");
+  assert.equal(normalizeTrackingStatus("accepted"), "ACCEPTED");
+  assert.equal(normalizeTrackingStatus("picked_up"), "PICKED_UP");
+  assert.equal(normalizeTrackingStatus("on_the_way"), "ON_THE_WAY");
+  assert.equal(normalizeTrackingStatus("canceled"), "CANCELLED");
+  assert.equal(normalizeTrackingStatus("unknown"), "PENDING");
 });
 
 test("getSimulatedRiderPoint returns a point between vendor and destination", () => {

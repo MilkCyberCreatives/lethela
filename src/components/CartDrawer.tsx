@@ -9,6 +9,7 @@ import { useCart } from "@/store/cart";
 import { readPreferredLocation } from "@/lib/location-preference";
 import {
   DEFAULT_DELIVERY_FEE_CENTS,
+  DELIVERY_PRICING_WORDING,
   EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   INCLUDED_DELIVERY_RADIUS_KM,
 } from "@/lib/pricing";
@@ -30,6 +31,7 @@ export default function CartDrawer() {
     baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
     deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
     distanceKm: null as number | null,
+    manualQuoteRequired: false,
     includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
     extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   });
@@ -74,6 +76,7 @@ export default function CartDrawer() {
         baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
         deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
         distanceKm: null,
+        manualQuoteRequired: false,
         includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
         extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
       });
@@ -104,6 +107,7 @@ export default function CartDrawer() {
           baseFeeCents: Number(json.baseFeeCents ?? DEFAULT_DELIVERY_FEE_CENTS),
           deliveryCents: Number(json.deliveryCents ?? DEFAULT_DELIVERY_FEE_CENTS),
           distanceKm: typeof json.distanceKm === "number" ? json.distanceKm : null,
+          manualQuoteRequired: Boolean(json.manualQuoteRequired),
           includedRadiusKm: Number(json.includedRadiusKm ?? INCLUDED_DELIVERY_RADIUS_KM),
           extraPerKmCents: Number(json.extraPerKmCents ?? EXTRA_DELIVERY_FEE_PER_KM_CENTS),
         });
@@ -122,20 +126,24 @@ export default function CartDrawer() {
     };
   }, [destinationSuburb, mounted, preferredLocation, visibleItems]);
 
-  const delivery = deliveryQuote.deliveryCents;
+  const hasItems = visibleItems.length > 0;
+  const delivery = hasItems ? deliveryQuote.deliveryCents : 0;
   const total = subtotal + delivery;
-  const whatsappLink = buildWhatsAppOrderLink({
-    items: visibleItems.map((item) => ({
-      name: item.name,
-      qty: item.qty,
-      priceCents: item.priceCents,
-    })),
-    subtotalCents: subtotal,
-    deliveryCents: delivery,
-    totalCents: total,
-    destinationSuburb,
-    vendorSlug: visibleItems[0]?.vendorSlug || null,
-  });
+  const whatsappLink = hasItems
+    ? buildWhatsAppOrderLink({
+        items: visibleItems.map((item) => ({
+          name: item.name,
+          qty: item.qty,
+          priceCents: item.priceCents,
+        })),
+        subtotalCents: subtotal,
+        deliveryCents: delivery,
+        totalCents: total,
+        destinationSuburb,
+        deliveryAddress: destinationSuburb,
+        vendorSlug: visibleItems[0]?.vendorSlug || null,
+      })
+    : "#";
 
   return (
     <>
@@ -227,20 +235,30 @@ export default function CartDrawer() {
               <span>Subtotal</span>
               <span>R {(subtotal / 100).toFixed(2)}</span>
             </div>
-            <div className="flex items-center justify-between text-white/80">
-              <span>
-                Delivery
-                {deliveryQuote.distanceKm != null
-                  ? ` (${deliveryQuote.distanceKm.toFixed(2)} km)`
-                  : ""}
-              </span>
-              <span>R {(delivery / 100).toFixed(2)}</span>
-            </div>
-            <div className="text-xs text-white/55">
-              {quoteLoading
-                ? "Refreshing delivery quote..."
-                : `R ${(deliveryQuote.baseFeeCents / 100).toFixed(2)} within ${deliveryQuote.includedRadiusKm} km, then R ${(deliveryQuote.extraPerKmCents / 100).toFixed(2)} per extra km.`}
-            </div>
+            {hasItems ? (
+              <>
+                <div className="flex items-center justify-between text-white/80">
+                  <span>
+                    Delivery
+                    {deliveryQuote.distanceKm != null
+                      ? ` (${deliveryQuote.distanceKm.toFixed(2)} km)`
+                      : ""}
+                  </span>
+                  <span>R {(delivery / 100).toFixed(2)}</span>
+                </div>
+                <div className="text-xs text-white/55">
+                  {quoteLoading
+                    ? "Refreshing delivery quote..."
+                    : deliveryQuote.manualQuoteRequired
+                      ? "This address is outside the launch delivery zone. Use WhatsApp for a manual quote."
+                      : DELIVERY_PRICING_WORDING}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/65">
+                Delivery will be calculated once you add items and enter your address.
+              </div>
+            )}
             <div className="flex items-center justify-between font-semibold">
               <span>Total</span>
               <span>R {(total / 100).toFixed(2)}</span>

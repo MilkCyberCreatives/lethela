@@ -20,7 +20,7 @@ export function businessFacts() {
     supportWhatsApp: getWhatsAppSupportLink(),
     supportPhoneDisplay: "+27 72 390 8919",
     serviceArea:
-      "Lethela is currently focused on Klipfontein View, Midrand, and nearby township-first delivery corridors, with gradual expansion to nearby suburbs.",
+      "Lethela is launching in Klipfontein View first, then expanding to nearby areas such as Mayibuye, Rabie Ridge and surrounding Midrand township communities.",
     countryContext: "South Africa",
     keyCategories: [
       "Kota",
@@ -28,6 +28,8 @@ export function businessFacts() {
       "Burgers",
       "Groceries",
       "Alcohol (18+ only)",
+      "Braai",
+      "Breakfast",
       "Local favourites",
     ],
     orderMethods: ["Online checkout with Ozow", "WhatsApp order confirmation"],
@@ -42,7 +44,7 @@ export function businessFacts() {
     riderRequirements:
       "Riders need South African ID, a valid license where applicable, reliable transport, a smartphone with GPS/data, WhatsApp, and a bank account.",
     alcoholPolicy:
-      "Alcohol listings are allowed for approved vendors, but sales are strictly 18+ and subject to local law and verification at fulfilment.",
+      "Alcohol is available from launch only to customers aged 18 or older, subject to age verification, delivery checks and local compliance.",
     escalation:
       "For urgent support, refunds, order issues, vendor onboarding help, or rider follow-up, the primary escalation path is WhatsApp support.",
   };
@@ -102,12 +104,12 @@ export function supportFaq(): SupportFaqItem[] {
     },
     {
       q: "Where is Lethela available?",
-      a: "Lethela is currently focused on Klipfontein View, Midrand and nearby suburbs while service expands gradually.",
+      a: "Lethela is launching in Klipfontein View first, then expanding to nearby areas such as Mayibuye, Rabie Ridge and surrounding Midrand township communities.",
       tags: ["coverage", "area", "midrand", "location", "available", "where"],
     },
     {
       q: "What can I order on Lethela?",
-      a: "You can order township favourites and essentials including kota, chips, burgers, groceries, and alcohol from approved vendors.",
+      a: "You can order township favourites and essentials including kota, chips, burgers, chicken, braai, breakfast items, groceries and alcohol from approved vendors. Alcohol is 18+ only.",
       tags: ["menu", "categories", "kota", "chips", "burgers", "groceries", "alcohol", "food"],
     },
     {
@@ -147,12 +149,12 @@ export function supportFaq(): SupportFaqItem[] {
     },
     {
       q: "Can I buy alcohol on Lethela?",
-      a: "Yes, approved vendors can list alcohol. Alcohol sales are strictly 18+ and subject to local legal and fulfilment requirements.",
+      a: "Yes. Alcohol is available from approved vendors for customers aged 18 or older, subject to age verification and delivery checks.",
       tags: ["alcohol", "beer", "wine", "cider", "spirits", "age", "18+"],
     },
     {
       q: "What is Lethela's alcohol policy?",
-      a: "Alcohol is 18+ only. Availability depends on approved vendors and compliance with local laws and checks during fulfilment.",
+      a: "Alcohol is 18+ only and subject to local law, age verification and fulfilment checks.",
       tags: ["policy", "alcohol policy", "18+", "law", "legal"],
     },
     {
@@ -205,7 +207,7 @@ export function supportFaq(): SupportFaqItem[] {
     },
     {
       q: "What do riders need to apply?",
-      a: "Riders need a valid South African ID, deliverable license where required, reliable transport, a smartphone with GPS and data, WhatsApp, and a bank account.",
+      a: "Riders need a valid South African ID, a valid licence where required for scooter or car deliveries, reliable transport, a smartphone with GPS and data, WhatsApp, and a bank account.",
       tags: ["rider requirements", "id", "license", "bike", "car", "transport", "bank account"],
     },
     {

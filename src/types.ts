@@ -5,7 +5,9 @@ export type Vendor = {
   slug: string;
   cover: string;
   badge: string | null;
-  rating: number;
+  rating: number | null;
+  reviewCount?: number;
+  deliveryFeeCents?: number;
   cuisines: string[];
   eta: string; // display string
   distanceKm?: number; // for AI ETA/rerank

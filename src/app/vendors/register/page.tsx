@@ -42,7 +42,9 @@ const STEPS = [
 const CHECKLIST = [
   "Business contact, owner email and secure password",
   "Trading address, suburb, city and delivery coverage",
-  "Cuisine tags, delivery fee and average prep ETA",
+  "Business category, operating hours and average prep ETA",
+  "Menu or product upload details",
+  "Banking or payout details",
   "Owner ID and proof of address ready for ops review",
 ];
 
@@ -80,7 +82,8 @@ export default function VendorRegisterPage() {
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 md:text-base">
               Lethela helps local food and grocery businesses reach more customers. Complete the
-              application below and we will review your store before it goes live.
+              application below and we will review your store before it goes live. No hidden
+              charges. You stay in control of your prices.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -185,6 +188,34 @@ export default function VendorRegisterPage() {
                 </article>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-[#080B27]">
+        <div className="container py-8">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-white/50">
+                Vendor commercial terms
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold">Pricing details unlock after approval</h2>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {[
+              "Approved vendors can sign in to view the current pricing structure.",
+              "Lethela confirms commercial terms before a store starts taking orders.",
+              "No hidden charges. You stay in control of your menu prices.",
+            ].map((item) => (
+              <article
+                key={item}
+                className="rounded-lg border border-white/10 bg-white/[0.035] p-4"
+              >
+                <CheckCircle2 className="h-5 w-5 text-lethela-primary" />
+                <p className="mt-3 text-sm leading-6 text-white/76">{item}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>

@@ -19,7 +19,7 @@ import { getHomeProducts, getHomeRecommendations, getHomeVendors } from "@/lib/h
 export const metadata: Metadata = {
   title: "Food, Grocery and Township Delivery",
   description:
-    "Order kota, chips, burgers, alcohol and groceries with Lethela. Fast local delivery for township and city communities.",
+    "Order kota, chips, burgers, chicken, braai, breakfast, groceries and alcohol with Lethela. Fast local delivery for Klipfontein View and nearby township communities.",
   alternates: {
     canonical: "/",
   },
@@ -36,7 +36,7 @@ const homeFaqSchema = {
       name: "What can I order on Lethela?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "You can order township favourites like kota, chips, burgers, alcohol and groceries from approved local vendors.",
+        text: "You can order township favourites like kota, chips, burgers, chicken, braai, breakfast items, groceries and alcohol from approved local vendors. Alcohol is 18+ only.",
       },
     },
     {

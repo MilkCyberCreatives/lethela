@@ -5,6 +5,7 @@ import { useCart } from "@/store/cart";
 import { formatZAR } from "@/lib/format";
 import {
   DEFAULT_DELIVERY_FEE_CENTS,
+  DELIVERY_PRICING_WORDING,
   EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   INCLUDED_DELIVERY_RADIUS_KM,
 } from "@/lib/pricing";
@@ -28,6 +29,13 @@ export default function CheckoutPage() {
   const [destinationSuburb, setDestinationSuburb] = useState(
     () => readPreferredLocation()?.label || "Klipfontein View, Midrand",
   );
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [standNumber, setStandNumber] = useState("");
+  const [streetSection, setStreetSection] = useState("");
+  const [landmark, setLandmark] = useState("");
+  const [deliveryNotes, setDeliveryNotes] = useState("");
   const [destinationPoint, setDestinationPoint] = useState<{ lat: number; lng: number } | null>(
     () => {
       const saved = readPreferredLocation();
@@ -38,6 +46,7 @@ export default function CheckoutPage() {
     baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
     deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
     distanceKm: null as number | null,
+    manualQuoteRequired: false,
     includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
     extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   });
@@ -50,6 +59,7 @@ export default function CheckoutPage() {
         baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
         deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
         distanceKm: null,
+        manualQuoteRequired: false,
         includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
         extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
       });
@@ -81,6 +91,7 @@ export default function CheckoutPage() {
           baseFeeCents: Number(json.baseFeeCents ?? DEFAULT_DELIVERY_FEE_CENTS),
           deliveryCents: Number(json.deliveryCents ?? DEFAULT_DELIVERY_FEE_CENTS),
           distanceKm: typeof json.distanceKm === "number" ? json.distanceKm : null,
+          manualQuoteRequired: Boolean(json.manualQuoteRequired),
           includedRadiusKm: Number(json.includedRadiusKm ?? INCLUDED_DELIVERY_RADIUS_KM),
           extraPerKmCents: Number(json.extraPerKmCents ?? EXTRA_DELIVERY_FEE_PER_KM_CENTS),
         });
@@ -99,27 +110,52 @@ export default function CheckoutPage() {
     };
   }, [destinationPoint, destinationSuburb, items]);
 
-  const deliveryFee = deliveryQuote.deliveryCents;
+  const hasItems = items.length > 0;
+  const deliveryFee = hasItems ? deliveryQuote.deliveryCents : 0;
   const total = subtotal + deliveryFee;
-  const whatsappLink = useMemo(
-    () =>
-      buildWhatsAppOrderLink({
-        items: items.map((item) => ({
-          name: item.name,
-          qty: item.qty,
-          priceCents: item.priceCents,
-        })),
-        subtotalCents: subtotal,
-        deliveryCents: deliveryFee,
-        totalCents: total,
-        destinationSuburb,
-        vendorSlug: items[0]?.vendorSlug || null,
-      }),
-    [deliveryFee, destinationSuburb, items, subtotal, total],
-  );
+  const whatsappLink = useMemo(() => {
+    const deliveryAddress = [
+      standNumber ? `Stand/house: ${standNumber}` : null,
+      streetSection ? `Street/section: ${streetSection}` : null,
+      destinationSuburb ? `Area: ${destinationSuburb}` : null,
+      landmark ? `Landmark: ${landmark}` : null,
+      deliveryNotes ? `Notes: ${deliveryNotes}` : null,
+    ]
+      .filter(Boolean)
+      .join("; ");
+
+    return buildWhatsAppOrderLink({
+      items: items.map((item) => ({
+        name: item.name,
+        qty: item.qty,
+        priceCents: item.priceCents,
+      })),
+      subtotalCents: subtotal,
+      deliveryCents: deliveryFee,
+      totalCents: total,
+      destinationSuburb,
+      deliveryAddress,
+      customerName,
+      customerPhone: whatsappNumber || customerPhone,
+      vendorSlug: items[0]?.vendorSlug || null,
+    });
+  }, [
+    customerName,
+    customerPhone,
+    deliveryFee,
+    deliveryNotes,
+    destinationSuburb,
+    items,
+    landmark,
+    standNumber,
+    streetSection,
+    subtotal,
+    total,
+    whatsappNumber,
+  ]);
 
   useEffect(() => {
-    if (items.length === 0) return;
+    if (items.length === 0 || deliveryQuote.manualQuoteRequired) return;
     const signature = JSON.stringify(
       items.map((item) => ({
         id: item.itemId,
@@ -142,7 +178,7 @@ export default function CheckoutPage() {
         quantity: item.qty,
       })),
     });
-  }, [items, total]);
+  }, [deliveryQuote.manualQuoteRequired, items, total]);
 
   async function payOzow() {
     if (items.length === 0) return;
@@ -224,7 +260,81 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            <div className="mt-4 space-y-2 text-sm">
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="grid gap-3 rounded-lg border border-white/15 p-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                    Customer name
+                  </label>
+                  <input
+                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
+                    value={customerName}
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    placeholder="Your full name"
+                    autoComplete="name"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                    Phone number
+                  </label>
+                  <input
+                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
+                    value={customerPhone}
+                    onChange={(event) => setCustomerPhone(event.target.value)}
+                    placeholder="072..."
+                    autoComplete="tel"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                    WhatsApp number
+                  </label>
+                  <input
+                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
+                    value={whatsappNumber}
+                    onChange={(event) => setWhatsappNumber(event.target.value)}
+                    placeholder="Same as phone if applicable"
+                    autoComplete="tel"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                    Stand / house number
+                  </label>
+                  <input
+                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
+                    value={standNumber}
+                    onChange={(event) => setStandNumber(event.target.value)}
+                    placeholder="Stand 1234"
+                    autoComplete="address-line1"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                    Street / extension / section
+                  </label>
+                  <input
+                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
+                    value={streetSection}
+                    onChange={(event) => setStreetSection(event.target.value)}
+                    placeholder="Extension 3"
+                    autoComplete="address-line2"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                    Landmark
+                  </label>
+                  <input
+                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
+                    value={landmark}
+                    onChange={(event) => setLandmark(event.target.value)}
+                    placeholder="Opposite Park X3"
+                  />
+                </div>
+              </div>
+
               <div className="rounded-lg border border-white/15 p-3">
                 <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
                   Delivery suburb / area
@@ -238,6 +348,16 @@ export default function CheckoutPage() {
                   }}
                   placeholder="Klipfontein View, Midrand"
                   autoComplete="address-level2"
+                />
+                <label className="mb-1 mt-3 block text-xs uppercase tracking-[0.1em] text-white/70">
+                  Delivery notes
+                </label>
+                <textarea
+                  className="w-full rounded bg-white px-3 py-2 text-sm text-black"
+                  value={deliveryNotes}
+                  onChange={(event) => setDeliveryNotes(event.target.value)}
+                  placeholder="Blue gate, opposite Park X3, call on arrival."
+                  rows={3}
                 />
               </div>
 
@@ -257,7 +377,9 @@ export default function CheckoutPage() {
               <p className="text-xs text-white/60">
                 {quoteLoading
                   ? "Refreshing delivery quote..."
-                  : `${formatZAR(deliveryQuote.baseFeeCents)} within ${deliveryQuote.includedRadiusKm} km, then ${formatZAR(deliveryQuote.extraPerKmCents)} for each extra km.`}
+                  : deliveryQuote.manualQuoteRequired
+                    ? "This address is outside the launch delivery zone. Use WhatsApp for a manual quote."
+                    : DELIVERY_PRICING_WORDING}
               </p>
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
@@ -266,12 +388,18 @@ export default function CheckoutPage() {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button className="bg-lethela-primary" disabled={loading} onClick={payOzow}>
+              <Button
+                className="bg-lethela-primary"
+                disabled={loading || deliveryQuote.manualQuoteRequired}
+                onClick={payOzow}
+              >
                 {loading
                   ? "Redirecting..."
-                  : isOzowSandbox
-                    ? "Pay with Ozow (sandbox)"
-                    : "Pay with Ozow"}
+                  : deliveryQuote.manualQuoteRequired
+                    ? "Manual quote required"
+                    : isOzowSandbox
+                      ? "Pay with Ozow (sandbox)"
+                      : "Pay with Ozow"}
               </Button>
               <Button
                 asChild

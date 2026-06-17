@@ -3,7 +3,21 @@ import { geocodeSuburb, haversineKm, type LatLng } from "@/lib/geo";
 
 export const DEFAULT_DELIVERY_FEE_CENTS = 1000;
 export const INCLUDED_DELIVERY_RADIUS_KM = 1;
-export const EXTRA_DELIVERY_FEE_PER_KM_CENTS = 700;
+export const EXTRA_DELIVERY_FEE_PER_KM_CENTS = 500;
+export const MAX_LAUNCH_DELIVERY_DISTANCE_KM = 10;
+export const DELIVERY_PRICING_WORDING =
+  "Delivery starts from R10 for nearby orders. Final delivery fee is based on distance and is shown before you confirm.";
+
+export const DELIVERY_FEE_TIERS = [
+  { maxKm: 1, feeCents: 1000, label: "0-1 km" },
+  { maxKm: 2, feeCents: 1500, label: "1.1-2 km" },
+  { maxKm: 3, feeCents: 2000, label: "2.1-3 km" },
+  { maxKm: 4, feeCents: 2500, label: "3.1-4 km" },
+  { maxKm: 5, feeCents: 3000, label: "4.1-5 km" },
+  { maxKm: 6, feeCents: 3500, label: "5.1-6 km" },
+  { maxKm: 8, feeCents: 4500, label: "6.1-8 km" },
+  { maxKm: 10, feeCents: 5500, label: "8.1-10 km" },
+] as const;
 
 type DeliveryVendorLocation = {
   latitude?: number | null;
@@ -36,12 +50,16 @@ async function resolveVendorPoint(vendor: DeliveryVendorLocation): Promise<LatLn
 
 export function deliveryFeeCents(distanceKm?: number | null, baseFeeCents?: number | null): number {
   const normalizedBaseFeeCents = normalizeBaseFeeCents(baseFeeCents);
-  if (!distanceKm || distanceKm <= INCLUDED_DELIVERY_RADIUS_KM) {
+  if (!distanceKm) {
     return normalizedBaseFeeCents;
   }
 
-  const extraKm = Math.ceil(distanceKm - INCLUDED_DELIVERY_RADIUS_KM);
-  return normalizedBaseFeeCents + extraKm * EXTRA_DELIVERY_FEE_PER_KM_CENTS;
+  const tier = DELIVERY_FEE_TIERS.find((item) => distanceKm <= item.maxKm);
+  return tier?.feeCents ?? DELIVERY_FEE_TIERS[DELIVERY_FEE_TIERS.length - 1].feeCents;
+}
+
+export function needsManualDeliveryQuote(distanceKm?: number | null): boolean {
+  return typeof distanceKm === "number" && distanceKm > MAX_LAUNCH_DELIVERY_DISTANCE_KM;
 }
 
 export function deliveryFeeZAR(distanceKm?: number | null, baseFeeCents?: number | null): number {
@@ -89,6 +107,8 @@ export async function quoteDelivery({
     baseFeeCents: normalizedBaseFeeCents,
     deliveryCents: deliveryFeeCents(distanceKm, normalizedBaseFeeCents),
     distanceKm,
+    manualQuoteRequired: needsManualDeliveryQuote(distanceKm),
+    maxLaunchDistanceKm: MAX_LAUNCH_DELIVERY_DISTANCE_KM,
     includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
     extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   };

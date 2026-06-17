@@ -57,6 +57,12 @@ export default function MainHeader() {
           <Link href="/rider" className="hover:underline hover:text-lethela-primary font-medium">
             Rider
           </Link>
+          <Link
+            href="/categories/groceries"
+            className="hover:underline hover:text-lethela-primary font-medium"
+          >
+            Groceries
+          </Link>
           <Link href="/about" className="hover:underline hover:text-lethela-primary font-medium">
             About
           </Link>
@@ -116,6 +122,9 @@ export default function MainHeader() {
                 </Link>
                 <Link href="/rider" className="hover:underline">
                   Rider
+                </Link>
+                <Link href="/categories/groceries" className="hover:underline">
+                  Groceries
                 </Link>
                 <Link href="/about" className="hover:underline">
                   About

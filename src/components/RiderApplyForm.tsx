@@ -162,7 +162,7 @@ export default function RiderApplyForm() {
             />
             <input
               className="rounded bg-white px-3 py-2 text-black"
-              placeholder="License code* (e.g. A1, B, C1)"
+              placeholder="Licence code where required (e.g. A1, B, C1)"
               required
               value={form.licenseCode}
               onChange={(event) =>

@@ -8,6 +8,11 @@ import {
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
 import { buildPublicVendorCard } from "@/lib/public-catalog";
+import {
+  canReadSqliteCatalog,
+  getSqliteCatalogProducts,
+  getSqliteCatalogVendors,
+} from "@/lib/sqlite-catalog";
 import type { ProductLite } from "@/components/ProductCard";
 import type { Vendor } from "@/types";
 
@@ -68,6 +73,11 @@ export async function getHomeRecommendations(suburb: string | null): Promise<Rec
 }
 
 export async function getHomeProducts(suburb: string | null, take = 24): Promise<ProductLite[]> {
+  if (canReadSqliteCatalog()) {
+    const sqliteItems = await getSqliteCatalogProducts({ suburb, take });
+    if (sqliteItems) return sqliteItems;
+  }
+
   if (shouldUseCatalogFallbackBeforeQuery()) {
     return getFallbackProducts().slice(0, Math.min(60, Math.max(6, take)));
   }
@@ -135,6 +145,16 @@ function fallbackVendors(hour: number): Vendor[] {
 
 export async function getHomeVendors(suburb: string | null, take = 18): Promise<Vendor[]> {
   const hour = new Date().getHours();
+  if (canReadSqliteCatalog()) {
+    const sqliteVendors = await getSqliteCatalogVendors({ suburb, take });
+    if (sqliteVendors) {
+      return sqliteVendors.map((vendor) => {
+        const etaStart = aiPredictETA(vendor.distanceKm ?? 3, vendor.baseEtaMin ?? 15, hour);
+        return { ...vendor, eta: `${etaStart}-${etaStart + 5} min` };
+      });
+    }
+  }
+
   if (shouldUseCatalogFallbackBeforeQuery()) {
     return fallbackVendors(hour).slice(0, Math.min(60, Math.max(6, take)));
   }
@@ -183,7 +203,7 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
       id: vendor.id,
       name: vendor.name,
       slug: vendor.slug,
-      rating: vendor.rating,
+      rating: vendor.rating ?? 0,
       cuisine: vendor.cuisine,
       halaal: vendor.halaal,
       image: vendor.image,
@@ -199,7 +219,7 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
       id: vendor.id,
       name: vendor.name,
       slug: vendor.slug,
-      rating: vendor.rating,
+      rating: vendor.rating ?? 0,
       cuisines: vendor.cuisines,
       distanceKm: vendor.distanceKm ?? 3,
       baseEtaMin: vendor.baseEtaMin ?? 15,

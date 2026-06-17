@@ -7,6 +7,7 @@ import {
   INCLUDED_DELIVERY_RADIUS_KM,
   quoteDelivery,
 } from "@/lib/pricing";
+import { canReadSqliteCatalog, getSqliteDeliveryVendor } from "@/lib/sqlite-catalog";
 
 const QuerySchema = z
   .object({
@@ -25,12 +26,19 @@ const QuerySchema = z
     },
   );
 
-function isLocalSqliteRuntime() {
-  return (
-    process.env.NODE_ENV !== "production" &&
-    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
-      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
-  );
+function localSqliteQuote(baseFeeCents = DEFAULT_DELIVERY_FEE_CENTS) {
+  const deliveryCents = baseFeeCents > 0 ? baseFeeCents : DEFAULT_DELIVERY_FEE_CENTS;
+  return {
+    ok: true,
+    originResolved: true,
+    destinationResolved: true,
+    locationResolved: false,
+    baseFeeCents: deliveryCents,
+    deliveryCents,
+    distanceKm: null,
+    includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
+    extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -48,18 +56,15 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (isLocalSqliteRuntime() && parsed.data.vendorId.startsWith("vendor-")) {
-    return NextResponse.json({
-      ok: true,
-      originResolved: true,
-      destinationResolved: true,
-      locationResolved: false,
-      baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
-      deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
-      distanceKm: null,
-      includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
-      extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
-    });
+  if (canReadSqliteCatalog()) {
+    if (parsed.data.vendorId.startsWith("vendor-")) {
+      return NextResponse.json(localSqliteQuote());
+    }
+
+    const sqliteVendor = await getSqliteDeliveryVendor(parsed.data.vendorId);
+    if (sqliteVendor) {
+      return NextResponse.json(localSqliteQuote(sqliteVendor.deliveryFee));
+    }
   }
 
   const vendor = await prisma.vendor.findFirst({

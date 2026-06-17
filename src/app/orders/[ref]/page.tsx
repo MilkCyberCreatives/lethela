@@ -62,7 +62,14 @@ type OrderPayload = {
   tracking?: TrackingPayload | null;
 };
 
-const STAGES: TrackingOrderStatus[] = ["PLACED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED"];
+const STAGES: TrackingOrderStatus[] = [
+  "PENDING",
+  "ACCEPTED",
+  "PREPARING",
+  "PICKED_UP",
+  "ON_THE_WAY",
+  "DELIVERED",
+];
 
 function normalizeRef(value: string) {
   return String(value || "")
@@ -90,23 +97,31 @@ function buildFallbackTracking(order: OrderPayload): TrackingPayload {
     statusLabel: getTrackingStatusLabel(status),
     statusDetail: getTrackingStatusDetail(status),
     etaLabel:
-      status === "PLACED"
+      status === "PENDING"
         ? "35-45 min"
-        : status === "PREPARING"
-          ? "20-30 min"
-          : status === "OUT_FOR_DELIVERY"
-            ? "8-15 min"
-            : status === "DELIVERED"
-              ? "Delivered"
-              : "Canceled",
+        : status === "ACCEPTED"
+          ? "30-40 min"
+          : status === "PREPARING"
+            ? "20-30 min"
+            : status === "PICKED_UP"
+              ? "12-20 min"
+              : status === "ON_THE_WAY" || status === "OUT_FOR_DELIVERY"
+                ? "8-15 min"
+                : status === "DELIVERED"
+                  ? "Delivered"
+                  : "Cancelled",
     progressPct:
-      status === "PLACED"
+      status === "PENDING"
         ? 12
-        : status === "PREPARING"
-          ? 42
-          : status === "OUT_FOR_DELIVERY"
-            ? 78
-            : 100,
+        : status === "ACCEPTED"
+          ? 26
+          : status === "PREPARING"
+            ? 42
+            : status === "PICKED_UP"
+              ? 64
+              : status === "ON_THE_WAY" || status === "OUT_FOR_DELIVERY"
+                ? 78
+                : 100,
     rider: order.rider ? { lat: order.rider.lat, lng: order.rider.lng } : null,
     hasLiveRider: Boolean(order.rider && !order.rider.simulated),
   };
@@ -301,8 +316,8 @@ export default function OrderTrackingPage() {
                 <div className="rounded-xl border border-white/15 bg-white/5 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-semibold">Order journey</div>
-                    {normalizeTrackingStatus(order.status) === "CANCELED" ? (
-                      <StatusBadge>Canceled</StatusBadge>
+                    {normalizeTrackingStatus(order.status) === "CANCELLED" ? (
+                      <StatusBadge>Cancelled</StatusBadge>
                     ) : null}
                   </div>
                   <p className="mt-3 text-sm text-white/75">{tracking.statusDetail}</p>
@@ -397,7 +412,8 @@ export default function OrderTrackingPage() {
                       <span className="font-semibold text-white">
                         {tracking.hasLiveRider
                           ? "Live"
-                          : tracking.status === "OUT_FOR_DELIVERY"
+                          : tracking.status === "OUT_FOR_DELIVERY" ||
+                              tracking.status === "ON_THE_WAY"
                             ? "Estimated"
                             : "Pending"}
                       </span>

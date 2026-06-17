@@ -9,17 +9,20 @@ import {
 } from "@/lib/catalog-runtime";
 import { inferProductCategory } from "@/lib/categories";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
+import { canReadSqliteCatalog, getSqliteCatalogProducts } from "@/lib/sqlite-catalog";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const suburb = searchParams.get("suburb") || undefined;
-  const alcohol = searchParams.get("alcohol");
+  const alcoholParam = searchParams.get("alcohol");
+  const alcohol = alcoholParam === "true" || alcoholParam === "false" ? alcoholParam : null;
   const category = String(searchParams.get("category") || "").trim();
   const take = Math.min(60, Math.max(6, Number(searchParams.get("take") ?? 30)));
 
   const where: {
+    inStock?: boolean;
     isAlcohol?: boolean;
     vendor?: {
       isActive?: boolean;
@@ -27,6 +30,7 @@ export async function GET(req: Request) {
       suburb?: { contains: string };
     };
   } = {
+    inStock: true,
     vendor: {
       isActive: true,
       status: "ACTIVE",
@@ -41,34 +45,41 @@ export async function GET(req: Request) {
     };
   }
 
-  const dbItems = shouldUseCatalogFallbackBeforeQuery()
+  const sqliteItems = canReadSqliteCatalog()
+    ? await getSqliteCatalogProducts({ suburb, category, alcohol, take })
+    : null;
+
+  const dbItems = sqliteItems
     ? []
-    : await runBoundedDbQuery((db) =>
-        db.product.findMany({
-          where,
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            priceCents: true,
-            image: true,
-            isAlcohol: true,
-            vendor: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                deliveryFee: true,
+    : shouldUseCatalogFallbackBeforeQuery()
+      ? []
+      : await runBoundedDbQuery((db) =>
+          db.product.findMany({
+            where,
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              priceCents: true,
+              image: true,
+              isAlcohol: true,
+              vendor: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  deliveryFee: true,
+                },
               },
             },
-          },
-          take,
-          orderBy: { updatedAt: "desc" },
-        }),
-      ).catch(() => []);
+            take,
+            orderBy: { updatedAt: "desc" },
+          }),
+        ).catch(() => []);
 
-  const items =
-    dbItems.length > 0
+  const items = sqliteItems
+    ? sqliteItems
+    : dbItems.length > 0
       ? dbItems.map((item) => ({
           ...item,
           category: inferProductCategory({
@@ -84,7 +95,7 @@ export async function GET(req: Request) {
           : [];
 
   const filtered = category
-    ? items.filter((item) => item.category.toLowerCase() === category.toLowerCase())
+    ? items.filter((item) => item.category?.toLowerCase() === category.toLowerCase())
     : items;
 
   const alcoholFiltered =

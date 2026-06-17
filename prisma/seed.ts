@@ -105,6 +105,19 @@ async function main() {
       halaal: true,
       image: "/vendors/curry.jpg",
     },
+    {
+      slug: "kasie-market",
+      name: "Kasie Market",
+      suburb: "Klipfontein View",
+      city: "Midrand",
+      province: "Gauteng",
+      cuisine: ["Groceries", "Household", "Daily essentials"],
+      rating: 4.4,
+      deliveryFee: 1900,
+      etaMins: 18,
+      halaal: true,
+      image: "/vendors/vegan.jpg",
+    },
   ];
 
   for (const v of vendors) {
@@ -220,6 +233,31 @@ async function main() {
       where: { vendorId_slug: { vendorId: product.vendorId, slug: product.slug } },
       update: product,
       create: product,
+    });
+  }
+
+  const kasieMarket = await prisma.vendor.findUnique({ where: { slug: "kasie-market" } });
+  if (kasieMarket) {
+    await prisma.product.upsert({
+      where: { vendorId_slug: { vendorId: kasieMarket.id, slug: "grocery-starter-pack" } },
+      update: {
+        vendorId: kasieMarket.id,
+        name: "Grocery Starter Pack",
+        slug: "grocery-starter-pack",
+        description: "Bread, milk, eggs, maize meal and cooking oil for the week.",
+        priceCents: 18999,
+        image: "/vendors/vegan.jpg",
+        inStock: true,
+      },
+      create: {
+        vendorId: kasieMarket.id,
+        name: "Grocery Starter Pack",
+        slug: "grocery-starter-pack",
+        description: "Bread, milk, eggs, maize meal and cooking oil for the week.",
+        priceCents: 18999,
+        image: "/vendors/vegan.jpg",
+        inStock: true,
+      },
     });
   }
 

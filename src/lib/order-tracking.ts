@@ -1,9 +1,12 @@
 export type TrackingOrderStatus =
-  | "PLACED"
+  | "PENDING"
+  | "ACCEPTED"
   | "PREPARING"
+  | "PICKED_UP"
+  | "ON_THE_WAY"
   | "OUT_FOR_DELIVERY"
   | "DELIVERED"
-  | "CANCELED";
+  | "CANCELLED";
 
 export type TrackingPoint = { lat: number; lng: number };
 
@@ -18,58 +21,73 @@ type TrackingShape = {
 };
 
 const STATUS_PROGRESS: Record<TrackingOrderStatus, number> = {
-  PLACED: 12,
+  PENDING: 12,
+  ACCEPTED: 26,
   PREPARING: 42,
+  PICKED_UP: 64,
+  ON_THE_WAY: 78,
   OUT_FOR_DELIVERY: 78,
   DELIVERED: 100,
-  CANCELED: 100,
+  CANCELLED: 100,
 };
 
 const STATUS_ETA: Record<TrackingOrderStatus, string> = {
-  PLACED: "35-45 min",
+  PENDING: "35-45 min",
+  ACCEPTED: "30-40 min",
   PREPARING: "20-30 min",
+  PICKED_UP: "12-20 min",
+  ON_THE_WAY: "8-15 min",
   OUT_FOR_DELIVERY: "8-15 min",
   DELIVERED: "Delivered",
-  CANCELED: "Canceled",
+  CANCELLED: "Cancelled",
 };
 
 const STATUS_LABEL: Record<TrackingOrderStatus, string> = {
-  PLACED: "Order placed",
+  PENDING: "Pending",
+  ACCEPTED: "Accepted",
   PREPARING: "Kitchen is preparing your order",
+  PICKED_UP: "Picked up",
+  ON_THE_WAY: "On the way",
   OUT_FOR_DELIVERY: "Rider is on the way",
   DELIVERED: "Delivered",
-  CANCELED: "Canceled",
+  CANCELLED: "Cancelled",
 };
 
 const STATUS_DETAIL: Record<TrackingOrderStatus, string> = {
-  PLACED: "Your payment has been received and the vendor is reviewing your order.",
+  PENDING: "Your order is waiting for confirmation or payment completion.",
+  ACCEPTED: "The vendor accepted your order and will start preparing it.",
   PREPARING: "The vendor is preparing your items for handoff.",
+  PICKED_UP: "The rider has collected your order from the vendor.",
+  ON_THE_WAY: "Your rider is heading to your drop-off point now.",
   OUT_FOR_DELIVERY: "Your rider is heading to your drop-off point now.",
   DELIVERED: "The order has been marked as delivered.",
-  CANCELED: "This order was canceled before completion.",
+  CANCELLED: "This order was cancelled before completion.",
 };
 
 export function normalizeTrackingStatus(input: string | null | undefined): TrackingOrderStatus {
   const upper = String(input || "")
     .trim()
     .toUpperCase();
-  if (upper === "ACCEPTED") return "PREPARING";
-  if (upper === "PICKED_UP" || upper === "ON_THE_WAY") return "OUT_FOR_DELIVERY";
+  if (upper === "PLACED") return "PENDING";
+  if (upper === "CANCELED") return "CANCELLED";
   if (
-    upper === "PLACED" ||
+    upper === "PENDING" ||
+    upper === "ACCEPTED" ||
     upper === "PREPARING" ||
+    upper === "PICKED_UP" ||
+    upper === "ON_THE_WAY" ||
     upper === "OUT_FOR_DELIVERY" ||
     upper === "DELIVERED" ||
-    upper === "CANCELED"
+    upper === "CANCELLED"
   ) {
     return upper;
   }
-  return "PLACED";
+  return "PENDING";
 }
 
 export function isTerminalTrackingStatus(status: string | null | undefined) {
   const normalized = normalizeTrackingStatus(status);
-  return normalized === "DELIVERED" || normalized === "CANCELED";
+  return normalized === "DELIVERED" || normalized === "CANCELLED";
 }
 
 export function getTrackingStatusLabel(status: string | null | undefined) {
@@ -105,7 +123,8 @@ export function getSimulatedRiderPoint(order: TrackingShape): TrackingPoint | nu
   const status = normalizeTrackingStatus(order.status);
   const vendor = order.vendor;
   const destination = order.destination;
-  if (!vendor || !destination || status !== "OUT_FOR_DELIVERY") return null;
+  if (!vendor || !destination || (status !== "OUT_FOR_DELIVERY" && status !== "ON_THE_WAY"))
+    return null;
 
   const anchor = toDate(order.riderLocatedAt) || toDate(order.updatedAt) || toDate(order.createdAt);
   if (!anchor) return interpolatePoint(vendor, destination, 0.25);
@@ -121,7 +140,12 @@ export function buildTrackingSnapshot(order: TrackingShape) {
   const baseProgress = getTrackingProgress(status);
   let liveProgress = baseProgress;
 
-  if (status === "OUT_FOR_DELIVERY" && order.vendor && order.destination && rider) {
+  if (
+    (status === "OUT_FOR_DELIVERY" || status === "ON_THE_WAY") &&
+    order.vendor &&
+    order.destination &&
+    rider
+  ) {
     const totalLat = order.destination.lat - order.vendor.lat;
     const totalLng = order.destination.lng - order.vendor.lng;
     const travelledLat = rider.lat - order.vendor.lat;

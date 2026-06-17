@@ -10,6 +10,7 @@ import { z } from "zod";
 import { withSentryRoute } from "@/server/withSentryRoute";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { DEMO_ORDER_REF } from "@/lib/demo-order";
+import { canReadSqliteCatalog } from "@/lib/sqlite-catalog";
 
 const BodySchema = z
   .object({
@@ -47,6 +48,11 @@ function isLocalSqliteRuntime() {
     (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
       process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
   );
+}
+
+function isLocalhostRequest(req: NextRequest) {
+  const hostname = req.nextUrl.hostname;
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
 }
 
 export const POST = withSentryRoute(async (req: NextRequest) => {
@@ -102,6 +108,12 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   } = parsed.data;
   if (items.length === 0) {
     return NextResponse.json({ ok: false, error: "Cart is empty." }, { status: 400 });
+  }
+
+  if (isLocalhostRequest(req) && canReadSqliteCatalog()) {
+    const trackingToken = createOrderTrackingToken(DEMO_ORDER_REF);
+    const redirectUrl = `${baseUrl}/checkout/success?ref=${encodeURIComponent(DEMO_ORDER_REF)}&t=${encodeURIComponent(trackingToken)}`;
+    return NextResponse.json({ ok: true, redirectUrl, ref: DEMO_ORDER_REF, localDemo: true });
   }
 
   const session = await auth();
@@ -181,6 +193,17 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       {
         ok: false,
         error: "We could not verify that delivery address. Please review checkout before paying.",
+      },
+      { status: 422 },
+    );
+  }
+
+  if (deliveryQuote.manualQuoteRequired) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "This address is outside the launch delivery zone. Please use WhatsApp for a manual quote.",
       },
       { status: 422 },
     );

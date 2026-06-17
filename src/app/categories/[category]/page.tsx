@@ -7,6 +7,7 @@ import StructuredData from "@/components/StructuredData";
 import { getFallbackCategoryProducts } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
+import { canReadSqliteCatalog, getSqliteCatalogProducts } from "@/lib/sqlite-catalog";
 import {
   categoryToSlug,
   inferProductCategory,
@@ -48,39 +49,46 @@ export default async function CategoryPage({ params }: PageProps) {
   const resolvedCategory = slugToCategory(category);
   if (!resolvedCategory) return notFound();
 
-  const dbItems = shouldPreferCatalogFallback()
+  const sqliteItems = canReadSqliteCatalog()
+    ? await getSqliteCatalogProducts({ category: resolvedCategory, take: 120 })
+    : null;
+
+  const dbItems = sqliteItems
     ? []
-    : await runBoundedDbQuery((db) =>
-        db.product.findMany({
-          where: {
-            inStock: true,
-            vendor: {
-              isActive: true,
-              status: "ACTIVE",
-            },
-          },
-          orderBy: { updatedAt: "desc" },
-          take: 120,
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            priceCents: true,
-            image: true,
-            isAlcohol: true,
-            vendor: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
+    : shouldPreferCatalogFallback()
+      ? []
+      : await runBoundedDbQuery((db) =>
+          db.product.findMany({
+            where: {
+              inStock: true,
+              vendor: {
+                isActive: true,
+                status: "ACTIVE",
               },
             },
-          },
-        }),
-      ).catch(() => []);
+            orderBy: { updatedAt: "desc" },
+            take: 120,
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              priceCents: true,
+              image: true,
+              isAlcohol: true,
+              vendor: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                },
+              },
+            },
+          }),
+        ).catch(() => []);
 
-  const items =
-    dbItems.length > 0
+  const items = sqliteItems
+    ? sqliteItems
+    : dbItems.length > 0
       ? dbItems.filter(
           (item) =>
             inferProductCategory({

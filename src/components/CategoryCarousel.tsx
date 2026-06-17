@@ -16,6 +16,7 @@ const CATEGORIES = [
   "Braai",
   "Pizza",
   "Chicken",
+  "Breakfast",
 ];
 
 export default function CategoryCarousel() {

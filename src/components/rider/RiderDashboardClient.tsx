@@ -91,20 +91,29 @@ export default function RiderDashboardClient() {
 
   async function load() {
     setLoading(true);
-    const [response, messagesResponse] = await Promise.all([
-      fetch("/api/riders/me", { cache: "no-store" }),
-      fetch("/api/riders/messages", { cache: "no-store" }).catch(() => null),
-    ]);
-    const json = (await response.json().catch(() => ({
-      ok: false,
-      error: "Failed to load rider dashboard.",
-    }))) as RiderMeResponse;
-    const messagesJson = messagesResponse
-      ? await messagesResponse.json().catch(() => ({ ok: false, items: [] }))
-      : { ok: false, items: [] };
-    setData(json);
-    setMessages(messagesJson.ok ? messagesJson.items || [] : []);
-    setLoading(false);
+    try {
+      const [response, messagesResponse] = await Promise.all([
+        fetch("/api/riders/me", { cache: "no-store" }),
+        fetch("/api/riders/messages", { cache: "no-store" }).catch(() => null),
+      ]);
+      const json = (await response.json().catch(() => ({
+        ok: false,
+        error: "Failed to load rider dashboard.",
+      }))) as RiderMeResponse;
+      const messagesJson = messagesResponse
+        ? await messagesResponse.json().catch(() => ({ ok: false, items: [] }))
+        : { ok: false, items: [] };
+      setData(json);
+      setMessages(messagesJson.ok ? messagesJson.items || [] : []);
+    } catch {
+      setData({
+        ok: false,
+        error: "We could not load the rider dashboard right now. Please sign in or try again.",
+      });
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {

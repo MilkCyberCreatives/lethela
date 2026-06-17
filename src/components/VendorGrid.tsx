@@ -46,7 +46,7 @@ export default function VendorGrid({
             id: vendor.id,
             name: vendor.name,
             slug: vendor.slug,
-            rating: vendor.rating,
+            rating: vendor.rating ?? 0,
             cuisines: vendor.cuisines,
             distanceKm: vendor.distanceKm ?? 3,
             baseEtaMin: vendor.baseEtaMin ?? 15,
