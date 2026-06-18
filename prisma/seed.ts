@@ -31,6 +31,27 @@ loadLocalEnv();
 
 const prisma = new PrismaClient();
 
+async function seedOperatingHours(vendorId: string) {
+  for (let day = 0; day < 7; day += 1) {
+    const closed = day === 0;
+    await prisma.operatingHour.upsert({
+      where: { vendorId_day: { vendorId, day } },
+      update: {
+        openMin: closed ? 0 : 8 * 60,
+        closeMin: closed ? 0 : 20 * 60,
+        closed,
+      },
+      create: {
+        vendorId,
+        day,
+        openMin: closed ? 0 : 8 * 60,
+        closeMin: closed ? 0 : 20 * 60,
+        closed,
+      },
+    });
+  }
+}
+
 async function main() {
   const demoPasswordHash = await hash("DemoVendor123!", 10);
   const adminPasswordHash = await hash("AdminDemo123!", 10);
@@ -65,6 +86,7 @@ async function main() {
     },
   });
 
+  // PRE-LAUNCH DEMO CONTENT: remove demo-* vendors/products before launch.
   const vendors = [
     {
       slug: "hello-tomato",
@@ -118,10 +140,62 @@ async function main() {
       halaal: true,
       image: "/vendors/vegan.jpg",
     },
+    {
+      slug: "demo-wings-yard",
+      name: "Demo Wings Yard",
+      suburb: "Klipfontein View",
+      city: "Midrand",
+      province: "Gauteng",
+      cuisine: ["Wings", "Chicken", "Street food"],
+      rating: 4.5,
+      deliveryFee: 1900,
+      etaMins: 24,
+      halaal: false,
+      image: "/vendors/grill.jpg",
+    },
+    {
+      slug: "demo-braai-spot",
+      name: "Demo Braai Spot",
+      suburb: "Klipfontein View",
+      city: "Midrand",
+      province: "Gauteng",
+      cuisine: ["Braai", "Chisa nyama", "Wors"],
+      rating: 4.6,
+      deliveryFee: 2200,
+      etaMins: 32,
+      halaal: false,
+      image: "/vendors/grill.jpg",
+    },
+    {
+      slug: "demo-breakfast-corner",
+      name: "Demo Breakfast Corner",
+      suburb: "Klipfontein View",
+      city: "Midrand",
+      province: "Gauteng",
+      cuisine: ["Breakfast", "Vetkoek", "Coffee"],
+      rating: 4.4,
+      deliveryFee: 1400,
+      etaMins: 20,
+      halaal: true,
+      image: "/vendors/burgers.jpg",
+    },
+    {
+      slug: "demo-liquor-locker",
+      name: "Demo Liquor Locker",
+      suburb: "Klipfontein View",
+      city: "Midrand",
+      province: "Gauteng",
+      cuisine: ["Alcohol", "Cider", "Beer"],
+      rating: 4.3,
+      deliveryFee: 1900,
+      etaMins: 28,
+      halaal: false,
+      image: "/vendors/vegan.jpg",
+    },
   ];
 
   for (const v of vendors) {
-    await prisma.vendor.upsert({
+    const vendor = await prisma.vendor.upsert({
       where: { slug: v.slug },
       update: {
         name: v.name,
@@ -152,6 +226,7 @@ async function main() {
         isActive: true,
       },
     });
+    await seedOperatingHours(vendor.id);
   }
 
   const helloTomato = await prisma.vendor.findUnique({ where: { slug: "hello-tomato" } });
@@ -205,9 +280,15 @@ async function main() {
     if (!exists) await prisma.item.create({ data: item });
   }
 
+  const vendorRows = await prisma.vendor.findMany({
+    where: { slug: { in: vendors.map((vendor) => vendor.slug) } },
+    select: { id: true, slug: true },
+  });
+  const vendorIdBySlug = new Map(vendorRows.map((vendor) => [vendor.slug, vendor.id]));
+
   const products = [
     {
-      vendorId: helloTomato.id,
+      vendorSlug: "hello-tomato",
       name: "Hello Tomato Burger",
       slug: "hello-tomato-burger",
       description: "Char-grilled burger with fresh toppings.",
@@ -216,10 +297,111 @@ async function main() {
       inStock: true,
     },
     {
-      vendorId: helloTomato.id,
-      name: "Cape Dry Cider 6-pack",
-      slug: "cape-dry-cider-6-pack",
-      description: "Cold and crisp local cider.",
+      vendorSlug: "hello-tomato",
+      name: "Township Kota Special",
+      slug: "township-kota-special",
+      description: "Loaded kota with chips, polony, egg, atchar and Russian.",
+      priceCents: 6999,
+      image: "/vendors/burgers.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "hello-tomato",
+      name: "Large Kasie Chips",
+      slug: "large-kasie-chips",
+      description: "Crispy township-style chips with masala salt.",
+      priceCents: 3599,
+      image: "/vendors/grill.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "hello-tomato",
+      name: "Demo Mogodu Plate",
+      slug: "demo-mogodu-plate",
+      description: "Tender mogodu served with pap, chakalaka and greens.",
+      priceCents: 8499,
+      image: "/vendors/grill.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "kasie-market",
+      name: "Grocery Starter Pack",
+      slug: "grocery-starter-pack",
+      description: "Bread, milk, eggs, maize meal and cooking oil for the week.",
+      priceCents: 18999,
+      image: "/vendors/vegan.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "kasie-market",
+      name: "Demo Groceries Bread Milk Airtime Pack",
+      slug: "demo-airtime-bread-milk",
+      description: "Groceries pack with bread, milk and prepaid airtime.",
+      priceCents: 9999,
+      image: "/vendors/vegan.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "demo-wings-yard",
+      name: "Demo Six Piece Wings",
+      slug: "demo-six-piece-wings",
+      description: "Sticky wings with chips and house chilli dip.",
+      priceCents: 7999,
+      image: "/vendors/grill.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "demo-wings-yard",
+      name: "Demo Chicken Bucket",
+      slug: "demo-chicken-bucket",
+      description: "Crispy chicken pieces for sharing with two sauces.",
+      priceCents: 14999,
+      image: "/vendors/grill.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "demo-braai-spot",
+      name: "Demo Braai Plate",
+      slug: "demo-braai-plate",
+      description: "Chisa nyama braai plate with wors, pap and chakalaka.",
+      priceCents: 11999,
+      image: "/vendors/grill.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "demo-braai-spot",
+      name: "Demo Boerewors Roll",
+      slug: "demo-boerewors-roll",
+      description: "Flame-grilled wors roll with tomato relish.",
+      priceCents: 5499,
+      image: "/vendors/grill.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "demo-breakfast-corner",
+      name: "Demo Breakfast Vetkoek Plate",
+      slug: "demo-breakfast-vetkoek-plate",
+      description: "Breakfast plate with vetkoek, egg, cheese and coffee.",
+      priceCents: 6499,
+      image: "/vendors/burgers.jpg",
+      inStock: true,
+    },
+    {
+      vendorSlug: "demo-liquor-locker",
+      name: "Demo Castle Lite 6-pack",
+      slug: "demo-castle-lite-6-pack",
+      description: "Cold beer 6-pack. 18+ only.",
+      priceCents: 10999,
+      image: "/vendors/vegan.jpg",
+      isAlcohol: true,
+      abv: 4,
+      inStock: true,
+    },
+    {
+      vendorSlug: "demo-liquor-locker",
+      name: "Demo Savanna Cider 6-pack",
+      slug: "demo-savanna-cider-6-pack",
+      description: "Crisp cider 6-pack. 18+ only.",
       priceCents: 12999,
       image: "/vendors/vegan.jpg",
       isAlcohol: true,
@@ -229,35 +411,13 @@ async function main() {
   ];
 
   for (const product of products) {
+    const { vendorSlug, ...productData } = product;
+    const vendorId = vendorIdBySlug.get(vendorSlug);
+    if (!vendorId) continue;
     await prisma.product.upsert({
-      where: { vendorId_slug: { vendorId: product.vendorId, slug: product.slug } },
-      update: product,
-      create: product,
-    });
-  }
-
-  const kasieMarket = await prisma.vendor.findUnique({ where: { slug: "kasie-market" } });
-  if (kasieMarket) {
-    await prisma.product.upsert({
-      where: { vendorId_slug: { vendorId: kasieMarket.id, slug: "grocery-starter-pack" } },
-      update: {
-        vendorId: kasieMarket.id,
-        name: "Grocery Starter Pack",
-        slug: "grocery-starter-pack",
-        description: "Bread, milk, eggs, maize meal and cooking oil for the week.",
-        priceCents: 18999,
-        image: "/vendors/vegan.jpg",
-        inStock: true,
-      },
-      create: {
-        vendorId: kasieMarket.id,
-        name: "Grocery Starter Pack",
-        slug: "grocery-starter-pack",
-        description: "Bread, milk, eggs, maize meal and cooking oil for the week.",
-        priceCents: 18999,
-        image: "/vendors/vegan.jpg",
-        inStock: true,
-      },
+      where: { vendorId_slug: { vendorId, slug: product.slug } },
+      update: { ...productData, vendorId },
+      create: { ...productData, vendorId },
     });
   }
 

@@ -86,3 +86,14 @@ test("catalog runtime skips live queries for local sqlite catalogs", () => {
 
   resetCatalogEnv();
 });
+
+test("catalog runtime skips live queries for local sqlite under next start", () => {
+  resetCatalogEnv();
+  process.env.NODE_ENV = "production";
+  process.env.DATABASE_PROVIDER = "sqlite";
+  process.env.DATABASE_URL = "file:C:/Users/milkc/lethela/prisma/dev.db";
+
+  assert.equal(shouldUseCatalogFallbackBeforeQuery(), true);
+
+  resetCatalogEnv();
+});

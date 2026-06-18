@@ -20,6 +20,8 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+export const dynamic = "force-dynamic";
+
 const getVendorBySlug = cache(async (slug: string) => getVendorProfile(slug));
 const DAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 type OperatingHourView = { day: number; openMin: number; closeMin: number; closed: boolean };

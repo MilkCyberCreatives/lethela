@@ -166,6 +166,28 @@ function upsertProduct(db, product) {
   return product.id;
 }
 
+function upsertOperatingHours(db, vendorId) {
+  for (let day = 0; day < 7; day += 1) {
+    const closed = day === 0 ? 1 : 0;
+    const openMin = day === 0 ? 0 : 8 * 60;
+    const closeMin = day === 0 ? 0 : 20 * 60;
+    const existing = db
+      .prepare("SELECT id FROM OperatingHour WHERE vendorId = ? AND day = ?")
+      .get(vendorId, day);
+
+    if (existing) {
+      db.prepare(
+        "UPDATE OperatingHour SET openMin = ?, closeMin = ?, closed = ? WHERE vendorId = ? AND day = ?",
+      ).run(openMin, closeMin, closed, vendorId, day);
+      continue;
+    }
+
+    db.prepare(
+      "INSERT INTO OperatingHour (id, vendorId, day, openMin, closeMin, closed) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(`hours-${vendorId}-${day}`, vendorId, day, openMin, closeMin, closed);
+  }
+}
+
 function upsertRider(db) {
   const existing = db
     .prepare("SELECT id FROM RiderApplication WHERE id = ?")
@@ -241,6 +263,7 @@ try {
     passwordHash: adminPasswordHash,
   });
 
+  // PRE-LAUNCH DEMO CONTENT: remove demo-* vendors/products before launch.
   const vendors = [
     {
       id: "vendor-hello-tomato",
@@ -298,52 +321,227 @@ try {
       halaal: true,
       image: "/vendors/vegan.jpg",
     },
+    {
+      id: "vendor-demo-wings-yard",
+      slug: "demo-wings-yard",
+      name: "Demo Wings Yard",
+      suburb: "Klipfontein View",
+      city: "Midrand",
+      province: "Gauteng",
+      cuisine: ["Wings", "Chicken", "Street food"],
+      rating: 4.5,
+      deliveryFee: 1900,
+      etaMins: 24,
+      halaal: false,
+      image: "/vendors/grill.jpg",
+    },
+    {
+      id: "vendor-demo-braai-spot",
+      slug: "demo-braai-spot",
+      name: "Demo Braai Spot",
+      suburb: "Klipfontein View",
+      city: "Midrand",
+      province: "Gauteng",
+      cuisine: ["Braai", "Chisa nyama", "Wors"],
+      rating: 4.6,
+      deliveryFee: 2200,
+      etaMins: 32,
+      halaal: false,
+      image: "/vendors/grill.jpg",
+    },
+    {
+      id: "vendor-demo-breakfast-corner",
+      slug: "demo-breakfast-corner",
+      name: "Demo Breakfast Corner",
+      suburb: "Klipfontein View",
+      city: "Midrand",
+      province: "Gauteng",
+      cuisine: ["Breakfast", "Vetkoek", "Coffee"],
+      rating: 4.4,
+      deliveryFee: 1400,
+      etaMins: 20,
+      halaal: true,
+      image: "/vendors/burgers.jpg",
+    },
+    {
+      id: "vendor-demo-liquor-locker",
+      slug: "demo-liquor-locker",
+      name: "Demo Liquor Locker",
+      suburb: "Klipfontein View",
+      city: "Midrand",
+      province: "Gauteng",
+      cuisine: ["Alcohol", "Cider", "Beer"],
+      rating: 4.3,
+      deliveryFee: 1900,
+      etaMins: 28,
+      halaal: false,
+      image: "/vendors/vegan.jpg",
+    },
   ];
 
   const vendorIds = new Map();
   for (const vendor of vendors) {
     const vendorId = upsertVendor(db, vendor, vendorUserId);
     vendorIds.set(vendor.slug, vendorId);
+    upsertOperatingHours(db, vendorId);
   }
   ensureMembership(db, vendorIds.get("hello-tomato"), vendorUserId);
 
-  const helloTomatoId = vendorIds.get("hello-tomato");
-  upsertProduct(db, {
-    id: "product-hello-burger",
-    vendorId: helloTomatoId,
-    slug: "hello-tomato-burger",
-    name: "Hello Tomato Burger",
-    description: "Char-grilled burger with fresh toppings.",
-    priceCents: 8999,
-    image: "/vendors/burgers.jpg",
-    isAlcohol: false,
-    inStock: true,
-  });
-  upsertProduct(db, {
-    id: "product-cider-pack",
-    vendorId: helloTomatoId,
-    slug: "cape-dry-cider-6-pack",
-    name: "Cape Dry Cider 6-pack",
-    description: "Cold and crisp local cider.",
-    priceCents: 12999,
-    image: "/vendors/vegan.jpg",
-    isAlcohol: true,
-    abv: 5,
-    inStock: true,
-  });
+  const products = [
+    {
+      id: "product-hello-burger",
+      vendorSlug: "hello-tomato",
+      slug: "hello-tomato-burger",
+      name: "Hello Tomato Burger",
+      description: "Char-grilled burger with fresh toppings.",
+      priceCents: 8999,
+      image: "/vendors/burgers.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "product-township-kota",
+      vendorSlug: "hello-tomato",
+      slug: "township-kota-special",
+      name: "Township Kota Special",
+      description: "Loaded kota with chips, polony, egg, atchar and Russian.",
+      priceCents: 6999,
+      image: "/vendors/burgers.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "product-large-chips",
+      vendorSlug: "hello-tomato",
+      slug: "large-kasie-chips",
+      name: "Large Kasie Chips",
+      description: "Crispy township-style chips with masala salt.",
+      priceCents: 3599,
+      image: "/vendors/grill.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "demo-product-mogodu-plate",
+      vendorSlug: "hello-tomato",
+      slug: "demo-mogodu-plate",
+      name: "Demo Mogodu Plate",
+      description: "Tender mogodu served with pap, chakalaka and greens.",
+      priceCents: 8499,
+      image: "/vendors/grill.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "product-grocery-starter-pack",
+      vendorSlug: "kasie-market",
+      slug: "grocery-starter-pack",
+      name: "Grocery Starter Pack",
+      description: "Bread, milk, eggs, maize meal and cooking oil for the week.",
+      priceCents: 18999,
+      image: "/vendors/vegan.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "demo-product-airtime-bread-milk",
+      vendorSlug: "kasie-market",
+      slug: "demo-airtime-bread-milk",
+      name: "Demo Groceries Bread Milk Airtime Pack",
+      description: "Groceries pack with bread, milk and prepaid airtime.",
+      priceCents: 9999,
+      image: "/vendors/vegan.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "demo-product-wings",
+      vendorSlug: "demo-wings-yard",
+      slug: "demo-six-piece-wings",
+      name: "Demo Six Piece Wings",
+      description: "Sticky wings with chips and house chilli dip.",
+      priceCents: 7999,
+      image: "/vendors/grill.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "demo-product-chicken-bucket",
+      vendorSlug: "demo-wings-yard",
+      slug: "demo-chicken-bucket",
+      name: "Demo Chicken Bucket",
+      description: "Crispy chicken pieces for sharing with two sauces.",
+      priceCents: 14999,
+      image: "/vendors/grill.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "demo-product-braai-plate",
+      vendorSlug: "demo-braai-spot",
+      slug: "demo-braai-plate",
+      name: "Demo Braai Plate",
+      description: "Chisa nyama braai plate with wors, pap and chakalaka.",
+      priceCents: 11999,
+      image: "/vendors/grill.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "demo-product-boerewors-roll",
+      vendorSlug: "demo-braai-spot",
+      slug: "demo-boerewors-roll",
+      name: "Demo Boerewors Roll",
+      description: "Flame-grilled wors roll with tomato relish.",
+      priceCents: 5499,
+      image: "/vendors/grill.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "demo-product-breakfast-plate",
+      vendorSlug: "demo-breakfast-corner",
+      slug: "demo-breakfast-vetkoek-plate",
+      name: "Demo Breakfast Vetkoek Plate",
+      description: "Breakfast plate with vetkoek, egg, cheese and coffee.",
+      priceCents: 6499,
+      image: "/vendors/burgers.jpg",
+      isAlcohol: false,
+      inStock: true,
+    },
+    {
+      id: "demo-product-castle-lite",
+      vendorSlug: "demo-liquor-locker",
+      slug: "demo-castle-lite-6-pack",
+      name: "Demo Castle Lite 6-pack",
+      description: "Cold beer 6-pack. 18+ only.",
+      priceCents: 10999,
+      image: "/vendors/vegan.jpg",
+      isAlcohol: true,
+      abv: 4,
+      inStock: true,
+    },
+    {
+      id: "demo-product-savanna-cider",
+      vendorSlug: "demo-liquor-locker",
+      slug: "demo-savanna-cider-6-pack",
+      name: "Demo Savanna Cider 6-pack",
+      description: "Crisp cider 6-pack. 18+ only.",
+      priceCents: 12999,
+      image: "/vendors/vegan.jpg",
+      isAlcohol: true,
+      abv: 5,
+      inStock: true,
+    },
+  ];
 
-  const kasieMarketId = vendorIds.get("kasie-market");
-  upsertProduct(db, {
-    id: "product-grocery-starter-pack",
-    vendorId: kasieMarketId,
-    slug: "grocery-starter-pack",
-    name: "Grocery Starter Pack",
-    description: "Bread, milk, eggs, maize meal and cooking oil for the week.",
-    priceCents: 18999,
-    image: "/vendors/vegan.jpg",
-    isAlcohol: false,
-    inStock: true,
-  });
+  for (const product of products) {
+    const { vendorSlug, ...productData } = product;
+    upsertProduct(db, {
+      ...productData,
+      vendorId: vendorIds.get(vendorSlug),
+    });
+  }
 
   upsertRider(db);
 

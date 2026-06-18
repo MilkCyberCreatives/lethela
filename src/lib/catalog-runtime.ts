@@ -44,7 +44,7 @@ export function shouldFallbackWhenCatalogEmpty() {
 
 export function isLocalSqliteCatalogRuntime() {
   return Boolean(
-    !isProductionCatalogRuntime() &&
+    !process.env.VERCEL &&
       (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
         process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:")),
   );
