@@ -29,6 +29,29 @@ function titleForCategory(category: TownshipCategory) {
   return CATEGORY_CONTENT[category].headline;
 }
 
+function mergeLaunchSamples(
+  category: TownshipCategory,
+  liveItems: NonNullable<Awaited<ReturnType<typeof getSqliteCatalogProducts>>>,
+) {
+  if (category !== "Alcohol") return liveItems;
+
+  const samples = getFallbackCategoryProducts(category);
+  const seen = new Set(
+    liveItems.map((item) => `${item.name.trim().toLowerCase()}::${item.vendor?.slug ?? ""}`),
+  );
+  const merged = [...liveItems];
+
+  for (const sample of samples) {
+    const signature = `${sample.name.trim().toLowerCase()}::${sample.vendor?.slug ?? ""}`;
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    merged.push(sample);
+    if (merged.length >= 16) break;
+  }
+
+  return merged;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { category } = await params;
   const resolvedCategory = slugToCategory(category);
@@ -104,7 +127,9 @@ export default async function CategoryPage({ params }: PageProps) {
         ? getFallbackCategoryProducts(resolvedCategory)
         : [];
   const items =
-    liveItems.length > 0 ? liveItems : getFallbackCategoryProducts(resolvedCategory).slice(0, 9);
+    liveItems.length > 0
+      ? mergeLaunchSamples(resolvedCategory, liveItems)
+      : getFallbackCategoryProducts(resolvedCategory).slice(0, 16);
   const content = CATEGORY_CONTENT[resolvedCategory];
 
   const categorySchema = {

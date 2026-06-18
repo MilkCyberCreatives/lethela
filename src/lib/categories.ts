@@ -48,7 +48,7 @@ export const CATEGORY_CONTENT: Record<
   Alcohol: {
     headline: "Alcohol delivery for adults only",
     intro:
-      "Browse beer, cider and other age-restricted items from licensed participating vendors where delivery is available.",
+      "Browse beer, cider, whiskey, vodka, gin, brandy-style spirits and cognac from licensed participating vendors where delivery is available.",
     guidance:
       "Alcohol orders are 18+ only. The buyer may be asked for identification, and delivery can be refused where age or sobriety cannot be verified.",
   },

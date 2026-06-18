@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { getFallbackCategoryProducts } from "../src/lib/catalog-fallback";
 import {
   buildPublicVendorCard,
   isPublicCatalogProduct,
@@ -55,4 +56,14 @@ test("isPublicCatalogProduct hides legacy demo product records", () => {
     }),
     true,
   );
+});
+
+test("alcohol launch samples cover key drink categories", () => {
+  const names = getFallbackCategoryProducts("Alcohol")
+    .map((item) => item.name.toLowerCase())
+    .join(" ");
+
+  for (const term of ["castle", "cider", "whiskey", "vodka", "gin", "cognac"]) {
+    assert.match(names, new RegExp(term));
+  }
 });
