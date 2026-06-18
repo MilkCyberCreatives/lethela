@@ -7,7 +7,11 @@ import {
   shouldPreferCatalogFallback,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
-import { buildPublicVendorCard, isPublicCatalogVendor } from "@/lib/public-catalog";
+import {
+  buildPublicVendorCard,
+  isPublicCatalogProduct,
+  isPublicCatalogVendor,
+} from "@/lib/public-catalog";
 import {
   canReadSqliteCatalog,
   getSqliteCatalogProducts,
@@ -121,9 +125,7 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
   }
 
   return rows
-    .filter((item) =>
-      isPublicCatalogVendor({ name: item.vendor.name ?? "", slug: item.vendor.slug ?? "" }),
-    )
+    .filter((item) => isPublicCatalogProduct(item))
     .map((item) => ({
       id: item.id,
       name: item.name,

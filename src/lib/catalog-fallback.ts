@@ -90,7 +90,7 @@ export type FallbackVendorCard = {
   baseEtaMin: number;
 };
 
-// PRE-LAUNCH DEMO CONTENT: remove demo-* vendors/products before launch.
+// Launch sample content keeps public pages populated until every approved vendor has live stock.
 const vendorIndex: VendorBase[] = [
   {
     id: "vendor-hello-tomato",
@@ -268,7 +268,7 @@ const fallbackVendorCards: FallbackVendorCard[] = [
     baseEtaMin: 15,
   },
   {
-    id: "demo-v5",
+    id: "launch-v5",
     name: "Mamsie's Wings Yard",
     slug: "mamsies-wings-yard",
     cover: "/vendors/grill.jpg",
@@ -279,7 +279,7 @@ const fallbackVendorCards: FallbackVendorCard[] = [
     baseEtaMin: 16,
   },
   {
-    id: "demo-v6",
+    id: "launch-v6",
     name: "Ubuntu Braai Spot",
     slug: "ubuntu-braai-spot",
     cover: "/vendors/grill.jpg",
@@ -290,7 +290,7 @@ const fallbackVendorCards: FallbackVendorCard[] = [
     baseEtaMin: 20,
   },
   {
-    id: "demo-v7",
+    id: "launch-v7",
     name: "Sunrise Breakfast Corner",
     slug: "sunrise-breakfast-corner",
     cover: "/vendors/burgers.jpg",
@@ -301,7 +301,7 @@ const fallbackVendorCards: FallbackVendorCard[] = [
     baseEtaMin: 13,
   },
   {
-    id: "demo-v8",
+    id: "launch-v8",
     name: "Klipfontein Bottle Store",
     slug: "klipfontein-bottle-store",
     cover: "/vendors/vegan.jpg",
@@ -406,7 +406,7 @@ const catalogProducts: CatalogProductRecord[] = [
     inStock: true,
   },
   {
-    id: "demo-product-mogodu-plate",
+    id: "launch-product-mogodu-plate",
     slug: "mogodu-sunday-plate",
     vendorId: "vendor-hello-tomato",
     vendorSlug: "hello-tomato",
@@ -419,7 +419,7 @@ const catalogProducts: CatalogProductRecord[] = [
     inStock: true,
   },
   {
-    id: "demo-product-wings",
+    id: "launch-product-wings",
     slug: "six-piece-sticky-wings",
     vendorId: "vendor-mamsies-wings-yard",
     vendorSlug: "mamsies-wings-yard",
@@ -432,7 +432,7 @@ const catalogProducts: CatalogProductRecord[] = [
     inStock: true,
   },
   {
-    id: "demo-product-chicken-bucket",
+    id: "launch-product-chicken-bucket",
     slug: "family-chicken-bucket",
     vendorId: "vendor-mamsies-wings-yard",
     vendorSlug: "mamsies-wings-yard",
@@ -445,7 +445,7 @@ const catalogProducts: CatalogProductRecord[] = [
     inStock: true,
   },
   {
-    id: "demo-product-braai-plate",
+    id: "launch-product-braai-plate",
     slug: "chisa-nyama-braai-plate",
     vendorId: "vendor-ubuntu-braai-spot",
     vendorSlug: "ubuntu-braai-spot",
@@ -458,7 +458,7 @@ const catalogProducts: CatalogProductRecord[] = [
     inStock: true,
   },
   {
-    id: "demo-product-boerewors-roll",
+    id: "launch-product-boerewors-roll",
     slug: "boerewors-relish-roll",
     vendorId: "vendor-ubuntu-braai-spot",
     vendorSlug: "ubuntu-braai-spot",
@@ -471,7 +471,7 @@ const catalogProducts: CatalogProductRecord[] = [
     inStock: true,
   },
   {
-    id: "demo-product-breakfast-plate",
+    id: "launch-product-breakfast-plate",
     slug: "breakfast-vetkoek-plate",
     vendorId: "vendor-sunrise-breakfast-corner",
     vendorSlug: "sunrise-breakfast-corner",
@@ -484,7 +484,7 @@ const catalogProducts: CatalogProductRecord[] = [
     inStock: true,
   },
   {
-    id: "demo-product-airtime-bread-milk",
+    id: "launch-product-airtime-bread-milk",
     slug: "bread-milk-airtime-pack",
     vendorId: "vendor-kasie-market",
     vendorSlug: "kasie-market",
@@ -497,7 +497,7 @@ const catalogProducts: CatalogProductRecord[] = [
     inStock: true,
   },
   {
-    id: "demo-product-castle-lite",
+    id: "launch-product-castle-lite",
     slug: "castle-lite-6-pack",
     vendorId: "vendor-klipfontein-bottle-store",
     vendorSlug: "klipfontein-bottle-store",
@@ -510,7 +510,7 @@ const catalogProducts: CatalogProductRecord[] = [
     inStock: true,
   },
   {
-    id: "demo-product-savanna-cider",
+    id: "launch-product-savanna-cider",
     slug: "savanna-cider-6-pack",
     vendorId: "vendor-klipfontein-bottle-store",
     vendorSlug: "klipfontein-bottle-store",
@@ -660,7 +660,7 @@ const sectionsBySlug: Record<string, CatalogSection[]> = {
       sortOrder: 1,
       items: [
         {
-          id: "menu-demo-wings",
+          id: "menu-launch-wings",
           vendorId: "vendor-mamsies-wings-yard",
           name: "Six Piece Sticky Wings",
           description: "Sticky wings with chips and house chilli dip.",
@@ -669,7 +669,7 @@ const sectionsBySlug: Record<string, CatalogSection[]> = {
           image: "/vendors/grill.jpg",
         },
         {
-          id: "menu-demo-chicken-bucket",
+          id: "menu-launch-chicken-bucket",
           vendorId: "vendor-mamsies-wings-yard",
           name: "Family Chicken Bucket",
           description: "Crispy chicken pieces for sharing with two sauces.",
@@ -687,7 +687,7 @@ const sectionsBySlug: Record<string, CatalogSection[]> = {
       sortOrder: 1,
       items: [
         {
-          id: "menu-demo-braai-plate",
+          id: "menu-launch-braai-plate",
           vendorId: "vendor-ubuntu-braai-spot",
           name: "Chisa Nyama Braai Plate",
           description: "Chisa nyama braai plate with wors, pap and chakalaka.",
@@ -705,7 +705,7 @@ const sectionsBySlug: Record<string, CatalogSection[]> = {
       sortOrder: 1,
       items: [
         {
-          id: "menu-demo-breakfast-plate",
+          id: "menu-launch-breakfast-plate",
           vendorId: "vendor-sunrise-breakfast-corner",
           name: "Breakfast Vetkoek Plate",
           description: "Breakfast plate with vetkoek, egg, cheese and coffee.",
@@ -723,7 +723,7 @@ const sectionsBySlug: Record<string, CatalogSection[]> = {
       sortOrder: 1,
       items: [
         {
-          id: "menu-demo-castle-lite",
+          id: "menu-launch-castle-lite",
           vendorId: "vendor-klipfontein-bottle-store",
           name: "Castle Lite 6-pack",
           description: "Cold beer 6-pack. 18+ only.",
@@ -732,7 +732,7 @@ const sectionsBySlug: Record<string, CatalogSection[]> = {
           image: "/vendors/vegan.jpg",
         },
         {
-          id: "menu-demo-savanna-cider",
+          id: "menu-launch-savanna-cider",
           vendorId: "vendor-klipfontein-bottle-store",
           name: "Savanna Cider 6-pack",
           description: "Crisp cider 6-pack. 18+ only.",

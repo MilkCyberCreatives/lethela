@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildPublicVendorCard, isPublicCatalogVendor } from "../src/lib/public-catalog";
+import {
+  buildPublicVendorCard,
+  isPublicCatalogProduct,
+  isPublicCatalogVendor,
+} from "../src/lib/public-catalog";
 
 test("buildPublicVendorCard prefers real review averages over fallback vendor rating", () => {
   const card = buildPublicVendorCard({
@@ -30,4 +34,25 @@ test("isPublicCatalogVendor hides the owner demo identity from public catalog su
   );
   assert.equal(isPublicCatalogVendor({ name: "Demo Wings Yard", slug: "demo-wings-yard" }), false);
   assert.equal(isPublicCatalogVendor({ name: "Hello Tomato", slug: "hello-tomato" }), true);
+});
+
+test("isPublicCatalogProduct hides legacy demo product records", () => {
+  assert.equal(
+    isPublicCatalogProduct({
+      id: "demo-product-airtime-bread-milk",
+      name: "Demo Groceries Bread Milk Airtime Pack",
+      vendorName: "Kasie Market",
+      vendorSlug: "kasie-market",
+    }),
+    false,
+  );
+  assert.equal(
+    isPublicCatalogProduct({
+      id: "launch-product-airtime-bread-milk",
+      name: "Bread Milk Airtime Pack",
+      vendorName: "Kasie Market",
+      vendorSlug: "kasie-market",
+    }),
+    true,
+  );
 });

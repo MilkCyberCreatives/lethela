@@ -8,6 +8,7 @@ import {
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
 import { inferProductCategory } from "@/lib/categories";
+import { isPublicCatalogProduct } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { canReadSqliteCatalog, getSqliteCatalogProducts } from "@/lib/sqlite-catalog";
 
@@ -80,14 +81,16 @@ export async function GET(req: Request) {
   const items = sqliteItems
     ? sqliteItems
     : dbItems.length > 0
-      ? dbItems.map((item) => ({
-          ...item,
-          category: inferProductCategory({
-            name: item.name,
-            description: item.description,
-            isAlcohol: item.isAlcohol,
-          }),
-        }))
+      ? dbItems
+          .filter((item) => isPublicCatalogProduct(item))
+          .map((item) => ({
+            ...item,
+            category: inferProductCategory({
+              name: item.name,
+              description: item.description,
+              isAlcohol: item.isAlcohol,
+            }),
+          }))
       : shouldPreferCatalogFallback()
         ? getFallbackProducts()
         : shouldFallbackWhenCatalogEmpty()

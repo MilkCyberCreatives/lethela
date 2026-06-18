@@ -1,7 +1,11 @@
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { getFallbackSearchSources } from "@/lib/catalog-fallback";
 import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
-import { getPublicVendorImage, isPublicCatalogVendor } from "@/lib/public-catalog";
+import {
+  getPublicVendorImage,
+  isPublicCatalogProduct,
+  isPublicCatalogVendor,
+} from "@/lib/public-catalog";
 import { runBoundedDbQuery, withQueryTimeout } from "@/lib/query-timeout";
 
 export type SearchHit = {
@@ -216,7 +220,12 @@ async function searchPostgres(
       })),
     ...products
       .filter((product) =>
-        isPublicCatalogVendor({ name: product.vendorName, slug: product.vendorSlug }),
+        isPublicCatalogProduct({
+          id: product.id,
+          name: product.name,
+          vendorName: product.vendorName,
+          vendorSlug: product.vendorSlug,
+        }),
       )
       .map((product) => ({
         id: product.id,
@@ -269,9 +278,11 @@ async function searchFallback(
         })),
       ...fallbackProductRows
         .filter((product: any) =>
-          isPublicCatalogVendor({
-            name: product.vendor?.name ?? product.vendorName ?? "",
-            slug: product.vendor?.slug ?? product.vendorSlug ?? "",
+          isPublicCatalogProduct({
+            id: product.id,
+            name: product.name,
+            vendorName: product.vendor?.name ?? product.vendorName ?? "",
+            vendorSlug: product.vendor?.slug ?? product.vendorSlug ?? "",
           }),
         )
         .map((product: any) => ({
@@ -366,12 +377,7 @@ async function searchFallback(
         isAlcohol: false,
       })),
     ...products
-      .filter((product: any) =>
-        isPublicCatalogVendor({
-          name: product.vendor?.name ?? "",
-          slug: product.vendor?.slug ?? "",
-        }),
-      )
+      .filter((product: any) => isPublicCatalogProduct(product))
       .map((product: any) => ({
         id: product.id,
         kind: "product" as const,

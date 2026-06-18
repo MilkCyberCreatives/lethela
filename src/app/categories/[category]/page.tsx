@@ -17,6 +17,7 @@ import {
 } from "@/lib/categories";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 import { buildPageMetadata } from "@/lib/seo";
+import { isPublicCatalogProduct } from "@/lib/public-catalog";
 
 type PageProps = {
   params: Promise<{ category: string }>;
@@ -92,6 +93,7 @@ export default async function CategoryPage({ params }: PageProps) {
     : dbItems.length > 0
       ? dbItems.filter(
           (item) =>
+            isPublicCatalogProduct(item) &&
             inferProductCategory({
               name: item.name,
               description: item.description,

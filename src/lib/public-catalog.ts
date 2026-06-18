@@ -14,6 +14,17 @@ type PublicVendorSource = {
   reviews?: Array<{ rating?: number | null }>;
 };
 
+type PublicProductSource = {
+  id?: string | null;
+  name: string;
+  vendor?: {
+    name?: string | null;
+    slug?: string | null;
+  } | null;
+  vendorName?: string | null;
+  vendorSlug?: string | null;
+};
+
 const HIDDEN_PUBLIC_VENDOR_TERMS = ["milk cyber creatives", "milk-cyber-creatives"];
 
 export function isPublicCatalogVendor(source: Pick<PublicVendorSource, "name" | "slug">) {
@@ -22,6 +33,18 @@ export function isPublicCatalogVendor(source: Pick<PublicVendorSource, "name" | 
 
   if (name.startsWith("demo ") || slug.startsWith("demo-")) return false;
   return !HIDDEN_PUBLIC_VENDOR_TERMS.some((term) => name.includes(term) || slug.includes(term));
+}
+
+export function isPublicCatalogProduct(source: PublicProductSource) {
+  const id = String(source.id ?? "")
+    .trim()
+    .toLowerCase();
+  const name = source.name.trim().toLowerCase();
+  const vendorName = source.vendor?.name ?? source.vendorName ?? "";
+  const vendorSlug = source.vendor?.slug ?? source.vendorSlug ?? "";
+
+  if (id.startsWith("demo-") || name.startsWith("demo ")) return false;
+  return isPublicCatalogVendor({ name: vendorName, slug: vendorSlug });
 }
 
 export function parseCuisineList(value: unknown) {

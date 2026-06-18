@@ -168,9 +168,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
               </div>
             ) : null}
             <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {results.map((item) => (
+              {results.map((item, index) => (
                 <Link
-                  key={`${item.kind}-${item.id}`}
+                  key={`${item.kind}-${item.slug ?? "result"}-${index}`}
                   href={item.slug ? `/vendors/${item.slug}` : "/"}
                   className="group overflow-hidden rounded-lg border border-white/15 bg-white/7 transition hover:border-lethela-primary/80 hover:bg-white/10"
                 >

@@ -2,7 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { inferProductCategory } from "@/lib/categories";
 import { prismaRuntimeInfo } from "@/lib/db";
-import { buildPublicVendorCard, isPublicCatalogVendor } from "@/lib/public-catalog";
+import {
+  buildPublicVendorCard,
+  isPublicCatalogProduct,
+  isPublicCatalogVendor,
+} from "@/lib/public-catalog";
 import type { ProductLite } from "@/components/ProductCard";
 import type { Vendor } from "@/types";
 
@@ -105,7 +109,12 @@ export async function getSqliteCatalogProducts({
 
     const mapped = rows
       .filter((row) =>
-        isPublicCatalogVendor({ name: row.vendorName ?? "", slug: row.vendorSlug ?? "" }),
+        isPublicCatalogProduct({
+          id: row.id,
+          name: row.name,
+          vendorName: row.vendorName,
+          vendorSlug: row.vendorSlug,
+        }),
       )
       .map((row) => {
         const isAlcohol = Boolean(row.isAlcohol);
