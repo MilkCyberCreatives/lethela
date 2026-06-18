@@ -81,7 +81,8 @@ export default function VendorRegisterPage() {
               Become a Lethela vendor.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 md:text-base">
-              Lethela helps local food and grocery businesses reach more customers. Complete the
+              Lethela helps local food, grocery and licensed alcohol businesses reach customers with
+              delivery-ready product pages, clear operating hours and order management. Complete the
               application below and we will review your store before it goes live. No hidden
               charges. You stay in control of your prices.
             </p>
@@ -206,7 +207,7 @@ export default function VendorRegisterPage() {
             {[
               "Approved vendors can sign in to view the current pricing structure.",
               "Lethela confirms commercial terms before a store starts taking orders.",
-              "No hidden charges. You stay in control of your menu prices.",
+              "Alcohol and regulated products require the correct vendor permissions before listing.",
             ].map((item) => (
               <article
                 key={item}

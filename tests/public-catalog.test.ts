@@ -28,5 +28,6 @@ test("isPublicCatalogVendor hides the owner demo identity from public catalog su
     isPublicCatalogVendor({ name: "Milk Cyber Creatives Owner", slug: "lethela-owner" }),
     false,
   );
+  assert.equal(isPublicCatalogVendor({ name: "Demo Wings Yard", slug: "demo-wings-yard" }), false);
   assert.equal(isPublicCatalogVendor({ name: "Hello Tomato", slug: "hello-tomato" }), true);
 });

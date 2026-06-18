@@ -9,6 +9,7 @@ import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { canReadSqliteCatalog, getSqliteCatalogProducts } from "@/lib/sqlite-catalog";
 import {
+  CATEGORY_CONTENT,
   categoryToSlug,
   inferProductCategory,
   slugToCategory,
@@ -24,7 +25,7 @@ type PageProps = {
 export const revalidate = 300;
 
 function titleForCategory(category: TownshipCategory) {
-  return `${category} delivery near you`;
+  return CATEGORY_CONTENT[category].headline;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return buildPageMetadata({
     title: titleForCategory(resolvedCategory),
-    description: `Order ${resolvedCategory.toLowerCase()} from local vendors on ${SITE_NAME}.`,
+    description: CATEGORY_CONTENT[resolvedCategory].intro,
     path: `/categories/${categoryToSlug(resolvedCategory)}`,
   });
 }
@@ -86,7 +87,7 @@ export default async function CategoryPage({ params }: PageProps) {
           }),
         ).catch(() => []);
 
-  const items = sqliteItems
+  const liveItems = sqliteItems
     ? sqliteItems
     : dbItems.length > 0
       ? dbItems.filter(
@@ -100,6 +101,9 @@ export default async function CategoryPage({ params }: PageProps) {
       : shouldPreferCatalogFallback()
         ? getFallbackCategoryProducts(resolvedCategory)
         : [];
+  const items =
+    liveItems.length > 0 ? liveItems : getFallbackCategoryProducts(resolvedCategory).slice(0, 9);
+  const content = CATEGORY_CONTENT[resolvedCategory];
 
   const categorySchema = {
     "@context": "https://schema.org",
@@ -116,32 +120,52 @@ export default async function CategoryPage({ params }: PageProps) {
 
       <section className="container py-10">
         <h1 className="text-3xl font-bold md:text-4xl">{titleForCategory(resolvedCategory)}</h1>
-        <p className="mt-2 text-sm text-white/75">
-          Browse local {resolvedCategory.toLowerCase()} listings, specials and fast delivery
-          options.
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-white/75 md:text-base">
+          {content.intro}
+        </p>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-white/62">{content.guidance}</p>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          {[
+            "Approved local vendors",
+            "Live menu and stock status",
+            "Clear delivery fees before checkout",
+          ].map((item) => (
+            <div key={item} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+              <p className="text-sm font-semibold text-white">{item}</p>
+            </div>
+          ))}
+        </div>
+
+        {liveItems.length === 0 ? (
+          <p className="mt-6 rounded-lg border border-amber-200/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
+            Launch sample listings are shown while approved vendors finish loading this category.
+            Availability, prices and operating hours are confirmed at checkout.
+          </p>
+        ) : null}
+
+        <p className="mt-8 text-sm text-white/65">
+          Showing {items.length} {resolvedCategory.toLowerCase()} option
+          {items.length === 1 ? "" : "s"} on {SITE_NAME}.
         </p>
 
-        {items.length === 0 ? (
-          <p className="mt-6 text-white/70">No {resolvedCategory.toLowerCase()} items found yet.</p>
-        ) : (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((product) => (
-              <ProductCard
-                key={product.id}
-                p={{
-                  id: product.id,
-                  name: product.name,
-                  description: product.description,
-                  image: product.image,
-                  isAlcohol: product.isAlcohol,
-                  priceCents: product.priceCents,
-                  vendor: product.vendor,
-                  category: resolvedCategory,
-                }}
-              />
-            ))}
-          </div>
-        )}
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((product) => (
+            <ProductCard
+              key={product.id}
+              p={{
+                id: product.id,
+                name: product.name,
+                description: product.description,
+                image: product.image,
+                isAlcohol: product.isAlcohol,
+                priceCents: product.priceCents,
+                vendor: product.vendor,
+                category: resolvedCategory,
+              }}
+            />
+          ))}
+        </div>
       </section>
 
       <Footer />

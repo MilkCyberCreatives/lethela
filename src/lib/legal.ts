@@ -1,6 +1,6 @@
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
-export const LEGAL_LAST_UPDATED = "10 March 2026";
+export const LEGAL_LAST_UPDATED = "18 June 2026";
 export const LEGAL_COMPANY_NAME = process.env.NEXT_PUBLIC_LEGAL_ENTITY_NAME?.trim() || "Lethela";
 export const LEGAL_SERVICE_AREA = "Klipfontein View, Midrand, South Africa";
 export const LEGAL_SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "";

@@ -52,7 +52,8 @@ export default function RiderPage() {
             <p className="mt-4 max-w-2xl text-sm text-white/80 md:text-base">
               Flexible hours with local demand zones, live order flow, and clear operations support
               from day one. Final onboarding and payout terms are confirmed during operations
-              approval.
+              approval. Riders may be asked to follow age-verification and safe-handover steps for
+              alcohol or other restricted deliveries.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
@@ -99,8 +100,8 @@ export default function RiderPage() {
               </a>
             </p>
             <div className="mt-4 rounded-lg border border-lethela-primary/25 bg-lethela-primary/10 p-3 text-xs leading-5 text-white/78">
-              Operations will confirm safety requirements, equipment and payout details before
-              launch shifts begin.
+              Operations will confirm safety requirements, equipment, payout details, alcohol
+              handover rules and escalation steps before launch shifts begin.
             </div>
           </aside>
         </div>

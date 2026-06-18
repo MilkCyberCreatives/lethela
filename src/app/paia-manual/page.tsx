@@ -61,6 +61,24 @@ export default function PaiaManualPage() {
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm leading-7 text-white/72">
+        <h2 className="text-lg font-semibold text-white">Records that may exist</h2>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          {[
+            "Customer account, support and order records",
+            "Vendor application, menu, payout and operations records",
+            "Rider application, delivery and support records",
+            "Payment references, reconciliation notes and refund records",
+            "Website, security, incident and system logs",
+            "Company, tax, contract and supplier administration records",
+          ].map((item) => (
+            <div key={item} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
+              {item}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm leading-7 text-white/72">
         <h2 className="text-lg font-semibold text-white">Important notes</h2>
         <div className="mt-3 space-y-3">
           <p>
@@ -74,6 +92,10 @@ export default function PaiaManualPage() {
           <p>
             Where applicable, requesters may need to complete a prescribed form or provide identity
             confirmation before access is given.
+          </p>
+          <p>
+            Fees, time periods and refusal grounds may apply under PAIA. If the requested record is
+            mainly personal information about you, POPIA access rights may also be relevant.
           </p>
         </div>
       </section>

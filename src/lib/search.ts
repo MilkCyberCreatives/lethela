@@ -1,7 +1,7 @@
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { getFallbackSearchSources } from "@/lib/catalog-fallback";
 import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
-import { getPublicVendorImage } from "@/lib/public-catalog";
+import { getPublicVendorImage, isPublicCatalogVendor } from "@/lib/public-catalog";
 import { runBoundedDbQuery, withQueryTimeout } from "@/lib/query-timeout";
 
 export type SearchHit = {
@@ -199,32 +199,38 @@ async function searchPostgres(
   });
 
   const rows = [
-    ...vendors.map((vendor) => ({
-      id: vendor.id,
-      kind: "vendor" as const,
-      title: vendor.name,
-      searchText: [vendor.name, vendor.suburb ?? "", vendor.city ?? ""].join(" "),
-      image: getPublicVendorImage(vendor.image ?? null, false),
-      slug: vendor.slug,
-      vendorName: vendor.name,
-      subtitle: [vendor.suburb, vendor.city].filter(Boolean).join(", ") || "Vendor",
-      priceCents: null,
-      isAlcohol: false,
-      dbScore: vendor.score,
-    })),
-    ...products.map((product) => ({
-      id: product.id,
-      kind: "product" as const,
-      title: product.name,
-      searchText: [product.name, product.description ?? "", product.vendorName].join(" "),
-      image: product.image ?? null,
-      slug: product.vendorSlug,
-      vendorName: product.vendorName,
-      subtitle: product.vendorName,
-      priceCents: product.priceCents,
-      isAlcohol: Boolean(product.isAlcohol),
-      dbScore: product.score,
-    })),
+    ...vendors
+      .filter((vendor) => isPublicCatalogVendor(vendor))
+      .map((vendor) => ({
+        id: vendor.id,
+        kind: "vendor" as const,
+        title: vendor.name,
+        searchText: [vendor.name, vendor.suburb ?? "", vendor.city ?? ""].join(" "),
+        image: getPublicVendorImage(vendor.image ?? null, false),
+        slug: vendor.slug,
+        vendorName: vendor.name,
+        subtitle: [vendor.suburb, vendor.city].filter(Boolean).join(", ") || "Vendor",
+        priceCents: null,
+        isAlcohol: false,
+        dbScore: vendor.score,
+      })),
+    ...products
+      .filter((product) =>
+        isPublicCatalogVendor({ name: product.vendorName, slug: product.vendorSlug }),
+      )
+      .map((product) => ({
+        id: product.id,
+        kind: "product" as const,
+        title: product.name,
+        searchText: [product.name, product.description ?? "", product.vendorName].join(" "),
+        image: product.image ?? null,
+        slug: product.vendorSlug,
+        vendorName: product.vendorName,
+        subtitle: product.vendorName,
+        priceCents: product.priceCents,
+        isAlcohol: Boolean(product.isAlcohol),
+        dbScore: product.score,
+      })),
   ];
 
   return scoreAndLimitRows(rows, tokens, limit);
@@ -242,39 +248,48 @@ async function searchFallback(
 
   if (allowFallback) {
     const rows = [
-      ...fallbackVendorRows.map((vendor: any) => ({
-        id: vendor.id,
-        kind: "vendor" as const,
-        title: vendor.name,
-        searchText: [
-          vendor.name,
-          vendor.suburb ?? "",
-          vendor.city ?? "",
-          ...(vendor.cuisine ?? []),
-        ].join(" "),
-        image: getPublicVendorImage(vendor.image ?? null, false),
-        slug: vendor.slug,
-        vendorName: vendor.name,
-        subtitle: [vendor.suburb, vendor.city].filter(Boolean).join(", ") || "Vendor",
-        priceCents: null,
-        isAlcohol: false,
-      })),
-      ...fallbackProductRows.map((product: any) => ({
-        id: product.id,
-        kind: "product" as const,
-        title: product.name,
-        searchText: [
-          product.name,
-          product.description ?? "",
-          product.vendor?.name ?? product.vendorName ?? "",
-        ].join(" "),
-        image: product.image ?? null,
-        slug: product.vendor?.slug ?? product.vendorSlug ?? null,
-        vendorName: product.vendor?.name ?? product.vendorName ?? null,
-        subtitle: product.vendor?.name ?? product.vendorName ?? "Product",
-        priceCents: product.priceCents ?? null,
-        isAlcohol: Boolean(product.isAlcohol),
-      })),
+      ...fallbackVendorRows
+        .filter((vendor: any) => isPublicCatalogVendor(vendor))
+        .map((vendor: any) => ({
+          id: vendor.id,
+          kind: "vendor" as const,
+          title: vendor.name,
+          searchText: [
+            vendor.name,
+            vendor.suburb ?? "",
+            vendor.city ?? "",
+            ...(vendor.cuisine ?? []),
+          ].join(" "),
+          image: getPublicVendorImage(vendor.image ?? null, false),
+          slug: vendor.slug,
+          vendorName: vendor.name,
+          subtitle: [vendor.suburb, vendor.city].filter(Boolean).join(", ") || "Vendor",
+          priceCents: null,
+          isAlcohol: false,
+        })),
+      ...fallbackProductRows
+        .filter((product: any) =>
+          isPublicCatalogVendor({
+            name: product.vendor?.name ?? product.vendorName ?? "",
+            slug: product.vendor?.slug ?? product.vendorSlug ?? "",
+          }),
+        )
+        .map((product: any) => ({
+          id: product.id,
+          kind: "product" as const,
+          title: product.name,
+          searchText: [
+            product.name,
+            product.description ?? "",
+            product.vendor?.name ?? product.vendorName ?? "",
+          ].join(" "),
+          image: product.image ?? null,
+          slug: product.vendor?.slug ?? product.vendorSlug ?? null,
+          vendorName: product.vendor?.name ?? product.vendorName ?? null,
+          subtitle: product.vendor?.name ?? product.vendorName ?? "Product",
+          priceCents: product.priceCents ?? null,
+          isAlcohol: Boolean(product.isAlcohol),
+        })),
     ];
     return scoreAndLimitRows(rows, tokens, limit);
   }
@@ -336,30 +351,39 @@ async function searchFallback(
   );
 
   const rows = [
-    ...vendors.map((vendor: any) => ({
-      id: vendor.id,
-      kind: "vendor" as const,
-      title: vendor.name,
-      searchText: [vendor.name, vendor.suburb ?? "", vendor.city ?? ""].join(" "),
-      image: getPublicVendorImage(vendor.image ?? null, false),
-      slug: vendor.slug,
-      vendorName: vendor.name,
-      subtitle: [vendor.suburb, vendor.city].filter(Boolean).join(", ") || "Vendor",
-      priceCents: null,
-      isAlcohol: false,
-    })),
-    ...products.map((product: any) => ({
-      id: product.id,
-      kind: "product" as const,
-      title: product.name,
-      searchText: [product.name, product.description ?? "", product.vendor?.name ?? ""].join(" "),
-      image: product.image ?? null,
-      slug: product.vendor?.slug ?? null,
-      vendorName: product.vendor?.name ?? null,
-      subtitle: product.vendor?.name ?? "Product",
-      priceCents: product.priceCents,
-      isAlcohol: Boolean(product.isAlcohol),
-    })),
+    ...vendors
+      .filter((vendor: any) => isPublicCatalogVendor(vendor))
+      .map((vendor: any) => ({
+        id: vendor.id,
+        kind: "vendor" as const,
+        title: vendor.name,
+        searchText: [vendor.name, vendor.suburb ?? "", vendor.city ?? ""].join(" "),
+        image: getPublicVendorImage(vendor.image ?? null, false),
+        slug: vendor.slug,
+        vendorName: vendor.name,
+        subtitle: [vendor.suburb, vendor.city].filter(Boolean).join(", ") || "Vendor",
+        priceCents: null,
+        isAlcohol: false,
+      })),
+    ...products
+      .filter((product: any) =>
+        isPublicCatalogVendor({
+          name: product.vendor?.name ?? "",
+          slug: product.vendor?.slug ?? "",
+        }),
+      )
+      .map((product: any) => ({
+        id: product.id,
+        kind: "product" as const,
+        title: product.name,
+        searchText: [product.name, product.description ?? "", product.vendor?.name ?? ""].join(" "),
+        image: product.image ?? null,
+        slug: product.vendor?.slug ?? null,
+        vendorName: product.vendor?.name ?? null,
+        subtitle: product.vendor?.name ?? "Product",
+        priceCents: product.priceCents,
+        isAlcohol: Boolean(product.isAlcohol),
+      })),
   ];
 
   return scoreAndLimitRows(rows, tokens, limit);

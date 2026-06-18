@@ -7,7 +7,7 @@ import {
   shouldPreferCatalogFallback,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
-import { buildPublicVendorCard } from "@/lib/public-catalog";
+import { buildPublicVendorCard, isPublicCatalogVendor } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { canReadSqliteCatalog, getSqliteCatalogVendors } from "@/lib/sqlite-catalog";
 
@@ -80,29 +80,31 @@ export async function GET(req: Request) {
         }),
       );
 
-      items = dbVendors.map((vendor) => {
-        const card = buildPublicVendorCard({
-          id: vendor.id,
-          name: vendor.name,
-          slug: vendor.slug,
-          rating: vendor.rating ?? 0,
-          cuisine: vendor.cuisine,
-          halaal: vendor.halaal,
-          image: vendor.image,
-          etaMins: vendor.etaMins,
-          products: vendor.products,
-          reviews: vendor.reviews,
+      items = dbVendors
+        .filter((vendor) => isPublicCatalogVendor(vendor))
+        .map((vendor) => {
+          const card = buildPublicVendorCard({
+            id: vendor.id,
+            name: vendor.name,
+            slug: vendor.slug,
+            rating: vendor.rating ?? 0,
+            cuisine: vendor.cuisine,
+            halaal: vendor.halaal,
+            image: vendor.image,
+            etaMins: vendor.etaMins,
+            products: vendor.products,
+            reviews: vendor.reviews,
+          });
+          const etaBase = aiPredictETA(
+            card.distanceKm ?? 3,
+            card.baseEtaMin ?? vendor.etaMins ?? 15,
+            hour,
+          );
+          return {
+            ...card,
+            eta: `${etaBase}-${etaBase + 5} min`,
+          };
         });
-        const etaBase = aiPredictETA(
-          card.distanceKm ?? 3,
-          card.baseEtaMin ?? vendor.etaMins ?? 15,
-          hour,
-        );
-        return {
-          ...card,
-          eta: `${etaBase}-${etaBase + 5} min`,
-        };
-      });
     } catch {
       items = [];
     }

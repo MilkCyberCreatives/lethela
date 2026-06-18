@@ -46,6 +46,11 @@ export default function TermsPage() {
           decline or adjust an order if stock is unavailable, the store is closing, or the order
           cannot reasonably be fulfilled.
         </p>
+        <p>
+          Product pages are invitations to order, not a guarantee that stock will remain available
+          until the vendor accepts the order. Customers should check item notes, delivery address,
+          alcohol warnings and substitution instructions before paying.
+        </p>
       </Section>
 
       <Section title="Payments">
@@ -70,6 +75,12 @@ export default function TermsPage() {
           to receive them. Customers must be 18 or older where alcohol is involved and may be asked
           for verification on delivery.
         </p>
+        <p>
+          South African liquor rules prohibit selling or supplying liquor to a minor and require
+          reasonable measures to check whether a customer is a minor before supply. Lethela may
+          cancel or refuse delivery if age, identity, sobriety or address checks fail, or if a
+          participating vendor is not approved to sell the item.
+        </p>
       </Section>
 
       <Section title="Refunds, cancellations and complaints">
@@ -78,6 +89,12 @@ export default function TermsPage() {
           reported. Please review the separate refund policy for more detail and contact support
           quickly when a problem occurs.
         </p>
+        <p>
+          Customer rights under the Consumer Protection Act and electronic commerce rules are not
+          excluded. Where the law gives a customer a stronger remedy, that legal remedy applies.
+          Perishable, prepared, customised or already-dispatched food may be handled differently
+          from ordinary packaged goods.
+        </p>
       </Section>
 
       <Section title="Vendor and rider responsibility">
@@ -85,6 +102,11 @@ export default function TermsPage() {
           Vendors remain responsible for their menus, pricing, preparation, food quality, lawful
           trading status and product compliance. Riders and delivery partners remain responsible for
           lawful conduct, safe delivery behaviour and route handling.
+        </p>
+        <p>
+          Vendors selling groceries, alcohol or other regulated goods must hold the registrations,
+          licences or permissions required for their own business and product category. Lethela may
+          suspend a listing where safety, licence, quality or consumer-law concerns arise.
         </p>
       </Section>
 
@@ -103,6 +125,11 @@ export default function TermsPage() {
           communications laws. To the extent permitted by law, platform liability is limited to
           direct losses reasonably linked to the service and excludes indirect or consequential
           loss. South African law governs these terms.
+        </p>
+        <p>
+          Lethela will aim to display clear supplier, price, delivery, cancellation and complaint
+          information before checkout. Some final operating details, such as vendor licence numbers
+          and registered entity information, must be confirmed before full commercial launch.
         </p>
       </Section>
     </LegalPageShell>

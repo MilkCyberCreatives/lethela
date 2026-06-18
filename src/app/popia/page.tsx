@@ -44,11 +44,27 @@ export default function PopiaPage() {
         <div className="mt-4">
           <BulletList
             items={[
+              "We process personal information for specific platform purposes, including account management, orders, delivery, vendor approval, rider onboarding, support, safety and payment reconciliation.",
               "We collect only information reasonably needed to run accounts, orders, onboarding, support, fraud prevention and platform operations.",
               "We aim to keep information accurate, relevant and secure.",
               "We limit access to personal information to authorised staff, providers and operating partners who need it.",
               "We take reasonable steps to investigate and respond to privacy incidents and security compromises.",
               "We keep records only for as long as lawful and operationally necessary.",
+            ]}
+          />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <h2 className="text-lg font-semibold text-white">POPIA conditions we use as a checklist</h2>
+        <div className="mt-4">
+          <BulletList
+            items={[
+              "Accountability: we assign privacy responsibility and keep practical records of platform data use.",
+              "Processing limitation and purpose specification: we avoid collecting unnecessary data and explain why information is needed.",
+              "Further processing limitation: we do not reuse personal information for unrelated purposes without a lawful reason.",
+              "Information quality and openness: we aim to keep account, vendor, rider and order records accurate and understandable.",
+              "Security safeguards and data subject participation: we protect records and give users a way to ask for access, correction or deletion where the law allows.",
             ]}
           />
         </div>

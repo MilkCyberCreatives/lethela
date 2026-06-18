@@ -20,6 +20,7 @@ export function isPublicCatalogVendor(source: Pick<PublicVendorSource, "name" | 
   const name = source.name.trim().toLowerCase();
   const slug = source.slug.trim().toLowerCase();
 
+  if (name.startsWith("demo ") || slug.startsWith("demo-")) return false;
   return !HIDDEN_PUBLIC_VENDOR_TERMS.some((term) => name.includes(term) || slug.includes(term));
 }
 

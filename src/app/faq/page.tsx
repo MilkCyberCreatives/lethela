@@ -15,11 +15,11 @@ export const metadata: Metadata = {
 const faq = [
   {
     q: "What can I order on Lethela?",
-    a: "You can order local favourites like kota, chips, burgers, alcohol and groceries from approved vendors.",
+    a: "You can browse township favourites such as kota, chips, burgers, wings, braai, mogodu and breakfast items, plus groceries and adult-only alcohol from approved participating vendors.",
   },
   {
     q: "How do vendors join Lethela?",
-    a: "Vendors apply online, submit business details and are approved by admin before their stores go live.",
+    a: "Vendors apply online, submit business details, trading location, category, operating hours and readiness information. Stores only go live after approval and commercial terms are confirmed.",
   },
   {
     q: "Can riders apply online?",
@@ -27,11 +27,23 @@ const faq = [
   },
   {
     q: "How do I track my order?",
-    a: "After checkout you receive an order reference and can track live status updates on the tracking page.",
+    a: "After checkout you receive an order reference. Use it on the tracking page to see status updates and, where available, rider movement on the map preview.",
   },
   {
     q: "Which areas are currently served?",
     a: "Lethela is focused on South African local delivery corridors, including Midrand and nearby township communities.",
+  },
+  {
+    q: "How does Lethela handle alcohol?",
+    a: "Alcohol is 18+ only. Customers may be asked to confirm age at checkout and produce valid identification on delivery. Delivery can be refused if age, identity, sobriety or safe handover cannot be verified.",
+  },
+  {
+    q: "Are prices and delivery fees shown before I pay?",
+    a: "Yes. Customers should see item prices, delivery fees and any manual-quote limits before completing checkout. Vendor commercial pricing is not public and is only available to approved vendors.",
+  },
+  {
+    q: "What happens if something is missing or wrong?",
+    a: "Contact support quickly with the order reference, phone number and photos if useful. Depending on the issue, Lethela may arrange a correction, replacement, credit, partial refund or full refund.",
   },
 ];
 

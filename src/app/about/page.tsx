@@ -59,8 +59,9 @@ export default function AboutPage() {
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
             Lethela is a South African delivery and logistics platform built for speed, fairness,
-            and local context. Phase 1 focuses on food delivery. Phase 2 expands to logistics,
-            removals, convenience, and more.
+            and local context. Phase 1 focuses on prepared food, groceries and adult-only alcohol
+            delivery through approved local vendors. Later phases can expand into broader logistics,
+            removals, convenience and community commerce.
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
@@ -71,7 +72,9 @@ export default function AboutPage() {
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
             Siyashesha means &quot;we are fast.&quot; That is our promise across onboarding,
-            support, and delivery.
+            support, and delivery. It also means we keep the journey practical: clear delivery fees,
+            visible operating hours, careful age checks for alcohol and fewer dead ends when a
+            customer is ready to order.
           </p>
 
           <div className="mt-8 text-xs text-white/60">
@@ -88,21 +91,34 @@ export default function AboutPage() {
           <div>
             <div className="mb-1 text-base font-semibold text-white">Vendors</div>
             <div>
-              Menu management, operating hours, specials, driver tracking, and AI-assisted growth
-              tools in one place.
+              Menu management, operating hours, specials, stock status, driver tracking,
+              customer-ready product writing and AI-assisted growth tools in one place. Approved
+              vendors control their prices and receive clear commercial terms before going live.
             </div>
           </div>
 
           <div>
             <div className="mb-1 text-base font-semibold text-white">Riders</div>
-            <div>Flexible hours, faster onboarding, and visibility into demand hotspots.</div>
+            <div>
+              Flexible delivery opportunities, faster onboarding, order references, route context
+              and operational support for township-first delivery corridors.
+            </div>
           </div>
 
           <div>
             <div className="mb-1 text-base font-semibold text-white">Customers</div>
             <div>
-              Search in plain language, get smarter recommendations, and track orders with less
-              friction.
+              Search in plain language, browse category-aware listings, get smarter recommendations,
+              see delivery charges before checkout and track orders with less friction.
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-1 text-base font-semibold text-white">Responsible launch</div>
+            <div>
+              Lethela is preparing for launch with POPIA-aware privacy practices, PAIA access
+              guidance, consumer-friendly refund handling and strict 18+ handling for alcohol
+              orders.
             </div>
           </div>
         </div>

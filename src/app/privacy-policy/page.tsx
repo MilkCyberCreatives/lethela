@@ -53,6 +53,11 @@ export default function PrivacyPolicyPage() {
           support, verify vendor or rider applications, improve recommendations, reduce fraud,
           maintain platform security, and meet legal or operational obligations.
         </p>
+        <p>
+          Our POPIA approach is based on purpose limitation, data minimisation, openness, security
+          safeguards and giving users practical ways to access or correct their information. We do
+          not sell customer personal information as a standalone product.
+        </p>
       </Section>
 
       <Section title="Who we share information with">
@@ -61,6 +66,10 @@ export default function PrivacyPolicyPage() {
           partners, hosting or storage providers, maps and delivery tools, support service
           providers, and advisers where disclosure is necessary for service delivery, security, or
           legal compliance.
+        </p>
+        <p>
+          For delivery, a vendor or rider may need a customer name, order details, phone number,
+          delivery area and delivery notes. Access should be limited to the order being fulfilled.
         </p>
       </Section>
 
@@ -86,6 +95,11 @@ export default function PrivacyPolicyPage() {
           for correction, object to certain processing, request deletion where legally permitted,
           and complain if you believe your information has been handled unlawfully.
         </p>
+        <p>
+          We may need to verify your identity before actioning a privacy request. Some records must
+          be retained for tax, accounting, fraud prevention, dispute handling or legal compliance
+          even where an account is closed.
+        </p>
       </Section>
 
       <Section title="Security and retention">
@@ -93,6 +107,11 @@ export default function PrivacyPolicyPage() {
           We use reasonable technical and organisational safeguards to protect information. Records
           are kept for as long as required for customer service, platform operations, dispute
           handling, legal compliance, and fraud prevention.
+        </p>
+        <p>
+          If we become aware of a security compromise affecting personal information, we will assess
+          the incident and take reasonable steps required by POPIA, including notifications where
+          applicable.
         </p>
       </Section>
 
