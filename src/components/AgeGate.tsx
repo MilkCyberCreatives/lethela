@@ -21,6 +21,7 @@ export default function AgeGate({ onClose }: { onClose?: () => void }) {
             Yes, I am 18+
           </Button>
           <button
+            type="button"
             className="inline-flex items-center rounded-md px-4 py-2 border border-white/20 text-sm"
             onClick={onClose}
           >

@@ -28,6 +28,28 @@ type CartState = {
 
 export const DELIVERY_FEE_PER_ITEM_CENTS = 1000;
 
+function isLegacyDemoCartItem(item: Partial<CartItem>) {
+  return (
+    String(item.vendorSlug || "").startsWith("demo-") ||
+    String(item.vendorId || "").startsWith("vendor-demo")
+  );
+}
+
+export function sanitizePersistedCartState(input: unknown) {
+  if (!input || typeof input !== "object") return { items: [], vendorLockedTo: null };
+
+  const candidate = input as Partial<CartState>;
+  const items = Array.isArray(candidate.items)
+    ? candidate.items.filter((item) => item && !isLegacyDemoCartItem(item))
+    : [];
+
+  return {
+    ...candidate,
+    items,
+    vendorLockedTo: items[0]?.vendorId ?? null,
+  };
+}
+
 export const useCart = create<CartState>()(
   persist(
     (set, get) => ({
@@ -88,8 +110,14 @@ export const useCart = create<CartState>()(
     }),
     {
       name: "lethela_cart",
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: (st) => ({ items: st.items, vendorLockedTo: st.vendorLockedTo }),
+      migrate: (persistedState) => sanitizePersistedCartState(persistedState),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...sanitizePersistedCartState(persistedState),
+      }),
     },
   ),
 );

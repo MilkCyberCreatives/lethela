@@ -162,6 +162,7 @@ export default function CartDrawer() {
         <div className="flex items-center justify-between border-b border-white/10 p-4">
           <h2 className="text-lg font-semibold">Your cart</h2>
           <button
+            type="button"
             aria-label="Close cart"
             className="rounded-md p-2 hover:bg-white/10"
             onClick={closeCart}
@@ -201,13 +202,18 @@ export default function CartDrawer() {
                         R {(item.priceCents / 100).toFixed(2)}
                       </div>
                     </div>
-                    <button className="text-xs underline" onClick={() => remove(item.itemId)}>
+                    <button
+                      type="button"
+                      className="text-xs underline"
+                      onClick={() => remove(item.itemId)}
+                    >
                       Remove
                     </button>
                   </div>
 
                   <div className="mt-2 inline-flex items-center gap-2">
                     <button
+                      type="button"
                       className="h-7 w-7 rounded border border-white/20"
                       onClick={() => dec(item.itemId)}
                       aria-label="Decrease quantity"
@@ -216,6 +222,7 @@ export default function CartDrawer() {
                     </button>
                     <span className="text-sm">{item.qty}</span>
                     <button
+                      type="button"
                       className="h-7 w-7 rounded border border-white/20"
                       onClick={() => inc(item.itemId)}
                       aria-label="Increase quantity"

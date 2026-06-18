@@ -123,6 +123,7 @@ export default function ProductsGrid({
 
       <div className="mb-4 flex flex-wrap gap-2">
         <button
+          type="button"
           className={`rounded-full border px-3 py-1.5 text-xs transition ${!category ? "border-white/40 bg-white/10" : "border-white/15"}`}
           onClick={() => setCategory("")}
         >
@@ -131,6 +132,7 @@ export default function ProductsGrid({
         {TOWNSHIP_CATEGORIES.map((item) => (
           <button
             key={item}
+            type="button"
             className={`rounded-full border px-3 py-1.5 text-xs transition ${category === item ? "border-white/40 bg-white/10" : "border-white/15"}`}
             onClick={() => setCategory(item)}
           >
@@ -142,7 +144,7 @@ export default function ProductsGrid({
       {error ? (
         <div className="mb-4 rounded border border-white/15 bg-white/5 p-3 text-sm text-red-200">
           {error}
-          <button className="ml-2 underline" onClick={() => void load()}>
+          <button type="button" className="ml-2 underline" onClick={() => void load()}>
             Retry
           </button>
         </div>

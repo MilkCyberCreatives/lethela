@@ -191,6 +191,7 @@ export default function AIChatWidget() {
   return (
     <>
       <button
+        type="button"
         ref={launcherRef}
         onClick={() => setOpen((value) => !value)}
         aria-label={open ? "Close AI assistant" : "Open AI assistant"}
@@ -230,6 +231,7 @@ export default function AIChatWidget() {
             {QUICK_PROMPTS.map((query) => (
               <button
                 key={query}
+                type="button"
                 onClick={() => void send(query)}
                 disabled={busy}
                 className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs hover:bg-white/15 disabled:opacity-60"

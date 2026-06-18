@@ -158,6 +158,7 @@ export default function FeaturedCarousel({ title, items, className, autoMs = 400
         {items.map((_, index) => (
           <button
             key={index}
+            type="button"
             onClick={() => scrollToIndex(index)}
             className={[
               "h-2.5 w-2.5 rounded-full transition",
