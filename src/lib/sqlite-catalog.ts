@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { inferProductCategory } from "@/lib/categories";
 import { prismaRuntimeInfo } from "@/lib/db";
-import { buildPublicVendorCard } from "@/lib/public-catalog";
+import { buildPublicVendorCard, isPublicCatalogVendor } from "@/lib/public-catalog";
 import type { ProductLite } from "@/components/ProductCard";
 import type { Vendor } from "@/types";
 
@@ -103,28 +103,32 @@ export async function getSqliteCatalogProducts({
       deliveryFee: number | null;
     }>;
 
-    const mapped = rows.map((row) => {
-      const isAlcohol = Boolean(row.isAlcohol);
-      return {
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        priceCents: row.priceCents,
-        image: row.image,
-        isAlcohol,
-        vendor: {
-          id: row.vendorId,
-          name: row.vendorName,
-          slug: row.vendorSlug,
-          deliveryFee: row.deliveryFee,
-        },
-        category: inferProductCategory({
+    const mapped = rows
+      .filter((row) =>
+        isPublicCatalogVendor({ name: row.vendorName ?? "", slug: row.vendorSlug ?? "" }),
+      )
+      .map((row) => {
+        const isAlcohol = Boolean(row.isAlcohol);
+        return {
+          id: row.id,
           name: row.name,
           description: row.description,
+          priceCents: row.priceCents,
+          image: row.image,
           isAlcohol,
-        }),
-      };
-    });
+          vendor: {
+            id: row.vendorId,
+            name: row.vendorName,
+            slug: row.vendorSlug,
+            deliveryFee: row.deliveryFee,
+          },
+          category: inferProductCategory({
+            name: row.name,
+            description: row.description,
+            isAlcohol,
+          }),
+        };
+      });
 
     return mapped.filter((item) => {
       if (alcohol === "true" && !item.isAlcohol) return false;
@@ -185,24 +189,28 @@ export async function getSqliteCatalogVendors({
       hasAlcohol: 0 | 1 | null;
     }>;
 
-    return rows.map((row) =>
-      buildPublicVendorCard({
-        id: row.id,
-        name: row.name,
-        slug: row.slug,
-        rating: row.rating ?? 0,
-        cuisine: normalizeCuisine(row.cuisine),
-        halaal: Boolean(row.halaal),
-        image: row.image,
-        etaMins: row.etaMins,
-        products: [{ isAlcohol: Boolean(row.hasAlcohol) }],
-        reviews:
-          row.reviewCount > 0 && row.averageRating
-            ? Array.from({ length: row.reviewCount }, () => ({ rating: Number(row.averageRating) }))
-            : [],
-        baseEtaMin: row.etaMins ?? 15,
-      }),
-    );
+    return rows
+      .filter((row) => isPublicCatalogVendor(row))
+      .map((row) =>
+        buildPublicVendorCard({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          rating: row.rating ?? 0,
+          cuisine: normalizeCuisine(row.cuisine),
+          halaal: Boolean(row.halaal),
+          image: row.image,
+          etaMins: row.etaMins,
+          products: [{ isAlcohol: Boolean(row.hasAlcohol) }],
+          reviews:
+            row.reviewCount > 0 && row.averageRating
+              ? Array.from({ length: row.reviewCount }, () => ({
+                  rating: Number(row.averageRating),
+                }))
+              : [],
+          baseEtaMin: row.etaMins ?? 15,
+        }),
+      );
   } finally {
     db.close();
   }

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { isPublicCatalogVendor } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { SITE_URL } from "@/lib/site";
 import { TOWNSHIP_CATEGORIES, categoryToSlug } from "@/lib/categories";
@@ -114,7 +115,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     : await runBoundedDbQuery((db) =>
         db.vendor.findMany({
           where: { isActive: true, status: "ACTIVE" },
-          select: { slug: true, updatedAt: true },
+          select: { name: true, slug: true, updatedAt: true },
           orderBy: { updatedAt: "desc" },
           take: 5000,
         }),
@@ -122,12 +123,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const vendorRoutes: MetadataRoute.Sitemap =
     vendorRows.length > 0
-      ? vendorRows.map((vendor) => ({
-          url: `${SITE_URL}/vendors/${vendor.slug}`,
-          lastModified: vendor.updatedAt,
-          changeFrequency: "daily",
-          priority: 0.9,
-        }))
+      ? vendorRows
+          .filter((vendor) => isPublicCatalogVendor(vendor))
+          .map((vendor) => ({
+            url: `${SITE_URL}/vendors/${vendor.slug}`,
+            lastModified: vendor.updatedAt,
+            changeFrequency: "daily",
+            priority: 0.9,
+          }))
       : shouldPreferCatalogFallback()
         ? getFallbackVendorCards().map((vendor) => ({
             url: `${SITE_URL}/vendors/${vendor.slug}`,

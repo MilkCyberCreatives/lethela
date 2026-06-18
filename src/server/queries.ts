@@ -5,6 +5,7 @@ import {
   shouldFallbackWhenCatalogEmpty,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
+import { isPublicCatalogVendor } from "@/lib/public-catalog";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
 export async function getVendorBySlug(slug: string) {
@@ -43,6 +44,7 @@ export async function getVendorBySlug(slug: string) {
   const vendor = await withQueryTimeout<VendorRecord | null>(vendorQuery, null);
 
   if (!vendor) return allowFallback || shouldFallbackWhenCatalogEmpty() ? fallback : null;
+  if (!isPublicCatalogVendor(vendor)) return null;
 
   const status = String(vendor.status || "").toUpperCase();
   const isPublicVendor =

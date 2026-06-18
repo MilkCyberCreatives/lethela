@@ -139,18 +139,6 @@ export default function Footer() {
 
         <div className="mt-7 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs text-white/55 md:flex-row md:items-center md:justify-between">
           <p>&copy; {new Date().getFullYear()} Lethela. All rights reserved.</p>
-          <p>
-            Developed by{" "}
-            <a
-              href="https://milkcybercreatives.co.za/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-white/75 underline decoration-white/30 underline-offset-4 hover:text-white"
-            >
-              Milk Cyber Creatives
-            </a>
-            .
-          </p>
         </div>
       </div>
     </footer>

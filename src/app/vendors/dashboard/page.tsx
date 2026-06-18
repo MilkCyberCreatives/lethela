@@ -188,12 +188,6 @@ export default async function VendorDashboardPage({
               >
                 Vendor sign in
               </Link>
-              <Link
-                href="/admin"
-                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
-              >
-                Open admin approvals
-              </Link>
             </div>
           </div>
         </section>

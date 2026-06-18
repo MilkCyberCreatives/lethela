@@ -5,6 +5,7 @@ import {
   shouldFallbackWhenCatalogEmpty,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
+import { isPublicCatalogVendor } from "@/lib/public-catalog";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 
@@ -54,7 +55,11 @@ export async function GET() {
 
   const products =
     dbProducts.length > 0
-      ? dbProducts
+      ? dbProducts.filter((product) =>
+          product.vendor
+            ? isPublicCatalogVendor({ name: product.vendor.name, slug: product.vendor.slug })
+            : true,
+        )
       : preferFallback || shouldFallbackWhenCatalogEmpty()
         ? getFallbackProducts()
             .slice(0, 5000)

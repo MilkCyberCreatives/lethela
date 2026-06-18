@@ -7,7 +7,7 @@ import {
   shouldPreferCatalogFallback,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
-import { buildPublicVendorCard } from "@/lib/public-catalog";
+import { buildPublicVendorCard, isPublicCatalogVendor } from "@/lib/public-catalog";
 import {
   canReadSqliteCatalog,
   getSqliteCatalogProducts,
@@ -120,20 +120,24 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
     return getFallbackProducts().slice(0, Math.min(60, Math.max(6, take)));
   }
 
-  return rows.map((item) => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    priceCents: item.priceCents,
-    image: item.image,
-    isAlcohol: item.isAlcohol,
-    vendor: item.vendor,
-    category: inferProductCategory({
+  return rows
+    .filter((item) =>
+      isPublicCatalogVendor({ name: item.vendor.name ?? "", slug: item.vendor.slug ?? "" }),
+    )
+    .map((item) => ({
+      id: item.id,
       name: item.name,
       description: item.description,
+      priceCents: item.priceCents,
+      image: item.image,
       isAlcohol: item.isAlcohol,
-    }),
-  }));
+      vendor: item.vendor,
+      category: inferProductCategory({
+        name: item.name,
+        description: item.description,
+        isAlcohol: item.isAlcohol,
+      }),
+    }));
 }
 
 function fallbackVendors(hour: number): Vendor[] {
@@ -198,21 +202,23 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
       : [];
   }
 
-  const mapped = dbVendors.map((vendor: VendorWithAlcohol) => {
-    return buildPublicVendorCard({
-      id: vendor.id,
-      name: vendor.name,
-      slug: vendor.slug,
-      rating: vendor.rating ?? 0,
-      cuisine: vendor.cuisine,
-      halaal: vendor.halaal,
-      image: vendor.image,
-      etaMins: vendor.etaMins,
-      products: vendor.products,
-      reviews: vendor.reviews,
-      baseEtaMin: vendor.etaMins ?? 15,
+  const mapped = dbVendors
+    .filter((vendor: VendorWithAlcohol) => isPublicCatalogVendor(vendor))
+    .map((vendor: VendorWithAlcohol) => {
+      return buildPublicVendorCard({
+        id: vendor.id,
+        name: vendor.name,
+        slug: vendor.slug,
+        rating: vendor.rating ?? 0,
+        cuisine: vendor.cuisine,
+        halaal: vendor.halaal,
+        image: vendor.image,
+        etaMins: vendor.etaMins,
+        products: vendor.products,
+        reviews: vendor.reviews,
+        baseEtaMin: vendor.etaMins ?? 15,
+      });
     });
-  });
 
   const reranked = await aiRerankVendors({
     vendors: mapped.map((vendor) => ({

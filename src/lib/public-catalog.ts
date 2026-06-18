@@ -14,6 +14,15 @@ type PublicVendorSource = {
   reviews?: Array<{ rating?: number | null }>;
 };
 
+const HIDDEN_PUBLIC_VENDOR_TERMS = ["milk cyber creatives", "milk-cyber-creatives"];
+
+export function isPublicCatalogVendor(source: Pick<PublicVendorSource, "name" | "slug">) {
+  const name = source.name.trim().toLowerCase();
+  const slug = source.slug.trim().toLowerCase();
+
+  return !HIDDEN_PUBLIC_VENDOR_TERMS.some((term) => name.includes(term) || slug.includes(term));
+}
+
 export function parseCuisineList(value: unknown) {
   if (Array.isArray(value)) {
     return value.filter(
