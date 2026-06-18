@@ -12,11 +12,11 @@ export default function AdvancedAutomationsPanel() {
     setLog("Running advanced automations...");
     try {
       const response = await fetch("/api/vendors/automations/run-advanced", { method: "POST" });
-      const json = await response.json();
-      if (json.ok) {
+      const json = await response.json().catch(() => ({}));
+      if (response.ok && json.ok) {
         setLog((json.results as string[]).map((line) => `- ${line}`).join("\n"));
       } else {
-        setLog(`Error: ${json.error}`);
+        setLog(`Error: ${json.error || `Request failed with status ${response.status}`}`);
       }
     } catch (err: any) {
       setLog(`Error: ${err.message}`);
@@ -33,6 +33,7 @@ export default function AdvancedAutomationsPanel() {
       </p>
 
       <button
+        type="button"
         onClick={runAll}
         disabled={busy}
         className="mt-3 rounded bg-lethela-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90"

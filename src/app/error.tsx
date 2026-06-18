@@ -14,6 +14,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
       <h1 className="text-xl font-bold">Page error</h1>
       <p className="mt-2 text-white/70">We’ve logged this and will look into it.</p>
       <button
+        type="button"
         onClick={() => reset()}
         className="mt-4 rounded bg-lethela-primary px-4 py-2 font-semibold"
       >

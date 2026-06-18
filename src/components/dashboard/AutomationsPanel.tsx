@@ -8,19 +8,27 @@ export default function AutomationsPanel() {
 
   const run = async () => {
     setOut("Running...");
-    const response = await fetch("/api/vendors/automations/run", { method: "POST" });
-    const json = await response.json();
-    if (json.ok) {
-      setOut((json.actions as string[]).map((action) => `- ${action}`).join("\n"));
-    } else {
-      setOut(`Error: ${json.error}`);
+    try {
+      const response = await fetch("/api/vendors/automations/run", { method: "POST" });
+      const json = await response.json().catch(() => ({}));
+      if (response.ok && json.ok) {
+        setOut((json.actions as string[]).map((action) => `- ${action}`).join("\n"));
+      } else {
+        setOut(`Error: ${json.error || `Request failed with status ${response.status}`}`);
+      }
+    } catch (error) {
+      setOut(`Error: ${error instanceof Error ? error.message : "Unable to run automations"}`);
     }
   };
 
   return (
     <DashCard title="Automations">
       <p className="text-sm text-white/80">Run AI-powered business automations on demand.</p>
-      <button onClick={run} className="mt-2 rounded bg-lethela-primary px-3 py-2 text-sm">
+      <button
+        type="button"
+        onClick={run}
+        className="mt-2 rounded bg-lethela-primary px-3 py-2 text-sm"
+      >
         Run automations now
       </button>
       {out ? (
