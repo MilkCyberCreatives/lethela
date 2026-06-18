@@ -1,11 +1,8 @@
 // /src/server/queries.ts
 import { prisma } from "@/server/db";
 import { getFallbackVendorProfile, type CatalogSection } from "@/lib/catalog-fallback";
-import {
-  shouldFallbackWhenCatalogEmpty,
-  shouldUseCatalogFallbackBeforeQuery,
-} from "@/lib/catalog-runtime";
-import { isPublicCatalogVendor } from "@/lib/public-catalog";
+import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
+import { isPublicCatalogProduct, isPublicCatalogVendor } from "@/lib/public-catalog";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
 export async function getVendorBySlug(slug: string) {
@@ -43,7 +40,7 @@ export async function getVendorBySlug(slug: string) {
 
   const vendor = await withQueryTimeout<VendorRecord | null>(vendorQuery, null);
 
-  if (!vendor) return allowFallback || shouldFallbackWhenCatalogEmpty() ? fallback : null;
+  if (!vendor) return fallback;
   if (!isPublicCatalogVendor(vendor)) return null;
 
   const status = String(vendor.status || "").toUpperCase();
@@ -64,24 +61,42 @@ export async function getVendorBySlug(slug: string) {
         }
       })();
 
+  const products = (vendor.products ?? []).filter((product) =>
+    isPublicCatalogProduct({
+      id: product.id,
+      name: product.name,
+      vendorName: vendor.name,
+      vendorSlug: vendor.slug,
+    }),
+  );
+
   const sections = (vendor.sections as unknown as CatalogSection[])
     .map((section) => ({
       ...section,
-      items: section.items.map((item) => ({
-        ...item,
-        tags: Array.isArray(item.tags)
-          ? item.tags
-          : (() => {
-              try {
-                const parsed = JSON.parse(String(item.tags || "[]"));
-                return Array.isArray(parsed)
-                  ? parsed.filter((tag): tag is string => typeof tag === "string")
-                  : [];
-              } catch {
-                return [];
-              }
-            })(),
-      })),
+      items: section.items
+        .filter((item) =>
+          isPublicCatalogProduct({
+            id: item.id,
+            name: item.name,
+            vendorName: vendor.name,
+            vendorSlug: vendor.slug,
+          }),
+        )
+        .map((item) => ({
+          ...item,
+          tags: Array.isArray(item.tags)
+            ? item.tags
+            : (() => {
+                try {
+                  const parsed = JSON.parse(String(item.tags || "[]"));
+                  return Array.isArray(parsed)
+                    ? parsed.filter((tag): tag is string => typeof tag === "string")
+                    : [];
+                } catch {
+                  return [];
+                }
+              })(),
+        })),
     }))
     .filter((section) => section.items.length > 0);
 
@@ -90,7 +105,7 @@ export async function getVendorBySlug(slug: string) {
     cuisine,
     sections,
     hours: vendor.hours ?? [],
-    products: vendor.products ?? [],
+    products,
     specials: vendor.specials ?? [],
   };
 }
