@@ -11,6 +11,14 @@ const StatusSchema = z.object({
   status: z.enum(["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED"]),
 });
 
+function isLocalSqliteRuntime() {
+  return (
+    !process.env.VERCEL &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
+  );
+}
+
 type Params = {
   params: Promise<{ id: string }>;
 };
@@ -48,7 +56,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           ? "under_review"
           : null;
 
-  if (notificationStatus) {
+  if (notificationStatus && !isLocalSqliteRuntime()) {
     await notifyApplicant({
       kind: "rider",
       name: item.fullName,

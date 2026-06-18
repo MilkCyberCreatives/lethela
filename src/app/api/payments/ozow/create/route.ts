@@ -44,7 +44,7 @@ const BodySchema = z
 
 function isLocalSqliteRuntime() {
   return (
-    process.env.NODE_ENV !== "production" &&
+    !process.env.VERCEL &&
     (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
       process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
   );
