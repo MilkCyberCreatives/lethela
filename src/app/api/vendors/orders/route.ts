@@ -44,6 +44,7 @@ export async function GET(req: Request) {
         riderSpeed: true,
         riderLocatedAt: true,
         ozowReference: true,
+        itemsJson: true,
         items: {
           select: {
             id: true,
@@ -64,10 +65,26 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      orders: orders.map((order) => ({
-        ...order,
-        riderConsoleUrl: buildRiderConsoleUrl(origin, order.publicId || order.ozowReference || ""),
-      })),
+      orders: orders.map((order) => {
+        const { itemsJson, ...safeOrder } = order;
+        return {
+          ...safeOrder,
+          deliveryDetails: (() => {
+            try {
+              const parsed = JSON.parse(itemsJson || "[]");
+              return !Array.isArray(parsed) && typeof parsed?.deliveryDetails === "object"
+                ? parsed.deliveryDetails
+                : null;
+            } catch {
+              return null;
+            }
+          })(),
+          riderConsoleUrl: buildRiderConsoleUrl(
+            origin,
+            order.publicId || order.ozowReference || "",
+          ),
+        };
+      }),
     });
   } catch (error: any) {
     return NextResponse.json(

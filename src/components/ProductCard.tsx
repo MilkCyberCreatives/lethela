@@ -80,6 +80,7 @@ export default function ProductCard({ p }: { p: ProductLite }) {
                   name: p.name,
                   priceCents: p.priceCents,
                   image: p.image || undefined,
+                  isAlcohol: Boolean(p.isAlcohol),
                 },
                 1,
               );

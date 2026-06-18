@@ -6,6 +6,7 @@ import {
   type RiderApplicationStatus,
   updateRiderApplicationStatus,
 } from "@/lib/rider-applications";
+import { logAdminAudit } from "@/lib/admin-audit";
 
 const StatusSchema = z.object({
   status: z.enum(["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED"]),
@@ -46,6 +47,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!item) {
     return NextResponse.json({ ok: false, error: "Rider application not found." }, { status: 404 });
   }
+
+  await logAdminAudit({
+    actor: guard.mode,
+    action: `set_rider_${parsed.data.status.toLowerCase()}`,
+    targetType: "rider_application",
+    targetId: item.id,
+    after: { status: item.status, email: item.email, phone: item.phone },
+  });
 
   const notificationStatus =
     item.status === "APPROVED"

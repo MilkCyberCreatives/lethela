@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import { formatZAR } from "@/lib/format";
@@ -25,47 +26,11 @@ const vendorPlans = [
   ["Growth Vendor", "R199/month + 0% commission"],
 ];
 
-function PricingAccessBlocked({ message }: { message: string }) {
-  return (
-    <main className="min-h-screen bg-lethela-secondary text-white">
-      <MainHeader />
-      <section className="container py-12">
-        <div className="max-w-2xl rounded-lg border border-white/10 bg-white/[0.035] p-6">
-          <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
-            Vendor-only pricing
-          </p>
-          <h1 className="mt-3 text-2xl font-bold">Approved vendor access required</h1>
-          <p className="mt-3 text-sm text-white/72">
-            {message} Pricing structures are only available to approved Lethela vendors.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              href="/vendors/signin"
-              className="rounded-full bg-lethela-primary px-4 py-2 text-sm font-medium"
-            >
-              Vendor sign in
-            </Link>
-            <Link
-              href="/vendors/register"
-              className="rounded-full border border-white/30 px-4 py-2 text-sm"
-            >
-              Apply as vendor
-            </Link>
-          </div>
-        </div>
-      </section>
-      <Footer />
-    </main>
-  );
-}
-
 export default async function PricingPage() {
   try {
     await requireVendor("STAFF");
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Please sign in with an approved vendor account.";
-    return <PricingAccessBlocked message={message} />;
+  } catch {
+    redirect("/vendors/signin?next=/pricing");
   }
 
   return (

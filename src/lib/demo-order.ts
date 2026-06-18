@@ -1,7 +1,19 @@
 export const DEMO_ORDER_REF = "LET-12345";
 
+export function isPublicDemoOrderEnabled() {
+  const isLocalSqlite =
+    !process.env.VERCEL &&
+    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
+      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"));
+  return (
+    process.env.NODE_ENV !== "production" ||
+    isLocalSqlite ||
+    process.env.ALLOW_PUBLIC_DEMO_ORDER === "true"
+  );
+}
+
 export function isDemoOrderRef(value: string) {
-  return value.trim().toUpperCase() === DEMO_ORDER_REF;
+  return isPublicDemoOrderEnabled() && value.trim().toUpperCase() === DEMO_ORDER_REF;
 }
 
 export function getDemoOrderSummary() {

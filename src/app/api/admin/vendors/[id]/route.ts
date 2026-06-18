@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { notifyApplicant } from "@/lib/application-notifications";
+import { logAdminAudit } from "@/lib/admin-audit";
 
 const ActionSchema = z.object({
   action: z.enum(["approve", "reject"]),
@@ -241,6 +242,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
 
     return updated;
+  });
+
+  await logAdminAudit({
+    actor: guard.mode,
+    action: approved ? "approve_vendor" : "reject_vendor",
+    targetType: "vendor",
+    targetId: vendor.id,
+    before: { status: existing.status, ownerId: existing.ownerId },
+    after: { status: vendor.status, isActive: vendor.isActive },
   });
 
   if (!isLocalSqliteRuntime() && vendor.email && vendor.phone) {

@@ -36,6 +36,7 @@ export default function CheckoutPage() {
   const [streetSection, setStreetSection] = useState("");
   const [landmark, setLandmark] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [destinationPoint, setDestinationPoint] = useState<{ lat: number; lng: number } | null>(
     () => {
       const saved = readPreferredLocation();
@@ -111,6 +112,7 @@ export default function CheckoutPage() {
   }, [destinationPoint, destinationSuburb, items]);
 
   const hasItems = items.length > 0;
+  const hasAlcohol = items.some((item) => item.isAlcohol);
   const deliveryFee = hasItems ? deliveryQuote.deliveryCents : 0;
   const total = subtotal + deliveryFee;
   const whatsappLink = useMemo(() => {
@@ -182,6 +184,10 @@ export default function CheckoutPage() {
 
   async function payOzow() {
     if (items.length === 0) return;
+    if (hasAlcohol && !ageConfirmed) {
+      setError("Confirm that you are 18 or older and can show ID on delivery.");
+      return;
+    }
     const destination = destinationSuburb.trim() || "Klipfontein View, Midrand";
     setLoading(true);
     setError(null);
@@ -208,12 +214,21 @@ export default function CheckoutPage() {
           destinationSuburb: destination,
           destinationLat: destinationPoint?.lat,
           destinationLng: destinationPoint?.lng,
+          customerName,
+          customerPhone,
+          whatsappNumber,
+          standNumber,
+          streetSection,
+          landmark,
+          deliveryNotes,
+          ageConfirmed,
           items: items.map((i) => ({
             itemId: i.itemId,
             name: i.name,
             priceCents: i.priceCents,
             qty: i.qty,
             image: i.image ?? null,
+            isAlcohol: Boolean(i.isAlcohol),
           })),
           subtotalCents: subtotal,
           deliveryCents: deliveryFee,
@@ -387,10 +402,28 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {hasAlcohol ? (
+              <label className="mt-4 flex items-start gap-3 rounded-lg border border-amber-200/25 bg-amber-300/10 p-4 text-sm text-amber-50">
+                <input
+                  type="checkbox"
+                  checked={ageConfirmed}
+                  onChange={(event) => setAgeConfirmed(event.target.checked)}
+                  className="mt-1"
+                />
+                <span>
+                  I confirm that I am 18 or older, sober, and able to show valid ID when the
+                  delivery arrives. I understand alcohol delivery may be refused if age or sobriety
+                  cannot be verified.
+                </span>
+              </label>
+            ) : null}
+
             <div className="mt-6 flex flex-wrap gap-3">
               <Button
                 className="bg-lethela-primary"
-                disabled={loading || deliveryQuote.manualQuoteRequired}
+                disabled={
+                  loading || deliveryQuote.manualQuoteRequired || (hasAlcohol && !ageConfirmed)
+                }
                 onClick={payOzow}
               >
                 {loading

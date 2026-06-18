@@ -26,8 +26,17 @@ const BodySchema = z
         priceCents: z.number().int().nonnegative(),
         qty: z.number().int().positive(),
         image: z.string().trim().max(1000).optional().nullable(),
+        isAlcohol: z.boolean().optional().default(false),
       }),
     ),
+    customerName: z.string().trim().max(120).optional().default(""),
+    customerPhone: z.string().trim().max(40).optional().default(""),
+    whatsappNumber: z.string().trim().max(40).optional().default(""),
+    standNumber: z.string().trim().max(120).optional().default(""),
+    streetSection: z.string().trim().max(120).optional().default(""),
+    landmark: z.string().trim().max(180).optional().default(""),
+    deliveryNotes: z.string().trim().max(500).optional().default(""),
+    ageConfirmed: z.boolean().optional().default(false),
     subtotalCents: z.number().int().nonnegative(),
     deliveryCents: z.number().int().nonnegative(),
     totalCents: z.number().int().positive(),
@@ -102,12 +111,27 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     destinationLat,
     destinationLng,
     items,
+    customerName,
+    customerPhone,
+    whatsappNumber,
+    standNumber,
+    streetSection,
+    landmark,
+    deliveryNotes,
+    ageConfirmed,
     subtotalCents,
     deliveryCents,
     totalCents: requestedTotalCents,
   } = parsed.data;
   if (items.length === 0) {
     return NextResponse.json({ ok: false, error: "Cart is empty." }, { status: 400 });
+  }
+
+  if (items.some((item) => item.isAlcohol) && !ageConfirmed) {
+    return NextResponse.json(
+      { ok: false, error: "Confirm that you are 18 or older before paying for alcohol." },
+      { status: 400 },
+    );
   }
 
   if (isLocalhostRequest(req) && canReadSqliteCatalog()) {
@@ -139,7 +163,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   const itemIds = [...new Set(items.map((item) => item.itemId))];
   const products = await prisma.product.findMany({
     where: { vendorId, id: { in: itemIds }, inStock: true },
-    select: { id: true, name: true, priceCents: true },
+    select: { id: true, name: true, priceCents: true, isAlcohol: true },
   });
   const menuItems = await prisma.item.findMany({
     where: { vendorId, id: { in: itemIds }, draft: false },
@@ -165,8 +189,30 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       productId: product?.id ?? null,
       name: resolved!.name,
       priceCents: resolved!.priceCents,
+      isAlcohol: Boolean(item.isAlcohol || product?.isAlcohol),
     };
   });
+
+  const containsAlcohol = normalizedItems.some((item) => item.isAlcohol);
+  if (containsAlcohol && !ageConfirmed) {
+    return NextResponse.json(
+      { ok: false, error: "Confirm that you are 18 or older before paying for alcohol." },
+      { status: 400 },
+    );
+  }
+
+  const deliveryDetails = {
+    customerName,
+    customerPhone,
+    whatsappNumber,
+    standNumber,
+    streetSection,
+    landmark,
+    destinationSuburb: destinationSuburb || "",
+    deliveryNotes,
+    ageConfirmed,
+    containsAlcohol,
+  };
 
   const calcSubtotal = normalizedItems.reduce((sum, item) => sum + item.priceCents * item.qty, 0);
   const deliveryQuote = await quoteDelivery({
@@ -249,7 +295,10 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       publicId: ozowReference,
       userId,
       vendorId,
-      itemsJson: JSON.stringify(normalizedItems),
+      itemsJson: JSON.stringify({
+        items: normalizedItems,
+        deliveryDetails,
+      }),
       subtotalCents: calcSubtotal,
       deliveryFeeCents: resolvedDeliveryCents,
       totalCents,

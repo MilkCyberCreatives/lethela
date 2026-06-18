@@ -11,6 +11,7 @@ export type CartItem = {
   priceCents: number;
   qty: number;
   image?: string | null;
+  isAlcohol?: boolean;
 };
 
 type CartState = {
@@ -64,7 +65,9 @@ export const useCart = create<CartState>()(
         if (existing) {
           set({
             items: nextItemsBase.map((cartItem) =>
-              cartItem.itemId === item.itemId ? { ...cartItem, qty: cartItem.qty + qty } : cartItem,
+              cartItem.itemId === item.itemId
+                ? { ...cartItem, ...item, qty: cartItem.qty + qty }
+                : cartItem,
             ),
             vendorLockedTo: item.vendorId,
           });

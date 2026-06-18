@@ -18,6 +18,18 @@ type Order = {
   customerLng: number | null;
   vendor: { latitude: number | null; longitude: number | null } | null;
   items: { id: string; qty: number; product: { name: string } | null }[];
+  deliveryDetails: {
+    customerName?: string;
+    customerPhone?: string;
+    whatsappNumber?: string;
+    standNumber?: string;
+    streetSection?: string;
+    landmark?: string;
+    destinationSuburb?: string;
+    deliveryNotes?: string;
+    containsAlcohol?: boolean;
+    ageConfirmed?: boolean;
+  } | null;
 };
 
 const STATUS: Array<OrderStatus> = [
@@ -67,6 +79,7 @@ export default function OrdersManager() {
         customerLng: order.customerLng,
         vendor: order.vendor,
         items: order.items,
+        deliveryDetails: order.deliveryDetails ?? null,
       }));
 
       setOrders(nextOrders);
@@ -146,6 +159,11 @@ export default function OrdersManager() {
         order.publicId,
         order.status,
         order.paymentStatus,
+        order.deliveryDetails?.customerName,
+        order.deliveryDetails?.customerPhone,
+        order.deliveryDetails?.whatsappNumber,
+        order.deliveryDetails?.destinationSuburb,
+        order.deliveryDetails?.landmark,
         ...order.items.map((item) => item.product?.name || "item"),
       ]
         .join(" ")
@@ -340,6 +358,46 @@ export default function OrdersManager() {
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              <div className="rounded border border-white/10 bg-black/20 p-3 text-sm">
+                <div className="text-xs uppercase tracking-[0.12em] text-white/60">
+                  Delivery details
+                </div>
+                {selectedOrder.deliveryDetails ? (
+                  <div className="mt-2 space-y-1 text-white/85">
+                    <div>Name: {selectedOrder.deliveryDetails.customerName || "Not supplied"}</div>
+                    <div>
+                      Phone:{" "}
+                      {selectedOrder.deliveryDetails.customerPhone ||
+                        selectedOrder.deliveryDetails.whatsappNumber ||
+                        "Not supplied"}
+                    </div>
+                    <div>
+                      Address:{" "}
+                      {[
+                        selectedOrder.deliveryDetails.standNumber,
+                        selectedOrder.deliveryDetails.streetSection,
+                        selectedOrder.deliveryDetails.destinationSuburb,
+                      ]
+                        .filter(Boolean)
+                        .join(", ") || "Not supplied"}
+                    </div>
+                    {selectedOrder.deliveryDetails.landmark ? (
+                      <div>Landmark: {selectedOrder.deliveryDetails.landmark}</div>
+                    ) : null}
+                    {selectedOrder.deliveryDetails.deliveryNotes ? (
+                      <div>Notes: {selectedOrder.deliveryDetails.deliveryNotes}</div>
+                    ) : null}
+                    {selectedOrder.deliveryDetails.containsAlcohol ? (
+                      <div className="text-amber-100">
+                        Alcohol order: ID check required on delivery.
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-white/65">No delivery notes were captured.</div>
+                )}
               </div>
 
               {selectedOrder.customerLat != null && selectedOrder.customerLng != null ? (

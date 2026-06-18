@@ -80,14 +80,22 @@ export async function GET(req: NextRequest, { params }: Params) {
       ? { lat: order.riderLat, lng: order.riderLng }
       : null;
 
-  const items = (() => {
+  const parsedOrderPayload = (() => {
     try {
-      const parsed = JSON.parse(order.itemsJson || "[]");
-      return Array.isArray(parsed) ? parsed : [];
+      return JSON.parse(order.itemsJson || "[]");
     } catch {
       return [];
     }
   })();
+  const items = Array.isArray(parsedOrderPayload)
+    ? parsedOrderPayload
+    : Array.isArray(parsedOrderPayload?.items)
+      ? parsedOrderPayload.items
+      : [];
+  const deliveryDetails =
+    !Array.isArray(parsedOrderPayload) && typeof parsedOrderPayload?.deliveryDetails === "object"
+      ? parsedOrderPayload.deliveryDetails
+      : null;
 
   const tracking = buildTrackingSnapshot({
     status: order.status,
@@ -110,6 +118,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       updatedAt: order.updatedAt,
       totalCents: order.totalCents,
       items,
+      deliveryDetails: hasDetailedTracking ? deliveryDetails : null,
       vendor: order.vendor,
       destination: hasDetailedTracking ? destination : null,
       rider:
