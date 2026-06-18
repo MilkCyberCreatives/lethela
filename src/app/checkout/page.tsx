@@ -429,10 +429,9 @@ export default function CheckoutPage() {
               manually.
             </p>
 
-            <p className="mt-3 text-xs text-white/60">
-              For local dev, set <code>OZOW_SITE_CODE</code> and <code>OZOW_PRIVATE_KEY</code> in{" "}
-              <code>.env.local</code>.
-            </p>
+            {isOzowSandbox ? (
+              <p className="mt-3 text-xs text-white/60">Sandbox checkout is active for testing.</p>
+            ) : null}
           </>
         )}
       </main>

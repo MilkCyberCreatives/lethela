@@ -55,7 +55,7 @@ export default function SignUpPage() {
           />
           <Input
             type="password"
-            placeholder="At least 6 characters"
+            placeholder="At least 8 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="bg-white text-black"

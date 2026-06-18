@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { createAdminAccessToken, ADMIN_ACCESS_COOKIE_NAME } from "@/lib/admin-access";
 import { prisma } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const BodySchema = z.object({
   adminKey: z.string().trim().min(1),
@@ -20,6 +21,19 @@ function keysMatch(provided: string, expected: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = await checkRateLimit({
+    key: "admin-access",
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+    headers: req.headers,
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many admin access attempts. Please try again later." },
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
+    );
+  }
+
   const configuredKey = process.env.ADMIN_APPROVAL_KEY?.trim();
   if (!configuredKey) {
     return NextResponse.json(

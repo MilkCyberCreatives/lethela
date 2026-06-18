@@ -54,7 +54,9 @@ export default function ResetPasswordForm() {
   return (
     <>
       <h1 className="text-2xl font-bold">Reset password</h1>
-      <p className="mt-2 text-sm text-white/70">Choose a new password for your Lethela account.</p>
+      <p className="mt-2 text-sm text-white/70">
+        Choose a new password with at least 8 characters.
+      </p>
 
       <div className="mt-6 space-y-3">
         <Input

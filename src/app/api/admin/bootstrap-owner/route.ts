@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const BootstrapOwnerSchema = z.object({
   adminKey: z.string().trim().optional(),
@@ -24,6 +25,19 @@ function keysMatch(provided: string, expected: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = await checkRateLimit({
+    key: "admin-bootstrap-owner",
+    limit: 3,
+    windowMs: 60 * 60 * 1000,
+    headers: req.headers,
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many owner setup attempts. Please try again later." },
+      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
+    );
+  }
+
   const configuredKey = process.env.ADMIN_APPROVAL_KEY?.trim();
   if (!configuredKey) {
     return NextResponse.json(
