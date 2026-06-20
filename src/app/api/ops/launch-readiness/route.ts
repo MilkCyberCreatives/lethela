@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { getCatalogMode } from "@/lib/catalog-runtime";
+import { hasWhatsAppChannel } from "@/lib/notification-channels";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { hasWebPushConfig } from "@/lib/web-push";
 import { hasStorageConfig, storageProvider } from "@/server/supabase";
@@ -122,10 +123,13 @@ export async function GET(req: NextRequest) {
     ),
     item(
       "Applicant WhatsApp notifications",
-      configured("TWILIO_ACCOUNT_SID") &&
-        configured("TWILIO_AUTH_TOKEN") &&
-        configured("TWILIO_WHATSAPP_FROM"),
+      hasWhatsAppChannel(),
       "Twilio WhatsApp sender configured",
+    ),
+    item(
+      "Vendor WhatsApp order alerts",
+      hasWhatsAppChannel(),
+      "Paid orders are sent to the vendor phone number after Ozow confirms payment",
     ),
     item(
       "Owner notification recipients",

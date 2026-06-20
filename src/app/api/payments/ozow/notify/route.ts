@@ -1,7 +1,9 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
+import { notifyVendorOfPaidOrder } from "@/lib/order-notifications";
 import { buildOzowResponseHash } from "@/lib/ozow";
+import { settleWithin } from "@/lib/notification-channels";
 
 export const dynamic = "force-dynamic";
 
@@ -170,6 +172,10 @@ export async function POST(req: NextRequest) {
     where: { id: order.id },
     data,
   });
+
+  if (paymentStatus === "PAID") {
+    await settleWithin(notifyVendorOfPaidOrder(order.id), 4_000);
+  }
 
   return NextResponse.json({ ok: true });
 }

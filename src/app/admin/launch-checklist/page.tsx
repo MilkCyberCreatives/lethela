@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { ADMIN_ACCESS_COOKIE_NAME, readAdminAccessToken } from "@/lib/admin-access";
 import { getCatalogMode } from "@/lib/catalog-runtime";
+import { hasWhatsAppChannel } from "@/lib/notification-channels";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { hasStorageConfig, storageProvider } from "@/server/supabase";
 import { hasWebPushConfig } from "@/lib/web-push";
@@ -96,6 +97,11 @@ export default async function LaunchChecklistPage() {
       label: "Durable uploads",
       ok: hasStorageConfig() && storageProvider() !== "local",
       detail: `Storage provider: ${storageProvider()}. Use durable storage for vendor images and KYC.`,
+    },
+    {
+      label: "Vendor WhatsApp order alerts",
+      ok: hasWhatsAppChannel(),
+      detail: "Paid Ozow orders are sent to the vendor phone number and still appear on dashboard.",
     },
     {
       label: "Sentry monitoring",

@@ -3,6 +3,7 @@ import { requireAdminRequest } from "@/lib/admin-auth";
 import { getCatalogMode } from "@/lib/catalog-runtime";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { countRiderApplications } from "@/lib/rider-applications";
+import { hasWhatsAppChannel } from "@/lib/notification-channels";
 import { hasWebPushConfig } from "@/lib/web-push";
 import { hasStorageConfig, storageProvider } from "@/server/supabase";
 import { getSqliteReadinessCounts } from "@/lib/sqlite-readiness";
@@ -77,6 +78,7 @@ export async function GET(req: NextRequest) {
           process.env.NEXT_PUBLIC_PUSHER_KEY?.trim(),
       ),
       ozow: Boolean(process.env.OZOW_SITE_CODE?.trim() && process.env.OZOW_PRIVATE_KEY?.trim()),
+      vendorWhatsAppOrders: hasWhatsAppChannel(),
       gtm: Boolean(process.env.NEXT_PUBLIC_GTM_ID?.trim()),
       ga4: Boolean(process.env.NEXT_PUBLIC_GA4_ID?.trim()),
       metaPixel: Boolean(process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()),
