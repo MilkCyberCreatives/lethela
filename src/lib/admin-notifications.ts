@@ -11,6 +11,8 @@ import {
   settleWithin,
   splitCsv,
 } from "@/lib/notification-channels";
+import { hasWebPushConfig } from "@/lib/web-push";
+import { sendPushToAdmins } from "@/lib/push-notifications";
 
 export type AdminVendorApplicationNotification = {
   id: string;
@@ -125,6 +127,9 @@ export function getAdminNotificationChannelStatus() {
           process.env.NEXT_PUBLIC_PUSHER_KEY?.trim(),
       ),
     },
+    webPush: {
+      enabled: hasWebPushConfig(),
+    },
   };
 }
 
@@ -147,6 +152,20 @@ export async function notifyAdminsOfVendorApplication(
           at: new Date().toISOString(),
         }),
         1500,
+      ),
+    );
+  }
+
+  if (channels.webPush.enabled) {
+    tasks.push(
+      settleWithin(
+        sendPushToAdmins({
+          title: "New vendor application",
+          body: `${application.name} is waiting for admin approval.`,
+          url: "/admin",
+          tag: "lethela-admin-vendor-application",
+        }),
+        3000,
       ),
     );
   }

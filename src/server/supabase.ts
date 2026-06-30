@@ -15,6 +15,10 @@ function normalizedStorageMode() {
   return (process.env.UPLOAD_STORAGE || "").trim().toLowerCase();
 }
 
+function isProductionRuntime() {
+  return process.env.NODE_ENV === "production";
+}
+
 export function hasSupabaseStorageConfig() {
   if (normalizedStorageMode() === "local") return false;
   return Boolean(
@@ -27,6 +31,11 @@ export function hasSupabaseStorageConfig() {
 export function hasLocalStorageConfig() {
   const mode = normalizedStorageMode();
   if (mode && mode !== "local") return false;
+  if (isProductionRuntime()) {
+    return Boolean(
+      process.env.STORAGE_LOCAL_DIR?.trim() && process.env.STORAGE_PUBLIC_PATH?.trim(),
+    );
+  }
   return Boolean(
     process.env.STORAGE_LOCAL_DIR?.trim() ||
       process.env.STORAGE_PUBLIC_PATH?.trim() ||

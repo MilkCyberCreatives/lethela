@@ -8,6 +8,7 @@ import {
   settleWithin,
 } from "@/lib/notification-channels";
 import { SITE_NAME } from "@/lib/site";
+import { sendPushToUsers } from "@/lib/push-notifications";
 
 export type MessageRecipientType = "VENDOR" | "RIDER" | "ALL_VENDORS" | "ALL_RIDERS" | "ALL";
 
@@ -246,6 +247,73 @@ async function recipientContacts(type: MessageRecipientType, id?: string | null)
   return [];
 }
 
+async function recipientUserIds(type: MessageRecipientType, id?: string | null): Promise<string[]> {
+  if (type === "VENDOR" && id) {
+    const vendor = await prisma.vendor.findUnique({
+      where: { id },
+      select: {
+        ownerId: true,
+        members: { select: { userId: true }, take: 20 },
+      },
+    });
+    return [vendor?.ownerId, ...(vendor?.members.map((member) => member.userId) ?? [])].filter(
+      (value): value is string => Boolean(value),
+    );
+  }
+
+  if (type === "ALL_VENDORS" || type === "ALL") {
+    const vendors = await prisma.vendor.findMany({
+      where: { status: "ACTIVE", isActive: true },
+      select: {
+        ownerId: true,
+        members: { select: { userId: true }, take: 20 },
+      },
+      take: 500,
+    });
+    const vendorUserIds = vendors.flatMap((vendor) => [
+      vendor.ownerId,
+      ...vendor.members.map((member) => member.userId),
+    ]);
+    if (type === "ALL_VENDORS") {
+      return vendorUserIds.filter((value): value is string => Boolean(value));
+    }
+
+    const riderUserIds = await recipientUserIds("ALL_RIDERS");
+    return [...vendorUserIds, ...riderUserIds].filter((value): value is string => Boolean(value));
+  }
+
+  if ((type === "RIDER" || type === "ALL_RIDERS") && id) {
+    const rider = await prisma.riderApplication.findUnique({
+      where: { id },
+      select: { email: true },
+    });
+    if (!rider?.email) return [];
+    const user = await prisma.user.findUnique({
+      where: { email: rider.email },
+      select: { id: true },
+    });
+    return user ? [user.id] : [];
+  }
+
+  if (type === "ALL_RIDERS") {
+    const riders = await prisma.riderApplication.findMany({
+      where: { status: "APPROVED" },
+      select: { email: true },
+      take: 500,
+    });
+    const emails = riders.map((rider) => rider.email).filter(Boolean);
+    if (emails.length === 0) return [];
+    const users = await prisma.user.findMany({
+      where: { email: { in: emails } },
+      select: { id: true },
+      take: 500,
+    });
+    return users.map((user) => user.id);
+  }
+
+  return [];
+}
+
 export async function notifyPlatformMessageRecipients(input: {
   recipientType: MessageRecipientType;
   recipientId?: string | null;
@@ -281,10 +349,26 @@ export async function notifyPlatformMessageRecipients(input: {
     }
   }
 
+  const userIds = await recipientUserIds(input.recipientType, input.recipientId);
+  if (userIds.length > 0) {
+    tasks.push(
+      settleWithin(
+        sendPushToUsers(userIds, "marketingEnabled", {
+          title: input.subject,
+          body: input.body,
+          url: "/vendors/dashboard",
+          tag: "lethela-platform-message",
+        }),
+        4000,
+      ),
+    );
+  }
+
   await Promise.all(tasks);
   return {
     contacts: contacts.length,
     emailEnabled: hasEmailChannel(),
     whatsappEnabled: hasWhatsAppChannel(),
+    pushEnabled: userIds.length > 0,
   };
 }

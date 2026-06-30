@@ -10,6 +10,8 @@ import {
   splitCsv,
 } from "@/lib/notification-channels";
 import { prisma } from "@/lib/db";
+import { hasWebPushConfig } from "@/lib/web-push";
+import { sendPushToAdmins } from "@/lib/push-notifications";
 
 export type ApplicationKind = "vendor" | "rider";
 export type ApplicationStatus = "submitted" | "under_review" | "approved" | "rejected";
@@ -255,6 +257,20 @@ export async function notifyAdminsOfRiderApplication(
           at: new Date().toISOString(),
         }),
         1500,
+      ),
+    );
+  }
+
+  if (hasWebPushConfig()) {
+    tasks.push(
+      settleWithin(
+        sendPushToAdmins({
+          title: "New rider application",
+          body: `${application.fullName} is waiting for owner approval.`,
+          url: "/admin",
+          tag: "lethela-admin-rider-application",
+        }),
+        3000,
       ),
     );
   }

@@ -81,8 +81,10 @@ export async function POST(req: Request) {
   });
 
   await upsertPushPreference(visitorId, userId, {
+    marketingEnabled: true,
     orderUpdatesEnabled: true,
     recommendationsEnabled: true,
+    adminAlertsEnabled: true,
   });
 
   return NextResponse.json({ ok: true });

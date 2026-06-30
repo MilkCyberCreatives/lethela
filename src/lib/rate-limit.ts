@@ -106,7 +106,7 @@ export async function checkRateLimit({
   const nextResetAt = now + windowMs;
 
   try {
-    await withTimeoutOrThrow(ensureRateLimitTable(), 1000, "Rate limit table setup timed out");
+    await withTimeoutOrThrow(ensureRateLimitTable(), 5000, "Rate limit table setup timed out");
 
     const rows = await withTimeoutOrThrow(
       prisma.$queryRaw<Array<{ count: number; reset_at: number }>>`
@@ -124,7 +124,7 @@ export async function checkRateLimit({
           updated_at = ${now}
         RETURNING count, reset_at
       `,
-      1000,
+      5000,
       "Rate limit check timed out",
     );
 
@@ -150,9 +150,6 @@ export async function checkRateLimit({
       scope: key,
       error: error instanceof Error ? error.message : String(error),
     });
-    if (process.env.NODE_ENV === "production" && prismaRuntimeInfo.scalable) {
-      return { ok: false, retryAfterSec: Math.max(5, Math.ceil(windowMs / 1000)) };
-    }
     return fallbackCheckRateLimit({ key, limit, windowMs, headers });
   }
 }

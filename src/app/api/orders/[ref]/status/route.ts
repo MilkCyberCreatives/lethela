@@ -7,6 +7,8 @@ import { pusherServer } from "@/lib/pusher-server";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { requireVendor } from "@/lib/authz";
 import { readRiderConsoleToken } from "@/lib/rider-console";
+import { notifyOrderStatusPush } from "@/lib/order-notifications";
+import { settleWithin } from "@/lib/notification-channels";
 
 const BodySchema = z.object({
   status: z.enum([
@@ -154,6 +156,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   } catch {
     // do not block successful updates when realtime is not configured
   }
+
+  await settleWithin(notifyOrderStatusPush(order.id, canonicalStatus), 3000);
 
   return NextResponse.json({ ok: true, status: canonicalStatus });
 }

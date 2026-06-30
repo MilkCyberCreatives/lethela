@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
 import { pusherServer } from "@/lib/pusher-server";
+import { notifyOrderStatusPush } from "@/lib/order-notifications";
+import { settleWithin } from "@/lib/notification-channels";
 
 const StatusSchema = z.object({
   status: z.enum(["PLACED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELED"]),
@@ -59,6 +61,8 @@ export async function PATCH(req: Request, { params }: Params) {
     } catch {
       // realtime may be disabled in local environments
     }
+
+    await settleWithin(notifyOrderStatusPush(order.id, parsed.data.status), 3000);
 
     return NextResponse.json({ ok: true, order: updated });
   } catch (error: unknown) {

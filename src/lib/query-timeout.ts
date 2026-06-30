@@ -28,10 +28,14 @@ export async function runBoundedDbQuery<T>(
   }
 
   const statementTimeoutMs = Math.max(250, Math.floor(ms));
-  return prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SET LOCAL statement_timeout = ${statementTimeoutMs}`);
-    return query(tx);
-  });
+  return withTimeoutOrThrow(
+    prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(`SET LOCAL statement_timeout = ${statementTimeoutMs}`);
+      return query(tx);
+    }),
+    ms,
+    "Database query timed out",
+  );
 }
 
 export async function withTimeoutOrThrow<T>(

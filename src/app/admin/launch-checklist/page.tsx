@@ -18,6 +18,26 @@ function falseFlag(name: string) {
   return process.env[name]?.trim() === "false";
 }
 
+function absoluteSqliteUrl(value = "") {
+  if (!value.startsWith("file:")) return false;
+  const body = value.slice("file:".length);
+  return body.startsWith("/") || /^[A-Za-z]:\//.test(body);
+}
+
+function productionDatabaseReady() {
+  if (prismaRuntimeInfo.provider === "postgresql" && prismaRuntimeInfo.scalable) return true;
+  return prismaRuntimeInfo.provider === "sqlite" && absoluteSqliteUrl(prismaRuntimeInfo.url);
+}
+
+function durableStorageReady() {
+  if (storageProvider() === "supabase") return true;
+  return (
+    storageProvider() === "local" &&
+    configured("STORAGE_LOCAL_DIR") &&
+    configured("STORAGE_PUBLIC_PATH")
+  );
+}
+
 function ChecklistItem({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
@@ -66,7 +86,7 @@ export default async function LaunchChecklistPage() {
   const checks = [
     {
       label: "Production database",
-      ok: prismaRuntimeInfo.provider === "postgresql" && prismaRuntimeInfo.scalable,
+      ok: productionDatabaseReady(),
       detail: `Provider: ${prismaRuntimeInfo.provider}. Scalable: ${prismaRuntimeInfo.scalable}.`,
     },
     {
@@ -95,8 +115,8 @@ export default async function LaunchChecklistPage() {
     },
     {
       label: "Durable uploads",
-      ok: hasStorageConfig() && storageProvider() !== "local",
-      detail: `Storage provider: ${storageProvider()}. Use durable storage for vendor images and KYC.`,
+      ok: hasStorageConfig() && durableStorageReady(),
+      detail: `Storage provider: ${storageProvider()}. Local storage requires a persistent upload directory.`,
     },
     {
       label: "Vendor WhatsApp order alerts",

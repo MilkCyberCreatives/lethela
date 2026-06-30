@@ -44,10 +44,10 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     preferences: {
-      marketingEnabled: preference?.marketingEnabled ?? false,
+      marketingEnabled: preference?.marketingEnabled ?? true,
       orderUpdatesEnabled: preference?.orderUpdatesEnabled ?? true,
       recommendationsEnabled: preference?.recommendationsEnabled ?? true,
-      adminAlertsEnabled: preference?.adminAlertsEnabled ?? false,
+      adminAlertsEnabled: preference?.adminAlertsEnabled ?? true,
     },
   });
 }

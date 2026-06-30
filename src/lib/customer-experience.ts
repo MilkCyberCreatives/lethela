@@ -104,11 +104,11 @@ export async function upsertPushPreference(
 
   const data = {
     userId: userId || null,
-    marketingEnabled: input.marketingEnabled ?? existing?.marketingEnabled ?? false,
+    marketingEnabled: input.marketingEnabled ?? existing?.marketingEnabled ?? true,
     orderUpdatesEnabled: input.orderUpdatesEnabled ?? existing?.orderUpdatesEnabled ?? true,
     recommendationsEnabled:
       input.recommendationsEnabled ?? existing?.recommendationsEnabled ?? true,
-    adminAlertsEnabled: input.adminAlertsEnabled ?? existing?.adminAlertsEnabled ?? false,
+    adminAlertsEnabled: input.adminAlertsEnabled ?? existing?.adminAlertsEnabled ?? true,
   };
 
   return prisma.pushPreference.upsert({
@@ -241,10 +241,10 @@ export async function getUserExperienceSnapshot(
       averageRating,
     },
     pushPreferences: {
-      marketingEnabled: pushPreference?.marketingEnabled ?? false,
+      marketingEnabled: pushPreference?.marketingEnabled ?? true,
       orderUpdatesEnabled: pushPreference?.orderUpdatesEnabled ?? true,
       recommendationsEnabled: pushPreference?.recommendationsEnabled ?? true,
-      adminAlertsEnabled: pushPreference?.adminAlertsEnabled ?? false,
+      adminAlertsEnabled: pushPreference?.adminAlertsEnabled ?? true,
     },
   };
 }

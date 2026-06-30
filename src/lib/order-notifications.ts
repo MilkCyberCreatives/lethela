@@ -1,5 +1,6 @@
 import { prisma, prismaRuntimeInfo } from "@/server/db";
 import { hasWhatsAppChannel, sendTwilioWhatsApp } from "@/lib/notification-channels";
+import { sendPushToUsers } from "@/lib/push-notifications";
 
 type OrderPayloadItem = {
   name?: string;
@@ -163,30 +164,37 @@ async function claimOrderNotification(orderId: string, event: string, channel: s
 }
 
 export async function notifyVendorOfPaidOrder(orderId: string) {
-  if (!hasWhatsAppChannel()) return { delivered: false as const, reason: "whatsapp-disabled" };
-
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
+      id: true,
       publicId: true,
       ozowReference: true,
       itemsJson: true,
       totalCents: true,
       deliveryFeeCents: true,
+      userId: true,
       vendor: {
         select: {
+          id: true,
           name: true,
           phone: true,
+          ownerId: true,
+          members: {
+            select: { userId: true },
+            take: 20,
+          },
         },
       },
     },
   });
 
   const vendorPhone = cleanLine(order?.vendor?.phone);
-  if (!order || !vendorPhone) return { delivered: false as const, reason: "missing-vendor-phone" };
+  if (!order) return { delivered: false as const, reason: "missing-order" };
 
-  const claimed = await claimOrderNotification(orderId, "paid-order", "whatsapp");
-  if (!claimed) return { delivered: false as const, reason: "duplicate" };
+  const tasks: Promise<unknown>[] = [];
+  let whatsappQueued = false;
+  let pushQueued = false;
 
   const parsed = parseOrderPayload(order.itemsJson);
   const siteUrl =
@@ -194,8 +202,9 @@ export async function notifyVendorOfPaidOrder(orderId: string) {
     process.env.NEXTAUTH_URL?.trim() ||
     "https://www.lethela.co.za";
 
+  const orderRef = order.publicId || order.ozowReference || orderId;
   const body = buildVendorOrderWhatsAppMessage({
-    orderRef: order.publicId || order.ozowReference || orderId,
+    orderRef,
     vendorName: order.vendor.name,
     totalCents: order.totalCents,
     deliveryFeeCents: order.deliveryFeeCents,
@@ -204,5 +213,103 @@ export async function notifyVendorOfPaidOrder(orderId: string) {
     dashboardUrl: `${siteUrl.replace(/\/$/, "")}/vendors/dashboard`,
   });
 
-  return sendTwilioWhatsApp({ to: vendorPhone, body });
+  if (hasWhatsAppChannel() && vendorPhone) {
+    const claimed = await claimOrderNotification(orderId, "paid-order", "whatsapp");
+    if (claimed) {
+      whatsappQueued = true;
+      tasks.push(sendTwilioWhatsApp({ to: vendorPhone, body }));
+    }
+  }
+
+  const vendorUserIds = [
+    order.vendor.ownerId,
+    ...order.vendor.members.map((member) => member.userId),
+  ].filter((value): value is string => Boolean(value));
+  if (vendorUserIds.length > 0) {
+    const claimed = await claimOrderNotification(orderId, "paid-order", "push-vendor");
+    if (claimed) {
+      pushQueued = true;
+      tasks.push(
+        sendPushToUsers(vendorUserIds, "orderUpdatesEnabled", {
+          title: "New paid order",
+          body: `${orderRef} is paid and ready in your vendor dashboard.`,
+          url: "/vendors/dashboard",
+          tag: `lethela-order-${orderRef}`,
+        }),
+      );
+    }
+  }
+
+  if (order.userId) {
+    const claimed = await claimOrderNotification(orderId, "paid-order", "push-customer");
+    if (claimed) {
+      pushQueued = true;
+      tasks.push(
+        sendPushToUsers([order.userId], "orderUpdatesEnabled", {
+          title: "Order paid",
+          body: `${orderRef} has been paid. We will keep you posted as it moves.`,
+          url: `/orders/${orderRef}`,
+          tag: `lethela-order-${orderRef}`,
+        }),
+      );
+    }
+  }
+
+  await Promise.allSettled(tasks);
+
+  return {
+    delivered: whatsappQueued || pushQueued,
+    whatsappQueued,
+    pushQueued,
+  } as const;
+}
+
+export async function notifyOrderStatusPush(orderId: string, status: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      publicId: true,
+      ozowReference: true,
+      userId: true,
+      vendor: {
+        select: {
+          ownerId: true,
+          members: {
+            select: { userId: true },
+            take: 20,
+          },
+        },
+      },
+    },
+  });
+  if (!order) return { sent: 0, failed: 0, total: 0 };
+
+  const orderRef = order.publicId || order.ozowReference || orderId;
+  const label = status.replaceAll("_", " ").toLowerCase();
+  const vendorUserIds = [
+    order.vendor.ownerId,
+    ...order.vendor.members.map((member) => member.userId),
+  ].filter((value): value is string => Boolean(value));
+  const customerUserIds = order.userId ? [order.userId] : [];
+
+  const [vendorDelivery, customerDelivery] = await Promise.all([
+    sendPushToUsers(vendorUserIds, "orderUpdatesEnabled", {
+      title: "Order status updated",
+      body: `${orderRef} is now ${label}.`,
+      url: "/vendors/dashboard",
+      tag: `lethela-order-${orderRef}`,
+    }),
+    sendPushToUsers(customerUserIds, "orderUpdatesEnabled", {
+      title: "Order status updated",
+      body: `${orderRef} is now ${label}.`,
+      url: `/orders/${orderRef}`,
+      tag: `lethela-order-${orderRef}`,
+    }),
+  ]);
+
+  return {
+    sent: vendorDelivery.sent + customerDelivery.sent,
+    failed: vendorDelivery.failed + customerDelivery.failed,
+    total: vendorDelivery.total + customerDelivery.total,
+  };
 }

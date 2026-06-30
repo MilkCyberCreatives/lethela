@@ -39,7 +39,7 @@ export default function VisitorTelemetry() {
       path.startsWith("/forgot-password") ||
       path.startsWith("/reset-password");
     const shouldPromptForPush =
-      pageViews >= 4 &&
+      pageViews >= 1 &&
       !wasPushPrompted() &&
       !isTransactionalPath &&
       typeof Notification !== "undefined" &&
@@ -51,7 +51,7 @@ export default function VisitorTelemetry() {
     const timeoutId = window.setTimeout(async () => {
       markPushPrompted();
       await registerPushSubscription().catch(() => undefined);
-    }, 12000);
+    }, 3500);
 
     return () => window.clearTimeout(timeoutId);
   }, [pathname, searchParams]);

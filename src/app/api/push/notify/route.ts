@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
-import { hasWebPushConfig, sendPushToSubscription } from "@/lib/web-push";
+import { hasWebPushConfig } from "@/lib/web-push";
+import {
+  sendPushToMarketingSubscribers,
+  sendPushToSelectedMarketingVisitors,
+} from "@/lib/push-notifications";
 
 type CampaignSegment = "ALL" | "ENGAGED" | "LOYAL" | "NO_ORDER_YET";
 
@@ -93,56 +97,19 @@ export async function POST(req: NextRequest) {
   const segmentedVisitorIds = body.visitorId
     ? [body.visitorId.trim()]
     : await resolveSegmentVisitorIds(segment);
-  const subscriptions = await prisma.pushSubscription.findMany({
-    where: {
-      ...(segmentedVisitorIds ? { visitorId: { in: segmentedVisitorIds } } : {}),
-      visitor: {
-        pushPreferences: {
-          some: {
-            marketingEnabled: true,
-          },
-        },
-      },
-    },
-    select: {
-      endpoint: true,
-      p256dh: true,
-      auth: true,
-    },
-    take: 500,
-  });
-
-  let sent = 0;
-  let failed = 0;
-
-  await Promise.all(
-    subscriptions.map(async (subscription) => {
-      try {
-        await sendPushToSubscription(subscription, {
-          title,
-          body: message,
-          url,
-          tag: "lethela-marketing",
-        });
-        sent += 1;
-      } catch (error: unknown) {
-        failed += 1;
-        const statusCode =
-          typeof error === "object" &&
-          error &&
-          "statusCode" in error &&
-          typeof (error as { statusCode?: unknown }).statusCode === "number"
-            ? (error as { statusCode: number }).statusCode
-            : null;
-
-        if (statusCode === 404 || statusCode === 410) {
-          await prisma.pushSubscription.deleteMany({
-            where: { endpoint: subscription.endpoint },
-          });
-        }
-      }
-    }),
-  );
+  const delivery = segmentedVisitorIds
+    ? await sendPushToSelectedMarketingVisitors(segmentedVisitorIds, {
+        title,
+        body: message,
+        url,
+        tag: "lethela-marketing",
+      })
+    : await sendPushToMarketingSubscribers({
+        title,
+        body: message,
+        url,
+        tag: "lethela-marketing",
+      });
 
   await prisma.pushCampaign.create({
     data: {
@@ -150,10 +117,16 @@ export async function POST(req: NextRequest) {
       body: message,
       url,
       segment,
-      sentCount: sent,
-      failedCount: failed,
+      sentCount: delivery.sent,
+      failedCount: delivery.failed,
     },
   });
 
-  return NextResponse.json({ ok: true, sent, failed, total: subscriptions.length, segment });
+  return NextResponse.json({
+    ok: true,
+    sent: delivery.sent,
+    failed: delivery.failed,
+    total: delivery.total,
+    segment,
+  });
 }
