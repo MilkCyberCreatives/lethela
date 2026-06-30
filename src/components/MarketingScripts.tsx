@@ -1,10 +1,25 @@
+"use client";
+
 import Script from "next/script";
+import { useEffect, useState } from "react";
+import { canUseAnalyticsCookies } from "@/lib/cookie-consent";
 
 const gtmId = process.env.NEXT_PUBLIC_GTM_ID?.trim() || "";
 const ga4Id = process.env.NEXT_PUBLIC_GA4_ID;
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
 export default function MarketingScripts() {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    setEnabled(canUseAnalyticsCookies());
+    const update = () => setEnabled(canUseAnalyticsCookies());
+    window.addEventListener("lethela:cookie-consent-changed", update);
+    return () => window.removeEventListener("lethela:cookie-consent-changed", update);
+  }, []);
+
+  if (!enabled) return null;
+
   return (
     <>
       {gtmId ? (

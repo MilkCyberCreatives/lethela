@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { canUseAnalyticsCookies, canUsePushCookies } from "@/lib/cookie-consent";
 import { readPreferredLocation } from "@/lib/location-preference";
 import {
   ensureVisitorId,
@@ -26,7 +27,9 @@ export default function VisitorTelemetry() {
   useEffect(() => {
     const path = `${pathname || "/"}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`;
     const preferredArea = readPreferredLocation()?.label || null;
-    void trackVisitorEvent({ type: "page_view", path, preferredArea });
+    if (canUseAnalyticsCookies()) {
+      void trackVisitorEvent({ type: "page_view", path, preferredArea });
+    }
 
     const pageViews = incrementPushPageViews();
     const isTransactionalPath =
@@ -44,6 +47,7 @@ export default function VisitorTelemetry() {
       !isTransactionalPath &&
       typeof Notification !== "undefined" &&
       Notification.permission === "default" &&
+      canUsePushCookies() &&
       Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim());
 
     if (!shouldPromptForPush) return;

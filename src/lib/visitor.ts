@@ -185,6 +185,12 @@ export async function unregisterPushSubscription() {
 
 export function pushDataLayerEvent(event: string, payload: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem("lethela_cookie_consent");
+    if (!raw || !JSON.parse(raw)?.analytics) return;
+  } catch {
+    return;
+  }
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event, ...payload });
 }
@@ -194,6 +200,12 @@ export function pushEcommerceEvent(
   ecommerce: { currency?: string; value?: number; items?: AnalyticsItem[]; [key: string]: unknown },
 ) {
   if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem("lethela_cookie_consent");
+    if (!raw || !JSON.parse(raw)?.analytics) return;
+  } catch {
+    return;
+  }
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ ecommerce: null });
   window.dataLayer.push({ event, ecommerce });
