@@ -78,6 +78,14 @@ function isTruthy(value) {
   return normalized === "1" || normalized === "true" || normalized === "yes";
 }
 
+function isVercelDeployment(values) {
+  return (
+    isTruthy(read("VERCEL", values)) ||
+    Boolean(read("VERCEL_ENV", values)) ||
+    Boolean(read("VERCEL_URL", values))
+  );
+}
+
 const argFile = process.argv[2];
 const { values, source } = loadEnvFromArg(argFile);
 
@@ -169,6 +177,12 @@ requireNonPlaceholder("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", "must be set for live b
 const uploadStorage = read("UPLOAD_STORAGE", values) || "local";
 if (!["local", "supabase"].includes(uploadStorage)) {
   errors.push("UPLOAD_STORAGE: must be either 'local' or 'supabase'.");
+}
+
+if (uploadStorage === "local" && isVercelDeployment(values)) {
+  errors.push(
+    "UPLOAD_STORAGE: local uploads are not durable on Vercel/serverless. Use UPLOAD_STORAGE=supabase for this deployment.",
+  );
 }
 
 if (uploadStorage === "supabase") {
