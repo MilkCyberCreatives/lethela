@@ -249,7 +249,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       {
         ok: false,
         error:
-          "This address is outside the launch delivery zone. Please use WhatsApp for a manual quote.",
+          "This address is outside the current delivery zone. Please use WhatsApp for a manual quote.",
       },
       { status: 422 },
     );

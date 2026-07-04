@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
 import StructuredData from "@/components/StructuredData";
-import { getFallbackProducts, getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { formatZAR } from "@/lib/format";
 import { searchCatalog } from "@/lib/search";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
@@ -14,39 +13,6 @@ type SearchParams = { q?: SearchParamValue } | Promise<{ q?: SearchParamValue }>
 function parseQuery(value: SearchParamValue) {
   if (Array.isArray(value)) return String(value[0] || "").trim();
   return String(value || "").trim();
-}
-
-function fallbackSearchResults(query: string) {
-  const lower = query.toLowerCase();
-  const products = getFallbackProducts()
-    .filter((product) => !product.isAlcohol)
-    .map((product) => ({
-      id: product.id,
-      kind: "product" as const,
-      title: product.name,
-      image: product.image,
-      slug: product.vendor.slug,
-      vendorName: product.vendor.name,
-      subtitle: product.description || product.vendor.name,
-      priceCents: product.priceCents,
-      isAlcohol: product.isAlcohol,
-    }));
-  const vendors = getFallbackVendorCards().map((vendor) => ({
-    id: vendor.id,
-    kind: "vendor" as const,
-    title: vendor.name,
-    image: vendor.cover,
-    slug: vendor.slug,
-    vendorName: vendor.name,
-    subtitle: `${vendor.cuisines.join(", ")} - ${vendor.baseEtaMin}-${vendor.baseEtaMin + 5} min`,
-    priceCents: null,
-    isAlcohol: false,
-  }));
-  const all = [...products, ...vendors];
-  const matches = all.filter((item) =>
-    [item.title, item.subtitle, item.vendorName].join(" ").toLowerCase().includes(lower),
-  );
-  return (matches.length > 0 ? matches : all).slice(0, 12);
 }
 
 export async function generateMetadata({
@@ -77,8 +43,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const params = await Promise.resolve(searchParams);
   const query = parseQuery(params.q).slice(0, 180);
   const liveResults = query.length >= 2 ? await searchCatalog(query, { limit: 30 }) : [];
-  const results =
-    query.length >= 2 && liveResults.length === 0 ? fallbackSearchResults(query) : liveResults;
+  const results = liveResults;
   const suggestions = ["kota", "chips", "chicken", "groceries", "braai", "breakfast", "mogodu"];
 
   const itemListSchema =
@@ -154,10 +119,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           </div>
         ) : (
           <>
-            {query.length >= 2 && liveResults.length === 0 ? (
-              <div className="mt-8 rounded-lg border border-amber-200/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
-                Showing launch sample results while approved vendors finish loading this search.
-                Prices, stock and delivery availability are confirmed at checkout.
+            {results.length === 0 ? (
+              <div className="mt-8 rounded-lg border border-white/15 bg-white/5 p-5 text-sm leading-6 text-white/75">
+                No approved live listings match this search yet. Try another product, township,
+                store name or category, or place a WhatsApp-assisted request with support.
               </div>
             ) : null}
             <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">

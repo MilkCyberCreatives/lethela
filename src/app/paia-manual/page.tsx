@@ -23,9 +23,8 @@ export default function PaiaManualPage() {
       note={
         <>
           Last updated: {LEGAL_LAST_UPDATED}. This is a practical access guide for the live
-          platform. Before full commercial launch, you should still finalise and publish a formal
-          private-body PAIA manual containing the registered entity details and prescribed record
-          categories.
+          platform. Formal private-body PAIA details are maintained with the platform owner,
+          information officer and support contacts published in the legal pages.
         </>
       }
     >

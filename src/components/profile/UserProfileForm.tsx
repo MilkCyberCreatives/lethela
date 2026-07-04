@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
+import { LogOut, Save, Upload } from "lucide-react";
 
 type UserProfile = {
   id: string;
@@ -84,7 +85,16 @@ export default function UserProfileForm() {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
       {loading ? (
-        <div className="text-sm text-white/70">Loading profile...</div>
+        <div className="grid animate-pulse gap-6 md:grid-cols-[280px,1fr]">
+          <div className="aspect-square rounded-2xl bg-white/10" />
+          <div className="grid gap-3">
+            <div className="h-4 w-32 rounded bg-white/10" />
+            <div className="h-10 rounded bg-white/10" />
+            <div className="h-4 w-24 rounded bg-white/10" />
+            <div className="h-10 rounded bg-white/10" />
+            <div className="h-10 rounded bg-white/10" />
+          </div>
+        </div>
       ) : (
         <>
           <div className="grid gap-6 md:grid-cols-[280px,1fr]">
@@ -173,23 +183,26 @@ export default function UserProfileForm() {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="rounded border border-white/20 px-4 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+                  className="inline-flex items-center rounded border border-white/20 px-4 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
                 >
+                  <Upload className="mr-2 h-4 w-4" />
                   Upload profile photo
                 </button>
                 <button
                   type="button"
                   onClick={save}
                   disabled={saving}
-                  className="rounded bg-lethela-primary px-4 py-2 text-sm text-white disabled:opacity-60"
+                  className="inline-flex items-center rounded bg-lethela-primary px-4 py-2 text-sm text-white disabled:opacity-60"
                 >
+                  <Save className="mr-2 h-4 w-4" />
                   {saving ? "Saving..." : "Save profile"}
                 </button>
                 <button
                   type="button"
                   onClick={() => void signOut({ callbackUrl: "/" })}
-                  className="rounded border border-white/20 px-4 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+                  className="inline-flex items-center rounded border border-white/20 px-4 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
                 >
+                  <LogOut className="mr-2 h-4 w-4" />
                   Sign out
                 </button>
               </div>

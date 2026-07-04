@@ -74,7 +74,7 @@ export default async function PricingPage() {
         </article>
 
         <article className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-          <h2 className="text-xl font-semibold">Vendor launch offer</h2>
+          <h2 className="text-xl font-semibold">Vendor pilot offer</h2>
           <div className="mt-4 space-y-2 text-sm text-white/78">
             <p>First 50 vendors register for free.</p>
             <p>First month is free.</p>
@@ -101,7 +101,7 @@ export default async function PricingPage() {
               Driver registration is free and there is no monthly driver fee.
             </p>
             <p className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/78">
-              During launch pilot, drivers get 100% of the delivery fee.
+              During the current pilot, drivers get 100% of the delivery fee.
             </p>
             <p className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/78">
               Drivers keep 100% of customer tips.

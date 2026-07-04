@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -36,23 +37,36 @@ export default function AdminPortalKeyForm() {
   }
 
   return (
-    <div className="mt-4 space-y-3">
-      <Input
-        type="password"
-        placeholder="Enter admin approval key"
-        value={adminKey}
-        onChange={(event) => setAdminKey(event.target.value)}
-        className="bg-white text-black"
-      />
-      <Button
-        variant="outline"
-        className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
-        onClick={submit}
-        disabled={!adminKey.trim() || submitting}
-      >
-        {submitting ? "Continuing..." : "Continue with key"}
-      </Button>
-      {error ? <p className="text-sm text-red-200">{error}</p> : null}
+    <div className="mt-4 rounded-2xl border border-white/15 bg-white/5 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">
+        Owner approval
+      </p>
+      <p className="mt-2 text-sm leading-6 text-white/70">
+        Enter the private admin key to unlock vendor approvals, rider approvals, refunds and support
+        operations.
+      </p>
+      <div className="mt-4 grid gap-3">
+        <Input
+          type="password"
+          placeholder="Enter admin approval key"
+          value={adminKey}
+          onChange={(event) => setAdminKey(event.target.value)}
+          className="bg-white text-black"
+        />
+        <Button
+          className="bg-lethela-primary text-white hover:opacity-90"
+          onClick={submit}
+          disabled={!adminKey.trim() || submitting}
+        >
+          <ShieldCheck className="mr-2 h-4 w-4" />
+          {submitting ? "Continuing..." : "Continue with key"}
+        </Button>
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

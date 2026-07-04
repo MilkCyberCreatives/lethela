@@ -395,7 +395,7 @@ export default function CheckoutPage() {
                 {quoteLoading
                   ? "Refreshing delivery quote..."
                   : deliveryQuote.manualQuoteRequired
-                    ? "This address is outside the launch delivery zone. Use WhatsApp for a manual quote."
+                    ? "This address is outside the current delivery zone. Use WhatsApp for a manual quote."
                     : DELIVERY_PRICING_WORDING}
               </p>
               <div className="flex justify-between text-base font-semibold">

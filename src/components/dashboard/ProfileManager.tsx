@@ -240,7 +240,21 @@ export default function ProfileManager() {
   return (
     <DashCard title="Store Profile">
       {loading || !form ? (
-        <div className="text-sm text-white/70">Loading profile...</div>
+        <div className="grid animate-pulse gap-4 md:grid-cols-[0.95fr,1.05fr]">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="aspect-[16/10] rounded-xl bg-white/10" />
+            <div className="mt-4 flex gap-2">
+              <div className="h-7 w-20 rounded-full bg-white/10" />
+              <div className="h-7 w-28 rounded-full bg-white/10" />
+            </div>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="h-4 w-40 rounded bg-white/10" />
+            <div className="mt-4 h-3 rounded bg-white/10" />
+            <div className="mt-3 h-3 w-2/3 rounded bg-white/10" />
+            <div className="mt-5 h-10 rounded bg-white/10" />
+          </div>
+        </div>
       ) : (
         <>
           <div className="mb-4 grid gap-3 md:grid-cols-[0.95fr,1.05fr]">

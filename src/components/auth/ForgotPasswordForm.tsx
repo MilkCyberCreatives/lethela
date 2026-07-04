@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ArrowRight, LifeBuoy, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -11,6 +13,7 @@ export default function ForgotPasswordForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resetUrl, setResetUrl] = useState<string | null>(null);
+  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
 
   const submit = async () => {
     if (!email.trim()) return;
@@ -44,44 +47,69 @@ export default function ForgotPasswordForm() {
   };
 
   return (
-    <>
-      <h1 className="text-2xl font-bold">Forgot password</h1>
-      <p className="mt-2 text-sm text-white/70">
-        Enter your email and we will send you a reset link.
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
+        Account recovery
+      </p>
+      <h1 className="mt-2 text-3xl font-semibold">Reset your password</h1>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Enter your account email. If it matches our records, we will send a secure reset link.
       </p>
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-6 grid gap-3">
         <Input
           type="email"
           placeholder="you@example.co.za"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="bg-white text-black"
+          className="border-slate-300 bg-white text-black"
+          autoComplete="email"
         />
         <Button
           onClick={submit}
           disabled={submitting || !email.trim()}
-          className="bg-lethela-primary"
+          className="bg-lethela-primary text-white"
         >
+          <Mail className="mr-2 h-4 w-4" />
           {submitting ? "Sending..." : "Send reset link"}
         </Button>
-        {message ? <p className="text-sm text-white/80">{message}</p> : null}
-        {error ? <p className="text-sm text-red-200">{error}</p> : null}
+        {message ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            {message}
+          </div>
+        ) : null}
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
         {resetUrl ? (
-          <p className="text-sm text-white/70">
+          <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
             Local reset link:{" "}
             <a href={resetUrl} className="underline">
               Open reset page
             </a>
           </p>
         ) : null}
-        <p className="text-sm text-white/70">
-          Remembered it?{" "}
-          <Link href="/signin" className="underline">
-            Back to sign in
-          </Link>
-        </p>
       </div>
-    </>
+      <div className="mt-5 grid gap-2 text-sm text-slate-600 md:grid-cols-2">
+        <Link
+          href="/signin"
+          className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
+        >
+          Back to sign in
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
+        >
+          WhatsApp support
+          <LifeBuoy className="h-4 w-4" />
+        </a>
+      </div>
+    </div>
   );
 }

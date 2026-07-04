@@ -290,7 +290,7 @@ export default function CartDrawer() {
                   {quoteLoading
                     ? "Refreshing delivery quote..."
                     : deliveryQuote.manualQuoteRequired
-                      ? "This address is outside the launch delivery zone. Use WhatsApp for a manual quote."
+                      ? "This address is outside the current delivery zone. Use WhatsApp for a manual quote."
                       : DELIVERY_PRICING_WORDING}
                 </div>
               </>

@@ -263,7 +263,7 @@ try {
     passwordHash: adminPasswordHash,
   });
 
-  // PRE-LAUNCH DEMO CONTENT: remove demo-* vendors/products before launch.
+  // DEMO CONTENT: keep demo-* vendors/products out of live marketplace surfaces.
   const vendors = [
     {
       id: "vendor-hello-tomato",

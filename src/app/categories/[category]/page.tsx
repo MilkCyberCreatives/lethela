@@ -4,8 +4,6 @@ import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import StructuredData from "@/components/StructuredData";
-import { getFallbackCategoryProducts } from "@/lib/catalog-fallback";
-import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { canReadSqliteCatalog, getSqliteCatalogProducts } from "@/lib/sqlite-catalog";
 import {
@@ -57,58 +55,56 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const dbItems = sqliteItems
     ? []
-    : shouldPreferCatalogFallback()
-      ? []
-      : await runBoundedDbQuery((db) =>
-          db.product.findMany({
-            where: {
-              inStock: true,
-              isAlcohol: false,
-              vendor: {
+    : await runBoundedDbQuery((db) =>
+        db.product.findMany({
+          where: {
+            inStock: true,
+            isAlcohol: false,
+            vendor: {
+              isActive: true,
+              status: { in: ["ACTIVE", "APPROVED"] },
+            },
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 120,
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            priceCents: true,
+            image: true,
+            isAlcohol: true,
+            vendor: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                status: true,
                 isActive: true,
-                status: { in: ["ACTIVE", "APPROVED"] },
+                phone: true,
+                address: true,
+                suburb: true,
+                city: true,
+                province: true,
+                municipality: true,
+                township: true,
+                sectionArea: true,
+                storeType: true,
+                cuisine: true,
+                etaMins: true,
+                deliveryFee: true,
+                kycIdUrl: true,
+                kycProofUrl: true,
+                bankName: true,
+                bankAccountName: true,
+                bankAccountNumber: true,
+                bankBranchCode: true,
+                _count: { select: { products: true, items: true, hours: true } },
               },
             },
-            orderBy: { updatedAt: "desc" },
-            take: 120,
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              priceCents: true,
-              image: true,
-              isAlcohol: true,
-              vendor: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  status: true,
-                  isActive: true,
-                  phone: true,
-                  address: true,
-                  suburb: true,
-                  city: true,
-                  province: true,
-                  municipality: true,
-                  township: true,
-                  sectionArea: true,
-                  storeType: true,
-                  cuisine: true,
-                  etaMins: true,
-                  deliveryFee: true,
-                  kycIdUrl: true,
-                  kycProofUrl: true,
-                  bankName: true,
-                  bankAccountName: true,
-                  bankAccountNumber: true,
-                  bankBranchCode: true,
-                  _count: { select: { products: true, items: true, hours: true } },
-                },
-              },
-            },
-          }),
-        ).catch(() => []);
+          },
+        }),
+      ).catch(() => []);
 
   const liveItems = sqliteItems
     ? sqliteItems
@@ -123,15 +119,8 @@ export default async function CategoryPage({ params }: PageProps) {
               isAlcohol: item.isAlcohol,
             }) === resolvedCategory,
         )
-      : shouldPreferCatalogFallback()
-        ? getFallbackCategoryProducts(resolvedCategory)
-        : [];
-  const items =
-    liveItems.length > 0
-      ? liveItems
-      : getFallbackCategoryProducts(resolvedCategory)
-          .filter((item) => !item.isAlcohol)
-          .slice(0, 16);
+      : [];
+  const items = liveItems;
   const content = CATEGORY_CONTENT[resolvedCategory];
 
   const categorySchema = {
@@ -166,10 +155,10 @@ export default async function CategoryPage({ params }: PageProps) {
           ))}
         </div>
 
-        {liveItems.length === 0 ? (
-          <p className="mt-6 rounded-lg border border-amber-200/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
-            Launch sample listings are shown while approved vendors finish loading this category.
-            Availability, prices and operating hours are confirmed at checkout.
+        {items.length === 0 ? (
+          <p className="mt-6 rounded-lg border border-white/15 bg-white/5 p-4 text-sm leading-6 text-white/75">
+            No approved live listings are available in this category yet. Lethela only shows vendors
+            with complete profiles, products, trading hours and approval.
           </p>
         ) : null}
 

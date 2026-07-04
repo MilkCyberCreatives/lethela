@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { ArrowRight, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -52,45 +53,63 @@ export default function ResetPasswordForm() {
   };
 
   return (
-    <>
-      <h1 className="text-2xl font-bold">Reset password</h1>
-      <p className="mt-2 text-sm text-white/70">
-        Choose a new password with at least 8 characters.
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
+        Secure reset
+      </p>
+      <h1 className="mt-2 text-3xl font-semibold">Choose a new password</h1>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Use at least 8 characters. Keep it different from passwords you use elsewhere.
       </p>
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-6 grid gap-3">
         <Input
           type="password"
           placeholder="New password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="bg-white text-black"
+          className="border-slate-300 bg-white text-black"
+          autoComplete="new-password"
         />
         <Input
           type="password"
           placeholder="Confirm new password"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
-          className="bg-white text-black"
+          className="border-slate-300 bg-white text-black"
+          autoComplete="new-password"
         />
         <Button
           onClick={submit}
           disabled={submitting || !password.trim() || !confirmPassword.trim() || !token}
-          className="bg-lethela-primary"
+          className="bg-lethela-primary text-white"
         >
+          <LockKeyhole className="mr-2 h-4 w-4" />
           {submitting ? "Updating..." : "Update password"}
         </Button>
-        {message ? <p className="text-sm text-white/80">{message}</p> : null}
-        {error ? <p className="text-sm text-red-200">{error}</p> : null}
-        {!token ? (
-          <p className="text-sm text-red-200">This reset link is missing or invalid.</p>
+        {message ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            {message}
+          </div>
         ) : null}
-        <p className="text-sm text-white/70">
-          <Link href="/signin" className="underline">
-            Back to sign in
-          </Link>
-        </p>
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+        {!token ? (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            This reset link is missing or invalid.
+          </p>
+        ) : null}
       </div>
-    </>
+      <Link
+        href="/signin"
+        className="mt-5 inline-flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:border-lethela-primary"
+      >
+        Back to sign in
+        <ArrowRight className="h-4 w-4" />
+      </Link>
+    </div>
   );
 }

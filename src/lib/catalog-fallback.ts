@@ -90,7 +90,7 @@ export type FallbackVendorCard = {
   baseEtaMin: number;
 };
 
-// Launch sample content keeps public pages populated until every approved vendor has live stock.
+// Demo content is kept for local/testing modes and must stay out of live marketplace surfaces.
 const vendorIndex: VendorBase[] = [
   {
     id: "vendor-hello-tomato",
