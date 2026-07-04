@@ -67,3 +67,8 @@ SEO + marketing:
 npx tsc --noEmit --incremental false
 npx eslint src
 ```
+
+## Operating readiness
+
+Use `/admin/launch-checklist` after deployment to verify the controlled pilot and public marketing
+gates. The owner runbook is in `docs/OPERATIONS_RUNBOOK.md`.

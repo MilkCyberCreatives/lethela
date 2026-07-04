@@ -295,7 +295,7 @@ export async function GET() {
       highlights: [
         paidOrders.length > 0
           ? `${paidOrders.length} paid order(s) cleared in the last 30 days.`
-          : "No paid orders yet. Focus on menu completeness and launch readiness.",
+          : "No paid orders yet. Focus on menu completeness and operating readiness.",
         onTimeRate >= 90
           ? `On-time delivery signal is ${onTimeRate}%.`
           : `On-time delivery signal is ${onTimeRate}%, so order operations need attention.`,

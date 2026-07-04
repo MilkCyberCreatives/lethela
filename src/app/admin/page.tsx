@@ -178,6 +178,29 @@ const WORKSPACES: Array<{ id: DashboardView; label: string; icon: typeof LayoutD
   { id: "operations", label: "Operations", icon: Activity },
 ];
 
+const DAILY_OPERATING_PLAYBOOK = [
+  "Check new vendor submissions and approve only complete profiles with products, hours, address, banking and documents.",
+  "Check rider applications and approve only riders with valid contact, vehicle, banking and emergency details.",
+  "Keep WhatsApp support open during operating hours and log every complaint, refund request or failed delivery.",
+  "Before accepting public traffic, run at least one low-value paid Ozow order from cart to vendor alert, rider handover and completion.",
+  "Keep alcohol hidden until licence checks, age verification, rider handover, refusal and refund rules are fully operational.",
+];
+
+const ORDER_EXCEPTION_PLAYBOOK = [
+  "Vendor unavailable: call the vendor, pause the store if needed, and offer customer replacement, credit or refund.",
+  "Missing or incorrect item: request photos where useful, contact the vendor, then record correction, partial refund or full refund.",
+  "Rider delay: contact rider first, notify customer with a realistic ETA, then reassign if the rider cannot continue.",
+  "Payment mismatch: match Ozow reference to the order before fulfilment or refund action.",
+  "Complaint escalation: keep the order reference, customer phone, vendor name, rider name and resolution note together.",
+];
+
+const SCALE_READINESS_PLAYBOOK = [
+  "Controlled pilot: minimum 1 approved vendor, 5 approved products, 1 approved rider and 1 successful paid proof order.",
+  "Public marketing: minimum 3 approved vendors, 20 approved products, 2 approved riders and 5 successful paid proof orders.",
+  "Monitoring: add Sentry for runtime errors and Pusher for realtime order/rider updates before larger customer traffic.",
+  "Media: replace placeholder-looking store and product images with real vendor photos before promotion.",
+];
+
 function formatDate(value: string) {
   return new Date(value).toLocaleString();
 }
@@ -895,7 +918,10 @@ export default function AdminPage() {
                           target: "riders",
                         },
                         { label: "Check delayed order exceptions", target: "orders" },
-                        { label: "Send launch updates to vendors and riders", target: "messages" },
+                        {
+                          label: "Send operating updates to vendors and riders",
+                          target: "messages",
+                        },
                       ].map((item) => (
                         <button
                           key={item.label}
@@ -1485,7 +1511,20 @@ export default function AdminPage() {
                   icon={Settings}
                 />
                 <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
-                  <h3 className="text-lg font-semibold">Launch communication workflow</h3>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                        Owner control room
+                      </p>
+                      <h3 className="mt-1 text-lg font-semibold">Operating readiness workflow</h3>
+                    </div>
+                    <Link
+                      href="/admin/launch-checklist"
+                      className="rounded-lg border border-white/15 px-3 py-2 text-sm text-white/75 transition hover:border-lethela-primary hover:text-lethela-primary"
+                    >
+                      Open readiness checklist
+                    </Link>
+                  </div>
                   <div className="mt-4 grid gap-3 text-sm text-white/70 md:grid-cols-3">
                     <p className="rounded-lg border border-white/10 p-3">
                       Vendor registration sends an applicant confirmation and owner alert.
@@ -1498,12 +1537,51 @@ export default function AdminPage() {
                     </p>
                   </div>
                 </div>
+                <OperationsList
+                  title="Daily operating SOP"
+                  items={DAILY_OPERATING_PLAYBOOK}
+                  className="md:col-span-2 xl:col-span-4"
+                />
+                <OperationsList
+                  title="Order exception SOP"
+                  items={ORDER_EXCEPTION_PLAYBOOK}
+                  className="md:col-span-2"
+                />
+                <OperationsList
+                  title="Scale-up gate"
+                  items={SCALE_READINESS_PLAYBOOK}
+                  className="md:col-span-2"
+                />
               </section>
             ) : null}
           </div>
         </div>
       </section>
     </main>
+  );
+}
+
+function OperationsList({
+  title,
+  items,
+  className = "",
+}: {
+  title: string;
+  items: string[];
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-lg border border-white/10 bg-white/[0.035] p-5 ${className}`}>
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <div className="mt-4 grid gap-3">
+        {items.map((item) => (
+          <div key={item} className="flex gap-3 rounded-lg border border-white/10 p-3">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-lethela-primary" />
+            <p className="text-sm leading-6 text-white/72">{item}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

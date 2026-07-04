@@ -296,7 +296,9 @@ export default function RiderDashboardClient() {
         <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-white/50">Launch readiness</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-white/50">
+                Operating readiness
+              </p>
               <h2 className="mt-1 text-lg font-semibold">Rider checklist</h2>
             </div>
             <Bike className="h-5 w-5 text-lethela-primary" />

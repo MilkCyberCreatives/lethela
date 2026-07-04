@@ -39,7 +39,7 @@ export default function MessagesPanel() {
     <DashCard title="Messages from Lethela">
       <div className="mb-4 flex items-center justify-between gap-3">
         <p className="text-sm text-white/65">
-          Owner updates, operational notices, and launch instructions appear here.
+          Owner updates, operational notices, and service instructions appear here.
         </p>
         <button
           className="rounded-full border border-white/25 px-3 py-1 text-xs text-white/80 hover:border-lethela-primary hover:text-lethela-primary"
@@ -50,7 +50,12 @@ export default function MessagesPanel() {
         </button>
       </div>
 
-      {loading ? <p className="text-sm text-white/60">Loading messages...</p> : null}
+      {loading ? (
+        <div className="grid animate-pulse gap-3">
+          <div className="h-16 rounded-lg bg-white/10" />
+          <div className="h-16 rounded-lg bg-white/10" />
+        </div>
+      ) : null}
       {error ? (
         <div className="rounded-lg border border-red-300/30 bg-red-300/10 p-3 text-sm text-red-100">
           {error}

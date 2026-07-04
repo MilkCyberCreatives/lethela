@@ -18,6 +18,11 @@ function falseFlag(name: string) {
   return process.env[name]?.trim() === "false";
 }
 
+function numberSetting(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
 function absoluteSqliteUrl(value = "") {
   if (!value.startsWith("file:")) return false;
   const body = value.slice("file:".length);
@@ -83,6 +88,19 @@ export default async function LaunchChecklistPage() {
     ),
   ]);
 
+  const pilotMinimums = {
+    vendors: numberSetting("MIN_PILOT_VENDORS", 1),
+    products: numberSetting("MIN_PILOT_PRODUCTS", 5),
+    riders: numberSetting("MIN_PILOT_RIDERS", 1),
+    paidOrders: numberSetting("MIN_PILOT_PAID_ORDERS", 1),
+  };
+  const publicMinimums = {
+    vendors: numberSetting("MIN_PUBLIC_VENDORS", 3),
+    products: numberSetting("MIN_PUBLIC_PRODUCTS", 20),
+    riders: numberSetting("MIN_PUBLIC_RIDERS", 2),
+    paidOrders: numberSetting("MIN_PUBLIC_PAID_ORDERS", 5),
+  };
+
   const checks = [
     {
       label: "Production database",
@@ -100,18 +118,30 @@ export default async function LaunchChecklistPage() {
     },
     {
       label: "Real paid order proof",
-      ok: paidOrders > 0,
-      detail: `${paidOrders} paid order(s) recorded. Run one low-value live payment before scaling traffic.`,
+      ok: paidOrders >= pilotMinimums.paidOrders,
+      detail: `${paidOrders}/${pilotMinimums.paidOrders} paid proof order(s) recorded. Run low-value live payments before scaling traffic.`,
     },
     {
       label: "Active catalog",
-      ok: getCatalogMode() === "live" && activeVendors > 0 && activeProducts > 0,
-      detail: `${activeVendors} active vendor(s), ${activeProducts} active product(s).`,
+      ok:
+        getCatalogMode() === "live" &&
+        activeVendors >= pilotMinimums.vendors &&
+        activeProducts >= pilotMinimums.products,
+      detail: `${activeVendors}/${pilotMinimums.vendors} active vendor(s), ${activeProducts}/${pilotMinimums.products} active product(s). Public marketing target: ${publicMinimums.vendors} vendor(s), ${publicMinimums.products} product(s).`,
     },
     {
       label: "Approved riders",
-      ok: approvedRiders > 0,
-      detail: `${approvedRiders} approved rider(s) available for launch.`,
+      ok: approvedRiders >= pilotMinimums.riders,
+      detail: `${approvedRiders}/${pilotMinimums.riders} approved rider(s) available for pilot operations. Public marketing target: ${publicMinimums.riders}.`,
+    },
+    {
+      label: "Public marketing gate",
+      ok:
+        activeVendors >= publicMinimums.vendors &&
+        activeProducts >= publicMinimums.products &&
+        approvedRiders >= publicMinimums.riders &&
+        paidOrders >= publicMinimums.paidOrders,
+      detail: `${activeVendors}/${publicMinimums.vendors} vendor(s), ${activeProducts}/${publicMinimums.products} product(s), ${approvedRiders}/${publicMinimums.riders} rider(s), ${paidOrders}/${publicMinimums.paidOrders} paid proof order(s).`,
     },
     {
       label: "Durable uploads",
@@ -151,12 +181,12 @@ export default async function LaunchChecklistPage() {
           Back to admin
         </Link>
         <p className="mt-6 text-xs uppercase tracking-[0.16em] text-lethela-primary">
-          Owner launch checklist
+          Owner operating checklist
         </p>
-        <h1 className="mt-3 text-3xl font-bold">Launch readiness</h1>
+        <h1 className="mt-3 text-3xl font-bold">Operating readiness</h1>
         <p className="mt-3 max-w-2xl text-sm text-white/70">
-          This owner-only checklist separates code readiness from external configuration and live
-          payment proof.
+          This owner-only checklist separates code readiness from external configuration, real
+          vendor supply, approved rider capacity and paid-order proof.
         </p>
         <div className="mt-6 grid gap-3">
           {checks.map((check) => (

@@ -16,6 +16,11 @@ function isFalse(name: string) {
   return process.env[name]?.trim() === "false";
 }
 
+function numberSetting(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
 function item(
   label: string,
   ok: boolean,
@@ -71,6 +76,19 @@ export async function GET(req: NextRequest) {
         withQueryTimeout(prisma.user.count(), 0),
       ]);
 
+  const pilotMinimums = {
+    vendors: numberSetting("MIN_PILOT_VENDORS", 1),
+    products: numberSetting("MIN_PILOT_PRODUCTS", 5),
+    riders: numberSetting("MIN_PILOT_RIDERS", 1),
+    paidOrders: numberSetting("MIN_PILOT_PAID_ORDERS", 1),
+  };
+  const publicMinimums = {
+    vendors: numberSetting("MIN_PUBLIC_VENDORS", 3),
+    products: numberSetting("MIN_PUBLIC_PRODUCTS", 20),
+    riders: numberSetting("MIN_PUBLIC_RIDERS", 2),
+    paidOrders: numberSetting("MIN_PUBLIC_PAID_ORDERS", 5),
+  };
+
   const checks = [
     item(
       "Production database",
@@ -115,6 +133,23 @@ export async function GET(req: NextRequest) {
       `${activeVendors} vendors, ${activeProducts} products`,
     ),
     item("Approved riders", approvedRiders > 0, `${approvedRiders} approved rider(s)`),
+    item(
+      "Controlled pilot gate",
+      activeVendors >= pilotMinimums.vendors &&
+        activeProducts >= pilotMinimums.products &&
+        approvedRiders >= pilotMinimums.riders &&
+        paidOrders >= pilotMinimums.paidOrders,
+      `${activeVendors}/${pilotMinimums.vendors} vendor(s), ${activeProducts}/${pilotMinimums.products} product(s), ${approvedRiders}/${pilotMinimums.riders} rider(s), ${paidOrders}/${pilotMinimums.paidOrders} paid proof order(s)`,
+    ),
+    item(
+      "Public marketing gate",
+      activeVendors >= publicMinimums.vendors &&
+        activeProducts >= publicMinimums.products &&
+        approvedRiders >= publicMinimums.riders &&
+        paidOrders >= publicMinimums.paidOrders,
+      `${activeVendors}/${publicMinimums.vendors} vendor(s), ${activeProducts}/${publicMinimums.products} product(s), ${approvedRiders}/${publicMinimums.riders} rider(s), ${paidOrders}/${publicMinimums.paidOrders} paid proof order(s)`,
+      "recommended",
+    ),
     item(
       "Applicant email notifications",
       configured("RESEND_API_KEY") &&
@@ -165,6 +200,8 @@ export async function GET(req: NextRequest) {
       pendingRiders,
       approvedRiders,
       users,
+      pilotMinimums,
+      publicMinimums,
     },
   });
 }

@@ -65,9 +65,9 @@ export default function AboutPage() {
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
-            Our stack is AI-native. Vendors can launch faster with generated menu descriptions,
-            pricing suggestions, promo timing insights, and operations automation. Riders get
-            smoother onboarding. Customers get better discovery and support.
+            Our stack is AI-native. Vendors can start selling faster with generated menu
+            descriptions, pricing suggestions, promo timing insights, and operations automation.
+            Riders get smoother onboarding. Customers get better discovery and support.
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
@@ -114,7 +114,7 @@ export default function AboutPage() {
           </div>
 
           <div>
-            <div className="mb-1 text-base font-semibold text-white">Responsible launch</div>
+            <div className="mb-1 text-base font-semibold text-white">Responsible operations</div>
             <div>
               Lethela operates with POPIA-aware privacy practices, PAIA access guidance,
               consumer-friendly refund handling and careful compliance checks before restricted

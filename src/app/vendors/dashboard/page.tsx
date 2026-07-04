@@ -92,7 +92,7 @@ const tabs: Array<{ tab: DashboardTab; label: string; hint: string }> = [
   { tab: "hours", label: "Hours", hint: "Trading schedule" },
   { tab: "specials", label: "Specials", hint: "Promotions" },
   { tab: "automations", label: "Automations", hint: "AI actions" },
-  { tab: "support", label: "Support", hint: "Help and launch" },
+  { tab: "support", label: "Support", hint: "Help and operations" },
 ];
 
 function resolveTab(value: string | undefined): DashboardTab {
@@ -497,7 +497,7 @@ export default async function VendorDashboardPage({
               </div>
             )}
           </InfoCard>
-          <InfoCard title="Launch readiness">
+          <InfoCard title="Operating readiness">
             <MiniStat label="Profile completion" value={`${progressPct}%`} />
             <MiniStat label="Menu sections" value={String(vendor?._count.sections ?? 0)} />
             <MiniStat label="Menu items" value={String(vendor?._count.items ?? 0)} />

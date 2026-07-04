@@ -13,6 +13,7 @@
     "test": "node --import tsx --test tests/**/*.test.ts",
     "smoke": "node scripts/smoke-site.mjs",
     "check:production-env": "node scripts/check-production-env.mjs",
+    "check:operating-readiness": "node scripts/check-operating-readiness.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
