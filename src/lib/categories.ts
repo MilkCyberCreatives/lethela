@@ -3,7 +3,6 @@ export const TOWNSHIP_CATEGORIES = [
   "Chips",
   "Burger",
   "Mogodu",
-  "Alcohol",
   "Groceries",
   "Wings",
   "Braai",
@@ -44,13 +43,6 @@ export const CATEGORY_CONTENT: Record<
       "Discover slow-cooked mogodu, pap, chakalaka and homestyle plates prepared by local food vendors.",
     guidance:
       "Traditional meals can sell out quickly, especially on weekends, so live stock may change during busy periods.",
-  },
-  Alcohol: {
-    headline: "Alcohol delivery for adults only",
-    intro:
-      "Browse beer, cider, whiskey, vodka, gin, brandy-style spirits and cognac from licensed participating vendors where delivery is available.",
-    guidance:
-      "Alcohol orders are 18+ only. The buyer may be asked for identification, and delivery can be refused where age or sobriety cannot be verified.",
   },
   Groceries: {
     headline: "Daily grocery essentials",
@@ -116,7 +108,7 @@ export function inferProductCategory(input: {
 }): TownshipCategory {
   const haystack = `${input.name} ${input.description || ""}`.toLowerCase();
 
-  if (input.isAlcohol) return "Alcohol";
+  if (input.isAlcohol) return "Groceries";
   if (/kota|spatlho|magwinya/.test(haystack)) return "Kota";
   if (/wing|drumstick/.test(haystack)) return "Wings";
   if (/breakfast|vetkoek|oats|cereal/.test(haystack)) return "Breakfast";

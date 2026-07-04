@@ -17,9 +17,19 @@ import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 import { getHomeProducts, getHomeRecommendations, getHomeVendors } from "@/lib/home-data";
 
 export const metadata: Metadata = {
-  title: "Food, Grocery and Township Delivery",
+  title: "Township Delivery South Africa | Food Delivery in Klipfontein View",
   description:
-    "Order kota, chips, burgers, chicken, braai, breakfast, groceries and alcohol with Lethela. Fast local delivery for Klipfontein View and nearby township communities.",
+    "Lethela is a township delivery marketplace for South Africa, now live in Klipfontein View. Order from approved local vendors, spaza shops, grocery sellers and restaurants near you.",
+  keywords: [
+    "Township delivery South Africa",
+    "Spaza shop delivery",
+    "Grocery delivery in townships",
+    "Kota delivery near me",
+    "Local food delivery township",
+    "Become a township vendor",
+    "Sell groceries online in South Africa",
+    "Delivery platform for spaza shops",
+  ],
   alternates: {
     canonical: "/",
   },
@@ -36,7 +46,7 @@ const homeFaqSchema = {
       name: "What can I order on Lethela?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "You can order township favourites like kota, chips, burgers, chicken, braai, breakfast items, groceries and alcohol from approved local vendors. Alcohol is 18+ only.",
+        text: "You can order township favourites like kota, chips, burgers, chicken, braai, breakfast items and groceries from approved local vendors. Alcohol is temporarily hidden until licence and handover checks are complete.",
       },
     },
     {
@@ -106,7 +116,7 @@ export default async function HomePage() {
         <ScrollReveal delay={80}>
           <section className="container py-10">
             <FeaturedCarousel
-              title="Hungry? Choose from top restaurants near you"
+              title="Order from approved township vendors near you"
               items={featuredVendors}
               autoMs={4000}
             />
@@ -125,11 +135,7 @@ export default async function HomePage() {
       </ScrollReveal>
 
       <ScrollReveal delay={160}>
-        <Suspense
-          fallback={
-            <section className="container py-10 text-white/70">Loading products...</section>
-          }
-        >
+        <Suspense fallback={<ProductGridSkeleton />}>
           <ProductsGrid suburb={address} initialItems={products} />
         </Suspense>
       </ScrollReveal>
@@ -142,5 +148,17 @@ export default async function HomePage() {
 
       <FloatingWidgets />
     </main>
+  );
+}
+
+function ProductGridSkeleton() {
+  return (
+    <section className="container py-10">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="h-64 rounded-2xl bg-white/10" />
+        ))}
+      </div>
+    </section>
   );
 }

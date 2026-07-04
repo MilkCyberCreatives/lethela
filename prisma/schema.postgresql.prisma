@@ -95,28 +95,36 @@ model PushPreference {
 }
 
 model Vendor {
-  id          String  @id @default(cuid())
-  name        String
-  slug        String  @unique
-  email       String? @unique
-  phone       String?
-  address     String?
-  suburb      String?
-  city        String?
-  province    String?
-  latitude    Float?
-  longitude   Float?
-  isActive    Boolean @default(true)
-  status      String  @default("ACTIVE")
-  ownerId     String?
-  kycIdUrl    String?
-  kycProofUrl String?
-  cuisine     String  @default("[]")
-  rating      Float   @default(4.4)
-  deliveryFee Int     @default(1500)
-  etaMins     Int     @default(30)
-  halaal      Boolean @default(false)
-  image       String?
+  id                String  @id @default(cuid())
+  name              String
+  slug              String  @unique
+  email             String? @unique
+  phone             String?
+  address           String?
+  suburb            String?
+  city              String?
+  province          String?
+  municipality      String?
+  township          String?
+  sectionArea       String?
+  storeType         String?
+  latitude          Float?
+  longitude         Float?
+  isActive          Boolean @default(true)
+  status            String  @default("ACTIVE")
+  ownerId           String?
+  kycIdUrl          String?
+  kycProofUrl       String?
+  bankName          String?
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankBranchCode    String?
+  cuisine           String  @default("[]")
+  rating            Float   @default(4.4)
+  deliveryFee       Int     @default(1500)
+  etaMins           Int     @default(30)
+  halaal            Boolean @default(false)
+  image             String?
 
   owner     User?               @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   products  Product[]

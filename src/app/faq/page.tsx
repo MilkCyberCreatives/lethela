@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const faq = [
   {
     q: "What can I order on Lethela?",
-    a: "You can browse township favourites such as kota, chips, burgers, wings, braai, mogodu and breakfast items, plus groceries and adult-only alcohol from approved participating vendors.",
+    a: "You can browse township favourites such as kota, chips, burgers, wings, braai, mogodu and breakfast items, plus groceries from approved participating vendors.",
   },
   {
     q: "How do vendors join Lethela?",
@@ -31,11 +31,11 @@ const faq = [
   },
   {
     q: "Which areas are currently served?",
-    a: "Lethela is focused on South African local delivery corridors, including Midrand and nearby township communities.",
+    a: "Lethela is built for township delivery across South Africa. It is live in Klipfontein View first before expanding to more townships.",
   },
   {
     q: "How does Lethela handle alcohol?",
-    a: "Alcohol is 18+ only. Customers may be asked to confirm age at checkout and produce valid identification on delivery. Delivery can be refused if age, identity, sobriety or safe handover cannot be verified.",
+    a: "Alcohol is hidden from public ordering for now while Lethela completes licence checks, age verification, rider handover rules, refusal handling and refund logic.",
   },
   {
     q: "Are prices and delivery fees shown before I pay?",

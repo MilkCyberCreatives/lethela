@@ -18,17 +18,19 @@ function parseQuery(value: SearchParamValue) {
 
 function fallbackSearchResults(query: string) {
   const lower = query.toLowerCase();
-  const products = getFallbackProducts().map((product) => ({
-    id: product.id,
-    kind: "product" as const,
-    title: product.name,
-    image: product.image,
-    slug: product.vendor.slug,
-    vendorName: product.vendor.name,
-    subtitle: product.description || product.vendor.name,
-    priceCents: product.priceCents,
-    isAlcohol: product.isAlcohol,
-  }));
+  const products = getFallbackProducts()
+    .filter((product) => !product.isAlcohol)
+    .map((product) => ({
+      id: product.id,
+      kind: "product" as const,
+      title: product.name,
+      image: product.image,
+      slug: product.vendor.slug,
+      vendorName: product.vendor.name,
+      subtitle: product.description || product.vendor.name,
+      priceCents: product.priceCents,
+      isAlcohol: product.isAlcohol,
+    }));
   const vendors = getFallbackVendorCards().map((vendor) => ({
     id: vendor.id,
     kind: "vendor" as const,
@@ -38,7 +40,7 @@ function fallbackSearchResults(query: string) {
     vendorName: vendor.name,
     subtitle: `${vendor.cuisines.join(", ")} - ${vendor.baseEtaMin}-${vendor.baseEtaMin + 5} min`,
     priceCents: null,
-    isAlcohol: vendor.cuisines.some((item) => item.toLowerCase().includes("alcohol")),
+    isAlcohol: false,
   }));
   const all = [...products, ...vendors];
   const matches = all.filter((item) =>
@@ -77,16 +79,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const liveResults = query.length >= 2 ? await searchCatalog(query, { limit: 30 }) : [];
   const results =
     query.length >= 2 && liveResults.length === 0 ? fallbackSearchResults(query) : liveResults;
-  const suggestions = [
-    "kota",
-    "chips",
-    "chicken",
-    "groceries",
-    "alcohol",
-    "braai",
-    "breakfast",
-    "mogodu",
-  ];
+  const suggestions = ["kota", "chips", "chicken", "groceries", "braai", "breakfast", "mogodu"];
 
   const itemListSchema =
     query.length >= 2
@@ -132,7 +125,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             defaultValue={query}
             required
             minLength={2}
-            placeholder="Search kota, chips, chicken, groceries, alcohol..."
+            placeholder="Search kota, chips, chicken, groceries, spaza shops..."
             className="min-h-12 w-full rounded-md border border-white/20 bg-white px-4 text-base text-black outline-none ring-lethela-primary/40 transition focus:ring-4"
           />
           <button

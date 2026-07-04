@@ -1,9 +1,11 @@
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
-export const LEGAL_LAST_UPDATED = "18 June 2026";
+export const LEGAL_LAST_UPDATED = "4 July 2026";
 export const LEGAL_COMPANY_NAME = process.env.NEXT_PUBLIC_LEGAL_ENTITY_NAME?.trim() || "Lethela";
-export const LEGAL_SERVICE_AREA = "Klipfontein View, Midrand, South Africa";
-export const LEGAL_SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "";
+export const LEGAL_SERVICE_AREA =
+  "township communities across South Africa, starting with Klipfontein View, Midrand";
+export const LEGAL_SUPPORT_EMAIL =
+  process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "support@lethela.co.za";
 export const LEGAL_INFO_OFFICER_NAME =
   process.env.NEXT_PUBLIC_INFO_OFFICER_NAME?.trim() || "Lethela Support Team";
 export const LEGAL_WHATSAPP_LINK = `https://wa.me/${getOrderWhatsAppPhone()}`;

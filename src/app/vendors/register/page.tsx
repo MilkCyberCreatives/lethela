@@ -16,9 +16,9 @@ import { Button } from "@/components/ui/button";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export const metadata: Metadata = {
-  title: "Become a Vendor",
+  title: "Become a Township Vendor | Sell on Lethela",
   description:
-    "Apply to become a Lethela vendor. Submit your business details and menu readiness for admin approval.",
+    "Become a township vendor on Lethela. Spaza shops, grocery sellers, kota businesses, restaurants and established food outlets can sell online in South Africa.",
   alternates: {
     canonical: "/vendors/register",
   },
@@ -40,12 +40,12 @@ const STEPS = [
 ];
 
 const CHECKLIST = [
-  "Business contact, owner email and secure password",
-  "Trading address, suburb, city and delivery coverage",
-  "Business category, operating hours and average prep ETA",
-  "Menu or product upload details",
-  "Banking or payout details",
-  "Owner ID and proof of address ready for ops review",
+  "First step only needs your full name, email, store name and password",
+  "Dashboard checklist covers township, province, address and delivery radius",
+  "Choose your store type: spaza, grocery, local food, restaurant or franchise",
+  "Upload products or menu items when you are ready",
+  "Banking and owner documents are completed before approval",
+  "API-ready setup supports larger brands and future integrations",
 ];
 
 const DASHBOARD_MODULES = [
@@ -78,13 +78,13 @@ export default function VendorRegisterPage() {
               Vendor onboarding
             </p>
             <h1 className="mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-5xl">
-              Become a Lethela vendor.
+              Sell to customers in your township.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 md:text-base">
-              Lethela helps local food, grocery and licensed alcohol businesses reach customers with
-              delivery-ready product pages, clear operating hours and order management. Complete the
-              application below and we will review your store before it goes live. No hidden
-              charges. You stay in control of your prices.
+              Whether you run a spaza shop, kota business, grocery store, home kitchen, restaurant
+              or established food outlet, Lethela helps you sell to customers in your township and
+              manage orders online. We are starting in Klipfontein View before expanding to more
+              townships across South Africa.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">

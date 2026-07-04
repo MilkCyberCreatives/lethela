@@ -1,4 +1,5 @@
 import type { Vendor } from "@/types";
+import { isPublicReadyVendor } from "@/lib/vendor-readiness";
 
 type PublicVendorSource = {
   id: string;
@@ -10,6 +11,24 @@ type PublicVendorSource = {
   image?: string | null;
   etaMins?: number | null;
   deliveryFee?: number | null;
+  status?: string | null;
+  isActive?: boolean | null;
+  phone?: string | null;
+  address?: string | null;
+  suburb?: string | null;
+  city?: string | null;
+  province?: string | null;
+  municipality?: string | null;
+  township?: string | null;
+  sectionArea?: string | null;
+  storeType?: string | null;
+  kycIdUrl?: string | null;
+  kycProofUrl?: string | null;
+  bankName?: string | null;
+  bankAccountName?: string | null;
+  bankAccountNumber?: string | null;
+  bankBranchCode?: string | null;
+  _count?: { products?: number; items?: number; hours?: number };
   products?: Array<{ isAlcohol?: boolean | null }>;
   reviews?: Array<{ rating?: number | null }>;
 };
@@ -33,6 +52,16 @@ export function isPublicCatalogVendor(source: Pick<PublicVendorSource, "name" | 
 
   if (name.startsWith("demo ") || slug.startsWith("demo-")) return false;
   return !HIDDEN_PUBLIC_VENDOR_TERMS.some((term) => name.includes(term) || slug.includes(term));
+}
+
+export function isPublicMarketplaceVendor(source: PublicVendorSource) {
+  if (!isPublicCatalogVendor(source)) return false;
+  return isPublicReadyVendor({
+    ...source,
+    productCount: source._count?.products ?? source.products?.length ?? 0,
+    menuItemCount: source._count?.items ?? 0,
+    operatingHoursCount: source._count?.hours ?? 0,
+  });
 }
 
 export function isPublicCatalogProduct(source: PublicProductSource) {
@@ -76,12 +105,8 @@ export function getPublicVendorImage(image: string | null | undefined, hasAlcoho
   return hasAlcohol ? "/vendors/vegan.jpg" : "/vendors/grill.jpg";
 }
 
-export function getPublicVendorBadge(
-  source: Pick<PublicVendorSource, "halaal">,
-  hasAlcohol: boolean,
-) {
+export function getPublicVendorBadge(source: Pick<PublicVendorSource, "halaal">) {
   if (source.halaal) return "Halaal";
-  if (hasAlcohol) return "18+ available";
   return null;
 }
 
@@ -111,7 +136,7 @@ export function buildPublicVendorCard(
     name: source.name,
     slug: source.slug,
     cover: getPublicVendorImage(source.image, hasAlcohol),
-    badge: getPublicVendorBadge(source, hasAlcohol),
+    badge: getPublicVendorBadge(source),
     rating: averageRating,
     reviewCount: reviewValues.length,
     deliveryFeeCents: DEFAULT_CARD_DELIVERY_FEE_CENTS,

@@ -6,6 +6,7 @@ import {
   buildPublicVendorCard,
   isPublicCatalogProduct,
   isPublicCatalogVendor,
+  isPublicMarketplaceVendor,
 } from "@/lib/public-catalog";
 import type { ProductLite } from "@/components/ProductCard";
 import type { Vendor } from "@/types";
@@ -89,8 +90,20 @@ export async function getSqliteCatalogProducts({
          FROM Product p
          INNER JOIN Vendor v ON v.id = p.vendorId
          WHERE p.inStock = 1
+           AND p.isAlcohol = 0
            AND v.isActive = 1
-           AND v.status = 'ACTIVE'${clauses.sql}
+           AND v.status IN ('ACTIVE', 'APPROVED')
+           AND v.phone IS NOT NULL
+           AND v.address IS NOT NULL
+           AND v.city IS NOT NULL
+           AND v.province IS NOT NULL
+           AND v.storeType IS NOT NULL
+           AND v.kycIdUrl IS NOT NULL
+           AND v.kycProofUrl IS NOT NULL
+           AND v.bankName IS NOT NULL
+           AND v.bankAccountName IS NOT NULL
+           AND v.bankAccountNumber IS NOT NULL
+           AND EXISTS (SELECT 1 FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0)${clauses.sql}
          ORDER BY p.updatedAt DESC
          LIMIT ?`,
       ) as unknown as SqliteStatement
@@ -140,8 +153,8 @@ export async function getSqliteCatalogProducts({
       });
 
     return mapped.filter((item) => {
-      if (alcohol === "true" && !item.isAlcohol) return false;
       if (alcohol === "false" && item.isAlcohol) return false;
+      if (item.isAlcohol) return false;
       if (category && item.category?.toLowerCase() !== category.toLowerCase()) return false;
       return true;
     });
@@ -172,14 +185,47 @@ export async function getSqliteCatalogVendors({
            v.halaal,
            v.image,
            v.etaMins,
+           v.status,
+           v.isActive,
+           v.phone,
+           v.address,
+           v.suburb,
+           v.city,
+           v.province,
+           v.municipality,
+           v.township,
+           v.sectionArea,
+           v.storeType,
+           v.deliveryFee,
+           v.kycIdUrl,
+           v.kycProofUrl,
+           v.bankName,
+           v.bankAccountName,
+           v.bankAccountNumber,
+           v.bankBranchCode,
+           COUNT(DISTINCT p.id) AS productCount,
+           (SELECT COUNT(*) FROM Item i WHERE i.vendorId = v.id AND i.draft = 0) AS menuItemCount,
+           (SELECT COUNT(*) FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0) AS operatingHoursCount,
            COUNT(r.id) AS reviewCount,
            AVG(r.rating) AS averageRating,
            MAX(CASE WHEN p.isAlcohol = 1 THEN 1 ELSE 0 END) AS hasAlcohol
          FROM Vendor v
-         LEFT JOIN Product p ON p.vendorId = v.id AND p.inStock = 1
+         LEFT JOIN Product p ON p.vendorId = v.id AND p.inStock = 1 AND p.isAlcohol = 0
          LEFT JOIN UserProductReview r ON r.vendorId = v.id
          WHERE v.isActive = 1
-           AND v.status = 'ACTIVE'${clauses.sql}
+           AND v.status IN ('ACTIVE', 'APPROVED')
+           AND v.phone IS NOT NULL
+           AND v.address IS NOT NULL
+           AND v.city IS NOT NULL
+           AND v.province IS NOT NULL
+           AND v.storeType IS NOT NULL
+           AND v.kycIdUrl IS NOT NULL
+           AND v.kycProofUrl IS NOT NULL
+           AND v.bankName IS NOT NULL
+           AND v.bankAccountName IS NOT NULL
+           AND v.bankAccountNumber IS NOT NULL
+           AND EXISTS (SELECT 1 FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0)
+           AND EXISTS (SELECT 1 FROM Product vp WHERE vp.vendorId = v.id AND vp.inStock = 1 AND vp.isAlcohol = 0)${clauses.sql}
          GROUP BY v.id
          ORDER BY v.updatedAt DESC
          LIMIT ?`,
@@ -193,13 +239,47 @@ export async function getSqliteCatalogVendors({
       halaal: 0 | 1 | null;
       image: string | null;
       etaMins: number | null;
+      status: string | null;
+      isActive: 0 | 1 | null;
+      phone: string | null;
+      address: string | null;
+      suburb: string | null;
+      city: string | null;
+      province: string | null;
+      municipality: string | null;
+      township: string | null;
+      sectionArea: string | null;
+      storeType: string | null;
+      deliveryFee: number | null;
+      kycIdUrl: string | null;
+      kycProofUrl: string | null;
+      bankName: string | null;
+      bankAccountName: string | null;
+      bankAccountNumber: string | null;
+      bankBranchCode: string | null;
+      productCount: number;
+      menuItemCount: number;
+      operatingHoursCount: number;
       reviewCount: number;
       averageRating: number | null;
       hasAlcohol: 0 | 1 | null;
     }>;
 
     return rows
-      .filter((row) => isPublicCatalogVendor(row))
+      .filter(
+        (row) =>
+          isPublicCatalogVendor(row) &&
+          isPublicMarketplaceVendor({
+            ...row,
+            isActive: Boolean(row.isActive),
+            halaal: Boolean(row.halaal),
+            _count: {
+              products: Number(row.productCount || 0),
+              items: Number(row.menuItemCount || 0),
+              hours: Number(row.operatingHoursCount || 0),
+            },
+          }),
+      )
       .map((row) =>
         buildPublicVendorCard({
           id: row.id,

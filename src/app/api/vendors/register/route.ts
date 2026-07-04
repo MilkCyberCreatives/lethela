@@ -3,31 +3,18 @@ import { NextResponse } from "next/server";
 import { compare, hash } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { notifyAdminsOfVendorApplication } from "@/lib/admin-notifications";
-import { notifyApplicant } from "@/lib/application-notifications";
 import { attachVendorSession } from "@/lib/vendor-session";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { VENDOR_STATUS, isApprovedVendorStatus } from "@/lib/vendor-readiness";
 
 const RegisterVendorSchema = z.object({
-  name: z.string().trim().min(2).max(120),
+  fullName: z.string().trim().min(2).max(120),
   email: z
     .string()
     .email()
     .transform((value) => value.trim().toLowerCase()),
+  storeName: z.string().trim().min(2).max(120),
   password: z.string().min(8).max(200),
-  phone: z.string().trim().min(8).max(40),
-  address: z.string().trim().min(6).max(240),
-  suburb: z.string().trim().min(2).max(120),
-  city: z.string().trim().min(2).max(120),
-  province: z.string().trim().min(2).max(120),
-  cuisine: z.array(z.string().trim().min(2).max(40)).min(1).max(8).default([]),
-  halaal: z.boolean().optional().default(false),
-  etaMins: z.number().int().min(10).max(120).default(30),
-  deliveryFeeCents: z.number().int().min(0).max(20_000).default(1000),
-  kycIdUrl: z.string().url().optional().nullable(),
-  kycProofUrl: z.string().url().optional().nullable(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
 });
 
 function slugify(input: string) {
@@ -37,14 +24,6 @@ function slugify(input: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
-}
-
-function isApprovedVendor(status: string | null | undefined, isActive: boolean) {
-  const normalizedStatus = String(status || "").toUpperCase();
-  return (
-    isActive &&
-    (normalizedStatus === "ACTIVE" || normalizedStatus === "APPROVED" || normalizedStatus === "")
-  );
 }
 
 function isLocalSqliteRuntime() {
@@ -73,7 +52,7 @@ export async function GET() {
 
   if (!email && !slug) {
     return NextResponse.json(
-      { ok: false, error: "No vendor application found in this session." },
+      { ok: false, error: "No vendor profile found in this browser." },
       { status: 404 },
     );
   }
@@ -94,73 +73,43 @@ export async function GET() {
   });
 
   if (!vendor) {
-    return NextResponse.json(
-      { ok: false, error: "Vendor application not found." },
-      { status: 404 },
-    );
+    return NextResponse.json({ ok: false, error: "Vendor profile not found." }, { status: 404 });
   }
 
   return NextResponse.json({
     ok: true,
     vendor,
-    pending: !isApprovedVendor(vendor.status, vendor.isActive),
+    pending: !isApprovedVendorStatus(vendor.status, vendor.isActive),
   });
 }
 
 export async function POST(req: Request) {
   const rateLimit = await checkRateLimit({
     key: "vendors-register",
-    limit: 5,
+    limit: 8,
     windowMs: 60 * 60 * 1000,
     headers: req.headers,
   });
   if (!rateLimit.ok) {
     return NextResponse.json(
-      { ok: false, error: "Too many vendor applications. Please try again later." },
+      { ok: false, error: "Too many vendor registrations. Please try again later." },
       { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
     );
   }
 
   const raw = await req.json().catch(() => ({}));
-  const body = {
-    ...raw,
-    cuisine: Array.isArray(raw?.cuisine)
-      ? raw.cuisine.map((value: unknown) => String(value || "").trim()).filter(Boolean)
-      : typeof raw?.cuisine === "string"
-        ? raw.cuisine
-            .split(",")
-            .map((value: string) => value.trim())
-            .filter(Boolean)
-        : [],
-    halaal: Boolean(raw?.halaal),
-    etaMins:
-      raw?.etaMins === undefined || raw?.etaMins === null || raw?.etaMins === ""
-        ? 30
-        : Number(raw.etaMins),
-    deliveryFeeCents:
-      raw?.deliveryFeeCents === undefined ||
-      raw?.deliveryFeeCents === null ||
-      raw?.deliveryFeeCents === ""
-        ? 1000
-        : Number(raw.deliveryFeeCents),
-    kycIdUrl: raw?.kycIdUrl ? String(raw.kycIdUrl).trim() : null,
-    kycProofUrl: raw?.kycProofUrl ? String(raw.kycProofUrl).trim() : null,
-    latitude:
-      raw?.latitude === undefined || raw?.latitude === null || raw?.latitude === ""
-        ? undefined
-        : Number(raw.latitude),
-    longitude:
-      raw?.longitude === undefined || raw?.longitude === null || raw?.longitude === ""
-        ? undefined
-        : Number(raw.longitude),
-  };
+  const parsed = RegisterVendorSchema.safeParse({
+    fullName: raw?.fullName ?? raw?.name,
+    email: raw?.email,
+    storeName: raw?.storeName ?? raw?.businessName,
+    password: raw?.password,
+  });
 
-  const parsed = RegisterVendorSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Invalid vendor registration data",
+        error: "Please enter your full name, email address, store name and password.",
         fieldErrors: parsed.error.flatten().fieldErrors,
       },
       { status: 400 },
@@ -171,18 +120,17 @@ export async function POST(req: Request) {
   if (isLocalSqliteRuntime()) {
     const vendor = {
       id: `local-vendor-${Date.now()}`,
-      name: payload.name,
-      slug: slugify(payload.name) || "local-vendor",
-      status: "PENDING",
+      name: payload.storeName,
+      slug: slugify(payload.storeName) || "local-vendor",
+      status: VENDOR_STATUS.DRAFT,
       isActive: false,
     };
 
     const response = NextResponse.json({
       ok: true,
-      pending: true,
-      message:
-        "Application submitted locally. An admin must approve your vendor before it goes live.",
+      message: "Draft vendor profile created. Complete your dashboard checklist next.",
       vendor,
+      redirectTo: "/vendors/dashboard",
     });
     attachVendorSession(response, {
       userId: `local-user-${Date.now()}`,
@@ -196,224 +144,91 @@ export async function POST(req: Request) {
 
   const existingUser = await prisma.user.findUnique({
     where: { email: payload.email },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      passwordHash: true,
-      role: true,
-    },
+    select: { id: true, name: true, email: true, passwordHash: true, role: true },
   });
 
   if (existingUser?.passwordHash) {
     const passwordMatches = await compare(payload.password, existingUser.passwordHash);
     if (!passwordMatches) {
       return NextResponse.json(
-        {
-          ok: false,
-          error:
-            "This email already has an account. Sign in with the correct password to continue.",
-        },
+        { ok: false, error: "This email already exists. Sign in or use the correct password." },
         { status: 409 },
       );
     }
   }
 
   const passwordHash = existingUser?.passwordHash || (await hash(payload.password, 10));
-
   const user = existingUser
     ? await prisma.user.update({
         where: { id: existingUser.id },
         data: {
-          name: existingUser.name || payload.name,
+          name: existingUser.name || payload.fullName,
           passwordHash,
           role: existingUser.role === "ADMIN" ? "ADMIN" : "VENDOR",
         },
-        select: {
-          id: true,
-          email: true,
-        },
+        select: { id: true, email: true },
       })
     : await prisma.user.create({
         data: {
-          name: payload.name,
+          name: payload.fullName,
           email: payload.email,
           passwordHash,
           role: "VENDOR",
         },
-        select: {
-          id: true,
-          email: true,
-        },
+        select: { id: true, email: true },
       });
 
-  const existingByEmail = await prisma.vendor.findFirst({
-    where: { email: payload.email },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      status: true,
-      isActive: true,
-      ownerId: true,
-    },
+  const existingVendor = await prisma.vendor.findFirst({
+    where: { OR: [{ email: payload.email }, { ownerId: user.id }] },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, slug: true, status: true, isActive: true, ownerId: true },
   });
 
-  if (existingByEmail?.ownerId && existingByEmail.ownerId !== user.id) {
+  if (existingVendor?.ownerId && existingVendor.ownerId !== user.id) {
     return NextResponse.json(
       { ok: false, error: "This vendor profile is already linked to another owner account." },
       { status: 409 },
     );
   }
 
-  const existingStatus = String(existingByEmail?.status || "").toUpperCase();
-  const shouldNotifyAdmins = !existingByEmail || existingStatus !== "PENDING";
-  if (existingByEmail && isApprovedVendor(existingStatus, existingByEmail.isActive)) {
-    await prisma.vendorMember.upsert({
-      where: {
-        vendorId_userId: {
-          vendorId: existingByEmail.id,
-          userId: user.id,
-        },
-      },
-      update: { role: "OWNER" },
-      create: {
-        vendorId: existingByEmail.id,
-        userId: user.id,
-        role: "OWNER",
-      },
-    });
-
-    const response = NextResponse.json({
-      ok: true,
-      pending: false,
-      message: "Vendor is already approved. Open your dashboard.",
-      vendor: existingByEmail,
-    });
-    attachVendorSession(response, {
-      userId: user.id,
-      vendorId: existingByEmail.id,
-      vendorSlug: existingByEmail.slug,
-      role: "OWNER",
-      email: user.email,
-    });
-    return response;
-  }
-
-  const vendor = existingByEmail
+  const vendor = existingVendor
     ? await prisma.vendor.update({
-        where: { id: existingByEmail.id },
+        where: { id: existingVendor.id },
         data: {
-          name: payload.name,
+          name: payload.storeName,
           email: payload.email,
-          phone: payload.phone,
-          address: payload.address,
-          suburb: payload.suburb,
-          city: payload.city,
-          province: payload.province,
-          cuisine: JSON.stringify(payload.cuisine),
-          halaal: payload.halaal,
-          etaMins: payload.etaMins,
-          deliveryFee: payload.deliveryFeeCents,
-          kycIdUrl: payload.kycIdUrl || null,
-          kycProofUrl: payload.kycProofUrl || null,
-          latitude: payload.latitude,
-          longitude: payload.longitude,
           ownerId: user.id,
-          status: "PENDING",
-          isActive: false,
+          status: isApprovedVendorStatus(existingVendor.status, existingVendor.isActive)
+            ? existingVendor.status
+            : VENDOR_STATUS.DRAFT,
+          isActive: isApprovedVendorStatus(existingVendor.status, existingVendor.isActive),
         },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          status: true,
-          isActive: true,
-        },
+        select: { id: true, name: true, slug: true, status: true, isActive: true },
       })
     : await prisma.vendor.create({
         data: {
-          name: payload.name,
-          slug: await ensureUniqueSlug(payload.name),
+          name: payload.storeName,
+          slug: await ensureUniqueSlug(payload.storeName),
           email: payload.email,
-          phone: payload.phone,
-          address: payload.address,
-          suburb: payload.suburb,
-          city: payload.city,
-          province: payload.province,
-          cuisine: JSON.stringify(payload.cuisine),
-          halaal: payload.halaal,
-          etaMins: payload.etaMins,
-          deliveryFee: payload.deliveryFeeCents,
-          kycIdUrl: payload.kycIdUrl || null,
-          kycProofUrl: payload.kycProofUrl || null,
-          latitude: payload.latitude,
-          longitude: payload.longitude,
           ownerId: user.id,
-          status: "PENDING",
+          status: VENDOR_STATUS.DRAFT,
           isActive: false,
+          cuisine: "[]",
         },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          status: true,
-          isActive: true,
-        },
+        select: { id: true, name: true, slug: true, status: true, isActive: true },
       });
 
   await prisma.vendorMember.upsert({
-    where: {
-      vendorId_userId: {
-        vendorId: vendor.id,
-        userId: user.id,
-      },
-    },
+    where: { vendorId_userId: { vendorId: vendor.id, userId: user.id } },
     update: { role: "OWNER" },
-    create: {
-      vendorId: vendor.id,
-      userId: user.id,
-      role: "OWNER",
-    },
+    create: { vendorId: vendor.id, userId: user.id, role: "OWNER" },
   });
-
-  if (shouldNotifyAdmins) {
-    await Promise.all([
-      notifyAdminsOfVendorApplication({
-        id: vendor.id,
-        name: payload.name,
-        slug: vendor.slug,
-        email: payload.email,
-        phone: payload.phone,
-        suburb: payload.suburb,
-        city: payload.city,
-      }),
-      notifyApplicant({
-        kind: "vendor",
-        name: payload.name,
-        email: payload.email,
-        phone: payload.phone,
-        status: "submitted",
-        reference: vendor.slug,
-      }),
-    ]);
-  } else {
-    await notifyApplicant({
-      kind: "vendor",
-      name: payload.name,
-      email: payload.email,
-      phone: payload.phone,
-      status: "submitted",
-      reference: vendor.slug,
-    });
-  }
 
   const response = NextResponse.json({
     ok: true,
-    pending: true,
-    message:
-      "Application submitted. We will confirm by email and WhatsApp, then notify you again when the owner approves it.",
+    message: "Draft vendor profile created. Complete your dashboard checklist next.",
     vendor,
+    redirectTo: "/vendors/dashboard",
   });
   attachVendorSession(response, {
     userId: user.id,

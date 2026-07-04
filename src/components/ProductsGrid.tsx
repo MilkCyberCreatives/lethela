@@ -12,7 +12,6 @@ import { pushEcommerceEvent } from "@/lib/visitor";
 type ApiResp = { ok: boolean; items: ProductLite[] };
 
 export default function ProductsGrid({
-  showAlcoholToggle = true,
   suburb,
   initialItems,
 }: {
@@ -23,7 +22,6 @@ export default function ProductsGrid({
   const hasInitial = (initialItems?.length ?? 0) > 0;
   const [items, setItems] = useState<ProductLite[]>(initialItems ?? []);
   const [loading, setLoading] = useState(!hasInitial);
-  const [onlyAlcohol, setOnlyAlcohol] = useState(false);
   const [category, setCategory] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [activeSuburb, setActiveSuburb] = useState<string | null>(suburb ?? null);
@@ -41,7 +39,6 @@ export default function ProductsGrid({
     setError(null);
     try {
       const query = new URLSearchParams();
-      if (onlyAlcohol) query.set("alcohol", "true");
       if (category) query.set("category", category);
       if (activeSuburb) query.set("suburb", activeSuburb);
       query.set("take", "24");
@@ -54,7 +51,7 @@ export default function ProductsGrid({
     } finally {
       setLoading(false);
     }
-  }, [activeSuburb, onlyAlcohol, category]);
+  }, [activeSuburb, category]);
 
   useEffect(() => {
     const syncLocation = () => {
@@ -76,14 +73,14 @@ export default function ProductsGrid({
   }, [suburb]);
 
   useEffect(() => {
-    const isDefaultFilter = !onlyAlcohol && !category;
+    const isDefaultFilter = !category;
     if (!skippedInitialLoad.current && hasInitial && isDefaultFilter) {
       skippedInitialLoad.current = true;
       return;
     }
     skippedInitialLoad.current = true;
     void load();
-  }, [category, hasInitial, load, onlyAlcohol]);
+  }, [category, hasInitial, load]);
 
   useEffect(() => {
     if (loading || items.length === 0) return;
@@ -92,7 +89,7 @@ export default function ProductsGrid({
     listTrackedRef.current = signature;
 
     pushEcommerceEvent("view_item_list", {
-      item_list_name: category || (onlyAlcohol ? "Alcohol" : "Popular picks near you"),
+      item_list_name: category || "Popular picks near you",
       items: items.slice(0, 12).map((item) => ({
         item_id: item.id,
         item_name: item.name,
@@ -102,23 +99,12 @@ export default function ProductsGrid({
         price: item.priceCents / 100,
       })),
     });
-  }, [category, items, loading, onlyAlcohol]);
+  }, [category, items, loading]);
 
   return (
     <section className="container py-10" id="products">
       <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h2 className="text-2xl font-semibold">Popular picks near you</h2>
-        {showAlcoholToggle ? (
-          <label className="inline-flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={onlyAlcohol}
-              onChange={(event) => setOnlyAlcohol(event.target.checked)}
-              className="h-4 w-4 rounded accent-lethela-primary"
-            />
-            Show alcohol only
-          </label>
-        ) : null}
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">

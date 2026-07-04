@@ -435,7 +435,11 @@ export default function ProductsManager() {
         </div>
 
         {loading ? (
-          <div className="text-sm text-white/70">Loading...</div>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="h-32 animate-pulse rounded-lg bg-white/10" />
+            ))}
+          </div>
         ) : filteredItems.length === 0 ? (
           <div className="text-sm text-white/70">No products match the current filter.</div>
         ) : (

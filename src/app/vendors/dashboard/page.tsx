@@ -1,11 +1,13 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import MainHeader from "@/components/MainHeader";
-import { requireVendor } from "@/lib/authz";
+import { getVendorSession } from "@/lib/authz";
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { getSqliteVendorDashboardData } from "@/lib/sqlite-vendor-dashboard";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
+import { getVendorReadiness, vendorStatusLabel } from "@/lib/vendor-readiness";
 
 const InsightsCard = dynamic(() => import("@/components/dashboard/InsightsCard"), {
   loading: () => <DashboardPanelSkeleton lines={4} />,
@@ -150,48 +152,20 @@ export default async function VendorDashboardPage({
   const resolved = await Promise.resolve(searchParams);
   const activeTab = resolveTab(resolved.tab);
 
-  let authError: string | null = null;
   let vendorId: string | null = null;
   let vendorSlug: string | null = null;
   let vendorRole: string | null = null;
 
   try {
-    const session = await requireVendor("STAFF");
+    const session = await getVendorSession();
     vendorId = session.vendorId;
     vendorSlug = session.vendorSlug;
     vendorRole = session.role;
   } catch (error: unknown) {
-    authError =
-      error instanceof Error ? error.message : "You do not have access to the vendor dashboard.";
-  }
-
-  if (authError || !vendorId) {
-    return (
-      <main className="min-h-screen bg-lethela-secondary text-white">
-        <MainHeader />
-        <section className="container py-12">
-          <div className="max-w-2xl rounded-2xl border border-white/15 bg-white/5 p-6">
-            <h1 className="text-2xl font-bold">Dashboard access blocked</h1>
-            <p className="mt-3 text-sm text-white/80">
-              {authError || "Unable to resolve vendor access."}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link
-                href="/vendors/register"
-                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
-              >
-                Go to vendor registration
-              </Link>
-              <Link
-                href="/vendors/signin"
-                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
-              >
-                Vendor sign in
-              </Link>
-            </div>
-          </div>
-        </section>
-      </main>
+    const message =
+      error instanceof Error ? error.message : "Please sign in to open your vendor dashboard.";
+    redirect(
+      `/signin?tab=vendor&callbackUrl=/vendors/dashboard&message=${encodeURIComponent(message)}`,
     );
   }
 
@@ -226,11 +200,24 @@ export default async function VendorDashboardPage({
             suburb: true,
             city: true,
             phone: true,
+            email: true,
             address: true,
+            province: true,
+            municipality: true,
+            township: true,
+            sectionArea: true,
+            storeType: true,
+            cuisine: true,
+            deliveryFee: true,
+            etaMins: true,
             latitude: true,
             longitude: true,
             kycIdUrl: true,
             kycProofUrl: true,
+            bankName: true,
+            bankAccountName: true,
+            bankAccountNumber: true,
+            bankBranchCode: true,
             updatedAt: true,
             _count: {
               select: {
@@ -285,6 +272,31 @@ export default async function VendorDashboardPage({
   const progressPct = Math.round(
     (progressChecks.filter(Boolean).length / progressChecks.length) * 100,
   );
+  const readiness = getVendorReadiness({
+    name: vendor?.name,
+    email: vendor?.email,
+    phone: vendor?.phone,
+    address: vendor?.address,
+    suburb: vendor?.suburb,
+    city: vendor?.city,
+    province: vendor?.province,
+    municipality: vendor?.municipality,
+    township: vendor?.township,
+    sectionArea: vendor?.sectionArea,
+    storeType: vendor?.storeType,
+    cuisine: vendor?.cuisine,
+    deliveryFee: vendor?.deliveryFee,
+    etaMins: vendor?.etaMins,
+    kycIdUrl: vendor?.kycIdUrl,
+    kycProofUrl: vendor?.kycProofUrl,
+    bankName: vendor?.bankName,
+    bankAccountName: vendor?.bankAccountName,
+    bankAccountNumber: vendor?.bankAccountNumber,
+    bankBranchCode: vendor?.bankBranchCode,
+    productCount: vendor?._count.products,
+    menuItemCount: vendor?._count.items,
+    operatingHoursCount: vendor?._count.hours,
+  });
   const revenue30 = orders.reduce(
     (sum, order) =>
       countsTowardRevenue(order.paymentStatus, order.status) ? sum + order.totalCents : sum,
@@ -339,13 +351,13 @@ export default async function VendorDashboardPage({
               </p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
                 <span className="rounded-full border border-white/20 px-3 py-1">
-                  {vendor?.status || "PENDING"}
+                  {vendorStatusLabel(vendor?.status)}
                 </span>
                 <span className="rounded-full border border-white/20 px-3 py-1">
                   {vendorRole || "STAFF"}
                 </span>
                 <span className="rounded-full border border-white/20 px-3 py-1">
-                  {progressPct}% ready
+                  {readiness.percent}% ready
                 </span>
                 <span className="rounded-full border border-white/20 px-3 py-1">
                   {vendor?.isActive ? "Store live" : "Store paused"}
@@ -380,6 +392,51 @@ export default async function VendorDashboardPage({
                 Open orders
               </Link>
             </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-200/20 bg-white/5 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-white/60">
+                Profile completion
+              </p>
+              <h2 className="mt-1 text-xl font-semibold">Complete your profile before approval</h2>
+              <p className="mt-2 text-sm text-white/70">
+                Lethela reviews complete stores only. Finish the required sections, then submit for
+                approval from here.
+              </p>
+            </div>
+            <form action="/api/vendors/profile/submit" method="post">
+              <button
+                className="rounded-full bg-lethela-primary px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/50"
+                disabled={!readiness.canSubmit}
+                title={
+                  readiness.canSubmit
+                    ? "Submit profile for owner approval"
+                    : "Complete every required profile section first"
+                }
+              >
+                Submit for Approval
+              </button>
+            </form>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {readiness.checks.map((check) => (
+              <div
+                key={check.key}
+                className={`rounded-xl border px-3 py-3 text-sm ${
+                  check.complete
+                    ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-50"
+                    : "border-white/10 bg-black/10 text-white/70"
+                }`}
+              >
+                <div className="font-semibold">{check.label}</div>
+                <div className="mt-1 text-xs opacity-75">
+                  {check.complete ? "Complete" : "Required before approval"}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

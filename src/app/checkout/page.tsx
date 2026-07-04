@@ -36,7 +36,6 @@ export default function CheckoutPage() {
   const [streetSection, setStreetSection] = useState("");
   const [landmark, setLandmark] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [destinationPoint, setDestinationPoint] = useState<{ lat: number; lng: number } | null>(
     () => {
       const saved = readPreferredLocation();
@@ -113,6 +112,7 @@ export default function CheckoutPage() {
 
   const hasItems = items.length > 0;
   const hasAlcohol = items.some((item) => item.isAlcohol);
+  const onlineCheckoutAvailable = !hasAlcohol;
   const deliveryFee = hasItems ? deliveryQuote.deliveryCents : 0;
   const total = subtotal + deliveryFee;
   const whatsappLink = useMemo(() => {
@@ -184,8 +184,8 @@ export default function CheckoutPage() {
 
   async function payOzow() {
     if (items.length === 0) return;
-    if (hasAlcohol && !ageConfirmed) {
-      setError("Confirm that you are 18 or older and can show ID on delivery.");
+    if (!onlineCheckoutAvailable) {
+      setError("Online checkout is not available for this cart yet. Please use WhatsApp ordering.");
       return;
     }
     const destination = destinationSuburb.trim() || "Klipfontein View, Midrand";
@@ -221,7 +221,6 @@ export default function CheckoutPage() {
           streetSection,
           landmark,
           deliveryNotes,
-          ageConfirmed,
           items: items.map((i) => ({
             itemId: i.itemId,
             name: i.name,
@@ -242,7 +241,7 @@ export default function CheckoutPage() {
       }
       window.location.href = json.redirectUrl;
     } catch {
-      setError("Could not start payment. Please try again.");
+      setError("Online checkout is not ready right now. Please use the WhatsApp order option.");
     } finally {
       setLoading(false);
     }
@@ -254,15 +253,18 @@ export default function CheckoutPage() {
       <main className="container py-10 md:py-14">
         <h1 className="text-2xl font-bold">Checkout</h1>
         {items.length === 0 ? (
-          <p className="mt-4 text-white/70">
-            Your cart is empty.{" "}
-            <Link href="/" className="underline">
-              Browse restaurants
-            </Link>
-            .
-          </p>
+          <div className="mt-5 max-w-xl rounded-2xl border border-white/10 bg-white/5 p-5">
+            <p className="text-white/80">Your cart is empty.</p>
+            <Button asChild className="mt-4 bg-lethela-primary text-white">
+              <Link href="/">Browse approved vendors</Link>
+            </Button>
+          </div>
         ) : (
           <>
+            <div className="mt-5 rounded-2xl border border-emerald-200/20 bg-emerald-300/10 p-4 text-sm text-emerald-50">
+              You can order as a guest. We only need your name, phone number and delivery details.
+              You can create an account after the order is placed.
+            </div>
             <div className="mt-6 space-y-2 rounded-lg border border-white/10 p-4">
               {items.map((i) => (
                 <div key={i.itemId} className="flex items-center justify-between text-sm">
@@ -403,36 +405,29 @@ export default function CheckoutPage() {
             </div>
 
             {hasAlcohol ? (
-              <label className="mt-4 flex items-start gap-3 rounded-lg border border-amber-200/25 bg-amber-300/10 p-4 text-sm text-amber-50">
-                <input
-                  type="checkbox"
-                  checked={ageConfirmed}
-                  onChange={(event) => setAgeConfirmed(event.target.checked)}
-                  className="mt-1"
-                />
+              <div className="mt-4 rounded-lg border border-amber-200/25 bg-amber-300/10 p-4 text-sm text-amber-50">
                 <span>
-                  I confirm that I am 18 or older, sober, and able to show valid ID when the
-                  delivery arrives. I understand alcohol delivery may be refused if age or sobriety
-                  cannot be verified.
+                  Alcohol checkout is temporarily paused while licence checks, rider handover rules
+                  and refund handling are completed. Please remove alcohol items or contact support.
                 </span>
-              </label>
+              </div>
             ) : null}
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Button
                 className="bg-lethela-primary"
-                disabled={
-                  loading || deliveryQuote.manualQuoteRequired || (hasAlcohol && !ageConfirmed)
-                }
+                disabled={loading || deliveryQuote.manualQuoteRequired || !onlineCheckoutAvailable}
                 onClick={payOzow}
               >
                 {loading
                   ? "Redirecting..."
-                  : deliveryQuote.manualQuoteRequired
-                    ? "Manual quote required"
-                    : isOzowSandbox
-                      ? "Pay with Ozow (sandbox)"
-                      : "Pay with Ozow"}
+                  : !onlineCheckoutAvailable
+                    ? "Online checkout unavailable"
+                    : deliveryQuote.manualQuoteRequired
+                      ? "Manual quote required"
+                      : isOzowSandbox
+                        ? "Pay with Ozow (sandbox)"
+                        : "Pay with Ozow"}
               </Button>
               <Button
                 asChild

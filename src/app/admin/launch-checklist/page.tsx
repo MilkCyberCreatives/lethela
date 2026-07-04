@@ -101,7 +101,7 @@ export default async function LaunchChecklistPage() {
     {
       label: "Real paid order proof",
       ok: paidOrders > 0,
-      detail: `${paidOrders} paid order(s) recorded. Run one low-value live payment before launch.`,
+      detail: `${paidOrders} paid order(s) recorded. Run one low-value live payment before scaling traffic.`,
     },
     {
       label: "Active catalog",

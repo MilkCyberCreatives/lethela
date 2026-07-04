@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import LegalPageShell from "@/components/legal/LegalPageShell";
-import { LEGAL_COMPANY_NAME, LEGAL_LAST_UPDATED, LEGAL_SERVICE_AREA } from "@/lib/legal";
+import {
+  LEGAL_COMPANY_NAME,
+  LEGAL_LAST_UPDATED,
+  LEGAL_SERVICE_AREA,
+  LEGAL_SUPPORT_EMAIL,
+  LEGAL_WHATSAPP_LINK,
+} from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -26,9 +32,15 @@ export default function TermsPage() {
       intro={`${LEGAL_COMPANY_NAME} provides a digital ordering, vendor management and delivery support platform. These terms govern customer, vendor and visitor use of the website and application.`}
       note={
         <>
-          Last updated: {LEGAL_LAST_UPDATED}. These terms are a practical operating version and
-          should be reviewed together with your final merchant, company and consumer law
-          requirements before launch.
+          Last updated: {LEGAL_LAST_UPDATED}. Platform operator: {LEGAL_COMPANY_NAME}. Support:{" "}
+          <a href={`mailto:${LEGAL_SUPPORT_EMAIL}`} className="underline">
+            {LEGAL_SUPPORT_EMAIL}
+          </a>{" "}
+          or{" "}
+          <a href={LEGAL_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="underline">
+            WhatsApp support
+          </a>
+          .
         </>
       }
     >
@@ -49,7 +61,7 @@ export default function TermsPage() {
         <p>
           Product pages are invitations to order, not a guarantee that stock will remain available
           until the vendor accepts the order. Customers should check item notes, delivery address,
-          alcohol warnings and substitution instructions before paying.
+          delivery fees and substitution instructions before paying.
         </p>
       </Section>
 
@@ -71,15 +83,12 @@ export default function TermsPage() {
 
       <Section title="Age-restricted products">
         <p>
-          Alcohol and other restricted products may only be sold to customers who lawfully qualify
-          to receive them. Customers must be 18 or older where alcohol is involved and may be asked
-          for verification on delivery.
+          Alcohol is hidden from public ordering while Lethela completes licence checks, age
+          verification, rider handover rules, refusal handling and refund logic.
         </p>
         <p>
-          South African liquor rules prohibit selling or supplying liquor to a minor and require
-          reasonable measures to check whether a customer is a minor before supply. Lethela may
-          cancel or refuse delivery if age, identity, sobriety or address checks fail, or if a
-          participating vendor is not approved to sell the item.
+          Vendors may not list or fulfil restricted products publicly unless Lethela has approved
+          the required documents, category controls and delivery process for that product type.
         </p>
       </Section>
 
@@ -95,6 +104,12 @@ export default function TermsPage() {
           Perishable, prepared, customised or already-dispatched food may be handled differently
           from ordinary packaged goods.
         </p>
+        <p>
+          Customer complaints can be raised through WhatsApp support or email. Include the order
+          reference, store name, phone number, issue details and photos where useful. Lethela will
+          review the vendor, rider and payment record before confirming a correction, replacement,
+          credit, partial refund or full refund.
+        </p>
       </Section>
 
       <Section title="Vendor and rider responsibility">
@@ -104,9 +119,9 @@ export default function TermsPage() {
           lawful conduct, safe delivery behaviour and route handling.
         </p>
         <p>
-          Vendors selling groceries, alcohol or other regulated goods must hold the registrations,
-          licences or permissions required for their own business and product category. Lethela may
-          suspend a listing where safety, licence, quality or consumer-law concerns arise.
+          Vendors selling groceries or other regulated goods must hold the registrations, licences
+          or permissions required for their own business and product category. Lethela may suspend a
+          listing where safety, licence, quality or consumer-law concerns arise.
         </p>
       </Section>
 
@@ -127,9 +142,9 @@ export default function TermsPage() {
           loss. South African law governs these terms.
         </p>
         <p>
-          Lethela will aim to display clear supplier, price, delivery, cancellation and complaint
-          information before checkout. Some final operating details, such as vendor licence numbers
-          and registered entity information, must be confirmed before full commercial launch.
+          Lethela aims to display clear supplier, price, delivery, cancellation and complaint
+          information before checkout. South African law governs these terms and related platform
+          disputes.
         </p>
       </Section>
     </LegalPageShell>

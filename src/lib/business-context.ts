@@ -20,14 +20,13 @@ export function businessFacts() {
     supportWhatsApp: getWhatsAppSupportLink(),
     supportPhoneDisplay: "+27 72 390 8919",
     serviceArea:
-      "Lethela is launching in Klipfontein View first, then expanding to nearby areas such as Mayibuye, Rabie Ridge and surrounding Midrand township communities.",
+      "Lethela is built for township delivery across South Africa. It is live in Klipfontein View first because the owner is based there, before expanding to more townships.",
     countryContext: "South Africa",
     keyCategories: [
       "Kota",
       "Chips",
       "Burgers",
       "Groceries",
-      "Alcohol (18+ only)",
       "Braai",
       "Breakfast",
       "Local favourites",
@@ -36,7 +35,7 @@ export function businessFacts() {
     tracking:
       "Customers track orders with a reference such as LET-12345 on the Track Order page or through live order pages.",
     vendorFlow:
-      "Vendors apply online, submit business details and optional compliance documents, then wait for admin approval before the store goes live.",
+      "Vendors create a short account first, complete store type, township, address, hours, delivery, menu, banking and owner documents in the dashboard, then submit for owner approval.",
     vendorTools:
       "Approved vendors get a dashboard with overview, menu management, imports, orders, analytics, profile, hours, specials, automations, and support.",
     riderFlow:
@@ -44,7 +43,7 @@ export function businessFacts() {
     riderRequirements:
       "Riders need South African ID, a valid license where applicable, reliable transport, a smartphone with GPS/data, WhatsApp, and a bank account.",
     alcoholPolicy:
-      "Alcohol is available from launch only to customers aged 18 or older, subject to age verification, delivery checks and local compliance.",
+      "Alcohol is hidden from public ordering until licence checks, age verification, rider handover rules, refusal handling and refund logic are complete.",
     escalation:
       "For urgent support, refunds, order issues, vendor onboarding help, or rider follow-up, the primary escalation path is WhatsApp support.",
   };
@@ -104,12 +103,12 @@ export function supportFaq(): SupportFaqItem[] {
     },
     {
       q: "Where is Lethela available?",
-      a: "Lethela is launching in Klipfontein View first, then expanding to nearby areas such as Mayibuye, Rabie Ridge and surrounding Midrand township communities.",
+      a: "Lethela is built for township communities across South Africa. It is live in Klipfontein View first before expanding to more townships.",
       tags: ["coverage", "area", "midrand", "location", "available", "where"],
     },
     {
       q: "What can I order on Lethela?",
-      a: "You can order township favourites and essentials including kota, chips, burgers, chicken, braai, breakfast items, groceries and alcohol from approved vendors. Alcohol is 18+ only.",
+      a: "You can order township favourites and essentials including kota, chips, burgers, chicken, braai, breakfast items and groceries from approved vendors. Alcohol is paused publicly until compliance checks are complete.",
       tags: ["menu", "categories", "kota", "chips", "burgers", "groceries", "alcohol", "food"],
     },
     {
@@ -149,12 +148,12 @@ export function supportFaq(): SupportFaqItem[] {
     },
     {
       q: "Can I buy alcohol on Lethela?",
-      a: "Yes. Alcohol is available from approved vendors for customers aged 18 or older, subject to age verification and delivery checks.",
+      a: "Not right now. Lethela is keeping alcohol hidden until licence checks, age verification, rider handover rules, refusal handling and refund logic are complete.",
       tags: ["alcohol", "beer", "wine", "cider", "spirits", "age", "18+"],
     },
     {
       q: "What is Lethela's alcohol policy?",
-      a: "Alcohol is 18+ only and subject to local law, age verification and fulfilment checks.",
+      a: "Alcohol is paused publicly until Lethela completes licence checks, age verification, rider handover rules, refusal handling and refund logic.",
       tags: ["policy", "alcohol policy", "18+", "law", "legal"],
     },
     {
@@ -164,7 +163,7 @@ export function supportFaq(): SupportFaqItem[] {
     },
     {
       q: "What do vendors need to apply?",
-      a: "Vendors should provide business name, phone, operating address, suburb, city, province, cuisine types, delivery fee defaults, and optional compliance links such as ID or proof of address.",
+      a: "Vendors should provide store type, phone, trading address, township, city, province, categories, operating hours, delivery settings, banking details and owner documents.",
       tags: ["vendor requirements", "documents", "vendor apply", "business details", "kyc"],
     },
     {

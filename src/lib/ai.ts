@@ -89,13 +89,13 @@ function mockChat(messages: AIMessage[]) {
     return "You can apply from the Rider page. Ops reviews applications before onboarding.";
   }
   if (/kota|chips|burger|grocer|groceries/i.test(last)) {
-    return "Popular categories include Kota, Chips, Burger, Alcohol, and Groceries. Tell me your area and I will suggest options.";
+    return "Popular categories include Kota, Chips, Burger, Groceries, Braai and Breakfast. Tell me your area and I will suggest options.";
   }
   if (/refund|refunds|cancel|cancellation/i.test(last)) {
     return `If your order is incorrect or delayed, message support on WhatsApp and we will resolve it quickly: ${WHATSAPP_SUPPORT}`;
   }
   if (/alcohol|beer|wine|cider/i.test(last)) {
-    return "Alcohol orders are available for customers aged 18+ and subject to local regulations.";
+    return "Alcohol is currently hidden from public ordering while Lethela completes licence checks, age verification, rider handover and refund rules.";
   }
   if (/vegan|halaal|vegetarian/i.test(last)) {
     return "We can suggest veg and halaal-friendly options. Share your area and preferred meal type.";

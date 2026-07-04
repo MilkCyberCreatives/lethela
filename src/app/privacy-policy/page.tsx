@@ -33,9 +33,15 @@ export default function PrivacyPolicyPage() {
       intro={`${LEGAL_COMPANY_NAME} processes personal information to run customer accounts, vendor onboarding, ordering, payment, delivery support and service communications. This policy explains the practical privacy rules we apply on the platform.`}
       note={
         <>
-          Last updated: {LEGAL_LAST_UPDATED}. This page is written for platform use and customer
-          clarity. It should still be reviewed against your final registered entity details before
-          full commercial launch.
+          Last updated: {LEGAL_LAST_UPDATED}. Platform operator: {LEGAL_COMPANY_NAME}. Support:{" "}
+          <a href={`mailto:${LEGAL_SUPPORT_EMAIL}`} className="underline">
+            {LEGAL_SUPPORT_EMAIL}
+          </a>{" "}
+          or{" "}
+          <a href={LEGAL_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="underline">
+            WhatsApp support
+          </a>
+          .
         </>
       }
     >
@@ -78,6 +84,10 @@ export default function PrivacyPolicyPage() {
           Online checkout is currently processed through Ozow. Lethela stores order and payment
           references needed for customer service and reconciliation, but banking authentication is
           handled through the payment flow itself.
+        </p>
+        <p>
+          Vendor banking details are collected for payout readiness and are used only for vendor
+          verification, settlement administration, fraud prevention and support.
         </p>
       </Section>
 

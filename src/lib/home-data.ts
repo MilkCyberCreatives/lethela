@@ -10,7 +10,7 @@ import {
 import {
   buildPublicVendorCard,
   isPublicCatalogProduct,
-  isPublicCatalogVendor,
+  isPublicMarketplaceVendor,
 } from "@/lib/public-catalog";
 import {
   canReadSqliteCatalog,
@@ -31,6 +31,25 @@ type VendorWithAlcohol = {
   etaMins?: number | null;
   products: Array<{ isAlcohol: boolean }>;
   reviews?: Array<{ rating: number }>;
+  status?: string | null;
+  isActive?: boolean | null;
+  phone?: string | null;
+  address?: string | null;
+  suburb?: string | null;
+  city?: string | null;
+  province?: string | null;
+  municipality?: string | null;
+  township?: string | null;
+  sectionArea?: string | null;
+  storeType?: string | null;
+  deliveryFee?: number | null;
+  kycIdUrl?: string | null;
+  kycProofUrl?: string | null;
+  bankName?: string | null;
+  bankAccountName?: string | null;
+  bankAccountNumber?: string | null;
+  bankBranchCode?: string | null;
+  _count?: { products?: number; items?: number; hours?: number };
 };
 
 type RecommendationCard = {
@@ -78,12 +97,14 @@ export async function getHomeRecommendations(suburb: string | null): Promise<Rec
 
 export async function getHomeProducts(suburb: string | null, take = 24): Promise<ProductLite[]> {
   if (canReadSqliteCatalog()) {
-    const sqliteItems = await getSqliteCatalogProducts({ suburb, take });
+    const sqliteItems = await getSqliteCatalogProducts({ suburb, take, alcohol: "false" });
     if (sqliteItems) return sqliteItems;
   }
 
   if (shouldUseCatalogFallbackBeforeQuery()) {
-    return getFallbackProducts().slice(0, Math.min(60, Math.max(6, take)));
+    return getFallbackProducts()
+      .filter((item) => !item.isAlcohol)
+      .slice(0, Math.min(60, Math.max(6, take)));
   }
 
   const normalizedSuburb = normalizeSuburb(suburb);
@@ -92,9 +113,10 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
       prisma.product.findMany({
         where: {
           inStock: true,
+          isAlcohol: false,
           vendor: {
             isActive: true,
-            status: "ACTIVE",
+            status: { in: ["ACTIVE", "APPROVED"] },
             ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
           },
         },
@@ -111,6 +133,26 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
               name: true,
               slug: true,
               deliveryFee: true,
+              status: true,
+              isActive: true,
+              phone: true,
+              address: true,
+              suburb: true,
+              city: true,
+              province: true,
+              municipality: true,
+              township: true,
+              sectionArea: true,
+              storeType: true,
+              cuisine: true,
+              etaMins: true,
+              kycIdUrl: true,
+              kycProofUrl: true,
+              bankName: true,
+              bankAccountName: true,
+              bankAccountNumber: true,
+              bankBranchCode: true,
+              _count: { select: { products: true, items: true, hours: true } },
             },
           },
         },
@@ -121,11 +163,13 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
   );
 
   if (rows.length === 0 && shouldFallbackWhenCatalogEmpty()) {
-    return getFallbackProducts().slice(0, Math.min(60, Math.max(6, take)));
+    return getFallbackProducts()
+      .filter((item) => !item.isAlcohol)
+      .slice(0, Math.min(60, Math.max(6, take)));
   }
 
   return rows
-    .filter((item) => isPublicCatalogProduct(item))
+    .filter((item) => isPublicCatalogProduct(item) && isPublicMarketplaceVendor(item.vendor))
     .map((item) => ({
       id: item.id,
       name: item.name,
@@ -171,7 +215,7 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
       prisma.vendor.findMany({
         where: {
           isActive: true,
-          status: "ACTIVE",
+          status: { in: ["ACTIVE", "APPROVED"] },
           ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
         },
         select: {
@@ -183,10 +227,30 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
           halaal: true,
           image: true,
           etaMins: true,
+          status: true,
+          isActive: true,
+          phone: true,
+          address: true,
+          suburb: true,
+          city: true,
+          province: true,
+          municipality: true,
+          township: true,
+          sectionArea: true,
+          storeType: true,
+          deliveryFee: true,
+          kycIdUrl: true,
+          kycProofUrl: true,
+          bankName: true,
+          bankAccountName: true,
+          bankAccountNumber: true,
+          bankBranchCode: true,
           products: {
             select: { isAlcohol: true },
-            take: 4,
+            where: { isAlcohol: false, inStock: true },
+            take: 6,
           },
+          _count: { select: { products: true, items: true, hours: true } },
           reviews: {
             select: { rating: true },
             take: 40,
@@ -205,7 +269,7 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
   }
 
   const mapped = dbVendors
-    .filter((vendor: VendorWithAlcohol) => isPublicCatalogVendor(vendor))
+    .filter((vendor: VendorWithAlcohol) => isPublicMarketplaceVendor(vendor))
     .map((vendor: VendorWithAlcohol) => {
       return buildPublicVendorCard({
         id: vendor.id,

@@ -37,8 +37,11 @@ export function middleware(req: NextRequest) {
         );
       }
       const url = req.nextUrl.clone();
-      url.pathname = "/vendors/register";
+      url.pathname = "/signin";
       url.searchParams.set("next", pathname);
+      url.searchParams.set("tab", "vendor");
+      url.searchParams.set("callbackUrl", pathname);
+      url.searchParams.set("message", "Please sign in to open your vendor dashboard.");
       return withVisitorCookie(req, NextResponse.redirect(url));
     }
   }

@@ -33,9 +33,16 @@ type DashboardView =
   | "orders"
   | "messages"
   | "operations";
-type VendorStatusFilter = "PENDING" | "ACTIVE" | "REJECTED" | "ALL";
+type VendorStatusOption =
+  | "DRAFT_PROFILE"
+  | "SUBMITTED_FOR_APPROVAL"
+  | "CHANGES_REQUESTED"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED"
+  | "ALL";
 type RiderStatusFilter = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "ALL";
-type VendorActionType = "approve" | "reject";
+type VendorActionType = "approve" | "reject" | "changes_requested" | "suspend";
 type RiderApplicationStatus = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
 
 type VendorApplication = {
@@ -61,9 +68,14 @@ type VendorApplication = {
 };
 
 type VendorCounts = {
+  draft?: number;
+  submitted?: number;
+  changesRequested?: number;
   pending: number;
   active: number;
+  approved?: number;
   rejected: number;
+  suspended?: number;
   total: number;
 };
 
@@ -139,7 +151,15 @@ type AdminStats = {
   topVendors: Array<{ id: string; name: string; revenueCents: number }>;
 };
 
-const VENDOR_STATUS_OPTIONS: VendorStatusFilter[] = ["PENDING", "ACTIVE", "REJECTED", "ALL"];
+const VENDOR_STATUS_OPTIONS: VendorStatusOption[] = [
+  "SUBMITTED_FOR_APPROVAL",
+  "CHANGES_REQUESTED",
+  "APPROVED",
+  "REJECTED",
+  "SUSPENDED",
+  "DRAFT_PROFILE",
+  "ALL",
+];
 const RIDER_STATUS_OPTIONS: RiderStatusFilter[] = [
   "PENDING",
   "UNDER_REVIEW",
@@ -257,7 +277,7 @@ function EmptyState({ title, text }: { title: string; text: string }) {
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState("");
   const [view, setView] = useState<DashboardView>("overview");
-  const [vendorStatus, setVendorStatus] = useState<VendorStatusFilter>("PENDING");
+  const [vendorStatus, setVendorStatus] = useState<VendorStatusOption>("SUBMITTED_FOR_APPROVAL");
   const [riderStatus, setRiderStatus] = useState<RiderStatusFilter>("PENDING");
   const [vendorSearch, setVendorSearch] = useState("");
   const [riderSearch, setRiderSearch] = useState("");
@@ -785,12 +805,12 @@ export default function AdminPage() {
                   <label className="mb-1 block text-xs text-white/60">Vendor filter</label>
                   <select
                     value={vendorStatus}
-                    onChange={(event) => setVendorStatus(event.target.value as VendorStatusFilter)}
+                    onChange={(event) => setVendorStatus(event.target.value as VendorStatusOption)}
                     className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
                   >
                     {VENDOR_STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
-                        {option}
+                        {option.replaceAll("_", " ")}
                       </option>
                     ))}
                   </select>
@@ -993,11 +1013,27 @@ export default function AdminPage() {
                         </Button>
                         <Button
                           variant="outline"
+                          className="border-amber-300/50 bg-transparent text-amber-100 hover:bg-amber-200/10"
+                          disabled={saving}
+                          onClick={() => updateVendorStatus(vendor.id, "changes_requested")}
+                        >
+                          Request changes
+                        </Button>
+                        <Button
+                          variant="outline"
                           className="border-red-300/50 bg-transparent text-red-100 hover:bg-red-200/10"
                           disabled={saving}
                           onClick={() => updateVendorStatus(vendor.id, "reject")}
                         >
                           Reject
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="border-white/25 bg-transparent text-white hover:bg-white/10"
+                          disabled={saving}
+                          onClick={() => updateVendorStatus(vendor.id, "suspend")}
+                        >
+                          Suspend
                         </Button>
                         {vendor.kycIdUrl ? (
                           <a

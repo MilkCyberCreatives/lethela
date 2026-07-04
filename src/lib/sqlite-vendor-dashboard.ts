@@ -21,8 +21,10 @@ export async function getSqliteVendorDashboardData(vendorId: string, since: Date
   try {
     const vendor = db
       .prepare(
-        `SELECT id, name, slug, status, isActive, suburb, city, phone, address,
-                latitude, longitude, kycIdUrl, kycProofUrl, updatedAt
+        `SELECT id, name, slug, email, status, isActive, suburb, city, province,
+                municipality, township, sectionArea, storeType, phone, address, cuisine,
+                deliveryFee, etaMins, latitude, longitude, kycIdUrl, kycProofUrl,
+                bankName, bankAccountName, bankAccountNumber, bankBranchCode, updatedAt
          FROM Vendor
          WHERE id = ?`,
       )
@@ -108,14 +110,27 @@ export async function getSqliteVendorDashboardData(vendorId: string, since: Date
         slug: String(vendor.slug),
         status: String(vendor.status || ""),
         isActive: Boolean(vendor.isActive),
+        email: vendor.email ? String(vendor.email) : null,
         suburb: vendor.suburb ? String(vendor.suburb) : null,
         city: vendor.city ? String(vendor.city) : null,
+        province: vendor.province ? String(vendor.province) : null,
+        municipality: vendor.municipality ? String(vendor.municipality) : null,
+        township: vendor.township ? String(vendor.township) : null,
+        sectionArea: vendor.sectionArea ? String(vendor.sectionArea) : null,
+        storeType: vendor.storeType ? String(vendor.storeType) : null,
         phone: vendor.phone ? String(vendor.phone) : null,
         address: vendor.address ? String(vendor.address) : null,
+        cuisine: vendor.cuisine ? String(vendor.cuisine) : "[]",
+        deliveryFee: Number(vendor.deliveryFee || 0),
+        etaMins: Number(vendor.etaMins || 30),
         latitude: vendor.latitude == null ? null : Number(vendor.latitude),
         longitude: vendor.longitude == null ? null : Number(vendor.longitude),
         kycIdUrl: vendor.kycIdUrl ? String(vendor.kycIdUrl) : null,
         kycProofUrl: vendor.kycProofUrl ? String(vendor.kycProofUrl) : null,
+        bankName: vendor.bankName ? String(vendor.bankName) : null,
+        bankAccountName: vendor.bankAccountName ? String(vendor.bankAccountName) : null,
+        bankAccountNumber: vendor.bankAccountNumber ? String(vendor.bankAccountNumber) : null,
+        bankBranchCode: vendor.bankBranchCode ? String(vendor.bankBranchCode) : null,
         updatedAt: new Date(vendor.updatedAt),
         _count: {
           products: count(db, "SELECT COUNT(*) AS n FROM Product WHERE vendorId = ?", vendorId),

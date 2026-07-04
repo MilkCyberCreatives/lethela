@@ -168,7 +168,20 @@ async function searchPostgres(
           ) AS score
         FROM "Vendor" AS v
         WHERE v."isActive" = true
-          AND v.status = 'ACTIVE'
+          AND v.status IN ('ACTIVE', 'APPROVED')
+          AND v.phone IS NOT NULL
+          AND v.address IS NOT NULL
+          AND v.city IS NOT NULL
+          AND v.province IS NOT NULL
+          AND v.cuisine IS NOT NULL
+          AND v."storeType" IS NOT NULL
+          AND v."kycIdUrl" IS NOT NULL
+          AND v."kycProofUrl" IS NOT NULL
+          AND v."bankName" IS NOT NULL
+          AND v."bankAccountName" IS NOT NULL
+          AND v."bankAccountNumber" IS NOT NULL
+          AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
+          AND EXISTS (SELECT 1 FROM "Product" vp WHERE vp."vendorId" = v.id AND vp."inStock" = true AND vp."isAlcohol" = false)
           AND to_tsvector('simple', coalesce(v.name, '') || ' ' || coalesce(v.suburb, '') || ' ' || coalesce(v.city, '') || ' ' || coalesce(v.cuisine, ''))
               @@ websearch_to_tsquery('simple', ${tsQuery})
         ORDER BY score DESC, v."updatedAt" DESC
@@ -191,7 +204,20 @@ async function searchPostgres(
         FROM "Product" AS p
         INNER JOIN "Vendor" AS v ON v.id = p."vendorId"
         WHERE v."isActive" = true
-          AND v.status = 'ACTIVE'
+          AND v.status IN ('ACTIVE', 'APPROVED')
+          AND p."isAlcohol" = false
+          AND v.phone IS NOT NULL
+          AND v.address IS NOT NULL
+          AND v.city IS NOT NULL
+          AND v.province IS NOT NULL
+          AND v.cuisine IS NOT NULL
+          AND v."storeType" IS NOT NULL
+          AND v."kycIdUrl" IS NOT NULL
+          AND v."kycProofUrl" IS NOT NULL
+          AND v."bankName" IS NOT NULL
+          AND v."bankAccountName" IS NOT NULL
+          AND v."bankAccountNumber" IS NOT NULL
+          AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
           AND to_tsvector('simple', coalesce(p.name, '') || ' ' || coalesce(p.description, '') || ' ' || coalesce(v.name, ''))
               @@ websearch_to_tsquery('simple', ${tsQuery})
         ORDER BY score DESC, p."updatedAt" DESC
@@ -284,7 +310,20 @@ async function searchPostgresLoose(query: string, tokens: string[], limit: numbe
         SELECT v.id, v.slug, v.name, v.suburb, v.city, v.image
         FROM "Vendor" AS v
         WHERE v."isActive" = true
-          AND v.status = 'ACTIVE'
+          AND v.status IN ('ACTIVE', 'APPROVED')
+          AND v.phone IS NOT NULL
+          AND v.address IS NOT NULL
+          AND v.city IS NOT NULL
+          AND v.province IS NOT NULL
+          AND v.cuisine IS NOT NULL
+          AND v."storeType" IS NOT NULL
+          AND v."kycIdUrl" IS NOT NULL
+          AND v."kycProofUrl" IS NOT NULL
+          AND v."bankName" IS NOT NULL
+          AND v."bankAccountName" IS NOT NULL
+          AND v."bankAccountNumber" IS NOT NULL
+          AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
+          AND EXISTS (SELECT 1 FROM "Product" vp WHERE vp."vendorId" = v.id AND vp."inStock" = true AND vp."isAlcohol" = false)
           AND (
             v.name ILIKE ANY(${patterns})
             OR coalesce(v.suburb, '') ILIKE ANY(${patterns})
@@ -307,7 +346,20 @@ async function searchPostgresLoose(query: string, tokens: string[], limit: numbe
         FROM "Product" AS p
         INNER JOIN "Vendor" AS v ON v.id = p."vendorId"
         WHERE v."isActive" = true
-          AND v.status = 'ACTIVE'
+          AND v.status IN ('ACTIVE', 'APPROVED')
+          AND p."isAlcohol" = false
+          AND v.phone IS NOT NULL
+          AND v.address IS NOT NULL
+          AND v.city IS NOT NULL
+          AND v.province IS NOT NULL
+          AND v.cuisine IS NOT NULL
+          AND v."storeType" IS NOT NULL
+          AND v."kycIdUrl" IS NOT NULL
+          AND v."kycProofUrl" IS NOT NULL
+          AND v."bankName" IS NOT NULL
+          AND v."bankAccountName" IS NOT NULL
+          AND v."bankAccountNumber" IS NOT NULL
+          AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
           AND (
             p.name ILIKE ANY(${patterns})
             OR coalesce(p.description, '') ILIKE ANY(${patterns})

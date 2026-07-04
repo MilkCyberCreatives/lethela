@@ -7,7 +7,7 @@ import {
   shouldPreferCatalogFallback,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
-import { buildPublicVendorCard, isPublicCatalogVendor } from "@/lib/public-catalog";
+import { buildPublicVendorCard, isPublicMarketplaceVendor } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { canReadSqliteCatalog, getSqliteCatalogVendors } from "@/lib/sqlite-catalog";
 
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
         db.vendor.findMany({
           where: {
             isActive: true,
-            status: "ACTIVE",
+            status: { in: ["ACTIVE", "APPROVED"] },
             ...(suburb ? { suburb: { contains: suburb } } : {}),
           },
           orderBy: { updatedAt: "desc" },
@@ -68,10 +68,30 @@ export async function GET(req: Request) {
             halaal: true,
             image: true,
             etaMins: true,
+            status: true,
+            isActive: true,
+            phone: true,
+            address: true,
+            suburb: true,
+            city: true,
+            province: true,
+            municipality: true,
+            township: true,
+            sectionArea: true,
+            storeType: true,
+            deliveryFee: true,
+            kycIdUrl: true,
+            kycProofUrl: true,
+            bankName: true,
+            bankAccountName: true,
+            bankAccountNumber: true,
+            bankBranchCode: true,
             products: {
               select: { isAlcohol: true },
-              take: 3,
+              where: { isAlcohol: false, inStock: true },
+              take: 6,
             },
+            _count: { select: { products: true, items: true, hours: true } },
             reviews: {
               select: { rating: true },
               take: 40,
@@ -81,7 +101,7 @@ export async function GET(req: Request) {
       );
 
       items = dbVendors
-        .filter((vendor) => isPublicCatalogVendor(vendor))
+        .filter((vendor) => isPublicMarketplaceVendor(vendor))
         .map((vendor) => {
           const card = buildPublicVendorCard({
             id: vendor.id,

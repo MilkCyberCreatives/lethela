@@ -10,7 +10,7 @@ import { requireVendor } from "@/lib/authz";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Lethela launch pricing for delivery, township vendors, and community riders in Klipfontein View.",
+    "Lethela pricing for township delivery, local vendors, spaza shops and community riders across South Africa.",
   robots: {
     index: false,
     follow: false,
@@ -39,13 +39,15 @@ export default async function PricingPage() {
 
       <section className="border-b border-white/10 bg-[#080B27]">
         <div className="container py-10 md:py-14">
-          <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">Launch pricing</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
+            Township pricing
+          </p>
           <h1 className="mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-5xl">
-            Simple pricing for the Klipfontein View pilot.
+            Simple pricing for township delivery, starting in Klipfontein View.
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 md:text-base">
-            {DELIVERY_PRICING_WORDING} We are launching in Klipfontein View first, then expanding to
-            Mayibuye, Rabie Ridge and nearby Midrand township communities.
+            {DELIVERY_PRICING_WORDING} We are live in Klipfontein View first, then expanding to more
+            township communities across South Africa.
           </p>
         </div>
       </section>
@@ -66,7 +68,7 @@ export default async function PricingPage() {
               </div>
             ))}
             <div className="rounded-lg border border-amber-200/25 bg-amber-300/10 px-3 py-2 text-sm text-amber-50">
-              Over 10 km: manual quote or unavailable during launch.
+              Over 10 km: manual quote or unavailable during the current pilot zone.
             </div>
           </div>
         </article>

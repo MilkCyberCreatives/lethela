@@ -100,8 +100,8 @@ export default function RiderPage() {
               </a>
             </p>
             <div className="mt-4 rounded-lg border border-lethela-primary/25 bg-lethela-primary/10 p-3 text-xs leading-5 text-white/78">
-              Operations will confirm safety requirements, equipment, payout details, alcohol
-              handover rules and escalation steps before launch shifts begin.
+              Operations confirm safety requirements, equipment, payout details, restricted-item
+              rules and escalation steps before active shifts begin.
             </div>
           </aside>
         </div>

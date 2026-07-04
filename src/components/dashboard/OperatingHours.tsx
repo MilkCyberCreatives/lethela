@@ -105,7 +105,15 @@ export default function OperatingHours() {
   }
 
   if (loading) {
-    return <DashCard title="Operating Hours">Loading...</DashCard>;
+    return (
+      <DashCard title="Operating Hours">
+        <div className="grid gap-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-12 animate-pulse rounded-lg bg-white/10" />
+          ))}
+        </div>
+      </DashCard>
+    );
   }
 
   return (

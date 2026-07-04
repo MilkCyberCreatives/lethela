@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import DashCard from "./DashCard";
+import { STORE_TYPES } from "@/lib/vendor-readiness";
 
 type VendorProfile = {
   id: string;
@@ -12,6 +13,10 @@ type VendorProfile = {
   suburb: string | null;
   city: string | null;
   province: string | null;
+  municipality: string | null;
+  township: string | null;
+  sectionArea: string | null;
+  storeType: string | null;
   cuisine: string | string[];
   deliveryFee: number;
   etaMins: number;
@@ -19,6 +24,10 @@ type VendorProfile = {
   image: string | null;
   kycIdUrl: string | null;
   kycProofUrl: string | null;
+  bankName: string | null;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
+  bankBranchCode: string | null;
   latitude: number | null;
   longitude: number | null;
   status: string;
@@ -38,6 +47,10 @@ type ProfileFormState = {
   suburb: string;
   city: string;
   province: string;
+  municipality: string;
+  township: string;
+  sectionArea: string;
+  storeType: string;
   cuisineInput: string;
   deliveryFee: string;
   etaMins: string;
@@ -46,6 +59,10 @@ type ProfileFormState = {
   image: string;
   kycIdUrl: string;
   kycProofUrl: string;
+  bankName: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankBranchCode: string;
   latitude: string;
   longitude: string;
 };
@@ -73,6 +90,10 @@ function buildFormState(vendor: VendorProfile): ProfileFormState {
     suburb: vendor.suburb || "",
     city: vendor.city || "",
     province: vendor.province || "",
+    municipality: vendor.municipality || "",
+    township: vendor.township || vendor.suburb || "",
+    sectionArea: vendor.sectionArea || "",
+    storeType: vendor.storeType || "",
     cuisineInput: parseCuisine(vendor.cuisine).join(", "),
     deliveryFee: String(Math.round(vendor.deliveryFee / 100)),
     etaMins: String(vendor.etaMins),
@@ -81,6 +102,10 @@ function buildFormState(vendor: VendorProfile): ProfileFormState {
     image: vendor.image || "",
     kycIdUrl: vendor.kycIdUrl || "",
     kycProofUrl: vendor.kycProofUrl || "",
+    bankName: vendor.bankName || "",
+    bankAccountName: vendor.bankAccountName || "",
+    bankAccountNumber: vendor.bankAccountNumber || "",
+    bankBranchCode: vendor.bankBranchCode || "",
     latitude: vendor.latitude == null ? "" : String(vendor.latitude),
     longitude: vendor.longitude == null ? "" : String(vendor.longitude),
   };
@@ -92,10 +117,18 @@ function profileHealth(vendor: VendorProfile | null) {
   }
 
   const checks = [
-    Boolean(vendor.phone && vendor.address && vendor.city && vendor.suburb && vendor.province),
+    Boolean(
+      vendor.phone &&
+        vendor.address &&
+        vendor.city &&
+        (vendor.township || vendor.suburb) &&
+        vendor.province &&
+        vendor.storeType,
+    ),
     Boolean(vendor.image),
     Boolean(vendor.latitude != null && vendor.longitude != null),
     Boolean(vendor.kycIdUrl && vendor.kycProofUrl),
+    Boolean(vendor.bankName && vendor.bankAccountName && vendor.bankAccountNumber),
     Boolean(vendor._count?.hours),
   ];
 
@@ -163,6 +196,10 @@ export default function ProfileManager() {
           suburb: form.suburb,
           city: form.city,
           province: form.province,
+          municipality: form.municipality,
+          township: form.township,
+          sectionArea: form.sectionArea,
+          storeType: form.storeType,
           cuisine: form.cuisineInput
             .split(",")
             .map((item) => item.trim())
@@ -174,6 +211,10 @@ export default function ProfileManager() {
           image: form.image || null,
           kycIdUrl: form.kycIdUrl || null,
           kycProofUrl: form.kycProofUrl || null,
+          bankName: form.bankName,
+          bankAccountName: form.bankAccountName,
+          bankAccountNumber: form.bankAccountNumber,
+          bankBranchCode: form.bankBranchCode || null,
           latitude: form.latitude === "" ? null : Number(form.latitude),
           longitude: form.longitude === "" ? null : Number(form.longitude),
         }),
@@ -307,7 +348,55 @@ export default function ProfileManager() {
               />
               <input
                 className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Cuisine tags (comma separated)"
+                placeholder="Municipality"
+                value={form.municipality}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, municipality: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Township"
+                value={form.township}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current
+                      ? { ...current, township: event.target.value, suburb: event.target.value }
+                      : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Section / area"
+                value={form.sectionArea}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, sectionArea: event.target.value } : current,
+                  )
+                }
+              />
+              <select
+                className="rounded bg-white px-3 py-2 text-black"
+                value={form.storeType}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, storeType: event.target.value } : current,
+                  )
+                }
+              >
+                <option value="">Store type</option>
+                {STORE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Product categories (kota, groceries, bread...)"
                 value={form.cuisineInput}
                 onChange={(event) =>
                   setForm((current) =>
@@ -391,6 +480,46 @@ export default function ProfileManager() {
                 onChange={(event) =>
                   setForm((current) =>
                     current ? { ...current, kycProofUrl: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Bank name"
+                value={form.bankName}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, bankName: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Account holder name"
+                value={form.bankAccountName}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, bankAccountName: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Account number"
+                value={form.bankAccountNumber}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, bankAccountNumber: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Branch code"
+                value={form.bankBranchCode}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, bankBranchCode: event.target.value } : current,
                   )
                 }
               />

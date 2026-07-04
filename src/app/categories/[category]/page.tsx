@@ -17,7 +17,7 @@ import {
 } from "@/lib/categories";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 import { buildPageMetadata } from "@/lib/seo";
-import { isPublicCatalogProduct } from "@/lib/public-catalog";
+import { isPublicCatalogProduct, isPublicMarketplaceVendor } from "@/lib/public-catalog";
 
 type PageProps = {
   params: Promise<{ category: string }>;
@@ -27,29 +27,6 @@ export const revalidate = 300;
 
 function titleForCategory(category: TownshipCategory) {
   return CATEGORY_CONTENT[category].headline;
-}
-
-function mergeLaunchSamples(
-  category: TownshipCategory,
-  liveItems: NonNullable<Awaited<ReturnType<typeof getSqliteCatalogProducts>>>,
-) {
-  if (category !== "Alcohol") return liveItems;
-
-  const samples = getFallbackCategoryProducts(category);
-  const seen = new Set(
-    liveItems.map((item) => `${item.name.trim().toLowerCase()}::${item.vendor?.slug ?? ""}`),
-  );
-  const merged = [...liveItems];
-
-  for (const sample of samples) {
-    const signature = `${sample.name.trim().toLowerCase()}::${sample.vendor?.slug ?? ""}`;
-    if (seen.has(signature)) continue;
-    seen.add(signature);
-    merged.push(sample);
-    if (merged.length >= 16) break;
-  }
-
-  return merged;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -75,7 +52,7 @@ export default async function CategoryPage({ params }: PageProps) {
   if (!resolvedCategory) return notFound();
 
   const sqliteItems = canReadSqliteCatalog()
-    ? await getSqliteCatalogProducts({ category: resolvedCategory, take: 120 })
+    ? await getSqliteCatalogProducts({ category: resolvedCategory, take: 120, alcohol: "false" })
     : null;
 
   const dbItems = sqliteItems
@@ -86,9 +63,10 @@ export default async function CategoryPage({ params }: PageProps) {
           db.product.findMany({
             where: {
               inStock: true,
+              isAlcohol: false,
               vendor: {
                 isActive: true,
-                status: "ACTIVE",
+                status: { in: ["ACTIVE", "APPROVED"] },
               },
             },
             orderBy: { updatedAt: "desc" },
@@ -105,6 +83,27 @@ export default async function CategoryPage({ params }: PageProps) {
                   id: true,
                   name: true,
                   slug: true,
+                  status: true,
+                  isActive: true,
+                  phone: true,
+                  address: true,
+                  suburb: true,
+                  city: true,
+                  province: true,
+                  municipality: true,
+                  township: true,
+                  sectionArea: true,
+                  storeType: true,
+                  cuisine: true,
+                  etaMins: true,
+                  deliveryFee: true,
+                  kycIdUrl: true,
+                  kycProofUrl: true,
+                  bankName: true,
+                  bankAccountName: true,
+                  bankAccountNumber: true,
+                  bankBranchCode: true,
+                  _count: { select: { products: true, items: true, hours: true } },
                 },
               },
             },
@@ -117,6 +116,7 @@ export default async function CategoryPage({ params }: PageProps) {
       ? dbItems.filter(
           (item) =>
             isPublicCatalogProduct(item) &&
+            isPublicMarketplaceVendor(item.vendor) &&
             inferProductCategory({
               name: item.name,
               description: item.description,
@@ -128,8 +128,10 @@ export default async function CategoryPage({ params }: PageProps) {
         : [];
   const items =
     liveItems.length > 0
-      ? mergeLaunchSamples(resolvedCategory, liveItems)
-      : getFallbackCategoryProducts(resolvedCategory).slice(0, 16);
+      ? liveItems
+      : getFallbackCategoryProducts(resolvedCategory)
+          .filter((item) => !item.isAlcohol)
+          .slice(0, 16);
   const content = CATEGORY_CONTENT[resolvedCategory];
 
   const categorySchema = {

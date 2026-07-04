@@ -8,7 +8,7 @@ import { notifyApplicant } from "@/lib/application-notifications";
 import { logAdminAudit } from "@/lib/admin-audit";
 
 const ActionSchema = z.object({
-  action: z.enum(["approve", "reject"]),
+  action: z.enum(["approve", "reject", "changes_requested", "suspend"]),
 });
 
 function isLocalSqliteRuntime() {
@@ -25,7 +25,17 @@ function sqliteFilePath() {
   return prismaRuntimeInfo.url.slice("file:".length);
 }
 
-async function updateLocalSqliteVendorStatus(id: string, approved: boolean) {
+function statusForAction(action: z.infer<typeof ActionSchema>["action"]) {
+  if (action === "approve") return { status: "APPROVED", isActive: true };
+  if (action === "changes_requested") return { status: "CHANGES_REQUESTED", isActive: false };
+  if (action === "suspend") return { status: "SUSPENDED", isActive: false };
+  return { status: "REJECTED", isActive: false };
+}
+
+async function updateLocalSqliteVendorStatus(
+  id: string,
+  action: z.infer<typeof ActionSchema>["action"],
+) {
   const filePath = sqliteFilePath();
   if (!filePath || !fs.existsSync(filePath)) return null;
 
@@ -39,17 +49,18 @@ async function updateLocalSqliteVendorStatus(id: string, approved: boolean) {
     if (!existing) return null;
 
     const now = new Date().toISOString();
+    const next = statusForAction(action);
     run("BEGIN IMMEDIATE");
     try {
       run(
         "UPDATE Vendor SET status = ?, isActive = ?, updatedAt = ? WHERE id = ?",
-        approved ? "ACTIVE" : "REJECTED",
-        approved ? 1 : 0,
+        next.status,
+        next.isActive ? 1 : 0,
         now,
         id,
       );
 
-      if (approved && existing.email) {
+      if (next.isActive && existing.email) {
         const normalizedEmail = existing.email.toLowerCase();
         let user = existing.ownerId
           ? (db
@@ -146,10 +157,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, error: "Invalid action payload." }, { status: 400 });
   }
 
-  const approved = parsed.data.action === "approve";
+  const action = parsed.data.action;
+  const next = statusForAction(action);
 
   if (isLocalSqliteRuntime()) {
-    const vendor = await updateLocalSqliteVendorStatus(id, approved);
+    const vendor = await updateLocalSqliteVendorStatus(id, action);
     if (!vendor) {
       return NextResponse.json({ ok: false, error: "Vendor not found." }, { status: 404 });
     }
@@ -157,7 +169,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({
       ok: true,
       vendor,
-      message: approved ? "Vendor approved." : "Vendor rejected.",
+      message: `Vendor ${next.status.replaceAll("_", " ").toLowerCase()}.`,
     });
   }
 
@@ -173,8 +185,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const updated = await tx.vendor.update({
       where: { id: existing.id },
       data: {
-        status: approved ? "ACTIVE" : "REJECTED",
-        isActive: approved,
+        status: next.status,
+        isActive: next.isActive,
       },
       select: {
         id: true,
@@ -188,7 +200,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       },
     });
 
-    if (approved && updated.email) {
+    if (next.isActive && updated.email) {
       const normalizedEmail = updated.email.toLowerCase();
       const ownerUser = existing.ownerId
         ? await tx.user.findUnique({
@@ -246,7 +258,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   await logAdminAudit({
     actor: guard.mode,
-    action: approved ? "approve_vendor" : "reject_vendor",
+    action: `${action}_vendor`,
     targetType: "vendor",
     targetId: vendor.id,
     before: { status: existing.status, ownerId: existing.ownerId },
@@ -259,7 +271,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       name: vendor.name,
       email: vendor.email,
       phone: vendor.phone,
-      status: approved ? "approved" : "rejected",
+      status: next.isActive ? "approved" : "rejected",
       reference: vendor.slug,
     });
   }
@@ -267,6 +279,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json({
     ok: true,
     vendor,
-    message: approved ? "Vendor approved." : "Vendor rejected.",
+    message: `Vendor ${next.status.replaceAll("_", " ").toLowerCase()}.`,
   });
 }

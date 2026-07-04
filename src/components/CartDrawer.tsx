@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { ShoppingBag, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
@@ -19,6 +19,7 @@ import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
 
 export default function CartDrawer() {
   const open = useUIStore((state) => state.cartOpen);
+  const openCart = useUIStore((state) => state.openCart);
   const closeCart = useUIStore((state) => state.closeCart);
   const items = useCart((state) => state.items);
   const inc = useCart((state) => state.inc);
@@ -147,6 +148,36 @@ export default function CartDrawer() {
 
   return (
     <>
+      {mounted && hasItems && !open ? (
+        <div className="fixed inset-x-3 bottom-3 z-[70] rounded-2xl border border-white/10 bg-slate-950/95 p-3 text-white shadow-2xl backdrop-blur md:left-auto md:right-5 md:w-[420px]">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={openCart}
+              className="flex min-w-0 flex-1 items-center gap-3 text-left"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-lethela-primary text-white">
+                <ShoppingBag className="h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">
+                  {visibleItems.length} item{visibleItems.length === 1 ? "" : "s"} in cart
+                </span>
+                <span className="block text-xs text-white/65">
+                  Total R {(total / 100).toFixed(2)}
+                </span>
+              </span>
+            </button>
+            <Link
+              href="/checkout"
+              className="rounded-full bg-lethela-primary px-4 py-2 text-sm font-semibold text-white"
+            >
+              Checkout
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
       {open ? (
         <div className="fixed inset-0 z-[98] bg-black/60" aria-hidden onClick={closeCart} />
       ) : null}
@@ -172,8 +203,10 @@ export default function CartDrawer() {
         </div>
 
         <div className="h-[calc(100%-208px)] space-y-3 overflow-y-auto p-4">
-          {visibleItems.length === 0 ? (
-            <p className="text-white/80">Your cart is empty.</p>
+          {!hasItems ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/75">
+              Your cart is empty. Add an item from an approved vendor to start an order.
+            </div>
           ) : (
             visibleItems.map((item) => (
               <div
@@ -273,15 +306,17 @@ export default function CartDrawer() {
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              asChild
-              className="flex-1 bg-lethela-primary"
-              disabled={visibleItems.length === 0}
-            >
-              <Link href="/checkout" onClick={closeCart}>
+            {hasItems ? (
+              <Button asChild className="flex-1 bg-lethela-primary">
+                <Link href="/checkout" onClick={closeCart}>
+                  Checkout
+                </Link>
+              </Button>
+            ) : (
+              <Button className="flex-1 bg-white/15 text-white" disabled>
                 Checkout
-              </Link>
-            </Button>
+              </Button>
+            )}
             <Button
               asChild
               variant="outline"

@@ -2,7 +2,7 @@
 import { prisma } from "@/server/db";
 import { getFallbackVendorProfile, type CatalogSection } from "@/lib/catalog-fallback";
 import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
-import { isPublicCatalogProduct, isPublicCatalogVendor } from "@/lib/public-catalog";
+import { isPublicCatalogProduct, isPublicMarketplaceVendor } from "@/lib/public-catalog";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
 export async function getVendorBySlug(slug: string) {
@@ -16,7 +16,7 @@ export async function getVendorBySlug(slug: string) {
     where: { slug },
     include: {
       products: {
-        where: { inStock: true },
+        where: { inStock: true, isAlcohol: false },
         orderBy: { updatedAt: "desc" },
         take: 80,
       },
@@ -33,6 +33,7 @@ export async function getVendorBySlug(slug: string) {
         orderBy: { day: "asc" },
       },
       items: true,
+      _count: { select: { products: true, items: true, hours: true } },
     },
   });
 
@@ -41,12 +42,7 @@ export async function getVendorBySlug(slug: string) {
   const vendor = await withQueryTimeout<VendorRecord | null>(vendorQuery, null);
 
   if (!vendor) return fallback;
-  if (!isPublicCatalogVendor(vendor)) return null;
-
-  const status = String(vendor.status || "").toUpperCase();
-  const isPublicVendor =
-    vendor.isActive && (status === "ACTIVE" || status === "APPROVED" || status === "");
-  if (!isPublicVendor) return null;
+  if (!isPublicMarketplaceVendor(vendor)) return null;
 
   const cuisine = Array.isArray(vendor.cuisine)
     ? vendor.cuisine

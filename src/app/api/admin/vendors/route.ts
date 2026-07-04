@@ -2,7 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
 
-const STATUS_VALUES = new Set(["PENDING", "ACTIVE", "REJECTED", "ALL"]);
+const STATUS_VALUES = new Set([
+  "DRAFT_PROFILE",
+  "SUBMITTED_FOR_APPROVAL",
+  "CHANGES_REQUESTED",
+  "APPROVED",
+  "REJECTED",
+  "SUSPENDED",
+  "PENDING",
+  "ACTIVE",
+  "ALL",
+]);
+
+function normalizeStatusFilter(value: string) {
+  if (value === "PENDING") return "SUBMITTED_FOR_APPROVAL";
+  if (value === "ACTIVE") return "APPROVED";
+  return value;
+}
 
 function isLocalSqliteRuntime() {
   return (
@@ -18,10 +34,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
 
-  const rawStatus = (req.nextUrl.searchParams.get("status") || "PENDING").toUpperCase();
+  const rawStatus = (
+    req.nextUrl.searchParams.get("status") || "SUBMITTED_FOR_APPROVAL"
+  ).toUpperCase();
   if (!STATUS_VALUES.has(rawStatus)) {
     return NextResponse.json({ ok: false, error: "Invalid status filter." }, { status: 400 });
   }
+  const statusFilter = normalizeStatusFilter(rawStatus);
 
   if (isLocalSqliteRuntime()) {
     return NextResponse.json({
@@ -29,9 +48,12 @@ export async function GET(req: NextRequest) {
       authMode: guard.mode,
       pendingCount: 0,
       counts: {
-        pending: 0,
-        active: 0,
+        draft: 0,
+        submitted: 0,
+        changesRequested: 0,
+        approved: 0,
         rejected: 0,
+        suspended: 0,
         total: 0,
       },
       items: [],
@@ -39,13 +61,22 @@ export async function GET(req: NextRequest) {
   }
 
   const where =
-    rawStatus === "ALL"
+    statusFilter === "ALL"
       ? {}
       : {
-          status: rawStatus,
+          status: statusFilter,
         };
 
-  const [items, pendingCount, activeCount, rejectedCount, totalCount] = await Promise.all([
+  const [
+    items,
+    draftCount,
+    submittedCount,
+    changesRequestedCount,
+    approvedCount,
+    rejectedCount,
+    suspendedCount,
+    totalCount,
+  ] = await Promise.all([
     prisma.vendor.findMany({
       where,
       orderBy: [{ updatedAt: "desc" }],
@@ -73,20 +104,29 @@ export async function GET(req: NextRequest) {
       },
       take: 200,
     }),
-    prisma.vendor.count({ where: { status: "PENDING" } }),
-    prisma.vendor.count({ where: { status: "ACTIVE" } }),
+    prisma.vendor.count({ where: { status: "DRAFT_PROFILE" } }),
+    prisma.vendor.count({ where: { status: "SUBMITTED_FOR_APPROVAL" } }),
+    prisma.vendor.count({ where: { status: "CHANGES_REQUESTED" } }),
+    prisma.vendor.count({ where: { status: "APPROVED" } }),
     prisma.vendor.count({ where: { status: "REJECTED" } }),
+    prisma.vendor.count({ where: { status: "SUSPENDED" } }),
     prisma.vendor.count(),
   ]);
+  const pendingCount = submittedCount + changesRequestedCount;
 
   return NextResponse.json({
     ok: true,
     authMode: guard.mode,
     pendingCount,
     counts: {
+      draft: draftCount,
+      submitted: submittedCount,
+      changesRequested: changesRequestedCount,
       pending: pendingCount,
-      active: activeCount,
+      approved: approvedCount,
+      active: approvedCount,
       rejected: rejectedCount,
+      suspended: suspendedCount,
       total: totalCount,
     },
     items,

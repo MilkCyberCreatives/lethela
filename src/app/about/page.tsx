@@ -59,9 +59,9 @@ export default function AboutPage() {
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
             Lethela is a South African delivery and logistics platform built for speed, fairness,
-            and local context. Phase 1 focuses on prepared food, groceries and adult-only alcohol
-            delivery through approved local vendors. Later phases can expand into broader logistics,
-            removals, convenience and community commerce.
+            and local context. Lethela is live in Klipfontein View first with prepared food,
+            groceries and township essentials through approved local vendors before expanding to
+            more township communities across South Africa.
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
@@ -73,8 +73,8 @@ export default function AboutPage() {
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
             Siyashesha means &quot;we are fast.&quot; That is our promise across onboarding,
             support, and delivery. It also means we keep the journey practical: clear delivery fees,
-            visible operating hours, careful age checks for alcohol and fewer dead ends when a
-            customer is ready to order.
+            visible operating hours, approved vendors and fewer dead ends when a customer is ready
+            to order.
           </p>
 
           <div className="mt-8 text-xs text-white/60">
@@ -116,9 +116,9 @@ export default function AboutPage() {
           <div>
             <div className="mb-1 text-base font-semibold text-white">Responsible launch</div>
             <div>
-              Lethela is preparing for launch with POPIA-aware privacy practices, PAIA access
-              guidance, consumer-friendly refund handling and strict 18+ handling for alcohol
-              orders.
+              Lethela operates with POPIA-aware privacy practices, PAIA access guidance,
+              consumer-friendly refund handling and careful compliance checks before restricted
+              categories are offered publicly.
             </div>
           </div>
         </div>
