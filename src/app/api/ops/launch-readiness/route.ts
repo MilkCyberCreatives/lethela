@@ -56,10 +56,48 @@ export async function GET(req: NextRequest) {
         sqliteCounts.users,
       ]
     : await Promise.all([
-        withQueryTimeout(prisma.vendor.count({ where: { isActive: true, status: "ACTIVE" } }), 0),
+        withQueryTimeout(
+          prisma.vendor.count({
+            where: {
+              isActive: true,
+              status: { in: ["ACTIVE", "APPROVED"] },
+              phone: { not: null },
+              address: { not: null },
+              city: { not: null },
+              province: { not: null },
+              storeType: { not: null },
+              kycIdUrl: { not: null },
+              kycProofUrl: { not: null },
+              bankName: { not: null },
+              bankAccountName: { not: null },
+              bankAccountNumber: { not: null },
+              hours: { some: { closed: false } },
+              products: { some: { inStock: true, isAlcohol: false } },
+            },
+          }),
+          0,
+        ),
         withQueryTimeout(
           prisma.product.count({
-            where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } },
+            where: {
+              inStock: true,
+              isAlcohol: false,
+              vendor: {
+                isActive: true,
+                status: { in: ["ACTIVE", "APPROVED"] },
+                phone: { not: null },
+                address: { not: null },
+                city: { not: null },
+                province: { not: null },
+                storeType: { not: null },
+                kycIdUrl: { not: null },
+                kycProofUrl: { not: null },
+                bankName: { not: null },
+                bankAccountName: { not: null },
+                bankAccountNumber: { not: null },
+                hours: { some: { closed: false } },
+              },
+            },
           }),
           0,
         ),
@@ -67,7 +105,12 @@ export async function GET(req: NextRequest) {
           prisma.order.count({ where: { paymentStatus: { in: ["PAID", "SUCCESS"] } } }),
           0,
         ),
-        withQueryTimeout(prisma.vendor.count({ where: { status: "PENDING" } }), 0),
+        withQueryTimeout(
+          prisma.vendor.count({
+            where: { status: { in: ["PENDING", "SUBMITTED_FOR_APPROVAL", "CHANGES_REQUESTED"] } },
+          }),
+          0,
+        ),
         withQueryTimeout(
           prisma.riderApplication.count({ where: { status: { in: ["PENDING", "UNDER_REVIEW"] } } }),
           0,

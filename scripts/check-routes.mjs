@@ -10,52 +10,46 @@ const CATCHALL_RE = /^\[\.\.\.(.+)\]$/; // e.g. "[...nextauth]"
 function walk(dir, results = []) {
   if (!fs.existsSync(dir)) return results;
   const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const e of entries) {
-    const full = path.join(dir, e.name);
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
     results.push(full);
-    if (e.isDirectory()) walk(full, results);
+    if (entry.isDirectory()) walk(full, results);
   }
   return results;
 }
 
 function hasChildrenAfterCatchAll(absPath, root) {
-  // If a folder segment is [...x], ensure it is the last segment before file (page.tsx/route.ts)
   const rel = path.relative(root, absPath);
   const parts = rel.split(path.sep).filter(Boolean);
 
-  // Check each segment; if it's catch-all and not the last folder segment before a file, flag it.
-  for (let i = 0; i < parts.length; i++) {
-    const seg = parts[i];
-    const isCatch = CATCHALL_RE.test(seg);
-    if (!isCatch) continue;
-    // Look at anything after this segment in the path
-    const after = parts.slice(i + 1);
+  for (let index = 0; index < parts.length; index += 1) {
+    const segment = parts[index];
+    if (!CATCHALL_RE.test(segment)) continue;
 
-    // If there are *any* folders after, then it's illegal.
-    // Acceptable endings are exactly "[...x]/page.tsx" or "[...x]/route.ts"
-    if (after.length === 0) continue; // folder itself, fine
+    const after = parts.slice(index + 1);
+    if (after.length === 0) continue;
     if (after.length === 1 && (after[0] === "page.tsx" || after[0] === "route.ts")) continue;
 
-    // Otherwise: illegal (e.g. "[...x]/foo/route.ts", or "[...x]/foo/bar", etc.)
-    return { rel, offendingSegment: seg, remainder: after.join(path.sep) };
+    return { rel, offendingSegment: segment, remainder: after.join(path.sep) };
   }
+
   return null;
 }
 
 function scanRoot(root) {
-  const all = walk(root);
   const offenders = [];
 
-  for (const p of all) {
-    const stat = fs.statSync(p);
+  for (const itemPath of walk(root)) {
+    const stat = fs.statSync(itemPath);
     if (!stat.isFile()) continue;
-    const base = path.basename(p);
-    // Only consider route-bearing files
+
+    const base = path.basename(itemPath);
     if (base !== "page.tsx" && base !== "route.ts") continue;
 
-    const issue = hasChildrenAfterCatchAll(p, root);
+    const issue = hasChildrenAfterCatchAll(itemPath, root);
     if (issue) offenders.push(issue);
   }
+
   return offenders;
 }
 
@@ -64,22 +58,22 @@ let totalOffenders = 0;
 for (const root of roots) {
   if (!fs.existsSync(root)) continue;
   const offenders = scanRoot(root);
-  if (offenders.length) {
-    console.log(`\n❌ Offending routes under: ${root}`);
-    for (const o of offenders) {
-      console.log(`  - ${o.rel}`);
-      console.log(
-        `    ↳ catch-all segment: ${o.offendingSegment}  | remainder after it: ${o.remainder}`,
-      );
-    }
-    totalOffenders += offenders.length;
+  if (!offenders.length) continue;
+
+  console.log(`\nERROR: Offending routes under: ${root}`);
+  for (const offender of offenders) {
+    console.log(`  - ${offender.rel}`);
+    console.log(
+      `    catch-all segment: ${offender.offendingSegment} | remainder after it: ${offender.remainder}`,
+    );
   }
+  totalOffenders += offenders.length;
 }
 
 if (totalOffenders === 0) {
-  console.log("✅ No invalid catch-all routes found.");
+  console.log("OK: No invalid catch-all routes found.");
   process.exit(0);
-} else {
-  console.log(`\nFound ${totalOffenders} invalid route path(s). Fix the ones listed above.`);
-  process.exit(1);
 }
+
+console.log(`\nFound ${totalOffenders} invalid route path(s). Fix the ones listed above.`);
+process.exit(1);

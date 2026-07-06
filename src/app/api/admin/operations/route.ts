@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
+import { listAdminAuditLogs, logAdminAudit } from "@/lib/admin-audit";
 import {
   createDispatchAssignment,
   createRefundCase,
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
   if (!guard.ok)
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
 
-  const [orders, riders, operations] = await Promise.all([
+  const [orders, riders, operations, auditLogs] = await Promise.all([
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
       take: 40,
@@ -91,6 +92,7 @@ export async function GET(req: NextRequest) {
       },
     }),
     listOperationRows(),
+    listAdminAuditLogs(),
   ]);
 
   return NextResponse.json({
@@ -109,6 +111,7 @@ export async function GET(req: NextRequest) {
       customerEmail: order.user?.email || null,
     })),
     riders,
+    auditLogs,
     ...operations,
   });
 }
@@ -141,6 +144,14 @@ export async function POST(req: NextRequest) {
       note: parsed.data.note,
       meta: { previousStatus: order.status },
     });
+    await logAdminAudit({
+      actor,
+      action: `set_order_${parsed.data.status.toLowerCase()}`,
+      targetType: "order",
+      targetId: order.id,
+      before: { status: order.status },
+      after: { status: parsed.data.status, publicId: order.publicId },
+    });
   }
 
   if (parsed.data.action === "refund") {
@@ -160,6 +171,17 @@ export async function POST(req: NextRequest) {
       actor,
       note: parsed.data.reason,
       meta: { amountCents: parsed.data.amountCents },
+    });
+    await logAdminAudit({
+      actor,
+      action: "create_refund_case",
+      targetType: "order",
+      targetId: order.id,
+      after: {
+        publicId: order.publicId,
+        amountCents: parsed.data.amountCents,
+        reason: parsed.data.reason,
+      },
     });
   }
 
@@ -189,6 +211,14 @@ export async function POST(req: NextRequest) {
       note: parsed.data.note,
       meta: { riderId: rider.id, riderName: rider.fullName },
     });
+    await logAdminAudit({
+      actor,
+      action: "assign_rider",
+      targetType: "order",
+      targetId: order.id,
+      before: { status: order.status },
+      after: { status: "OUT_FOR_DELIVERY", riderId: rider.id, riderName: rider.fullName },
+    });
   }
 
   if (parsed.data.action === "event") {
@@ -198,6 +228,13 @@ export async function POST(req: NextRequest) {
       type: parsed.data.type,
       actor,
       note: parsed.data.note,
+    });
+    await logAdminAudit({
+      actor,
+      action: "record_order_note",
+      targetType: "order",
+      targetId: order.id,
+      after: { publicId: order.publicId, type: parsed.data.type },
     });
   }
 

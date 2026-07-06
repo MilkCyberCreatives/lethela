@@ -211,6 +211,17 @@ type OperationsDispatch = {
   updatedAt: string;
 };
 
+type AdminAuditLog = {
+  id: string;
+  actor: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  before: string | null;
+  after: string | null;
+  createdAt: string;
+};
+
 const VENDOR_STATUS_OPTIONS: VendorStatusOption[] = [
   "SUBMITTED_FOR_APPROVAL",
   "CHANGES_REQUESTED",
@@ -654,6 +665,7 @@ export default function AdminPage() {
   const [operationsEvents, setOperationsEvents] = useState<OperationsEvent[]>([]);
   const [operationsRefunds, setOperationsRefunds] = useState<OperationsRefund[]>([]);
   const [operationsDispatches, setOperationsDispatches] = useState<OperationsDispatch[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLog[]>([]);
   const [operationsForm, setOperationsForm] = useState({
     orderRef: "",
     status: "PREPARING",
@@ -788,6 +800,7 @@ export default function AdminPage() {
       setOperationsEvents(operationsJson.events ?? []);
       setOperationsRefunds(operationsJson.refunds ?? []);
       setOperationsDispatches(operationsJson.dispatches ?? []);
+      setAuditLogs(operationsJson.auditLogs ?? []);
       setAuthMode(vendorsJson.authMode ?? ridersJson.authMode ?? null);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to load approvals."));
@@ -2112,6 +2125,16 @@ export default function AdminPage() {
                             dispatch.note ? ` - ${dispatch.note}` : ""
                           }`,
                           meta: new Date(dispatch.createdAt).toLocaleString(),
+                        }))}
+                      />
+                      <OperationsFeed
+                        title="Audit logs"
+                        empty="No admin audit logs yet."
+                        items={auditLogs.map((log) => ({
+                          id: log.id,
+                          title: `${log.action.replaceAll("_", " ")} - ${log.targetType}`,
+                          body: `${log.actor} updated ${log.targetId}`,
+                          meta: new Date(log.createdAt).toLocaleString(),
                         }))}
                       />
                     </div>

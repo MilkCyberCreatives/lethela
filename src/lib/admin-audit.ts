@@ -61,3 +61,35 @@ export async function logAdminAudit(input: AdminAuditInput) {
     // Audit logging should never block an approval action.
   }
 }
+
+export async function listAdminAuditLogs(limit = 60) {
+  await ensureAuditTable();
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{
+      id: string;
+      actor: string;
+      action: string;
+      target_type: string;
+      target_id: string;
+      before_json: string | null;
+      after_json: string | null;
+      created_at: string;
+    }>
+  >(
+    `SELECT id, actor, action, target_type, target_id, before_json, after_json, created_at
+     FROM app_admin_audit_logs
+     ORDER BY created_at DESC
+     LIMIT ${Math.min(100, Math.max(1, Math.round(limit)))}`,
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    actor: row.actor,
+    action: row.action,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    before: row.before_json,
+    after: row.after_json,
+    createdAt: row.created_at,
+  }));
+}

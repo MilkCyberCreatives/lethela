@@ -320,7 +320,7 @@ export async function getSqliteDeliveryVendor(vendorId: string): Promise<{
        FROM Vendor
        WHERE id = ?
          AND isActive = 1
-         AND status = 'ACTIVE'
+         AND status IN ('ACTIVE', 'APPROVED')
        LIMIT 1`,
     ) as unknown as { get: (...params: unknown[]) => unknown };
     const row = statement.get(vendorId) as { id: string; deliveryFee: number | null } | undefined;
