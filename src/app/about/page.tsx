@@ -5,9 +5,9 @@ import StructuredData from "@/components/StructuredData";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export const metadata: Metadata = {
-  title: "About Lethela",
+  title: "About Lethela | Township Delivery South Africa",
   description:
-    "Learn about Lethela's AI-supported delivery platform, vendor growth tools, rider onboarding, and customer ordering experience in South Africa.",
+    "Lethela is a South African township delivery platform helping local businesses, spaza shops, food vendors, riders and restaurants sell online and deliver faster.",
   alternates: {
     canonical: "/about",
   },
@@ -58,23 +58,23 @@ export default function AboutPage() {
           </h1>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
-            Lethela is a South African delivery and logistics platform built for speed, fairness,
-            and local context. Lethela is live in Klipfontein View first with prepared food,
-            groceries and township essentials through approved local vendors before expanding to
-            more township communities across South Africa.
+            Lethela is a South African township delivery platform built to help local businesses
+            sell online and deliver faster. We connect customers with approved vendors, spaza shops,
+            grocery sellers, food businesses, riders and restaurants near them. We are starting in
+            Klipfontein View, Midrand, before expanding to more township communities across South
+            Africa.
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
-            Our stack is AI-native. Vendors can start selling faster with generated menu
-            descriptions, pricing suggestions, promo timing insights, and operations automation.
-            Riders get smoother onboarding. Customers get better discovery and support.
+            The goal is practical: help township customers find nearby businesses they can trust,
+            help vendors manage orders without complicated tools, and help local riders earn through
+            clear delivery operations.
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80 md:text-base">
-            Siyashesha means &quot;we are fast.&quot; That is our promise across onboarding,
-            support, and delivery. It also means we keep the journey practical: clear delivery fees,
-            visible operating hours, approved vendors and fewer dead ends when a customer is ready
-            to order.
+            AI supports Lethela quietly behind the scenes for product writing, order management,
+            insights and growth suggestions. The customer experience stays simple: approved vendors,
+            clear delivery fees, visible operating hours, WhatsApp support and order references.
           </p>
 
           <div className="mt-8 text-xs text-white/60">
@@ -91,9 +91,9 @@ export default function AboutPage() {
           <div>
             <div className="mb-1 text-base font-semibold text-white">Vendors</div>
             <div>
-              Menu management, operating hours, specials, stock status, driver tracking,
-              customer-ready product writing and AI-assisted growth tools in one place. Approved
-              vendors control their prices and receive clear commercial terms before going live.
+              Spaza shops, grocery sellers, home kitchens, kota businesses, restaurants and
+              franchise-ready brands can manage products, operating hours, specials, stock status
+              and customer-ready product writing in one place.
             </div>
           </div>
 

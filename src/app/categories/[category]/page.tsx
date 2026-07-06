@@ -125,10 +125,56 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const categorySchema = {
     "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: `${resolvedCategory} on ${SITE_NAME}`,
-    url: absoluteUrl(`/categories/${categoryToSlug(resolvedCategory)}`),
-    about: resolvedCategory,
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        name: `${resolvedCategory} on ${SITE_NAME}`,
+        url: absoluteUrl(`/categories/${categoryToSlug(resolvedCategory)}`),
+        about: resolvedCategory,
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: absoluteUrl("/"),
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: resolvedCategory,
+            item: absoluteUrl(`/categories/${categoryToSlug(resolvedCategory)}`),
+          },
+        ],
+      },
+      {
+        "@type": "ItemList",
+        name: `${resolvedCategory} products`,
+        itemListElement: items.slice(0, 12).map((item, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "Product",
+            name: item.name,
+            image: item.image || undefined,
+            description: item.description || content.intro,
+            offers: {
+              "@type": "Offer",
+              priceCurrency: "ZAR",
+              price: (item.priceCents / 100).toFixed(2),
+              availability: "https://schema.org/InStock",
+              url: absoluteUrl(`/vendors/${item.vendor?.slug || ""}`),
+            },
+            brand: {
+              "@type": "Brand",
+              name: item.vendor?.name || SITE_NAME,
+            },
+          },
+        })),
+      },
+    ],
   };
 
   return (

@@ -161,11 +161,10 @@ export default function CartDrawer() {
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-semibold">
-                  {visibleItems.length} item{visibleItems.length === 1 ? "" : "s"} in cart
+                  View cart · {visibleItems.length} item{visibleItems.length === 1 ? "" : "s"} · R
+                  {(total / 100).toFixed(2)}
                 </span>
-                <span className="block text-xs text-white/65">
-                  Total R {(total / 100).toFixed(2)}
-                </span>
+                <span className="block text-xs text-white/65">Checkout or send via WhatsApp</span>
               </span>
             </button>
             <Link

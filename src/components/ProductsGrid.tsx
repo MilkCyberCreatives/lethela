@@ -145,7 +145,10 @@ export default function ProductsGrid({
             />
           ))
         ) : items.length === 0 ? (
-          <p className="text-white/70">No products found.</p>
+          <div className="rounded-lg border border-white/15 bg-white/5 p-5 text-sm leading-6 text-white/72 sm:col-span-2 lg:col-span-3">
+            No approved live products are available yet. Lethela only shows products from approved
+            vendors with complete profiles, trading hours and stock ready for ordering.
+          </div>
         ) : (
           items.map((product) => <ProductCard key={product.id} p={product} />)
         )}

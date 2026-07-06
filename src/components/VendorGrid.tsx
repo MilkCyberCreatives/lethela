@@ -129,6 +129,11 @@ export default function VendorGrid({
         </div>
       ) : error ? (
         <p className="text-sm text-red-200">{error}</p>
+      ) : vendors.length === 0 ? (
+        <div className="rounded-lg border border-white/15 bg-white/5 p-5 text-sm leading-6 text-white/72">
+          We are still onboarding approved vendors in your area. Are you a spaza shop, food vendor
+          or restaurant? Join Lethela today.
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {vendors.map((vendor) => (

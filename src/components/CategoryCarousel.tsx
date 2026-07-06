@@ -11,7 +11,7 @@ const CATEGORIES = [
   "Chips",
   "Burger",
   "Mogodu",
-  "Groceries",
+  "Spaza & Groceries",
   "Braai",
   "Pizza",
   "Chicken",

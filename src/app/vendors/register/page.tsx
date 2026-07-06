@@ -26,16 +26,20 @@ export const metadata: Metadata = {
 
 const STEPS = [
   {
-    title: "Apply",
-    text: "Send your business details, contact information and trading location.",
+    title: "Create profile",
+    text: "Start with only your full name, email address, store name and password.",
   },
   {
-    title: "Review",
-    text: "We check your store details, area coverage and required documents.",
+    title: "Complete dashboard checklist",
+    text: "Add store type, township, address, trading hours, delivery radius, products, banking and documents.",
+  },
+  {
+    title: "Submit for approval",
+    text: "Lethela reviews complete profiles before stores appear publicly.",
   },
   {
     title: "Start selling",
-    text: "Once approved, you can manage your menu and receive customer orders.",
+    text: "Approved vendors can manage products, receive orders and serve customers nearby.",
   },
 ];
 
@@ -61,7 +65,7 @@ const DASHBOARD_MODULES = [
 
 const READINESS = [
   { label: "Admin approval", value: "Required", icon: ShieldCheck },
-  { label: "Application time", value: "2-5 min", icon: Clock },
+  { label: "Profile setup", value: "Under 1 min", icon: Clock },
   { label: "Vendor account", value: "Included", icon: Store },
 ];
 
@@ -163,7 +167,7 @@ export default function VendorRegisterPage() {
               information up to date.
             </p>
           </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
             {STEPS.map((step, index) => (
               <article
                 key={step.title}
@@ -174,6 +178,14 @@ export default function VendorRegisterPage() {
                 <p className="mt-2 text-sm leading-6 text-white/62">{step.text}</p>
               </article>
             ))}
+          </div>
+          <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.035] p-4">
+            <h3 className="font-semibold">Dashboard checklist after registration</h3>
+            <p className="mt-2 text-sm leading-6 text-white/62">
+              Store type, province, municipality or city, township, section or area, store address
+              or pin location, trading hours, delivery radius, products or menu, banking details,
+              owner documents and Submit for approval.
+            </p>
           </div>
           <div className="mt-3 grid gap-3 md:grid-cols-4">
             {DASHBOARD_MODULES.map((module) => {

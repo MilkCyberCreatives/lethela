@@ -3,7 +3,7 @@ export const TOWNSHIP_CATEGORIES = [
   "Chips",
   "Burger",
   "Mogodu",
-  "Groceries",
+  "Spaza & Groceries",
   "Wings",
   "Braai",
   "Pizza",
@@ -44,12 +44,12 @@ export const CATEGORY_CONTENT: Record<
     guidance:
       "Traditional meals can sell out quickly, especially on weekends, so live stock may change during busy periods.",
   },
-  Groceries: {
-    headline: "Daily grocery essentials",
+  "Spaza & Groceries": {
+    headline: "Spaza shop and grocery delivery",
     intro:
-      "Shop bread, milk, eggs, maize meal, cooking oil, household basics and small top-up baskets from nearby stores.",
+      "Shop bread, milk, eggs, maize meal, rice, cooking oil, toiletries, cleaning products and daily essentials from nearby spaza shops and grocery sellers.",
     guidance:
-      "Substitutions should be confirmed with the customer before dispatch where an item is unavailable.",
+      "Lethela supports simple grocery baskets, spaza stock lists and customer-approved substitutions before dispatch where an item is unavailable.",
   },
   Wings: {
     headline: "Wings, dips and sharing boxes",
@@ -95,9 +95,11 @@ export function categoryToSlug(category: TownshipCategory | string) {
 }
 
 export function slugToCategory(slug: string): TownshipCategory | null {
-  const match = TOWNSHIP_CATEGORIES.find(
-    (category) => categoryToSlug(category) === categoryToSlug(slug),
-  );
+  const normalizedSlug = categoryToSlug(slug);
+  if (["groceries", "grocery", "spaza", "spaza-shop-delivery"].includes(normalizedSlug)) {
+    return "Spaza & Groceries";
+  }
+  const match = TOWNSHIP_CATEGORIES.find((category) => categoryToSlug(category) === normalizedSlug);
   return match ?? null;
 }
 
@@ -108,7 +110,7 @@ export function inferProductCategory(input: {
 }): TownshipCategory {
   const haystack = `${input.name} ${input.description || ""}`.toLowerCase();
 
-  if (input.isAlcohol) return "Groceries";
+  if (input.isAlcohol) return "Spaza & Groceries";
   if (/kota|spatlho|magwinya/.test(haystack)) return "Kota";
   if (/wing|drumstick/.test(haystack)) return "Wings";
   if (/breakfast|vetkoek|oats|cereal/.test(haystack)) return "Breakfast";
@@ -116,8 +118,12 @@ export function inferProductCategory(input: {
   if (/chip|fries|atchar chips/.test(haystack)) return "Chips";
   if (/burger|beef burger|chicken burger/.test(haystack)) return "Burger";
   if (/mogodu|tripe/.test(haystack)) return "Mogodu";
-  if (/egg|milk|bread|maize|rice|oil|beans|sugar|salt|flour|grocer/.test(haystack))
-    return "Groceries";
+  if (
+    /egg|milk|bread|maize|rice|pasta|oil|beans|sugar|tea|snack|cold drink|cleaning|toiletr|baby|household|spaza|grocer/.test(
+      haystack,
+    )
+  )
+    return "Spaza & Groceries";
   if (/pizza/.test(haystack)) return "Pizza";
   if (/chicken|bucket/.test(haystack)) return "Chicken";
   return "Burger";

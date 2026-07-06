@@ -11,7 +11,10 @@ import {
   Clock,
   LayoutDashboard,
   LineChart,
+  LifeBuoy,
+  LogOut,
   Mail,
+  MapPin,
   MessageSquare,
   PackageCheck,
   RefreshCw,
@@ -19,10 +22,11 @@ import {
   Settings,
   ShoppingBag,
   Store,
+  Truck,
+  UserCircle,
   Users,
   WalletCards,
 } from "lucide-react";
-import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
 
 type DashboardView =
@@ -224,14 +228,75 @@ const RIDER_STATUS_OPTIONS: RiderStatusFilter[] = [
   "ALL",
 ];
 
-const WORKSPACES: Array<{ id: DashboardView; label: string; icon: typeof LayoutDashboard }> = [
-  { id: "overview", label: "Owner overview", icon: LayoutDashboard },
-  { id: "vendors", label: "Vendors", icon: Store },
-  { id: "riders", label: "Riders", icon: Bike },
-  { id: "users", label: "Users", icon: Users },
-  { id: "orders", label: "Orders", icon: ShoppingBag },
-  { id: "messages", label: "Messages", icon: MessageSquare },
-  { id: "operations", label: "Operations", icon: Activity },
+const ADMIN_NAV_GROUPS: Array<{
+  title: string;
+  items: Array<{ id: DashboardView; label: string; icon: typeof LayoutDashboard }>;
+}> = [
+  {
+    title: "Dashboard",
+    items: [
+      { id: "overview", label: "Overview", icon: LayoutDashboard },
+      { id: "operations", label: "Live operations", icon: Activity },
+      { id: "users", label: "Analytics", icon: LineChart },
+    ],
+  },
+  {
+    title: "Marketplace",
+    items: [
+      { id: "vendors", label: "Vendors", icon: Store },
+      { id: "orders", label: "Products", icon: PackageCheck },
+      { id: "orders", label: "Categories", icon: Search },
+      { id: "vendors", label: "Spaza shops", icon: Store },
+      { id: "vendors", label: "Restaurants", icon: Store },
+      { id: "operations", label: "Franchise partners", icon: Settings },
+    ],
+  },
+  {
+    title: "Orders",
+    items: [
+      { id: "orders", label: "Live orders", icon: ShoppingBag },
+      { id: "orders", label: "Order history", icon: CalendarDays },
+      { id: "orders", label: "Cancelled orders", icon: Clock },
+      { id: "operations", label: "Refunds", icon: WalletCards },
+    ],
+  },
+  {
+    title: "Riders",
+    items: [
+      { id: "riders", label: "Rider applications", icon: Bike },
+      { id: "riders", label: "Active riders", icon: Users },
+      { id: "riders", label: "Rider availability", icon: Clock },
+      { id: "operations", label: "Delivery zones", icon: MapPin },
+    ],
+  },
+  {
+    title: "Customers",
+    items: [
+      { id: "users", label: "Users", icon: Users },
+      { id: "messages", label: "Messages", icon: MessageSquare },
+      { id: "messages", label: "Support tickets", icon: LifeBuoy },
+      { id: "operations", label: "Complaints", icon: Bell },
+    ],
+  },
+  {
+    title: "Growth",
+    items: [
+      { id: "operations", label: "Townships", icon: MapPin },
+      { id: "messages", label: "Campaigns", icon: LineChart },
+      { id: "messages", label: "Promotions", icon: Bell },
+      { id: "messages", label: "WhatsApp broadcasts", icon: MessageSquare },
+    ],
+  },
+  {
+    title: "Settings",
+    items: [
+      { id: "operations", label: "Platform settings", icon: Settings },
+      { id: "operations", label: "Pricing and delivery fees", icon: WalletCards },
+      { id: "operations", label: "API integrations", icon: Activity },
+      { id: "operations", label: "Staff roles", icon: Users },
+      { id: "operations", label: "Audit logs", icon: CheckCircle2 },
+    ],
+  },
 ];
 
 const DAILY_OPERATING_PLAYBOOK = [
@@ -353,6 +418,209 @@ function EmptyState({ title, text }: { title: string; text: string }) {
   );
 }
 
+function AdminTopBar({ onRefresh, loading }: { onRefresh: () => void; loading: boolean }) {
+  return (
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#05071D]/95 backdrop-blur">
+      <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center gap-4 px-4 py-3 md:px-6 lg:px-8">
+        <Link href="/admin" className="flex shrink-0 items-center gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary font-bold">
+            L
+          </span>
+          <span>
+            <span className="block text-sm font-semibold">Lethela Admin</span>
+            <span className="block text-[11px] uppercase tracking-[0.14em] text-white/45">
+              Command centre
+            </span>
+          </span>
+        </Link>
+
+        <div className="hidden min-w-0 flex-1 items-center rounded-lg border border-white/10 bg-white/[0.05] px-3 md:flex">
+          <Search className="h-4 w-4 text-white/40" />
+          <input
+            className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/35"
+            placeholder="Search orders, vendors, riders, customers..."
+          />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
+            aria-label="Notifications"
+          >
+            <Bell className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
+            aria-label="Support"
+          >
+            <LifeBuoy className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="hidden h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white/70 transition hover:border-lethela-primary hover:text-white sm:inline-flex"
+            aria-label="Profile menu"
+          >
+            <UserCircle className="h-4 w-4" />
+            Owner
+          </button>
+          <Button
+            variant="outline"
+            className="hidden border-white/20 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary md:inline-flex"
+            onClick={onRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            {loading ? "Refreshing" : "Refresh"}
+          </Button>
+          <Link
+            href="/"
+            className="hidden rounded-lg border border-white/20 px-3 py-2 text-sm text-white/72 transition hover:border-lethela-primary hover:text-lethela-primary lg:inline-flex"
+          >
+            View Marketplace
+          </Link>
+          <button
+            type="button"
+            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
+            aria-label="Sign out"
+            onClick={() => {
+              void fetch("/api/admin/access", { method: "DELETE" }).finally(() => {
+                window.location.href = "/owner-access";
+              });
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function PriorityCard({
+  label,
+  value,
+  note,
+  icon: Icon,
+  onClick,
+}: {
+  label: string;
+  value: string | number;
+  note: string;
+  icon: typeof LayoutDashboard;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-xl border border-white/10 bg-white/[0.055] p-5 text-left shadow-xl shadow-black/10 transition hover:border-lethela-primary/60 hover:bg-white/[0.08]"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">{label}</p>
+          <p className="mt-3 text-3xl font-bold">{value}</p>
+        </div>
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
+          <Icon className="h-5 w-5" />
+        </span>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-white/62">{note}</p>
+    </button>
+  );
+}
+
+type AttentionRow = {
+  type: string;
+  issue: string;
+  area: string;
+  assignedTo: string;
+  priority: "High" | "Medium" | "Low";
+  status: string;
+  action: string;
+  target: DashboardView;
+};
+
+function NeedsAttentionTable({
+  rows,
+  onNavigate,
+}: {
+  rows: AttentionRow[];
+  onNavigate: (view: DashboardView) => void;
+}) {
+  const activeRows = rows.filter(
+    (row) => !["Clear", "0 pending", "0 in queue"].includes(row.status),
+  );
+  const displayRows = activeRows.length > 0 ? activeRows : [];
+
+  return (
+    <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+            Operations queue
+          </p>
+          <h3 className="mt-1 text-xl font-semibold">Needs Attention</h3>
+        </div>
+        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/55">
+          {displayRows.length} active issue{displayRows.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      {displayRows.length === 0 ? (
+        <EmptyState
+          title="No urgent issues right now."
+          text="New operational alerts will appear here automatically."
+        />
+      ) : (
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[860px] border-separate border-spacing-y-2 text-left text-sm">
+            <thead className="text-xs uppercase tracking-[0.12em] text-white/38">
+              <tr>
+                <th className="px-3 py-2">Type</th>
+                <th className="px-3 py-2">Issue</th>
+                <th className="px-3 py-2">Township/Area</th>
+                <th className="px-3 py-2">Assigned to</th>
+                <th className="px-3 py-2">Priority</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayRows.map((row) => (
+                <tr key={`${row.type}-${row.issue}`} className="bg-[#080B27]/75">
+                  <td className="rounded-l-lg px-3 py-3 font-semibold">{row.type}</td>
+                  <td className="px-3 py-3 text-white/78">{row.issue}</td>
+                  <td className="px-3 py-3 text-white/68">{row.area}</td>
+                  <td className="px-3 py-3 text-white/68">{row.assignedTo}</td>
+                  <td className="px-3 py-3">
+                    <span
+                      className={`rounded-full border px-2.5 py-1 text-xs ${row.priority === "High" ? "border-red-300/35 bg-red-300/10 text-red-100" : row.priority === "Medium" ? "border-amber-300/35 bg-amber-300/10 text-amber-100" : "border-white/15 bg-white/5 text-white/65"}`}
+                    >
+                      {row.priority}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-white/68">{row.status}</td>
+                  <td className="rounded-r-lg px-3 py-3">
+                    <button
+                      type="button"
+                      className="rounded-md bg-lethela-primary px-3 py-2 text-xs font-semibold text-white"
+                      onClick={() => onNavigate(row.target)}
+                    >
+                      {row.action}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState("");
   const [view, setView] = useState<DashboardView>("overview");
@@ -408,7 +676,6 @@ export default function AdminPage() {
     body: "",
     channel: "ALL",
   });
-  const [totalPendingApprovals, setTotalPendingApprovals] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -521,7 +788,6 @@ export default function AdminPage() {
       setOperationsEvents(operationsJson.events ?? []);
       setOperationsRefunds(operationsJson.refunds ?? []);
       setOperationsDispatches(operationsJson.dispatches ?? []);
-      setTotalPendingApprovals(Number(notificationsJson.totalPendingApprovals ?? 0));
       setAuthMode(vendorsJson.authMode ?? ridersJson.authMode ?? null);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to load approvals."));
@@ -738,92 +1004,6 @@ export default function AdminPage() {
     [riderSearch, riders],
   );
 
-  const activeRiders = riderCounts.approved;
-  const totalRiderQueue = riderCounts.pending + riderCounts.underReview;
-  const activeVendorRatio = vendorCounts.total
-    ? Math.round((vendorCounts.active / vendorCounts.total) * 100)
-    : 0;
-
-  const metrics = [
-    {
-      label: "Orders today",
-      value: stats?.ordersToday ?? 0,
-      note: "Orders created since midnight.",
-      icon: ShoppingBag,
-      target: "orders" as DashboardView,
-    },
-    {
-      label: "Revenue today",
-      value: money(stats?.revenueTodayCents ?? 0),
-      note: "Paid and successful orders today.",
-      icon: WalletCards,
-      target: "orders" as DashboardView,
-    },
-    {
-      label: "Revenue month",
-      value: money(stats?.revenueMonthCents ?? 0),
-      note: "Paid and successful orders this month.",
-      icon: LineChart,
-      target: "orders" as DashboardView,
-    },
-    {
-      label: "Pending approvals",
-      value: totalPendingApprovals,
-      note: "Vendor and rider onboarding work waiting for the owner.",
-      icon: Clock,
-      target: "vendors" as DashboardView,
-    },
-    {
-      label: "Live vendors",
-      value: stats?.activeVendors ?? vendorCounts.active,
-      note: `${activeVendorRatio}% of vendor applications are live.`,
-      icon: Store,
-      target: "vendors" as DashboardView,
-    },
-    {
-      label: "Rider bench",
-      value: stats?.activeRiders ?? activeRiders,
-      note: `${totalRiderQueue} rider application(s) still need review.`,
-      icon: Bike,
-      target: "riders" as DashboardView,
-    },
-    {
-      label: "Pending deliveries",
-      value: stats?.pendingDeliveries ?? 0,
-      note: "Orders waiting, preparing, or out for delivery.",
-      icon: PackageCheck,
-      target: "orders" as DashboardView,
-    },
-    {
-      label: "Average delivery",
-      value: stats?.averageDeliveryTimeMins ? `${stats.averageDeliveryTimeMins}m` : "N/A",
-      note: "Starts after completed deliveries.",
-      icon: Clock,
-      target: "orders" as DashboardView,
-    },
-    {
-      label: "Satisfaction",
-      value: stats?.reviewCount ? `${stats.customerSatisfactionScore}/5` : "N/A",
-      note: "Starts after customer reviews.",
-      icon: CheckCircle2,
-      target: "users" as DashboardView,
-    },
-    {
-      label: "Alert health",
-      value:
-        channels?.email.enabled ||
-        channels?.whatsapp.enabled ||
-        channels?.push.enabled ||
-        applicantChannels?.email.enabled ||
-        applicantChannels?.whatsapp.enabled
-          ? "On"
-          : "Setup",
-      note: "Email, WhatsApp and browser alert coverage for admin and applicant events.",
-      icon: Bell,
-      target: "operations" as DashboardView,
-    },
-  ];
-
   const orderMonitoring = [
     {
       label: "Pending deliveries",
@@ -866,40 +1046,51 @@ export default function AdminPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-lethela-secondary text-white">
-      <MainHeader />
+    <main className="min-h-screen bg-[#05071D] text-white">
+      <AdminTopBar onRefresh={load} loading={loading} />
 
-      <section className="container py-8">
-        <div className="grid gap-5 lg:grid-cols-[250px,1fr]">
-          <aside className="rounded-lg border border-white/10 bg-[#090D2C] p-4 lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
+      <section className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[280px,minmax(0,1fr)]">
+          <aside className="rounded-xl border border-white/10 bg-[#090D2C]/95 p-4 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:overflow-y-auto">
             <div className="border-b border-white/10 pb-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-white/50">Lethela owner</p>
-              <h1 className="mt-2 text-xl font-bold">Dashboard</h1>
+              <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
+                Lethela Admin
+              </p>
+              <h1 className="mt-2 text-xl font-bold">Operations</h1>
               <p className="mt-2 text-xs leading-relaxed text-white/60">
-                Admin, vendor, user and rider operations in one workspace.
+                Live marketplace control for orders, vendors, riders, support and growth.
               </p>
             </div>
 
-            <nav className="mt-4 grid gap-2">
-              {WORKSPACES.map((item) => {
-                const Icon = item.icon;
-                const active = view === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${
-                      active
-                        ? "bg-lethela-primary text-white"
-                        : "bg-white/[0.035] text-white/70 hover:bg-white/[0.07] hover:text-white"
-                    }`}
-                    type="button"
-                    onClick={() => setView(item.id)}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
+            <nav className="mt-4 grid gap-5">
+              {ADMIN_NAV_GROUPS.map((group) => (
+                <div key={group.title}>
+                  <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/38">
+                    {group.title}
+                  </p>
+                  <div className="grid gap-1.5">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const active = view === item.id;
+                      return (
+                        <button
+                          key={`${group.title}-${item.label}`}
+                          className={`flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${
+                            active
+                              ? "bg-lethela-primary text-white shadow-lg shadow-lethela-primary/20"
+                              : "bg-white/[0.025] text-white/68 hover:bg-white/[0.075] hover:text-white"
+                          }`}
+                          type="button"
+                          onClick={() => setView(item.id)}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </nav>
 
             <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.035] p-3">
@@ -917,18 +1108,17 @@ export default function AdminPage() {
             </div>
           </aside>
 
-          <div className="min-w-0 space-y-5">
-            <section className="rounded-lg border border-white/10 bg-[#0C1132] p-5">
+          <div className="min-w-0 space-y-6">
+            <section className="rounded-xl border border-white/10 bg-[#0C1132] p-5 shadow-2xl shadow-black/20">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
                     Operations command
                   </p>
-                  <h2 className="mt-2 text-2xl font-bold md:text-3xl">Owner dashboard</h2>
+                  <h2 className="mt-2 text-2xl font-bold md:text-3xl">Owner Command Centre</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/68">
-                    Sego gave us the food-admin structure: KPIs, order queues, profile modules,
-                    calendar, messages and product controls. This version keeps Lethela styling and
-                    connects those ideas to admin, vendors, customers and riders.
+                    Monitor live orders, vendors, riders, approvals and township growth from one
+                    place.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -952,57 +1142,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-5">
-                {metrics.map((metric) => (
-                  <MetricCard
-                    key={metric.label}
-                    {...metric}
-                    onClick={() => setView(metric.target)}
-                  />
-                ))}
-              </div>
-
-              <div className="mt-5 grid gap-3 md:grid-cols-[1fr,180px,180px]">
-                <div>
-                  <label className="mb-1 block text-xs text-white/60">Admin key</label>
-                  <input
-                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black outline-none focus:ring-2 focus:ring-lethela-primary"
-                    value={adminKey}
-                    onChange={(event) => setAdminKey(event.target.value)}
-                    placeholder="Use if ADMIN_APPROVAL_KEY is set"
-                    type="password"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-white/60">Vendor filter</label>
-                  <select
-                    value={vendorStatus}
-                    onChange={(event) => setVendorStatus(event.target.value as VendorStatusOption)}
-                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
-                  >
-                    {VENDOR_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option.replaceAll("_", " ")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-white/60">Rider filter</label>
-                  <select
-                    value={riderStatus}
-                    onChange={(event) => setRiderStatus(event.target.value as RiderStatusFilter)}
-                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
-                  >
-                    {RIDER_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               {notice ? (
                 <div className="mt-4 rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-2 text-xs text-emerald-100">
                   {notice}
@@ -1017,113 +1156,136 @@ export default function AdminPage() {
 
             {view === "overview" ? (
               <div className="space-y-5">
-                <section className="grid gap-5 xl:grid-cols-[1.15fr,0.85fr]">
-                  <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.14em] text-white/50">
-                          Order monitoring
-                        </p>
-                        <h3 className="mt-1 text-lg font-semibold">Live queue overview</h3>
-                      </div>
-                      <LineChart className="h-5 w-5 text-lethela-primary" />
-                    </div>
-                    <div className="mt-5 space-y-4">
-                      {orderMonitoring.map((item) => (
-                        <button
-                          key={item.label}
-                          className="block w-full text-left"
-                          type="button"
-                          onClick={() => setView("orders")}
-                        >
-                          <div className="flex justify-between text-sm">
-                            <span className="text-white/70">{item.label}</span>
-                            <span className="font-semibold">{item.value}</span>
-                          </div>
-                          <div className="mt-2 h-2 rounded-full bg-white/10">
-                            <div
-                              className={`h-2 rounded-full ${item.color}`}
-                              style={{ width: `${Math.min(item.value * 10, 100)}%` }}
-                            />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.14em] text-white/50">Today</p>
-                        <h3 className="mt-1 text-lg font-semibold">Owner checklist</h3>
-                      </div>
-                      <CalendarDays className="h-5 w-5 text-lethela-primary" />
-                    </div>
-                    <div className="mt-4 grid gap-3">
-                      {[
-                        { label: "Clear pending vendor KYC approvals", target: "vendors" },
-                        {
-                          label: "Move rider applications from pending to review",
-                          target: "riders",
-                        },
-                        { label: "Check delayed order exceptions", target: "orders" },
-                        {
-                          label: "Send operating updates to vendors and riders",
-                          target: "messages",
-                        },
-                      ].map((item) => (
-                        <button
-                          key={item.label}
-                          className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
-                          type="button"
-                          onClick={() => setView(item.target as DashboardView)}
-                        >
-                          <CheckCircle2 className="h-4 w-4 text-lethela-primary" />
-                          <span className="text-sm text-white/75">{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <PriorityCard
+                    label="Live orders"
+                    value={stats?.pendingDeliveries ?? 0}
+                    note="Orders waiting, preparing or out for delivery."
+                    icon={ShoppingBag}
+                    onClick={() => setView("orders")}
+                  />
+                  <PriorityCard
+                    label="Orders needing action"
+                    value={(stats?.delayedOrders ?? 0) + (stats?.failedDeliveries ?? 0)}
+                    note="Delayed, failed or exception orders."
+                    icon={Bell}
+                    onClick={() => setView("operations")}
+                  />
+                  <PriorityCard
+                    label="Pending vendor approvals"
+                    value={vendorCounts.submitted ?? vendorCounts.pending ?? 0}
+                    note="Complete vendor profiles waiting for owner review."
+                    icon={Store}
+                    onClick={() => setView("vendors")}
+                  />
+                  <PriorityCard
+                    label="Riders available now"
+                    value={riderCounts.approved}
+                    note="Approved riders ready for dispatch planning."
+                    icon={Bike}
+                    onClick={() => setView("riders")}
+                  />
                 </section>
 
-                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  {[
+                <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                  <MetricCard
+                    label="Revenue today"
+                    value={money(stats?.revenueTodayCents ?? 0)}
+                    note="Paid successful orders today."
+                    icon={WalletCards}
+                  />
+                  <MetricCard
+                    label="Revenue month"
+                    value={money(stats?.revenueMonthCents ?? 0)}
+                    note="Paid successful orders this month."
+                    icon={LineChart}
+                  />
+                  <MetricCard
+                    label="Completed orders"
+                    value={stats?.ordersToday ?? 0}
+                    note="Orders created today."
+                    icon={PackageCheck}
+                  />
+                  <MetricCard
+                    label="Cancelled orders"
+                    value={stats?.cancelledOrders ?? 0}
+                    note="Cancelled orders needing review."
+                    icon={Clock}
+                  />
+                  <MetricCard
+                    label="Average delivery"
+                    value={
+                      stats?.averageDeliveryTimeMins ? `${stats.averageDeliveryTimeMins}m` : "N/A"
+                    }
+                    note="Starts after completed deliveries."
+                    icon={Truck}
+                  />
+                  <MetricCard
+                    label="Satisfaction"
+                    value={stats?.reviewCount ? `${stats.customerSatisfactionScore}/5` : "N/A"}
+                    note="Customer review signal."
+                    icon={CheckCircle2}
+                  />
+                </section>
+
+                <NeedsAttentionTable
+                  rows={[
                     {
-                      title: "AI insights",
-                      body: stats?.topProducts[0]
-                        ? `Most ordered: ${stats.topProducts[0].name}. Peak trends and customer habits will deepen as orders grow.`
-                        : "No customer order trends yet. This will start once the first paid orders are placed.",
-                      target: "orders",
+                      type: "Order",
+                      issue:
+                        (stats?.delayedOrders ?? 0) > 0
+                          ? "Delayed order waiting for action"
+                          : "No rider assigned",
+                      area: "Klipfontein View",
+                      assignedTo: "Admin",
+                      priority: "High",
+                      status: (stats?.pendingDeliveries ?? 0) > 0 ? "Waiting" : "Clear",
+                      action: "Assign rider",
+                      target: "operations",
                     },
                     {
-                      title: "Vendor performance",
-                      body: stats?.topVendors[0]
-                        ? `Top vendor: ${stats.topVendors[0].name}. View vendor sales, ratings, and stock coaching.`
-                        : "No vendor sales yet. Performance insights start after vendors receive paid orders.",
+                      type: "Vendor",
+                      issue: "Profile incomplete or waiting approval",
+                      area: "Township onboarding",
+                      assignedTo: "Vendor",
+                      priority: "Medium",
+                      status: `${vendorCounts.pending ?? 0} pending`,
+                      action: "Review vendor",
                       target: "vendors",
                     },
                     {
-                      title: "Township commerce",
-                      body: "Kota, shisanyama, spaza, groceries, airtime, electricity, and township specials will be activated from real vendor categories.",
-                      target: "users",
+                      type: "Product",
+                      issue: "Missing image or category review",
+                      area: "Spaza & Groceries",
+                      assignedTo: "Vendor",
+                      priority: "Low",
+                      status: "Pending",
+                      action: "Review product",
+                      target: "orders",
                     },
                     {
-                      title: "Marketing control",
-                      body: "Promotions, coupons, free delivery campaigns, push, SMS, and WhatsApp broadcasts will use real customer and vendor segments.",
+                      type: "Rider",
+                      issue: "KYC pending",
+                      area: "Klipfontein View",
+                      assignedTo: "Admin",
+                      priority: "Medium",
+                      status: `${riderCounts.pending + riderCounts.underReview} in queue`,
+                      action: "Review rider",
+                      target: "riders",
+                    },
+                    {
+                      type: "Refund",
+                      issue: "Refund request waiting",
+                      area: "Support",
+                      assignedTo: "Support",
+                      priority: "High",
+                      status: operationsRefunds.length > 0 ? "Open" : "Clear",
+                      action: "Review refund",
                       target: "operations",
                     },
-                  ].map((item) => (
-                    <button
-                      key={item.title}
-                      className="rounded-lg border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
-                      type="button"
-                      onClick={() => setView(item.target as DashboardView)}
-                    >
-                      <h3 className="text-lg font-semibold">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-white/65">{item.body}</p>
-                    </button>
-                  ))}
-                </section>
+                  ]}
+                  onNavigate={setView}
+                />
               </div>
             ) : null}
 
@@ -1135,6 +1297,22 @@ export default function AdminPage() {
                   placeholder="Search vendors by name, slug, email, or area"
                   onChange={setVendorSearch}
                 />
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">
+                    Vendor status filter
+                  </label>
+                  <select
+                    value={vendorStatus}
+                    onChange={(event) => setVendorStatus(event.target.value as VendorStatusOption)}
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black md:max-w-xs"
+                  >
+                    {VENDOR_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option.replaceAll("_", " ")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 {filteredVendors.map((vendor) => {
                   const saving = savingKey === `vendor:${vendor.id}`;
                   const location = [vendor.address, vendor.suburb, vendor.city, vendor.province]
@@ -1251,6 +1429,22 @@ export default function AdminPage() {
                   placeholder="Search riders by name, phone, vehicle, or area"
                   onChange={setRiderSearch}
                 />
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">
+                    Rider status filter
+                  </label>
+                  <select
+                    value={riderStatus}
+                    onChange={(event) => setRiderStatus(event.target.value as RiderStatusFilter)}
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black md:max-w-xs"
+                  >
+                    {RIDER_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="grid gap-3 md:grid-cols-3">
                   <MetricCard
                     label="Pending"
@@ -1659,6 +1853,23 @@ export default function AdminPage() {
                   note={`Browser push: ${pushPermission}`}
                   icon={Settings}
                 />
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
+                  <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                    Settings / Developer Tools
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold">Admin access key</h3>
+                  <p className="mt-1 text-sm text-white/60">
+                    Use this only when the production admin approval key is required to restore
+                    owner access on this browser.
+                  </p>
+                  <input
+                    className="mt-4 h-10 w-full max-w-md rounded-lg border border-white/10 bg-white px-3 text-sm text-black outline-none focus:ring-2 focus:ring-lethela-primary"
+                    value={adminKey}
+                    onChange={(event) => setAdminKey(event.target.value)}
+                    placeholder="ADMIN_APPROVAL_KEY"
+                    type="password"
+                  />
+                </div>
                 <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
