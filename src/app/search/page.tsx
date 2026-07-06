@@ -28,6 +28,11 @@ export async function generateMetadata({
       title: "Search",
       description: `Search vendors, products, groceries and township favourites on ${SITE_NAME}.`,
       alternates: { canonical: "/search" },
+      openGraph: {
+        title: `Search township delivery on ${SITE_NAME}`,
+        description: `Find approved township vendors, spaza shops, groceries, kota, meals and restaurants on ${SITE_NAME}.`,
+        url: absoluteUrl("/search"),
+      },
     };
   }
 
@@ -36,6 +41,11 @@ export async function generateMetadata({
     description: `Search results for "${query}" on ${SITE_NAME}.`,
     alternates: { canonical: `/search?q=${encodeURIComponent(query)}` },
     robots: { index: false, follow: true },
+    openGraph: {
+      title: `Search ${query} on ${SITE_NAME}`,
+      description: `Find ${query}, approved vendors, groceries and local food delivery options on ${SITE_NAME}.`,
+      url: absoluteUrl(`/search?q=${encodeURIComponent(query)}`),
+    },
   };
 }
 
@@ -45,6 +55,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const liveResults = query.length >= 2 ? await searchCatalog(query, { limit: 30 }) : [];
   const results = liveResults;
   const suggestions = ["kota", "chips", "chicken", "groceries", "braai", "breakfast", "mogodu"];
+  const discoverySuggestions = [
+    "spaza shop delivery",
+    "grocery delivery township",
+    "kota delivery near me",
+    "local food delivery",
+    "restaurant delivery",
+    "bread milk eggs",
+  ];
 
   const itemListSchema =
     query.length >= 2
@@ -102,7 +120,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
         </form>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {suggestions.map((term) => (
+          {[...suggestions, ...discoverySuggestions].map((term) => (
             <Link
               key={term}
               href={`/search?q=${encodeURIComponent(term)}`}

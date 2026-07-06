@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import MainHeader from "@/components/MainHeader";
 import UserProfileForm from "@/components/profile/UserProfileForm";
+import OrderHistoryPanel from "@/components/profile/OrderHistoryPanel";
 import ProfileExperiencePanel from "@/components/profile/ProfileExperiencePanel";
 import { auth } from "@/auth";
 import { buildNoIndexMetadata } from "@/lib/seo";
@@ -32,6 +33,7 @@ export default async function ProfilePage() {
 
         <div className="grid gap-6">
           <UserProfileForm />
+          <OrderHistoryPanel />
           <ProfileExperiencePanel />
         </div>
       </section>

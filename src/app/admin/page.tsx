@@ -151,6 +151,62 @@ type AdminStats = {
   topVendors: Array<{ id: string; name: string; revenueCents: number }>;
 };
 
+type OperationsOrder = {
+  id: string;
+  publicId: string;
+  ozowReference: string | null;
+  status: string;
+  paymentStatus: string;
+  totalCents: number;
+  createdAt: string;
+  vendorName: string;
+  vendorPhone: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+};
+
+type OperationsRider = {
+  id: string;
+  fullName: string;
+  phone: string;
+  suburb: string;
+  city: string;
+  vehicleType: string;
+};
+
+type OperationsEvent = {
+  id: string;
+  publicId: string;
+  type: string;
+  actor: string | null;
+  note: string | null;
+  createdAt: string;
+};
+
+type OperationsRefund = {
+  id: string;
+  publicId: string;
+  amountCents: number;
+  reason: string;
+  status: string;
+  evidenceUrl: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type OperationsDispatch = {
+  id: string;
+  publicId: string;
+  riderApplicationId: string;
+  riderName: string;
+  riderPhone: string;
+  status: string;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 const VENDOR_STATUS_OPTIONS: VendorStatusOption[] = [
   "SUBMITTED_FOR_APPROVAL",
   "CHANGES_REQUESTED",
@@ -325,6 +381,20 @@ export default function AdminPage() {
   );
   const [messages, setMessages] = useState<PlatformMessage[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [operationsOrders, setOperationsOrders] = useState<OperationsOrder[]>([]);
+  const [operationsRiders, setOperationsRiders] = useState<OperationsRider[]>([]);
+  const [operationsEvents, setOperationsEvents] = useState<OperationsEvent[]>([]);
+  const [operationsRefunds, setOperationsRefunds] = useState<OperationsRefund[]>([]);
+  const [operationsDispatches, setOperationsDispatches] = useState<OperationsDispatch[]>([]);
+  const [operationsForm, setOperationsForm] = useState({
+    orderRef: "",
+    status: "PREPARING",
+    riderApplicationId: "",
+    refundAmountRand: "",
+    refundReason: "",
+    evidenceUrl: "",
+    note: "",
+  });
   const [messageForm, setMessageForm] = useState<{
     recipientType: MessageRecipientType;
     recipientId: string;
@@ -386,21 +456,24 @@ export default function AdminPage() {
         notificationsResponse,
         messagesResponse,
         statsResponse,
+        operationsResponse,
       ] = await Promise.all([
         fetch(`/api/admin/vendors?status=${vendorStatus}`, { method: "GET", cache: "no-store" }),
         fetch(`/api/admin/riders?status=${riderStatus}`, { method: "GET", cache: "no-store" }),
         fetch("/api/admin/notifications", { method: "GET", cache: "no-store" }),
         fetch("/api/admin/messages", { method: "GET", cache: "no-store" }),
         fetch("/api/admin/stats", { method: "GET", cache: "no-store" }),
+        fetch("/api/admin/operations", { method: "GET", cache: "no-store" }),
       ]);
 
-      const [vendorsJson, ridersJson, notificationsJson, messagesJson, statsJson] =
+      const [vendorsJson, ridersJson, notificationsJson, messagesJson, statsJson, operationsJson] =
         await Promise.all([
           vendorsResponse.json(),
           ridersResponse.json(),
           notificationsResponse.json(),
           messagesResponse.json(),
           statsResponse.json(),
+          operationsResponse.json(),
         ]);
 
       if (!vendorsResponse.ok || !vendorsJson.ok)
@@ -415,6 +488,9 @@ export default function AdminPage() {
       }
       if (!statsResponse.ok || !statsJson.ok) {
         throw new Error(statsJson.error || "Failed to load owner statistics.");
+      }
+      if (!operationsResponse.ok || !operationsJson.ok) {
+        throw new Error(operationsJson.error || "Failed to load operations center.");
       }
 
       setVendors(vendorsJson.items ?? []);
@@ -440,6 +516,11 @@ export default function AdminPage() {
       setApplicantChannels(notificationsJson.applicantChannels ?? null);
       setMessages(messagesJson.items ?? []);
       setStats(statsJson.stats ?? null);
+      setOperationsOrders(operationsJson.orders ?? []);
+      setOperationsRiders(operationsJson.riders ?? []);
+      setOperationsEvents(operationsJson.events ?? []);
+      setOperationsRefunds(operationsJson.refunds ?? []);
+      setOperationsDispatches(operationsJson.dispatches ?? []);
       setTotalPendingApprovals(Number(notificationsJson.totalPendingApprovals ?? 0));
       setAuthMode(vendorsJson.authMode ?? ridersJson.authMode ?? null);
     } catch (err: unknown) {
@@ -551,6 +632,74 @@ export default function AdminPage() {
       await load();
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to send message."));
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function submitOperation(action: "status" | "dispatch" | "refund" | "event") {
+    const orderRef = operationsForm.orderRef.trim();
+    if (!orderRef) {
+      setError("Choose or enter an order reference first.");
+      return;
+    }
+
+    setSavingKey(`operation:${action}`);
+    setError(null);
+    setNotice(null);
+    try {
+      const amountCents = Math.round(Number(operationsForm.refundAmountRand || 0) * 100);
+      const payload =
+        action === "status"
+          ? {
+              action,
+              orderRef,
+              status: operationsForm.status,
+              note: operationsForm.note || undefined,
+            }
+          : action === "dispatch"
+            ? {
+                action,
+                orderRef,
+                riderApplicationId: operationsForm.riderApplicationId,
+                note: operationsForm.note || undefined,
+              }
+            : action === "refund"
+              ? {
+                  action,
+                  orderRef,
+                  amountCents,
+                  reason: operationsForm.refundReason,
+                  evidenceUrl: operationsForm.evidenceUrl || undefined,
+                  note: operationsForm.note || undefined,
+                }
+              : {
+                  action,
+                  orderRef,
+                  type: "OWNER_NOTE",
+                  note: operationsForm.note || "Owner operations note",
+                };
+
+      const response = await fetch("/api/admin/operations", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.ok) {
+        throw new Error(json.error || "Failed to save operation.");
+      }
+      setNotice("Operations update saved.");
+      setOperationsForm((state) => ({
+        ...state,
+        refundAmountRand: "",
+        refundReason: "",
+        evidenceUrl: "",
+        note: "",
+      }));
+      await load();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to save operation."));
     } finally {
       setSavingKey(null);
     }
@@ -1511,6 +1660,253 @@ export default function AdminPage() {
                   icon={Settings}
                 />
                 <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                        Order control
+                      </p>
+                      <h3 className="mt-1 text-lg font-semibold">Operations center</h3>
+                      <p className="mt-1 text-sm text-white/60">
+                        Update order lifecycle, assign approved riders, log refund cases and keep an
+                        audit trail for support follow-up.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                      onClick={load}
+                    >
+                      Refresh
+                    </Button>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr,1.1fr]">
+                    <div className="grid gap-3">
+                      <label className="grid gap-1 text-sm">
+                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          Order
+                        </span>
+                        <select
+                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          value={operationsForm.orderRef}
+                          onChange={(event) =>
+                            setOperationsForm((state) => ({
+                              ...state,
+                              orderRef: event.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Choose recent order</option>
+                          {operationsOrders.map((order) => (
+                            <option key={order.id} value={order.publicId}>
+                              {order.publicId} - {order.vendorName} - {money(order.totalCents)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="grid gap-1 text-sm">
+                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          Manual reference
+                        </span>
+                        <input
+                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          value={operationsForm.orderRef}
+                          onChange={(event) =>
+                            setOperationsForm((state) => ({
+                              ...state,
+                              orderRef: event.target.value,
+                            }))
+                          }
+                          placeholder="LET-..."
+                        />
+                      </label>
+
+                      <label className="grid gap-1 text-sm">
+                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          Status
+                        </span>
+                        <select
+                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          value={operationsForm.status}
+                          onChange={(event) =>
+                            setOperationsForm((state) => ({
+                              ...state,
+                              status: event.target.value,
+                            }))
+                          }
+                        >
+                          {["PLACED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELED"].map(
+                            (status) => (
+                              <option key={status} value={status}>
+                                {status.replaceAll("_", " ")}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </label>
+
+                      <label className="grid gap-1 text-sm">
+                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          Approved rider
+                        </span>
+                        <select
+                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          value={operationsForm.riderApplicationId}
+                          onChange={(event) =>
+                            setOperationsForm((state) => ({
+                              ...state,
+                              riderApplicationId: event.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Choose rider</option>
+                          {operationsRiders.map((rider) => (
+                            <option key={rider.id} value={rider.id}>
+                              {rider.fullName} - {rider.suburb || rider.city} - {rider.vehicleType}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label className="grid gap-1 text-sm">
+                          <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                            Refund amount
+                          </span>
+                          <input
+                            className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                            value={operationsForm.refundAmountRand}
+                            onChange={(event) =>
+                              setOperationsForm((state) => ({
+                                ...state,
+                                refundAmountRand: event.target.value,
+                              }))
+                            }
+                            placeholder="0.00"
+                          />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                            Evidence URL
+                          </span>
+                          <input
+                            className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                            value={operationsForm.evidenceUrl}
+                            onChange={(event) =>
+                              setOperationsForm((state) => ({
+                                ...state,
+                                evidenceUrl: event.target.value,
+                              }))
+                            }
+                            placeholder="Photo or proof link"
+                          />
+                        </label>
+                      </div>
+
+                      <label className="grid gap-1 text-sm">
+                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          Refund reason
+                        </span>
+                        <input
+                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          value={operationsForm.refundReason}
+                          onChange={(event) =>
+                            setOperationsForm((state) => ({
+                              ...state,
+                              refundReason: event.target.value,
+                            }))
+                          }
+                          placeholder="Missing item, failed delivery, incorrect order..."
+                        />
+                      </label>
+
+                      <label className="grid gap-1 text-sm">
+                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          Operations note
+                        </span>
+                        <textarea
+                          className="min-h-24 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-black"
+                          value={operationsForm.note}
+                          onChange={(event) =>
+                            setOperationsForm((state) => ({ ...state, note: event.target.value }))
+                          }
+                          placeholder="What happened and what action was taken?"
+                        />
+                      </label>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          className="bg-lethela-primary text-white"
+                          disabled={savingKey === "operation:status"}
+                          onClick={() => void submitOperation("status")}
+                        >
+                          Update status
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                          disabled={savingKey === "operation:dispatch"}
+                          onClick={() => void submitOperation("dispatch")}
+                        >
+                          Assign rider
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                          disabled={savingKey === "operation:refund"}
+                          onClick={() => void submitOperation("refund")}
+                        >
+                          Create refund case
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                          disabled={savingKey === "operation:event"}
+                          onClick={() => void submitOperation("event")}
+                        >
+                          Save note
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3">
+                      <OperationsFeed
+                        title="Recent order events"
+                        empty="No order events logged yet."
+                        items={operationsEvents.map((event) => ({
+                          id: event.id,
+                          title: `${event.publicId} - ${event.type.replaceAll("_", " ")}`,
+                          body: event.note || event.actor || "No note captured.",
+                          meta: new Date(event.createdAt).toLocaleString(),
+                        }))}
+                      />
+                      <OperationsFeed
+                        title="Refund cases"
+                        empty="No refund cases yet."
+                        items={operationsRefunds.map((refund) => ({
+                          id: refund.id,
+                          title: `${refund.publicId} - ${money(refund.amountCents)} - ${refund.status}`,
+                          body: `${refund.reason}${refund.note ? ` - ${refund.note}` : ""}`,
+                          meta: new Date(refund.createdAt).toLocaleString(),
+                        }))}
+                      />
+                      <OperationsFeed
+                        title="Dispatch assignments"
+                        empty="No rider assignments yet."
+                        items={operationsDispatches.map((dispatch) => ({
+                          id: dispatch.id,
+                          title: `${dispatch.publicId} - ${dispatch.riderName}`,
+                          body: `${dispatch.status} - ${dispatch.riderPhone}${
+                            dispatch.note ? ` - ${dispatch.note}` : ""
+                          }`,
+                          meta: new Date(dispatch.createdAt).toLocaleString(),
+                        }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-xs uppercase tracking-[0.14em] text-white/45">
@@ -1580,6 +1976,38 @@ function OperationsList({
             <p className="text-sm leading-6 text-white/72">{item}</p>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function OperationsFeed({
+  title,
+  empty,
+  items,
+}: {
+  title: string;
+  empty: string;
+  items: Array<{ id: string; title: string; body: string; meta: string }>;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/10 p-4">
+      <h4 className="text-sm font-semibold text-white">{title}</h4>
+      <div className="mt-3 grid gap-2">
+        {items.length === 0 ? (
+          <p className="text-sm text-white/55">{empty}</p>
+        ) : (
+          items.slice(0, 5).map((item) => (
+            <article
+              key={item.id}
+              className="rounded-lg border border-white/10 bg-white/[0.04] p-3"
+            >
+              <div className="text-sm font-medium text-white">{item.title}</div>
+              <p className="mt-1 text-xs leading-5 text-white/65">{item.body}</p>
+              <div className="mt-2 text-[11px] text-white/40">{item.meta}</div>
+            </article>
+          ))
+        )}
       </div>
     </div>
   );

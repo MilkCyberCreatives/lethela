@@ -5,6 +5,7 @@ import {
   getPublicVendorImage,
   isPublicCatalogProduct,
   isPublicCatalogVendor,
+  isPublicMarketplaceVendor,
 } from "@/lib/public-catalog";
 import { runBoundedDbQuery, withQueryTimeout } from "@/lib/query-timeout";
 
@@ -36,13 +37,19 @@ const SEARCH_SYNONYMS: Record<string, string[]> = {
   chips: ["fries", "slap", "masala"],
   fries: ["chips"],
   chicken: ["wings", "strips", "peri", "bucket"],
-  groceries: ["grocery", "bread", "milk", "eggs", "essentials"],
-  grocery: ["groceries", "bread", "milk", "eggs", "essentials"],
+  groceries: ["grocery", "bread", "milk", "eggs", "essentials", "spaza", "maize", "rice"],
+  grocery: ["groceries", "bread", "milk", "eggs", "essentials", "spaza", "maize", "rice"],
   kota: ["sphatlo", "bunny", "quarter"],
   sphatlo: ["kota", "bunny", "quarter"],
   braai: ["chisa", "nyama", "wors", "boerewors"],
   breakfast: ["vetkoek", "coffee", "egg"],
   mogodu: ["tripe", "pap"],
+  spaza: ["groceries", "bread", "milk", "airtime", "toiletries", "essentials"],
+  supermarket: ["grocery", "groceries", "bread", "milk", "maize", "rice"],
+  township: ["kasi", "spaza", "kota", "local"],
+  kasi: ["township", "kota", "spaza", "local"],
+  restaurant: ["takeaway", "food", "franchise"],
+  franchise: ["restaurant", "takeaway", "brand"],
 };
 
 function tokenize(value: string) {
@@ -443,7 +450,19 @@ async function searchFallback(
       prisma.vendor.findMany({
         where: {
           isActive: true,
-          status: "ACTIVE",
+          status: { in: ["ACTIVE", "APPROVED"] },
+          phone: { not: null },
+          address: { not: null },
+          city: { not: null },
+          province: { not: null },
+          storeType: { not: null },
+          kycIdUrl: { not: null },
+          kycProofUrl: { not: null },
+          bankName: { not: null },
+          bankAccountName: { not: null },
+          bankAccountNumber: { not: null },
+          hours: { some: { closed: false } },
+          products: { some: { inStock: true, isAlcohol: false } },
           OR: vendorOr,
         },
         take: candidateLimit,
@@ -455,13 +474,40 @@ async function searchFallback(
           suburb: true,
           city: true,
           image: true,
+          status: true,
+          isActive: true,
+          phone: true,
+          address: true,
+          province: true,
+          cuisine: true,
+          storeType: true,
+          kycIdUrl: true,
+          kycProofUrl: true,
+          bankName: true,
+          bankAccountName: true,
+          bankAccountNumber: true,
+          deliveryFee: true,
+          etaMins: true,
+          _count: { select: { products: true, hours: true } },
         },
       }),
       prisma.product.findMany({
         where: {
+          isAlcohol: false,
           vendor: {
             isActive: true,
-            status: "ACTIVE",
+            status: { in: ["ACTIVE", "APPROVED"] },
+            phone: { not: null },
+            address: { not: null },
+            city: { not: null },
+            province: { not: null },
+            storeType: { not: null },
+            kycIdUrl: { not: null },
+            kycProofUrl: { not: null },
+            bankName: { not: null },
+            bankAccountName: { not: null },
+            bankAccountNumber: { not: null },
+            hours: { some: { closed: false } },
           },
           OR: productOr,
         },
@@ -472,6 +518,22 @@ async function searchFallback(
             select: {
               name: true,
               slug: true,
+              status: true,
+              isActive: true,
+              phone: true,
+              address: true,
+              city: true,
+              province: true,
+              cuisine: true,
+              storeType: true,
+              kycIdUrl: true,
+              kycProofUrl: true,
+              bankName: true,
+              bankAccountName: true,
+              bankAccountNumber: true,
+              deliveryFee: true,
+              etaMins: true,
+              _count: { select: { products: true, hours: true } },
             },
           },
         },
@@ -482,7 +544,7 @@ async function searchFallback(
 
   const rows = [
     ...vendors
-      .filter((vendor: any) => isPublicCatalogVendor(vendor))
+      .filter((vendor: any) => isPublicMarketplaceVendor(vendor))
       .map((vendor: any) => ({
         id: vendor.id,
         kind: "vendor" as const,
@@ -496,7 +558,10 @@ async function searchFallback(
         isAlcohol: false,
       })),
     ...products
-      .filter((product: any) => isPublicCatalogProduct(product))
+      .filter(
+        (product: any) =>
+          isPublicCatalogProduct(product) && isPublicMarketplaceVendor(product.vendor),
+      )
       .map((product: any) => ({
         id: product.id,
         kind: "product" as const,

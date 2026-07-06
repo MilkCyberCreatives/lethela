@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
-import { isPublicCatalogVendor } from "@/lib/public-catalog";
+import { isPublicMarketplaceVendor } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { SITE_URL } from "@/lib/site";
 import { TOWNSHIP_CATEGORIES, categoryToSlug } from "@/lib/categories";
@@ -46,6 +46,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.4,
+    },
+    {
+      url: `${SITE_URL}/opensearch.xml`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.25,
     },
     {
       url: `${SITE_URL}/feeds/google-merchant.xml`,
@@ -114,8 +120,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ? []
     : await runBoundedDbQuery((db) =>
         db.vendor.findMany({
-          where: { isActive: true, status: "ACTIVE" },
-          select: { name: true, slug: true, updatedAt: true },
+          where: {
+            isActive: true,
+            status: { in: ["ACTIVE", "APPROVED"] },
+            phone: { not: null },
+            address: { not: null },
+            city: { not: null },
+            province: { not: null },
+            storeType: { not: null },
+            kycIdUrl: { not: null },
+            kycProofUrl: { not: null },
+            bankName: { not: null },
+            bankAccountName: { not: null },
+            bankAccountNumber: { not: null },
+            hours: { some: { closed: false } },
+            products: { some: { inStock: true, isAlcohol: false } },
+          },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            updatedAt: true,
+            status: true,
+            isActive: true,
+            phone: true,
+            address: true,
+            city: true,
+            province: true,
+            cuisine: true,
+            storeType: true,
+            kycIdUrl: true,
+            kycProofUrl: true,
+            bankName: true,
+            bankAccountName: true,
+            bankAccountNumber: true,
+            deliveryFee: true,
+            etaMins: true,
+            _count: { select: { products: true, hours: true } },
+          },
           orderBy: { updatedAt: "desc" },
           take: 5000,
         }),
@@ -124,7 +166,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const vendorRoutes: MetadataRoute.Sitemap =
     vendorRows.length > 0
       ? vendorRows
-          .filter((vendor) => isPublicCatalogVendor(vendor))
+          .filter((vendor) => isPublicMarketplaceVendor(vendor))
           .map((vendor) => ({
             url: `${SITE_URL}/vendors/${vendor.slug}`,
             lastModified: vendor.updatedAt,
