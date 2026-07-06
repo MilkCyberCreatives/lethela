@@ -28,10 +28,20 @@ type SearchOptions = {
 
 const CACHE_TTL_MS = 60_000;
 const searchCache = new Map<string, { ts: number; hits: SearchHit[] }>();
+const RESTRICTED_PUBLIC_SEARCH_TERMS = new Set([
+  "alcohol",
+  "beer",
+  "wine",
+  "cider",
+  "vodka",
+  "whisky",
+  "whiskey",
+  "gin",
+  "brandy",
+  "booze",
+]);
 
 const SEARCH_SYNONYMS: Record<string, string[]> = {
-  alcohol: ["beer", "cider", "wine", "whisky", "whiskey", "vodka", "gin", "brandy", "booze"],
-  booze: ["alcohol", "beer", "cider", "whisky", "vodka", "gin"],
   burger: ["burgers", "cheeseburger"],
   burgers: ["burger", "cheeseburger"],
   chips: ["fries", "slap", "masala"],
@@ -604,13 +614,15 @@ function searchStaticFallback(tokens: string[], limit: number) {
         isAlcohol: false,
       })),
     ...fallbackProductRows
-      .filter((product: any) =>
-        isPublicCatalogProduct({
-          id: product.id,
-          name: product.name,
-          vendorName: product.vendor?.name ?? product.vendorName ?? "",
-          vendorSlug: product.vendor?.slug ?? product.vendorSlug ?? "",
-        }),
+      .filter(
+        (product: any) =>
+          !product.isAlcohol &&
+          isPublicCatalogProduct({
+            id: product.id,
+            name: product.name,
+            vendorName: product.vendor?.name ?? product.vendorName ?? "",
+            vendorSlug: product.vendor?.slug ?? product.vendorSlug ?? "",
+          }),
       )
       .map((product: any) => ({
         id: product.id,
@@ -637,13 +649,17 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
   if (!query) return [] as SearchHit[];
 
   const limit = Math.min(24, Math.max(1, opts.limit ?? 12));
+  const tokens = tokenize(query);
+  if (tokens.some((token) => RESTRICTED_PUBLIC_SEARCH_TERMS.has(token))) {
+    return [] as SearchHit[];
+  }
+
   const cacheKey = `${query.toLowerCase()}::${limit}`;
   const cached = searchCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
     return cached.hits;
   }
 
-  const tokens = tokenize(query);
   const hits =
     prismaRuntimeInfo.provider === "postgresql"
       ? await searchPostgres(query, tokens, limit)

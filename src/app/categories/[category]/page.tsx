@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
-import ProductCard from "@/components/ProductCard";
+import HomeProductCard from "@/components/HomeProductCard";
 import StructuredData from "@/components/StructuredData";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { canReadSqliteCatalog, getSqliteCatalogProducts } from "@/lib/sqlite-catalog";
@@ -25,6 +25,11 @@ export const revalidate = 300;
 
 function titleForCategory(category: TownshipCategory) {
   return CATEGORY_CONTENT[category].headline;
+}
+
+function optionsLabel(category: TownshipCategory, count: number) {
+  const noun = category === "Groceries" ? "grocery option" : `${category.toLowerCase()} option`;
+  return `Showing ${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -184,40 +189,21 @@ export default async function CategoryPage({ params }: PageProps) {
 
       <section className="container py-10">
         <h1 className="text-3xl font-bold md:text-4xl">{titleForCategory(resolvedCategory)}</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-white/75 md:text-base">
-          {content.intro}
-        </p>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-white/62">{content.guidance}</p>
-
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
-          {[
-            "Approved local vendors",
-            "Live menu and stock status",
-            "Clear delivery fees before checkout",
-          ].map((item) => (
-            <div key={item} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-              <p className="text-sm font-semibold text-white">{item}</p>
-            </div>
-          ))}
-        </div>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">{content.intro}</p>
 
         {items.length === 0 ? (
           <p className="mt-6 rounded-lg border border-white/15 bg-white/5 p-4 text-sm leading-6 text-white/75">
-            No approved live listings are available in this category yet. Lethela only shows vendors
-            with complete profiles, products, trading hours and approval.
+            No approved live listings are available in this category yet.
           </p>
         ) : null}
 
-        <p className="mt-8 text-sm text-white/65">
-          Showing {items.length} {resolvedCategory.toLowerCase()} option
-          {items.length === 1 ? "" : "s"} on {SITE_NAME}.
-        </p>
+        <p className="mt-8 text-sm text-white/65">{optionsLabel(resolvedCategory, items.length)}</p>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((product) => (
-            <ProductCard
+            <HomeProductCard
               key={product.id}
-              p={{
+              product={{
                 id: product.id,
                 name: product.name,
                 description: product.description,

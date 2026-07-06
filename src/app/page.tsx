@@ -45,7 +45,7 @@ const homeWebPageSchema = {
 };
 
 const foodCategories = new Set(["Kota", "Chicken", "Burger", "Braai", "Breakfast", "Wings"]);
-const groceryCategories = new Set(["Groceries", "Spaza & Groceries", "Drinks", "Snacks"]);
+const groceryCategories = new Set(["Groceries", "Drinks", "Snacks"]);
 
 export default async function HomePage() {
   const address = await getDisplaySuburb();
@@ -85,10 +85,14 @@ export default async function HomePage() {
 
       {hasMarketplaceItems ? (
         <>
-          <ProductRail title="Groceries near you" products={groceryProducts} />
+          <ProductRail
+            title="Groceries near you"
+            subtitle="Bread, milk, eggs, snacks and daily basics."
+            products={groceryProducts}
+          />
           <ProductRail title="Popular food" products={popularFood} />
           <VendorRail title="Vendors near you" vendors={vendors} />
-          <ProductRail title="Recently added" products={recentProducts} />
+          <ProductRail title="Recently added products" products={recentProducts} />
         </>
       ) : (
         <MarketplaceEmptyState />
@@ -100,12 +104,21 @@ export default async function HomePage() {
   );
 }
 
-function ProductRail({ title, products }: { title: string; products: ProductLite[] }) {
+function ProductRail({
+  title,
+  subtitle,
+  products,
+}: {
+  title: string;
+  subtitle?: string;
+  products: ProductLite[];
+}) {
   if (products.length === 0) return null;
 
   return (
     <section className="container py-8">
       <SectionHeader title={title} href="/search" />
+      {subtitle ? <p className="-mt-3 mb-5 text-sm text-white/62">{subtitle}</p> : null}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((product) => (
           <HomeProductCard key={product.id} product={product} />

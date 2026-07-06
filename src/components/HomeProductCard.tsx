@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import type { ProductLite } from "@/components/ProductCard";
-import { formatZAR } from "@/lib/format";
 import { pushEcommerceEvent, trackVisitorEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
 import { useUIStore } from "@/store/ui";
@@ -38,7 +37,9 @@ export default function HomeProductCard({ product }: { product: ProductLite }) {
       <div className="p-4">
         <div className="min-w-0">
           <h3 className="truncate text-base font-semibold">{product.name}</h3>
-          <p className="mt-1 text-sm font-semibold text-white">{formatZAR(product.priceCents)}</p>
+          <p className="mt-1 text-sm font-semibold text-white">
+            R {(product.priceCents / 100).toFixed(2)}
+          </p>
           <p className="mt-2 truncate text-xs text-white/65">{vendor?.name || "Lethela vendor"}</p>
           <p className="mt-1 truncate text-xs text-white/50">{area}</p>
         </div>

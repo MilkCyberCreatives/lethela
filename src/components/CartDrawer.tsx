@@ -149,7 +149,7 @@ export default function CartDrawer() {
   return (
     <>
       {mounted && hasItems && !open ? (
-        <div className="fixed inset-x-3 bottom-3 z-[70] rounded-2xl border border-white/10 bg-slate-950/95 p-3 text-white shadow-2xl backdrop-blur md:left-auto md:right-5 md:w-[420px]">
+        <div className="fixed inset-x-3 bottom-3 z-[70] rounded-2xl border border-white/10 bg-slate-950/95 p-3 text-white shadow-2xl backdrop-blur md:hidden">
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
@@ -204,7 +204,7 @@ export default function CartDrawer() {
         <div className="h-[calc(100%-208px)] space-y-3 overflow-y-auto p-4">
           {!hasItems ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/75">
-              Your cart is empty. Add an item from an approved vendor to start an order.
+              No items in cart yet. Add an item from an approved vendor to start an order.
             </div>
           ) : (
             visibleItems.map((item) => (

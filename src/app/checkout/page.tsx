@@ -254,9 +254,21 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-bold">Checkout</h1>
         {items.length === 0 ? (
           <div className="mt-5 max-w-xl rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-white/80">Your cart is empty.</p>
+            <h2 className="text-lg font-semibold">No items in your cart yet.</h2>
+            <p className="mt-2 text-sm text-white/70">
+              Browse vendors first, or message Lethela on WhatsApp for help placing an order.
+            </p>
             <Button asChild className="mt-4 bg-lethela-primary text-white">
               <Link href="/">Browse approved vendors</Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="ml-3 mt-4 border-white/30 text-white hover:border-white/60"
+            >
+              <a href={whatsappLink} target="_blank" rel="noreferrer">
+                Order via WhatsApp
+              </a>
             </Button>
           </div>
         ) : (
@@ -407,8 +419,8 @@ export default function CheckoutPage() {
             {hasAlcohol ? (
               <div className="mt-4 rounded-lg border border-amber-200/25 bg-amber-300/10 p-4 text-sm text-amber-50">
                 <span>
-                  Alcohol checkout is temporarily paused while licence checks, rider handover rules
-                  and refund handling are completed. Please remove alcohol items or contact support.
+                  Restricted 18+ checkout is paused while compliance checks are completed. Please
+                  remove restricted items or contact support.
                 </span>
               </div>
             ) : null}
