@@ -1,31 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Headphones,
-  MapPin,
-  ReceiptText,
-  ShieldCheck,
-  ShoppingBasket,
-  Store,
-  Truck,
-} from "lucide-react";
+import { CheckCircle2, MapPin, ShoppingBag, Store, Truck } from "lucide-react";
 import MainHeader from "@/components/MainHeader";
 import Hero from "@/components/Hero";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import VendorCard from "@/components/VendorCard";
 import Footer from "@/components/Footer";
+import HomeProductCard from "@/components/HomeProductCard";
 import StructuredData from "@/components/StructuredData";
+import type { ProductLite } from "@/components/ProductCard";
 import { getDisplaySuburb } from "@/lib/location";
-import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
-import { getHomeVendors } from "@/lib/home-data";
+import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
+import { getHomeProducts, getHomeVendors } from "@/lib/home-data";
 import type { Vendor } from "@/types";
 
 export const metadata: Metadata = {
   title: "Lethela | Township Delivery South Africa",
   description:
-    "Lethela is a township delivery marketplace for South Africa, now live in Klipfontein View. Order from approved local vendors, spaza shops, grocery sellers and restaurants near you.",
+    "Lethela is a township delivery marketplace for South Africa, now live in Klipfontein View. Order food, groceries and daily essentials from approved local vendors near you.",
   keywords: [
     "Township delivery South Africa",
     "Spaza shop delivery",
@@ -43,37 +35,6 @@ export const metadata: Metadata = {
 
 export const revalidate = 180;
 
-const homeFaqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "What can I order on Lethela?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "You can order food, groceries and daily essentials from approved local vendors, spaza shops and restaurants. Alcohol is temporarily hidden until licence and handover checks are complete.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Where is Lethela live?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Lethela is now live in Klipfontein View and built for township delivery across South Africa.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can vendors join Lethela?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. Spaza shops, food vendors, grocery sellers, restaurants and riders can apply online and go live after approval.",
-      },
-    },
-  ],
-};
-
 const homeWebPageSchema = {
   "@context": "https://schema.org",
   "@type": "WebPage",
@@ -83,13 +44,27 @@ const homeWebPageSchema = {
   about: ["Township delivery", "Food delivery", "Grocery delivery", "Spaza shop delivery"],
 };
 
+const foodCategories = new Set(["Kota", "Chicken", "Burger", "Braai", "Breakfast", "Wings"]);
+const groceryCategories = new Set(["Groceries", "Spaza & Groceries", "Drinks", "Snacks"]);
+
 export default async function HomePage() {
   const address = await getDisplaySuburb();
-  const vendors = await getHomeVendors(address, 6);
+  const [vendors, products] = await Promise.all([
+    getHomeVendors(address, 6),
+    getHomeProducts(address, 36),
+  ]);
+
+  const groceryProducts = products
+    .filter((product) => groceryCategories.has(String(product.category)))
+    .slice(0, 8);
+  const popularFood = products
+    .filter((product) => foodCategories.has(String(product.category)))
+    .slice(0, 8);
+  const recentProducts = products.slice(0, 8);
+  const hasMarketplaceItems = vendors.length > 0 || products.length > 0;
 
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
-      <StructuredData data={homeFaqSchema} />
       <StructuredData data={homeWebPageSchema} />
       <MainHeader />
 
@@ -104,185 +79,111 @@ export default async function HomePage() {
         }))}
       />
 
-      <TrustStrip />
-      <LiveNearYouSection vendors={vendors} area={address} />
-      <SpazaGroceriesSection />
-
-      <section className="container py-12">
+      <section className="container py-10">
         <CategoryCarousel />
       </section>
 
-      <HowItWorksSection />
-      <JoinLethelaSection />
+      {hasMarketplaceItems ? (
+        <>
+          <ProductRail title="Groceries near you" products={groceryProducts} />
+          <ProductRail title="Popular food" products={popularFood} />
+          <VendorRail title="Vendors near you" vendors={vendors} />
+          <ProductRail title="Recently added" products={recentProducts} />
+        </>
+      ) : (
+        <MarketplaceEmptyState />
+      )}
+
+      <HowItWorksStrip />
       <Footer />
     </main>
   );
 }
 
-function TrustStrip() {
-  const items = [
-    ["Approved local vendors", ShieldCheck],
-    ["Clear delivery fees", ReceiptText],
-    ["WhatsApp support", Headphones],
-    ["Built for township businesses", Store],
-  ] as const;
+function ProductRail({ title, products }: { title: string; products: ProductLite[] }) {
+  if (products.length === 0) return null;
 
   return (
-    <section className="border-y border-white/10 bg-white/[0.035]">
-      <div className="container grid gap-3 py-5 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map(([label, Icon]) => (
-          <div key={label} className="flex items-center gap-3 text-sm text-white/78">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
-              <Icon className="h-4 w-4" />
-            </span>
-            <span className="font-medium">{label}</span>
-          </div>
+    <section className="container py-8">
+      <SectionHeader title={title} href="/search" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {products.map((product) => (
+          <HomeProductCard key={product.id} product={product} />
         ))}
       </div>
     </section>
   );
 }
 
-function LiveNearYouSection({ vendors, area }: { vendors: Vendor[]; area: string | null }) {
+function VendorRail({ title, vendors }: { title: string; vendors: Vendor[] }) {
+  if (vendors.length === 0) return null;
+
   return (
-    <section id="live-near-you" className="container py-12">
-      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold md:text-3xl">Live near you</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/62">
-            Approved vendors ready for customers
-            {area ? ` in ${area}` : " in your selected area"}.
-          </p>
-        </div>
+    <section id="vendors-near-you" className="container py-8">
+      <SectionHeader title={title} href="/search" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {vendors.map((vendor) => (
+          <VendorCard key={vendor.id} v={vendor} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SectionHeader({ title, href }: { title: string; href: string }) {
+  return (
+    <div className="mb-5 flex items-center justify-between gap-4">
+      <h2 className="text-2xl font-semibold">{title}</h2>
+      <Link
+        href={href}
+        className="rounded-md border border-white/15 px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-lethela-primary hover:text-lethela-primary"
+      >
+        Browse all
+      </Link>
+    </div>
+  );
+}
+
+function MarketplaceEmptyState() {
+  return (
+    <section className="container py-10">
+      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-6 text-center">
+        <h2 className="text-xl font-semibold">No approved vendors are live in this area yet.</h2>
+        <p className="mt-2 text-sm text-white/64">Check again soon or browse another area.</p>
         <Link
-          href="/search"
-          className="inline-flex items-center rounded-md border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-lethela-primary hover:text-lethela-primary"
+          href="/vendors/register"
+          className="mt-5 inline-flex rounded-md bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-lethela-primary/90"
         >
-          Search marketplace
-          <ArrowRight className="ml-2 h-4 w-4" />
+          Own a shop or restaurant? Join Lethela.
         </Link>
       </div>
-
-      {vendors.length > 0 ? (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {vendors.slice(0, 6).map((vendor) => (
-            <VendorCard key={vendor.id} v={vendor} />
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-6">
-          <h3 className="text-xl font-semibold">We are still onboarding approved vendors here.</h3>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
-            Are you a spaza shop, food vendor or restaurant? Join Lethela today. We only show
-            vendors with complete profiles, products, trading hours and approval.
-          </p>
-          <Link
-            href="/vendors/register"
-            className="mt-5 inline-flex rounded-md bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-lethela-primary/90"
-          >
-            Join as a vendor
-          </Link>
-        </div>
-      )}
     </section>
   );
 }
 
-function SpazaGroceriesSection() {
-  return (
-    <section className="container py-12">
-      <div className="grid gap-6 rounded-xl border border-white/10 bg-white/[0.04] p-6 md:p-8 lg:grid-cols-[1fr,0.85fr]">
-        <div>
-          <span className="grid h-12 w-12 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
-            <ShoppingBasket className="h-6 w-6" />
-          </span>
-          <h2 className="mt-5 text-2xl font-semibold md:text-3xl">
-            Spaza shops and groceries near you
-          </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68 md:text-base">
-            Get bread, milk, eggs, snacks, cold drinks and daily basics delivered from local shops.
-          </p>
-          <Link
-            href="/categories/spaza-groceries"
-            className="mt-6 inline-flex rounded-md bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-lethela-primary/90"
-          >
-            Browse groceries
-          </Link>
-        </div>
-        <div className="grid content-start gap-3 sm:grid-cols-2">
-          {["Bread", "Milk", "Eggs", "Snacks", "Cold drinks", "Daily basics"].map((item) => (
-            <div key={item} className="rounded-lg border border-white/10 bg-[#080B27]/70 p-4">
-              <p className="font-medium">{item}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorksSection() {
+function HowItWorksStrip() {
   const steps = [
     ["Enter your location", MapPin],
     ["Choose a vendor", Store],
-    ["Place your order", CheckCircle2],
+    ["Place your order", ShoppingBag],
     ["Track your delivery", Truck],
   ] as const;
 
   return (
-    <section className="container py-12">
-      <div className="mb-6 max-w-2xl">
-        <h2 className="text-2xl font-semibold md:text-3xl">How Lethela works</h2>
-        <p className="mt-2 text-sm leading-6 text-white/62">
-          A simple ordering flow for township customers and local businesses.
-        </p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {steps.map(([label, Icon], index) => (
-          <article key={label} className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
-            <div className="flex items-center justify-between gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
+    <section className="container pb-12 pt-8">
+      <div className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-4 sm:grid-cols-2 lg:grid-cols-4">
+        {steps.map(([label, Icon]) => (
+          <div key={label} className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
+              {label === "Place your order" ? (
+                <CheckCircle2 className="h-5 w-5" />
+              ) : (
                 <Icon className="h-5 w-5" />
-              </span>
-              <span className="text-sm font-semibold text-white/35">0{index + 1}</span>
-            </div>
-            <h3 className="mt-5 font-semibold">{label}</h3>
-          </article>
+              )}
+            </span>
+            <span className="text-sm font-medium text-white/78">{label}</span>
+          </div>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function JoinLethelaSection() {
-  return (
-    <section className="container pb-14 pt-8">
-      <div className="grid gap-4 md:grid-cols-2">
-        <article className="rounded-xl border border-white/10 bg-white/[0.04] p-6">
-          <h2 className="text-2xl font-semibold">Become a vendor</h2>
-          <p className="mt-3 text-sm leading-7 text-white/66">
-            Spaza shops, food vendors, grocery sellers and restaurants can create a profile and
-            complete approval from the dashboard.
-          </p>
-          <Link
-            href="/vendors/register"
-            className="mt-5 inline-flex rounded-md bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-lethela-primary/90"
-          >
-            Sell on Lethela
-          </Link>
-        </article>
-        <article className="rounded-xl border border-white/10 bg-white/[0.04] p-6">
-          <h2 className="text-2xl font-semibold">Become a rider</h2>
-          <p className="mt-3 text-sm leading-7 text-white/66">
-            Local riders can apply to support township deliveries as Lethela expands area by area.
-          </p>
-          <Link
-            href="/rider"
-            className="mt-5 inline-flex rounded-md border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-lethela-primary hover:text-lethela-primary"
-          >
-            Apply as a rider
-          </Link>
-        </article>
       </div>
     </section>
   );

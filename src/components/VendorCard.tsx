@@ -53,9 +53,14 @@ export default function VendorCard({ v }: { v: Vendor }) {
           )}
         </div>
 
-        <p className="mt-1 text-sm text-white/70">{v.cuisines[0] || "Local vendor"}</p>
+        <p className="mt-1 truncate text-sm text-white/70">
+          {[v.storeType || v.cuisines[0] || "Local vendor", v.area].filter(Boolean).join(" · ")}
+        </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/80">
+          <span className="rounded-md bg-emerald-400/15 px-2 py-1 text-emerald-100">
+            {v.isOpen === false ? "Closed" : "Open"}
+          </span>
           <span className="rounded-md bg-white/10 px-2 py-1">{v.eta}</span>
           <span className="rounded-md bg-white/10 px-2 py-1">
             Delivery from {formatZAR(v.deliveryFeeCents ?? DEFAULT_DELIVERY_FEE_CENTS)}

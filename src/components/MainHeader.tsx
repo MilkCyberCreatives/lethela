@@ -57,10 +57,10 @@ export default function MainHeader() {
             Rider
           </Link>
           <Link
-            href="/categories/spaza-groceries"
+            href="/categories/groceries"
             className="hover:underline hover:text-lethela-primary font-medium"
           >
-            Spaza & Groceries
+            Groceries
           </Link>
           <Link
             href="/restaurants"
@@ -127,8 +127,8 @@ export default function MainHeader() {
                 <Link href="/rider" className="hover:underline">
                   Rider
                 </Link>
-                <Link href="/categories/spaza-groceries" className="hover:underline">
-                  Spaza & Groceries
+                <Link href="/categories/groceries" className="hover:underline">
+                  Groceries
                 </Link>
                 <Link href="/restaurants" className="hover:underline">
                   Restaurants

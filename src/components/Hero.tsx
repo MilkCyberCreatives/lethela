@@ -362,30 +362,11 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
             Now live in Klipfontein View. Built for township delivery across South Africa.
           </p>
           <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">
-            Township delivery made simple.
+            Lethela &mdash; Siyashesha
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-white/78 md:text-lg">
-            Order food, groceries and daily essentials from approved vendors, spaza shops and
-            restaurants near you.
+            Fast deliveries near you.
           </p>
-          <p className="mt-3 text-sm text-white/62">
-            Now live in Klipfontein View. Expanding to more township communities across South
-            Africa.
-          </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link
-              href="#live-near-you"
-              className="rounded-md bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-lethela-primary/90"
-            >
-              Browse vendors
-            </Link>
-            <Link
-              href="/vendors/register"
-              className="rounded-md border border-white/25 px-5 py-3 text-sm font-semibold text-white transition hover:border-lethela-primary hover:text-lethela-primary"
-            >
-              Sell on Lethela
-            </Link>
-          </div>
 
           <div className="mt-8 flex w-full max-w-2xl flex-col gap-3" ref={acRef}>
             <form
@@ -579,62 +560,66 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
           ) : null}
         </div>
 
-        <div className="hidden">
-          <div className="card-glass w-full max-w-md rounded-2xl p-6 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30">
-            <p className="text-sm text-white/80">
-              {activeArea
-                ? `Nearby options in ${activeArea}.`
-                : "Set your area to see nearby options."}
-            </p>
-            <div className="mt-3 min-h-28 rounded-xl bg-white/10 p-4">
-              {!activeArea ? (
-                <div className="flex h-full min-h-20 items-center justify-center text-center text-sm text-white/55">
-                  Enter your address or use your location to load nearby vendors.
-                </div>
-              ) : nearbyLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <div key={index} className="h-4 animate-pulse rounded-full bg-white/10" />
-                  ))}
-                </div>
-              ) : nearbyVendors.length > 0 ? (
-                <div className="space-y-3">
-                  {nearbyVendors.map((vendor) => (
-                    <Link
-                      key={vendor.id}
-                      href={`/vendors/${vendor.slug}`}
-                      className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 transition-colors hover:border-white/20 hover:bg-white/[0.05]"
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-white">{vendor.name}</div>
-                        <div className="truncate text-[11px] text-white/65">
-                          {vendor.cuisines?.slice(0, 2).join(" • ") || "Open now"}
+        {false ? (
+          <div className="hidden">
+            <div className="card-glass w-full max-w-md rounded-2xl p-6 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30">
+              <p className="text-sm text-white/80">
+                {activeArea
+                  ? `Nearby options in ${activeArea}.`
+                  : "Set your area to see nearby options."}
+              </p>
+              <div className="mt-3 min-h-28 rounded-xl bg-white/10 p-4">
+                {!activeArea ? (
+                  <div className="flex h-full min-h-20 items-center justify-center text-center text-sm text-white/55">
+                    Enter your address or use your location to load nearby vendors.
+                  </div>
+                ) : nearbyLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <div key={index} className="h-4 animate-pulse rounded-full bg-white/10" />
+                    ))}
+                  </div>
+                ) : nearbyVendors.length > 0 ? (
+                  <div className="space-y-3">
+                    {nearbyVendors.map((vendor) => (
+                      <Link
+                        key={vendor.id}
+                        href={`/vendors/${vendor.slug}`}
+                        className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 transition-colors hover:border-white/20 hover:bg-white/[0.05]"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-white">
+                            {vendor.name}
+                          </div>
+                          <div className="truncate text-[11px] text-white/65">
+                            {vendor.cuisines?.slice(0, 2).join(" • ") || "Open now"}
+                          </div>
                         </div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <div className="text-xs font-medium text-white">
-                          {vendor.eta || "20-25 min"}
+                        <div className="shrink-0 text-right">
+                          <div className="text-xs font-medium text-white">
+                            {vendor.eta || "20-25 min"}
+                          </div>
+                          {vendor.badge ? (
+                            <div className="text-[10px] text-white/55">{vendor.badge}</div>
+                          ) : null}
                         </div>
-                        {vendor.badge ? (
-                          <div className="text-[10px] text-white/55">{vendor.badge}</div>
-                        ) : null}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex h-full min-h-20 items-center justify-center text-center text-sm text-white/55">
-                  No nearby vendors are available for this area yet.
-                </div>
-              )}
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex h-full min-h-20 items-center justify-center text-center text-sm text-white/55">
+                    No nearby vendors are available for this area yet.
+                  </div>
+                )}
+              </div>
+              <p className="mt-4 text-xs text-white/70">
+                {activeArea
+                  ? `${nearbyVendors.length || 0} nearby option${nearbyVendors.length === 1 ? "" : "s"} ready to browse.`
+                  : "Built for South Africa • Performance-first"}
+              </p>
             </div>
-            <p className="mt-4 text-xs text-white/70">
-              {activeArea
-                ? `${nearbyVendors.length || 0} nearby option${nearbyVendors.length === 1 ? "" : "s"} ready to browse.`
-                : "Built for South Africa • Performance-first"}
-            </p>
           </div>
-        </div>
+        ) : null}
       </div>
     </section>
   );

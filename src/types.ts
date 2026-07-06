@@ -9,6 +9,9 @@ export type Vendor = {
   reviewCount?: number;
   deliveryFeeCents?: number;
   cuisines: string[];
+  area?: string | null;
+  storeType?: string | null;
+  isOpen?: boolean;
   eta: string; // display string
   distanceKm?: number; // for AI ETA/rerank
   baseEtaMin?: number; // vendor-prep baseline

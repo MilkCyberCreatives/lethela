@@ -3,7 +3,9 @@ export const TOWNSHIP_CATEGORIES = [
   "Chips",
   "Burger",
   "Mogodu",
-  "Spaza & Groceries",
+  "Groceries",
+  "Drinks",
+  "Snacks",
   "Wings",
   "Braai",
   "Pizza",
@@ -44,12 +46,23 @@ export const CATEGORY_CONTENT: Record<
     guidance:
       "Traditional meals can sell out quickly, especially on weekends, so live stock may change during busy periods.",
   },
-  "Spaza & Groceries": {
-    headline: "Spaza shop and grocery delivery",
+  Groceries: {
+    headline: "Groceries",
     intro:
-      "Shop bread, milk, eggs, maize meal, rice, cooking oil, toiletries, cleaning products and daily essentials from nearby spaza shops and grocery sellers.",
+      "Shop bread, milk, eggs, maize meal, rice, cooking oil, toiletries, cleaning products and daily essentials from nearby grocery sellers.",
     guidance:
-      "Lethela supports simple grocery baskets, spaza stock lists and customer-approved substitutions before dispatch where an item is unavailable.",
+      "Lethela supports simple grocery baskets, stock lists and customer-approved substitutions before dispatch where an item is unavailable.",
+  },
+  Drinks: {
+    headline: "Drinks",
+    intro: "Browse cold drinks, juice, water and everyday refreshments from nearby vendors.",
+    guidance:
+      "Alcohol is hidden from public browsing until licence checks, age verification and handover rules are complete.",
+  },
+  Snacks: {
+    headline: "Snacks",
+    intro: "Browse chips, sweets, biscuits and quick snack items from nearby vendors.",
+    guidance: "Snack availability depends on live vendor stock and delivery coverage.",
   },
   Wings: {
     headline: "Wings, dips and sharing boxes",
@@ -96,8 +109,12 @@ export function categoryToSlug(category: TownshipCategory | string) {
 
 export function slugToCategory(slug: string): TownshipCategory | null {
   const normalizedSlug = categoryToSlug(slug);
-  if (["groceries", "grocery", "spaza", "spaza-shop-delivery"].includes(normalizedSlug)) {
-    return "Spaza & Groceries";
+  if (
+    ["groceries", "grocery", "spaza", "spaza-groceries", "spaza-shop-delivery"].includes(
+      normalizedSlug,
+    )
+  ) {
+    return "Groceries";
   }
   const match = TOWNSHIP_CATEGORIES.find((category) => categoryToSlug(category) === normalizedSlug);
   return match ?? null;
@@ -110,11 +127,13 @@ export function inferProductCategory(input: {
 }): TownshipCategory {
   const haystack = `${input.name} ${input.description || ""}`.toLowerCase();
 
-  if (input.isAlcohol) return "Spaza & Groceries";
+  if (input.isAlcohol) return "Groceries";
   if (/kota|spatlho|magwinya/.test(haystack)) return "Kota";
   if (/wing|drumstick/.test(haystack)) return "Wings";
   if (/breakfast|vetkoek|oats|cereal/.test(haystack)) return "Breakfast";
   if (/braai|nyama|wors|chops/.test(haystack)) return "Braai";
+  if (/cold drink|cooldrink|juice|water|soda|drink/.test(haystack)) return "Drinks";
+  if (/snack|chips|crisps|biscuit|sweet|chocolate/.test(haystack)) return "Snacks";
   if (/chip|fries|atchar chips/.test(haystack)) return "Chips";
   if (/burger|beef burger|chicken burger/.test(haystack)) return "Burger";
   if (/mogodu|tripe/.test(haystack)) return "Mogodu";
@@ -123,7 +142,7 @@ export function inferProductCategory(input: {
       haystack,
     )
   )
-    return "Spaza & Groceries";
+    return "Groceries";
   if (/pizza/.test(haystack)) return "Pizza";
   if (/chicken|bucket/.test(haystack)) return "Chicken";
   return "Burger";
