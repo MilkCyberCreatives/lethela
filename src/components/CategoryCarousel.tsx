@@ -1,72 +1,54 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
-import { ChevronLeft, ChevronRight, Utensils } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, ShoppingBasket, Utensils } from "lucide-react";
 import { categoryToSlug } from "@/lib/categories";
 
 const CATEGORIES = [
-  "Kota",
-  "Chips",
-  "Burger",
-  "Mogodu",
-  "Spaza & Groceries",
-  "Braai",
-  "Pizza",
-  "Chicken",
-  "Breakfast",
+  { label: "Spaza & Groceries", category: "Spaza & Groceries" },
+  { label: "Kota", category: "Kota" },
+  { label: "Chicken", category: "Chicken" },
+  { label: "Burgers", category: "Burger" },
+  { label: "Braai", category: "Braai" },
+  { label: "Breakfast", category: "Breakfast" },
 ];
 
 export default function CategoryCarousel() {
-  const scroller = useRef<HTMLDivElement>(null);
-
-  const scrollBy = (dx: number) => {
-    scroller.current?.scrollBy({ left: dx, behavior: "smooth" });
-  };
-
   return (
-    <section>
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-xl font-semibold">Popular categories</h3>
-        <div className="hidden gap-2 md:flex">
-          <Button
-            variant="outline"
-            className="border-white/20"
-            onClick={() => scrollBy(-240)}
-            aria-label="Scroll categories left"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="outline"
-            className="border-white/20"
-            onClick={() => scrollBy(240)}
-            aria-label="Scroll categories right"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
+    <section id="popular-categories">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold">Popular categories</h2>
+          <p className="mt-2 text-sm text-white/62">
+            Start with the township favourites customers ask for most.
+          </p>
         </div>
+        <Link
+          href="/search"
+          className="inline-flex items-center text-sm font-semibold text-white/75 transition hover:text-lethela-primary"
+        >
+          View all categories
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Link>
       </div>
 
-      <div
-        ref={scroller}
-        className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1"
-        style={{ scrollBehavior: "smooth" }}
-        role="listbox"
-        aria-label="Category list"
-      >
-        {CATEGORIES.map((category) => (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {CATEGORIES.map((item) => (
           <Link
-            key={category}
-            href={`/categories/${categoryToSlug(category)}`}
-            className="snap-start shrink-0 rounded-xl border border-white/15 bg-lethela-secondary px-4 py-2 text-sm transition hover:bg-white/5"
-            aria-label={category}
+            key={item.label}
+            href={`/categories/${categoryToSlug(item.category)}`}
+            className="group rounded-xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-lethela-primary/60 hover:bg-white/[0.07]"
+            aria-label={item.label}
           >
-            <span className="inline-flex items-center gap-2">
-              <Utensils className="h-4 w-4" />
-              {category}
+            <span className="grid h-11 w-11 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
+              {item.category === "Spaza & Groceries" ? (
+                <ShoppingBasket className="h-5 w-5" />
+              ) : (
+                <Utensils className="h-5 w-5" />
+              )}
             </span>
+            <span className="mt-4 block text-lg font-semibold">{item.label}</span>
+            <span className="mt-1 block text-sm text-white/58">Browse approved listings</span>
           </Link>
         ))}
       </div>

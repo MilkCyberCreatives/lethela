@@ -44,7 +44,7 @@ type PublicProductSource = {
   vendorSlug?: string | null;
 };
 
-const HIDDEN_PUBLIC_VENDOR_TERMS = ["milk cyber creatives", "milk-cyber-creatives"];
+const HIDDEN_PUBLIC_VENDOR_TERMS = ["milk cyber creatives", "milk-cyber-creatives", "leadvault"];
 
 export function isPublicCatalogVendor(source: Pick<PublicVendorSource, "name" | "slug">) {
   const name = source.name.trim().toLowerCase();

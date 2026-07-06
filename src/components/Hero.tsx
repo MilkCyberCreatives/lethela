@@ -356,22 +356,40 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
         className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80"
       />
 
-      <div className="relative container grid gap-10 py-12 md:grid-cols-2 md:py-20">
-        <div className="flex flex-col justify-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
-            Lethela - <span className="text-lethela-primary">Siyashesha</span>
-          </h1>
-          <p className="mt-4 text-white/80 max-w-xl">
-            Fast deliveries in{" "}
-            <span className="font-semibold text-white">
-              {activeArea || initialArea || "Klipfontein View, Midrand 1685"}
-            </span>
-            .
+      <div className="relative container py-12 md:py-20">
+        <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary">
+            Now live in Klipfontein View. Built for township delivery across South Africa.
           </p>
+          <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">
+            Township delivery made simple.
+          </h1>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-white/78 md:text-lg">
+            Order food, groceries and daily essentials from approved vendors, spaza shops and
+            restaurants near you.
+          </p>
+          <p className="mt-3 text-sm text-white/62">
+            Now live in Klipfontein View. Expanding to more township communities across South
+            Africa.
+          </p>
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <Link
+              href="#live-near-you"
+              className="rounded-md bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-lethela-primary/90"
+            >
+              Browse vendors
+            </Link>
+            <Link
+              href="/vendors/register"
+              className="rounded-md border border-white/25 px-5 py-3 text-sm font-semibold text-white transition hover:border-lethela-primary hover:text-lethela-primary"
+            >
+              Sell on Lethela
+            </Link>
+          </div>
 
-          <div className="mt-6 flex flex-col gap-3" ref={acRef}>
+          <div className="mt-8 flex w-full max-w-2xl flex-col gap-3" ref={acRef}>
             <form
-              className="relative flex w-full max-w-xl items-center gap-2"
+              className="relative flex w-full items-center gap-2"
               onSubmit={(event) => {
                 event.preventDefault();
                 setOpen(false);
@@ -381,7 +399,7 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
             >
               <div className="relative flex-1">
                 <Input
-                  placeholder="Ask AI: vegan curry near Midrand"
+                  placeholder="Search kota, groceries, chicken, spaza shops..."
                   value={q}
                   onFocus={() => suggests.length > 0 && setOpen(true)}
                   onChange={(event) => setQ(event.target.value)}
@@ -476,11 +494,11 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
                 className="bg-lethela-primary disabled:opacity-60"
                 aria-label="Search"
               >
-                {loading ? "Thinking..." : "Ask AI"}
+                {loading ? "Searching..." : "Search"}
               </Button>
             </form>
 
-            <div className="flex items-center gap-2 text-xs text-white/70">
+            <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-white/70">
               <Button
                 variant="outline"
                 className="h-8 border-white/30 px-3 text-white hover:bg-white/10"
@@ -517,7 +535,7 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
 
           {searchNotice ? <p className="mt-4 text-sm text-white/70">{searchNotice}</p> : null}
           {resp ? (
-            <div className="mt-6 rounded-xl border border-white/10 bg-lethela-secondary p-4 text-sm">
+            <div className="mt-6 w-full max-w-2xl rounded-xl border border-white/10 bg-lethela-secondary p-4 text-left text-sm">
               <div className="text-white/85 font-medium">Search results</div>
               {resp.ok && Array.isArray(resp.results) && resp.results.length > 0 ? (
                 <div className="mt-3 grid gap-3">
@@ -561,7 +579,7 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
           ) : null}
         </div>
 
-        <div className="hidden md:flex items-center justify-center">
+        <div className="hidden">
           <div className="card-glass w-full max-w-md rounded-2xl p-6 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30">
             <p className="text-sm text-white/80">
               {activeArea
