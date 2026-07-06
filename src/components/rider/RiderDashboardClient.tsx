@@ -137,8 +137,14 @@ export default function RiderDashboardClient() {
 
   if (loading) {
     return (
-      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 text-sm text-white/70">
-        Loading rider dashboard...
+      <div className="grid animate-pulse gap-4 rounded-lg border border-white/10 bg-white/[0.04] p-5">
+        <div className="h-5 w-40 rounded bg-white/10" />
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="h-24 rounded-lg bg-white/10" />
+          <div className="h-24 rounded-lg bg-white/10" />
+          <div className="h-24 rounded-lg bg-white/10" />
+        </div>
+        <div className="h-32 rounded-lg bg-white/10" />
       </div>
     );
   }

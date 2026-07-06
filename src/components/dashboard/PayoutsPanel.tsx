@@ -127,8 +127,12 @@ export default function PayoutsPanel() {
               <tbody>
                 {loading ? (
                   <tr className="border-t border-white/10">
-                    <td colSpan={4} className="py-6 text-center text-white/60">
-                      Loading settlements...
+                    <td colSpan={4} className="py-4">
+                      <div className="grid animate-pulse gap-2">
+                        <div className="h-5 rounded bg-white/10" />
+                        <div className="h-5 rounded bg-white/10" />
+                        <div className="h-5 rounded bg-white/10" />
+                      </div>
                     </td>
                   </tr>
                 ) : payouts && payouts.recentSettlements.length > 0 ? (

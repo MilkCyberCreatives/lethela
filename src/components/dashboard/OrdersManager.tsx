@@ -235,7 +235,11 @@ export default function OrdersManager() {
       </div>
 
       {loading ? (
-        <div className="mt-4 text-sm text-white/70">Loading orders...</div>
+        <div className="mt-4 grid animate-pulse gap-3">
+          <div className="h-20 rounded-lg bg-white/10" />
+          <div className="h-20 rounded-lg bg-white/10" />
+          <div className="h-20 rounded-lg bg-white/10" />
+        </div>
       ) : filteredOrders.length === 0 ? (
         <div className="mt-4 text-sm text-white/70">No orders match the current filters.</div>
       ) : (

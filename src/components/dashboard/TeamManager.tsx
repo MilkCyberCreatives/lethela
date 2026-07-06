@@ -173,8 +173,12 @@ export default function TeamManager() {
             <tbody>
               {loading ? (
                 <tr className="border-t border-white/10">
-                  <td colSpan={5} className="py-6 text-center text-white/60">
-                    Loading team...
+                  <td colSpan={5} className="py-4">
+                    <div className="grid animate-pulse gap-2">
+                      <div className="h-5 rounded bg-white/10" />
+                      <div className="h-5 rounded bg-white/10" />
+                      <div className="h-5 rounded bg-white/10" />
+                    </div>
                   </td>
                 </tr>
               ) : members.length > 0 ? (

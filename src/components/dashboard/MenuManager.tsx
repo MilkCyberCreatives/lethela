@@ -490,7 +490,10 @@ export default function MenuManager() {
           </div>
 
           {loading ? (
-            <div className="text-sm text-white/70">Loading menu...</div>
+            <div className="grid animate-pulse gap-3">
+              <div className="h-20 rounded-xl bg-white/10" />
+              <div className="h-20 rounded-xl bg-white/10" />
+            </div>
           ) : sections.length === 0 ? (
             <div className="rounded-xl border border-dashed border-white/15 bg-black/10 px-4 py-6 text-sm text-white/70">
               No menu sections yet. Start with a section like Breakfast, Kota, Mogodu, Drinks, or

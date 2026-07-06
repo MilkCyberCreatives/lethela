@@ -230,6 +230,10 @@ if (isTruthy(read("ALLOW_PRODUCTION_DEMO_CATALOG", values))) {
   warnings.push("ALLOW_PRODUCTION_DEMO_CATALOG: should be unset for a real launch.");
 }
 
+if (isTruthy(read("ALLOW_PUBLIC_DEMO_ORDER", values))) {
+  errors.push("ALLOW_PUBLIC_DEMO_ORDER: must be unset for a real operating environment.");
+}
+
 warnIfMissing(
   "PASSWORD_RESET_SECRET",
   "recommended so password reset does not rely on NEXTAUTH_SECRET.",

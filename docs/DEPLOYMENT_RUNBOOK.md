@@ -253,12 +253,13 @@ Relevant code:
 - `src/app/api/admin/access/route.ts`
 - `src/lib/admin-auth.ts`
 
-## Pre-Launch Verification
+## Operating Verification
 
 Run these commands against the production configuration before opening traffic:
 
 ```powershell
 npm run check:production-env -- .env.production
+npm run check:operating-readiness -- .env.production https://www.lethela.co.za
 npm test
 npx tsc --noEmit --incremental false
 npm run build
@@ -272,13 +273,13 @@ Then verify the live deployment:
 4. Confirm `services.maps` is `true`.
 5. Confirm `services.ozow` is `true`.
 6. Confirm `catalog.mode` is `live`.
-7. Confirm `catalog.activeVendors` and `catalog.activeProducts` are sensible for your launch state.
+7. Confirm `catalog.activeVendors` and `catalog.activeProducts` are sensible for your operating state.
 
 Relevant code:
 
 - `src/app/api/ops/health/route.ts`
 
-## Launch Smoke Test
+## Operating Smoke Test
 
 Run this exact flow on the live site:
 
@@ -300,7 +301,7 @@ Run this exact flow on the live site:
 - `serverActions.allowedOrigins` now follows your configured site origins, so make sure `NEXT_PUBLIC_SITE_URL` and `NEXTAUTH_URL` are correct before deployment.
 - `NEXT_PUBLIC_SITE_URL` and `NEXTAUTH_URL` should match the public canonical domain exactly.
 - Avoid relying on fallback defaults for production analytics or public legal metadata.
-- Production launches now intentionally reject demo catalog mode unless `ALLOW_PRODUCTION_DEMO_CATALOG=true` is set for a temporary non-launch environment.
+- Production operating checks intentionally reject demo catalog mode and public demo orders.
 
 Relevant code:
 
@@ -310,10 +311,10 @@ Relevant code:
 
 ## Rollback Guidance
 
-If launch validation fails:
+If operating validation fails:
 
 1. Keep traffic closed.
 2. Fix the missing env or infrastructure issue.
 3. Re-run `/api/ops/health`.
-4. Re-run the launch smoke test.
-5. Only open traffic after all launch-critical checks pass.
+4. Re-run the operating smoke test.
+5. Only open traffic after all operating-critical checks pass.
