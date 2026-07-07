@@ -26,8 +26,8 @@ const QuerySchema = z
     },
   );
 
-function localSqliteQuote(baseFeeCents = DEFAULT_DELIVERY_FEE_CENTS) {
-  const deliveryCents = baseFeeCents > 0 ? baseFeeCents : DEFAULT_DELIVERY_FEE_CENTS;
+function localSqliteQuote() {
+  const deliveryCents = DEFAULT_DELIVERY_FEE_CENTS;
   return {
     ok: true,
     originResolved: true,
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 
     const sqliteVendor = await getSqliteDeliveryVendor(parsed.data.vendorId);
     if (sqliteVendor) {
-      return NextResponse.json(localSqliteQuote(sqliteVendor.deliveryFee));
+      return NextResponse.json(localSqliteQuote());
     }
   }
 

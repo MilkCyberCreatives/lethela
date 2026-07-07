@@ -219,7 +219,7 @@ export default function VendorRegisterPage() {
             {[
               "Approved vendors can sign in to view the current pricing structure.",
               "Lethela confirms commercial terms before a store starts taking orders.",
-              "Alcohol and regulated products require the correct vendor permissions before listing.",
+              "Liquor and regulated products require the correct vendor permissions before listing.",
             ].map((item) => (
               <article
                 key={item}

@@ -39,7 +39,7 @@ export async function GET() {
     "- Support channel: WhatsApp support",
     "- Vendors require admin approval before going live",
     "- Riders require operations review before onboarding",
-    "- Alcohol is hidden publicly until licence, age verification and rider handover controls are complete",
+    "- Liquor is a restricted 18+ category for approved licensed vendors only",
     "",
     "## Machine-readable signals",
     "- JSON-LD Organization/WebSite/SearchAction schema",

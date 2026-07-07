@@ -13,6 +13,22 @@ function isFailed(paymentStatus: string, orderStatus: string) {
   return payment === "FAILED" || payment === "CANCELLED" || status === "CANCELED";
 }
 
+function parseDeliveryDetails(itemsJson: string | null | undefined) {
+  try {
+    const parsed = JSON.parse(itemsJson || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? ((parsed as { deliveryDetails?: Record<string, unknown> }).deliveryDetails ?? null)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function numberDetail(details: Record<string, unknown> | null, key: string) {
+  const value = details?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
+}
+
 function nextPayoutDate() {
   const next = new Date();
   next.setDate(next.getDate() + 2);
@@ -69,6 +85,7 @@ export async function GET() {
             subtotalCents: true,
             deliveryFeeCents: true,
             totalCents: true,
+            itemsJson: true,
             createdAt: true,
             items: { select: { qty: true } },
           },
@@ -136,17 +153,24 @@ export async function GET() {
     const failedOrders = orders.filter((order) => isFailed(order.paymentStatus, order.status));
     const recentPaidOrders = paidOrders.filter((order) => new Date(order.createdAt) >= since7);
     const latestPaidOrder = paidOrders[0] || null;
+    const riderTipFor = (order: (typeof orders)[number]) =>
+      numberDetail(parseDeliveryDetails(order.itemsJson), "riderTipCents");
+    const riderPayoutFor = (order: (typeof orders)[number]) =>
+      order.deliveryFeeCents + riderTipFor(order);
 
     const payouts = {
-      availableCents: paidOrders.reduce((sum, order) => sum + order.totalCents, 0),
-      pendingCents: pendingSettlementOrders.reduce((sum, order) => sum + order.totalCents, 0),
-      failedCents: failedOrders.reduce((sum, order) => sum + order.totalCents, 0),
-      last7DaysCents: recentPaidOrders.reduce((sum, order) => sum + order.totalCents, 0),
+      availableCents: paidOrders.reduce((sum, order) => sum + order.subtotalCents, 0),
+      pendingCents: pendingSettlementOrders.reduce((sum, order) => sum + order.subtotalCents, 0),
+      failedCents: failedOrders.reduce((sum, order) => sum + order.subtotalCents, 0),
+      last7DaysCents: recentPaidOrders.reduce((sum, order) => sum + order.subtotalCents, 0),
       averagePaidOrderCents: paidOrders.length
         ? Math.round(
-            paidOrders.reduce((sum, order) => sum + order.totalCents, 0) / paidOrders.length,
+            paidOrders.reduce((sum, order) => sum + order.subtotalCents, 0) / paidOrders.length,
           )
         : 0,
+      riderDeliveryFeeCents: paidOrders.reduce((sum, order) => sum + order.deliveryFeeCents, 0),
+      riderTipCents: paidOrders.reduce((sum, order) => sum + riderTipFor(order), 0),
+      riderPayoutCents: paidOrders.reduce((sum, order) => sum + riderPayoutFor(order), 0),
       paidOrdersCount: paidOrders.length,
       pendingOrdersCount: pendingSettlementOrders.length,
       failedOrdersCount: failedOrders.length,
@@ -155,7 +179,11 @@ export async function GET() {
       recentSettlements: paidOrders.slice(0, 6).map((order) => ({
         publicId: order.publicId,
         createdAt: order.createdAt.toISOString(),
-        amountCents: order.totalCents,
+        amountCents: order.subtotalCents,
+        deliveryFeeCents: order.deliveryFeeCents,
+        riderTipCents: riderTipFor(order),
+        riderPayoutCents: riderPayoutFor(order),
+        totalPaidCents: order.totalCents,
         itemsCount: order.items.reduce((sum, item) => sum + item.qty, 0),
       })),
     };

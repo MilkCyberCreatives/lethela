@@ -97,6 +97,10 @@ export default function PrivacyPolicyPage() {
           preferences, ratings, and basic site functionality. We may also use limited analytics,
           fraud prevention and marketing tools where appropriate.
         </p>
+        <p>
+          Voice search uses your device or browser microphone permission to turn speech into search
+          text. Lethela does not store your voice recording.
+        </p>
       </Section>
 
       <Section title="Your POPIA rights">

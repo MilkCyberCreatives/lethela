@@ -58,6 +58,8 @@ type RiderMeResponse = {
     pickupArea: string;
     totalCents: number;
     deliveryFeeCents: number;
+    riderTipCents: number;
+    riderPayoutCents: number;
     riderLocatedAt: string | null;
     createdAt: string;
     updatedAt: string;
@@ -234,7 +236,7 @@ export default function RiderDashboardClient() {
           <Metric
             label="Est. delivery fees"
             value={money(orders.reduce((sum, order) => sum + order.deliveryFeeCents, 0))}
-            note="Visible active dispatch pool"
+            note="100% goes to the assigned rider"
             icon={WalletCards}
           />
         </div>
@@ -291,6 +293,10 @@ export default function RiderDashboardClient() {
                     )}
                     <span className="text-xs text-white/60">
                       Delivery fee: {money(order.deliveryFeeCents)}
+                    </span>
+                    <span className="text-xs text-white/60">Tip: {money(order.riderTipCents)}</span>
+                    <span className="text-xs font-semibold text-white">
+                      Rider total: {money(order.riderPayoutCents)}
                     </span>
                   </div>
                 </article>

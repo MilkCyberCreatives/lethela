@@ -39,6 +39,7 @@ const BodySchema = z
     ageConfirmed: z.boolean().optional().default(false),
     subtotalCents: z.number().int().nonnegative(),
     deliveryCents: z.number().int().nonnegative(),
+    riderTipCents: z.number().int().nonnegative().optional().default(0),
     totalCents: z.number().int().positive(),
   })
   .refine(
@@ -121,6 +122,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     ageConfirmed,
     subtotalCents,
     deliveryCents,
+    riderTipCents,
     totalCents: requestedTotalCents,
   } = parsed.data;
   if (items.length === 0) {
@@ -201,19 +203,6 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     );
   }
 
-  const deliveryDetails = {
-    customerName,
-    customerPhone,
-    whatsappNumber,
-    standNumber,
-    streetSection,
-    landmark,
-    destinationSuburb: destinationSuburb || "",
-    deliveryNotes,
-    ageConfirmed,
-    containsAlcohol,
-  };
-
   const calcSubtotal = normalizedItems.reduce((sum, item) => sum + item.priceCents * item.qty, 0);
   const deliveryQuote = await quoteDelivery({
     vendor,
@@ -225,7 +214,30 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     baseFeeCents: vendor.deliveryFee,
   });
   const resolvedDeliveryCents = deliveryQuote.deliveryCents;
-  const totalCents = calcSubtotal + resolvedDeliveryCents;
+  const resolvedRiderTipCents = Math.max(0, Math.round(riderTipCents || 0));
+  const riderPayoutCents = resolvedDeliveryCents + resolvedRiderTipCents;
+  const vendorPayoutCents = calcSubtotal;
+  const platformFeeCents = 0;
+  const totalCents = calcSubtotal + resolvedDeliveryCents + resolvedRiderTipCents;
+
+  const deliveryDetails = {
+    customerName,
+    customerPhone,
+    whatsappNumber,
+    standNumber,
+    streetSection,
+    landmark,
+    destinationSuburb: destinationSuburb || "",
+    deliveryNotes,
+    ageConfirmed,
+    containsAlcohol,
+    deliveryDistanceKm: deliveryQuote.distanceKm,
+    riderTipCents: resolvedRiderTipCents,
+    riderPayoutCents,
+    vendorPayoutCents,
+    platformFeeCents,
+    payoutNote: "Lethela delivery fee and customer tip go fully to the assigned rider.",
+  };
 
   if (!deliveryQuote.originResolved) {
     return NextResponse.json(
@@ -258,6 +270,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   if (
     Math.abs(calcSubtotal - subtotalCents) > 5 ||
     Math.abs(resolvedDeliveryCents - deliveryCents) > 5 ||
+    Math.abs(resolvedRiderTipCents - riderTipCents) > 5 ||
     Math.abs(totalCents - requestedTotalCents) > 5
   ) {
     return NextResponse.json(
@@ -266,6 +279,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
         error: "Cart totals changed. Please review checkout before paying.",
         subtotalCents: calcSubtotal,
         deliveryCents: resolvedDeliveryCents,
+        riderTipCents: resolvedRiderTipCents,
         totalCents,
       },
       { status: 409 },

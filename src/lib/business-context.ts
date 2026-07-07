@@ -43,7 +43,7 @@ export function businessFacts() {
     riderRequirements:
       "Riders need South African ID, a valid license where applicable, reliable transport, a smartphone with GPS/data, WhatsApp, and a bank account.",
     alcoholPolicy:
-      "Alcohol is hidden from public ordering until licence checks, age verification, rider handover rules, refusal handling and refund logic are complete.",
+      "Liquor is a restricted 18+ category. It may only be sold by approved licensed vendors, and valid ID may be required on delivery.",
     escalation:
       "For urgent support, refunds, order issues, vendor onboarding help, or rider follow-up, the primary escalation path is WhatsApp support.",
   };
@@ -76,7 +76,7 @@ export function buildBusinessSystemPrompt(relevantItems: SupportFaqItem[] = []) 
     `- Vendor dashboard tools: ${facts.vendorTools}`,
     `- Rider onboarding: ${facts.riderFlow}`,
     `- Rider requirements: ${facts.riderRequirements}`,
-    `- Alcohol policy: ${facts.alcoholPolicy}`,
+    `- Liquor policy: ${facts.alcoholPolicy}`,
     `- Escalation: ${facts.escalation}`,
     `- Support WhatsApp: ${facts.supportWhatsApp}`,
     "",
@@ -108,7 +108,7 @@ export function supportFaq(): SupportFaqItem[] {
     },
     {
       q: "What can I order on Lethela?",
-      a: "You can order township favourites and essentials including kota, chips, burgers, chicken, braai, breakfast items and groceries from approved vendors. Alcohol is paused publicly until compliance checks are complete.",
+      a: "You can order township favourites and essentials including kota, chips, burgers, chicken, braai, breakfast items and groceries from approved vendors. Liquor is restricted to adults 18+ and approved licensed vendors.",
       tags: ["menu", "categories", "kota", "chips", "burgers", "groceries", "alcohol", "food"],
     },
     {
@@ -147,13 +147,13 @@ export function supportFaq(): SupportFaqItem[] {
       tags: ["refund", "refunds", "cancel", "cancellation", "return", "payment issue"],
     },
     {
-      q: "Can I buy alcohol on Lethela?",
-      a: "Not right now. Lethela is keeping alcohol hidden until licence checks, age verification, rider handover rules, refusal handling and refund logic are complete.",
+      q: "Can I buy liquor on Lethela?",
+      a: "Liquor is a restricted 18+ category. It may only be sold by approved licensed vendors, and valid ID may be required on delivery.",
       tags: ["alcohol", "beer", "wine", "cider", "spirits", "age", "18+"],
     },
     {
-      q: "What is Lethela's alcohol policy?",
-      a: "Alcohol is paused publicly until Lethela completes licence checks, age verification, rider handover rules, refusal handling and refund logic.",
+      q: "What is Lethela's liquor policy?",
+      a: "Liquor is sold by approved licensed vendors only. Riders must check valid ID where required and refuse handover if the recipient is under 18, intoxicated, or cannot provide valid ID.",
       tags: ["policy", "alcohol policy", "18+", "law", "legal"],
     },
     {

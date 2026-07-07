@@ -5,6 +5,7 @@ import { Facebook, Instagram, Linkedin, MessageCircle, Music2, Youtube } from "l
 import { getFooterSocialLinks, LEGAL_SERVICE_AREA, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
 import { trackWhatsAppClick } from "@/lib/visitor";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
+import { reopenCookieConsent } from "@/lib/cookie-consent";
 
 const POPULAR_SOCIALS = [
   { key: "whatsapp", label: "WhatsApp" },
@@ -141,6 +142,13 @@ export default function Footer() {
 
         <div className="mt-7 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs text-white/55 md:flex-row md:items-center md:justify-between">
           <p>&copy; {new Date().getFullYear()} Lethela. All rights reserved.</p>
+          <button
+            type="button"
+            onClick={reopenCookieConsent}
+            className="text-left text-white/65 underline-offset-4 transition hover:text-white hover:underline"
+          >
+            Cookie Settings
+          </button>
         </div>
       </div>
     </footer>

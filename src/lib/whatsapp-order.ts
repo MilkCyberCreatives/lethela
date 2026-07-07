@@ -8,6 +8,7 @@ type WhatsAppOrderPayload = {
   items: OrderItem[];
   subtotalCents: number;
   deliveryCents: number;
+  riderTipCents?: number;
   totalCents: number;
   customerName?: string | null;
   customerPhone?: string | null;
@@ -58,6 +59,7 @@ export function buildWhatsAppOrderMessage(payload: WhatsAppOrderPayload) {
     "",
     `Subtotal: ${formatR(payload.subtotalCents)}`,
     `Delivery: ${formatR(payload.deliveryCents)}`,
+    `Rider tip: ${formatR(payload.riderTipCents || 0)}`,
     `Total: ${formatR(payload.totalCents)}`,
     "",
     "I prefer to pay offline/cash. Please confirm this order.",

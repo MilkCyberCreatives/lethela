@@ -7,6 +7,10 @@ type Settlement = {
   publicId: string;
   createdAt: string;
   amountCents: number;
+  deliveryFeeCents: number;
+  riderTipCents: number;
+  riderPayoutCents: number;
+  totalPaidCents: number;
   itemsCount: number;
 };
 
@@ -16,6 +20,9 @@ type PayoutsPayload = {
   failedCents: number;
   last7DaysCents: number;
   averagePaidOrderCents: number;
+  riderDeliveryFeeCents: number;
+  riderTipCents: number;
+  riderPayoutCents: number;
   paidOrdersCount: number;
   pendingOrdersCount: number;
   failedOrdersCount: number;
@@ -59,7 +66,8 @@ export default function PayoutsPanel() {
       <DashCard title="Payouts and Settlements">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-white/70">
-            Estimated settlement visibility from live paid and pending orders.
+            Vendor payouts show product sales only. Lethela delivery fees and customer tips are
+            tracked separately for riders.
           </p>
           <button
             type="button"
@@ -73,18 +81,24 @@ export default function PayoutsPanel() {
         {error ? <p className="mt-3 text-xs text-red-200">{error}</p> : null}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <StatCard
-            label="Available"
+            label="Vendor available"
             value={loading ? "..." : money(payouts?.availableCents ?? 0)}
           />
-          <StatCard label="Pending" value={loading ? "..." : money(payouts?.pendingCents ?? 0)} />
-          <StatCard label="Failed" value={loading ? "..." : money(payouts?.failedCents ?? 0)} />
           <StatCard
-            label="Last 7 days"
-            value={loading ? "..." : money(payouts?.last7DaysCents ?? 0)}
+            label="Vendor pending"
+            value={loading ? "..." : money(payouts?.pendingCents ?? 0)}
           />
           <StatCard
-            label="Avg paid order"
-            value={loading ? "..." : money(payouts?.averagePaidOrderCents ?? 0)}
+            label="Rider fees"
+            value={loading ? "..." : money(payouts?.riderDeliveryFeeCents ?? 0)}
+          />
+          <StatCard
+            label="Rider tips"
+            value={loading ? "..." : money(payouts?.riderTipCents ?? 0)}
+          />
+          <StatCard
+            label="Vendor 7 days"
+            value={loading ? "..." : money(payouts?.last7DaysCents ?? 0)}
           />
         </div>
       </DashCard>
@@ -121,13 +135,15 @@ export default function PayoutsPanel() {
                   <th className="pb-3 pr-4 font-medium">Order</th>
                   <th className="pb-3 pr-4 font-medium">Time</th>
                   <th className="pb-3 pr-4 font-medium">Items</th>
-                  <th className="pb-3 font-medium">Amount</th>
+                  <th className="pb-3 pr-4 font-medium">Vendor payout</th>
+                  <th className="pb-3 pr-4 font-medium">Rider payout</th>
+                  <th className="pb-3 font-medium">Total paid</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr className="border-t border-white/10">
-                    <td colSpan={4} className="py-4">
+                    <td colSpan={6} className="py-4">
                       <div className="grid animate-pulse gap-2">
                         <div className="h-5 rounded bg-white/10" />
                         <div className="h-5 rounded bg-white/10" />
@@ -143,14 +159,20 @@ export default function PayoutsPanel() {
                         {new Date(settlement.createdAt).toLocaleString()}
                       </td>
                       <td className="py-3 pr-4 text-white/65">{settlement.itemsCount}</td>
-                      <td className="py-3 font-semibold text-white">
+                      <td className="py-3 pr-4 font-semibold text-white">
                         {money(settlement.amountCents)}
+                      </td>
+                      <td className="py-3 pr-4 text-white/70">
+                        {money(settlement.riderPayoutCents)}
+                      </td>
+                      <td className="py-3 font-semibold text-white">
+                        {money(settlement.totalPaidCents)}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr className="border-t border-white/10">
-                    <td colSpan={4} className="py-6 text-center text-white/60">
+                    <td colSpan={6} className="py-6 text-center text-white/60">
                       No paid orders to settle yet.
                     </td>
                   </tr>

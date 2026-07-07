@@ -161,6 +161,14 @@ type OperationsOrder = {
   ozowReference: string | null;
   status: string;
   paymentStatus: string;
+  subtotalCents: number;
+  deliveryFeeCents: number;
+  riderTipCents: number;
+  riderPayoutCents: number;
+  vendorPayoutCents: number;
+  platformFeeCents: number;
+  deliveryDistanceKm: number | null;
+  containsAlcohol: boolean;
   totalCents: number;
   createdAt: string;
   vendorName: string;
@@ -315,7 +323,7 @@ const DAILY_OPERATING_PLAYBOOK = [
   "Check rider applications and approve only riders with valid contact, vehicle, banking and emergency details.",
   "Keep WhatsApp support open during operating hours and log every complaint, refund request or failed delivery.",
   "Before accepting public traffic, run at least one low-value paid Ozow order from cart to vendor alert, rider handover and completion.",
-  "Keep alcohol hidden until licence checks, age verification, rider handover, refusal and refund rules are fully operational.",
+  "Keep liquor restricted to approved licensed vendors with age verification, rider ID checks, refusal handling and refund rules.",
 ];
 
 const ORDER_EXCEPTION_PLAYBOOK = [
@@ -2095,6 +2103,42 @@ export default function AdminPage() {
                     </div>
 
                     <div className="grid gap-3">
+                      <div className="rounded-lg border border-white/10 bg-black/10 p-4">
+                        <h4 className="text-sm font-semibold text-white">
+                          Recent order money split
+                        </h4>
+                        <div className="mt-3 grid gap-2">
+                          {operationsOrders.length === 0 ? (
+                            <p className="text-sm text-white/55">No recent orders loaded yet.</p>
+                          ) : (
+                            operationsOrders.slice(0, 5).map((order) => (
+                              <div
+                                key={order.id}
+                                className="rounded-lg border border-white/10 bg-white/[0.035] p-3 text-xs text-white/70"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <span className="font-semibold text-white">{order.publicId}</span>
+                                  <span>{order.vendorName}</span>
+                                </div>
+                                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                                  <span>Products: {money(order.subtotalCents)}</span>
+                                  <span>Vendor payout: {money(order.vendorPayoutCents)}</span>
+                                  <span>Delivery fee: {money(order.deliveryFeeCents)}</span>
+                                  <span>Tip: {money(order.riderTipCents)}</span>
+                                  <span>Rider payout: {money(order.riderPayoutCents)}</span>
+                                  <span>Total paid: {money(order.totalCents)}</span>
+                                </div>
+                                <div className="mt-2 text-white/50">
+                                  {order.deliveryDistanceKm != null
+                                    ? `${order.deliveryDistanceKm.toFixed(2)} km`
+                                    : "Distance pending"}
+                                  {order.containsAlcohol ? " - Liquor ID check required" : ""}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
                       <OperationsFeed
                         title="Recent order events"
                         empty="No order events logged yet."

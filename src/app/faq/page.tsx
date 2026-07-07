@@ -35,7 +35,7 @@ const faq = [
   },
   {
     q: "How does Lethela handle alcohol?",
-    a: "Alcohol is hidden from public ordering for now while Lethela completes licence checks, age verification, rider handover rules, refusal handling and refund logic.",
+    a: "Liquor is a restricted 18+ category. It may only be sold by approved licensed vendors, and valid ID may be required on delivery.",
   },
   {
     q: "Are prices and delivery fees shown before I pay?",

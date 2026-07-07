@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
 import StructuredData from "@/components/StructuredData";
+import VoiceSearchButton from "@/components/VoiceSearchButton";
 import { formatZAR } from "@/lib/format";
 import { searchCatalog } from "@/lib/search";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
@@ -101,7 +102,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
         <form
           action="/search"
           method="get"
-          className="mt-6 grid max-w-3xl gap-3 rounded-lg border border-white/15 bg-white/8 p-3 shadow-2xl shadow-black/20 sm:grid-cols-[1fr_auto]"
+          className="mt-6 grid max-w-3xl gap-3 rounded-lg border border-white/15 bg-white/8 p-3 shadow-2xl shadow-black/20 sm:grid-cols-[1fr_auto_auto]"
         >
           <input
             type="search"
@@ -118,6 +119,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           >
             Search
           </button>
+          <VoiceSearchButton />
         </form>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -149,8 +151,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           <>
             {results.length === 0 ? (
               <div className="mt-8 rounded-lg border border-white/15 bg-white/5 p-5 text-sm leading-6 text-white/75">
-                No approved live listings match this search yet. Try another product, township,
-                store name or category, or place a WhatsApp-assisted request with support.
+                <p className="font-semibold text-white">No results found.</p>
+                <p className="mt-1">
+                  Try searching for groceries, kota, chicken, bread, drinks or vendors near you.
+                </p>
               </div>
             ) : null}
             <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">

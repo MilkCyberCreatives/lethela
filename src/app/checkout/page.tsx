@@ -36,6 +36,7 @@ export default function CheckoutPage() {
   const [streetSection, setStreetSection] = useState("");
   const [landmark, setLandmark] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [riderTipCents, setRiderTipCents] = useState(0);
   const [destinationPoint, setDestinationPoint] = useState<{ lat: number; lng: number } | null>(
     () => {
       const saved = readPreferredLocation();
@@ -114,7 +115,8 @@ export default function CheckoutPage() {
   const hasAlcohol = items.some((item) => item.isAlcohol);
   const onlineCheckoutAvailable = !hasAlcohol;
   const deliveryFee = hasItems ? deliveryQuote.deliveryCents : 0;
-  const total = subtotal + deliveryFee;
+  const tipCents = hasItems ? Math.max(0, Math.round(riderTipCents)) : 0;
+  const total = subtotal + deliveryFee + tipCents;
   const whatsappLink = useMemo(() => {
     const deliveryAddress = [
       standNumber ? `Stand/house: ${standNumber}` : null,
@@ -134,6 +136,7 @@ export default function CheckoutPage() {
       })),
       subtotalCents: subtotal,
       deliveryCents: deliveryFee,
+      riderTipCents: tipCents,
       totalCents: total,
       destinationSuburb,
       deliveryAddress,
@@ -152,6 +155,7 @@ export default function CheckoutPage() {
     standNumber,
     streetSection,
     subtotal,
+    tipCents,
     total,
     whatsappNumber,
   ]);
@@ -231,6 +235,7 @@ export default function CheckoutPage() {
           })),
           subtotalCents: subtotal,
           deliveryCents: deliveryFee,
+          riderTipCents: tipCents,
           totalCents: total,
         }),
       });
@@ -245,6 +250,11 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function updateTipFromRand(value: string) {
+    const number = Number(value.replace(",", "."));
+    setRiderTipCents(Number.isFinite(number) ? Math.max(0, Math.round(number * 100)) : 0);
   }
 
   return (
@@ -402,6 +412,39 @@ export default function CheckoutPage() {
                     : ""}
                 </span>
                 <span>{formatZAR(deliveryFee)}</span>
+              </div>
+              <div className="rounded-lg border border-white/15 bg-white/[0.04] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold">Rider tip</div>
+                    <p className="mt-1 text-xs text-white/60">
+                      100% of the tip goes to the assigned rider.
+                    </p>
+                  </div>
+                  <input
+                    className="w-24 rounded bg-white px-3 py-2 text-right text-sm text-black"
+                    inputMode="decimal"
+                    aria-label="Rider tip amount in rand"
+                    value={(tipCents / 100).toFixed(2)}
+                    onChange={(event) => updateTipFromRand(event.target.value)}
+                  />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[0, 500, 1000, 1500, 2000].map((amount) => (
+                    <button
+                      key={amount}
+                      type="button"
+                      onClick={() => setRiderTipCents(amount)}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                        tipCents === amount
+                          ? "border-lethela-primary bg-lethela-primary text-white"
+                          : "border-white/20 text-white/75 hover:border-lethela-primary"
+                      }`}
+                    >
+                      {amount === 0 ? "No tip" : formatZAR(amount)}
+                    </button>
+                  ))}
+                </div>
               </div>
               <p className="text-xs text-white/60">
                 {quoteLoading

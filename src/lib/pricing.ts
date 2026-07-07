@@ -3,20 +3,21 @@ import { geocodeSuburb, haversineKm, type LatLng } from "@/lib/geo";
 
 export const DEFAULT_DELIVERY_FEE_CENTS = 1000;
 export const INCLUDED_DELIVERY_RADIUS_KM = 1;
-export const EXTRA_DELIVERY_FEE_PER_KM_CENTS = 500;
+export const DELIVERY_FEE_PER_KM_CENTS = 1000;
+export const EXTRA_DELIVERY_FEE_PER_KM_CENTS = DELIVERY_FEE_PER_KM_CENTS;
 export const MAX_LAUNCH_DELIVERY_DISTANCE_KM = 10;
 export const DELIVERY_PRICING_WORDING =
-  "Delivery starts from R10 for nearby orders. Final delivery fee is based on distance and is shown before you confirm.";
+  "Lethela delivery is R10 per km with a R10 minimum. The full delivery fee goes to the rider.";
 
 export const DELIVERY_FEE_TIERS = [
   { maxKm: 1, feeCents: 1000, label: "0-1 km" },
-  { maxKm: 2, feeCents: 1500, label: "1.1-2 km" },
-  { maxKm: 3, feeCents: 2000, label: "2.1-3 km" },
-  { maxKm: 4, feeCents: 2500, label: "3.1-4 km" },
-  { maxKm: 5, feeCents: 3000, label: "4.1-5 km" },
-  { maxKm: 6, feeCents: 3500, label: "5.1-6 km" },
-  { maxKm: 8, feeCents: 4500, label: "6.1-8 km" },
-  { maxKm: 10, feeCents: 5500, label: "8.1-10 km" },
+  { maxKm: 2, feeCents: 2000, label: "2 km" },
+  { maxKm: 3, feeCents: 3000, label: "3 km" },
+  { maxKm: 4, feeCents: 4000, label: "4 km" },
+  { maxKm: 5, feeCents: 5000, label: "5 km" },
+  { maxKm: 6, feeCents: 6000, label: "6 km" },
+  { maxKm: 8, feeCents: 8000, label: "8 km" },
+  { maxKm: 10, feeCents: 10000, label: "10 km" },
 ] as const;
 
 type DeliveryVendorLocation = {
@@ -26,13 +27,6 @@ type DeliveryVendorLocation = {
   suburb?: string | null;
   city?: string | null;
 };
-
-function normalizeBaseFeeCents(baseFeeCents?: number | null) {
-  if (typeof baseFeeCents === "number" && Number.isFinite(baseFeeCents) && baseFeeCents >= 0) {
-    return Math.round(baseFeeCents);
-  }
-  return DEFAULT_DELIVERY_FEE_CENTS;
-}
 
 function vendorAddressQuery(vendor: DeliveryVendorLocation) {
   return [vendor.address, vendor.suburb, vendor.city].filter(Boolean).join(", ");
@@ -48,36 +42,32 @@ async function resolveVendorPoint(vendor: DeliveryVendorLocation): Promise<LatLn
   return geocodeSuburb(query);
 }
 
-export function deliveryFeeCents(distanceKm?: number | null, baseFeeCents?: number | null): number {
-  const normalizedBaseFeeCents = normalizeBaseFeeCents(baseFeeCents);
-  if (!distanceKm) {
-    return normalizedBaseFeeCents;
+export function deliveryFeeCents(distanceKm?: number | null): number {
+  if (typeof distanceKm !== "number" || !Number.isFinite(distanceKm) || distanceKm <= 0) {
+    return DEFAULT_DELIVERY_FEE_CENTS;
   }
 
-  const tier = DELIVERY_FEE_TIERS.find((item) => distanceKm <= item.maxKm);
-  return tier?.feeCents ?? DELIVERY_FEE_TIERS[DELIVERY_FEE_TIERS.length - 1].feeCents;
+  return Math.max(DEFAULT_DELIVERY_FEE_CENTS, Math.ceil(distanceKm * DELIVERY_FEE_PER_KM_CENTS));
 }
 
 export function needsManualDeliveryQuote(distanceKm?: number | null): boolean {
   return typeof distanceKm === "number" && distanceKm > MAX_LAUNCH_DELIVERY_DISTANCE_KM;
 }
 
-export function deliveryFeeZAR(distanceKm?: number | null, baseFeeCents?: number | null): number {
-  return deliveryFeeCents(distanceKm, baseFeeCents) / 100;
+export function deliveryFeeZAR(distanceKm?: number | null): number {
+  return deliveryFeeCents(distanceKm) / 100;
 }
 
 export async function quoteDelivery({
   vendor,
   destinationSuburb,
   destinationPoint: explicitDestinationPoint,
-  baseFeeCents,
 }: {
   vendor: DeliveryVendorLocation;
   destinationSuburb?: string | null;
   destinationPoint?: LatLng | null;
   baseFeeCents?: number | null;
 }) {
-  const normalizedBaseFeeCents = normalizeBaseFeeCents(baseFeeCents);
   const destinationQuery = destinationSuburb?.trim() || "";
   const [originPoint, destinationPoint] = await Promise.all([
     resolveVendorPoint(vendor),
@@ -104,13 +94,13 @@ export async function quoteDelivery({
     originResolved: Boolean(originPoint),
     destinationResolved: Boolean(destinationPoint),
     locationResolved: Boolean(originPoint && destinationPoint),
-    baseFeeCents: normalizedBaseFeeCents,
-    deliveryCents: deliveryFeeCents(distanceKm, normalizedBaseFeeCents),
+    baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
+    deliveryCents: deliveryFeeCents(distanceKm),
     distanceKm,
     manualQuoteRequired: needsManualDeliveryQuote(distanceKm),
     maxLaunchDistanceKm: MAX_LAUNCH_DELIVERY_DISTANCE_KM,
     includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
-    extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
+    extraPerKmCents: DELIVERY_FEE_PER_KM_CENTS,
   };
 }
 

@@ -57,6 +57,40 @@ async function findOrder(orderRef: string) {
   });
 }
 
+function parseOrderFinancials(itemsJson: string | null | undefined) {
+  try {
+    const parsed = JSON.parse(itemsJson || "{}");
+    const details = parsed && typeof parsed === "object" ? parsed.deliveryDetails : null;
+    const numberValue = (key: string) => {
+      const value = details?.[key];
+      return typeof value === "number" && Number.isFinite(value)
+        ? Math.max(0, Math.round(value))
+        : 0;
+    };
+    return {
+      riderTipCents: numberValue("riderTipCents"),
+      riderPayoutCents: numberValue("riderPayoutCents"),
+      vendorPayoutCents: numberValue("vendorPayoutCents"),
+      platformFeeCents: numberValue("platformFeeCents"),
+      deliveryDistanceKm:
+        typeof details?.deliveryDistanceKm === "number" &&
+        Number.isFinite(details.deliveryDistanceKm)
+          ? details.deliveryDistanceKm
+          : null,
+      containsAlcohol: Boolean(details?.containsAlcohol),
+    };
+  } catch {
+    return {
+      riderTipCents: 0,
+      riderPayoutCents: 0,
+      vendorPayoutCents: 0,
+      platformFeeCents: 0,
+      deliveryDistanceKm: null,
+      containsAlcohol: false,
+    };
+  }
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminRequest(req);
   if (!guard.ok)
@@ -72,7 +106,10 @@ export async function GET(req: NextRequest) {
         ozowReference: true,
         status: true,
         paymentStatus: true,
+        subtotalCents: true,
+        deliveryFeeCents: true,
         totalCents: true,
+        itemsJson: true,
         createdAt: true,
         vendor: { select: { name: true, phone: true } },
         user: { select: { email: true, name: true } },
@@ -97,19 +134,30 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    orders: orders.map((order) => ({
-      id: order.id,
-      publicId: order.publicId,
-      ozowReference: order.ozowReference,
-      status: order.status,
-      paymentStatus: order.paymentStatus,
-      totalCents: order.totalCents,
-      createdAt: order.createdAt,
-      vendorName: order.vendor?.name || "Unknown vendor",
-      vendorPhone: order.vendor?.phone || null,
-      customerName: order.user?.name || null,
-      customerEmail: order.user?.email || null,
-    })),
+    orders: orders.map((order) => {
+      const financials = parseOrderFinancials(order.itemsJson);
+      return {
+        id: order.id,
+        publicId: order.publicId,
+        ozowReference: order.ozowReference,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        subtotalCents: order.subtotalCents,
+        deliveryFeeCents: order.deliveryFeeCents,
+        riderTipCents: financials.riderTipCents,
+        riderPayoutCents: financials.riderPayoutCents || order.deliveryFeeCents,
+        vendorPayoutCents: financials.vendorPayoutCents || order.subtotalCents,
+        platformFeeCents: financials.platformFeeCents,
+        deliveryDistanceKm: financials.deliveryDistanceKm,
+        containsAlcohol: financials.containsAlcohol,
+        totalCents: order.totalCents,
+        createdAt: order.createdAt,
+        vendorName: order.vendor?.name || "Unknown vendor",
+        vendorPhone: order.vendor?.phone || null,
+        customerName: order.user?.name || null,
+        customerEmail: order.user?.email || null,
+      };
+    }),
     riders,
     auditLogs,
     ...operations,

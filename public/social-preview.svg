@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Lethela — Siyashesha</title>
+  <desc id="desc">Township Delivery South Africa social preview image.</desc>
+  <rect width="1200" height="630" fill="#ffffff"/>
+  <rect x="72" y="72" width="1056" height="486" rx="36" fill="#ffffff" stroke="#080B27" stroke-width="4"/>
+  <circle cx="968" cy="315" r="116" fill="#080B27"/>
+  <text x="968" y="350" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#ffffff">L</text>
+  <text x="132" y="250" font-family="Arial, Helvetica, sans-serif" font-size="86" font-weight="800" fill="#080B27">Lethela</text>
+  <text x="132" y="322" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="800" fill="#D61F2C">Siyashesha</text>
+  <text x="132" y="405" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="500" fill="#1f2937">Township Delivery South Africa</text>
+  <text x="132" y="462" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#4b5563">Food • Groceries • Local vendors • Riders</text>
+</svg>

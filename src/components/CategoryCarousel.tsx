@@ -48,11 +48,11 @@ export default function CategoryCarousel() {
             <Link
               key={item.label}
               href={`/categories/${categoryToSlug(item.category)}`}
-              className="group min-h-[78px] rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 transition hover:border-lethela-primary/60 hover:bg-white/[0.07]"
+              className="group min-h-[78px] rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 transition duration-150 hover:-translate-y-0.5 hover:border-lethela-primary/60 hover:bg-white/[0.07]"
               aria-label={item.badge ? `${item.label} ${item.badge}` : item.label}
             >
-              <span className="mx-auto grid h-9 w-9 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
-                <Icon className="h-5 w-5" />
+              <span className="mx-auto grid h-9 w-9 place-items-center rounded-full bg-lethela-primary text-white">
+                <Icon className="h-5 w-5" aria-hidden strokeWidth={2} />
               </span>
               <span className="mt-2 flex items-center justify-center gap-1 text-center text-xs font-semibold">
                 {item.label}

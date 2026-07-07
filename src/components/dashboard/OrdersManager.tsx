@@ -29,6 +29,11 @@ type Order = {
     deliveryNotes?: string;
     containsAlcohol?: boolean;
     ageConfirmed?: boolean;
+    deliveryDistanceKm?: number | null;
+    riderTipCents?: number;
+    riderPayoutCents?: number;
+    vendorPayoutCents?: number;
+    platformFeeCents?: number;
   } | null;
 };
 
@@ -336,13 +341,29 @@ export default function OrdersManager() {
                   </div>
                 </div>
                 <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
-                  <div className="text-xs text-white/60">Delivery</div>
+                  <div className="text-xs text-white/60">Rider delivery fee</div>
                   <div className="mt-1 font-semibold">
                     R{(selectedOrder.deliveryFeeCents / 100).toFixed(2)}
                   </div>
                 </div>
                 <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
-                  <div className="text-xs text-white/60">Total</div>
+                  <div className="text-xs text-white/60">Rider tip</div>
+                  <div className="mt-1 font-semibold">
+                    R{((selectedOrder.deliveryDetails?.riderTipCents || 0) / 100).toFixed(2)}
+                  </div>
+                </div>
+                <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
+                  <div className="text-xs text-white/60">Rider payout</div>
+                  <div className="mt-1 font-semibold">
+                    R
+                    {(
+                      (selectedOrder.deliveryDetails?.riderPayoutCents ||
+                        selectedOrder.deliveryFeeCents) / 100
+                    ).toFixed(2)}
+                  </div>
+                </div>
+                <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
+                  <div className="text-xs text-white/60">Total paid</div>
                   <div className="mt-1 font-semibold">
                     R{(selectedOrder.totalCents / 100).toFixed(2)}
                   </div>
@@ -392,6 +413,12 @@ export default function OrdersManager() {
                     ) : null}
                     {selectedOrder.deliveryDetails.deliveryNotes ? (
                       <div>Notes: {selectedOrder.deliveryDetails.deliveryNotes}</div>
+                    ) : null}
+                    {selectedOrder.deliveryDetails.deliveryDistanceKm != null ? (
+                      <div>
+                        Distance:{" "}
+                        {Number(selectedOrder.deliveryDetails.deliveryDistanceKm).toFixed(2)} km
+                      </div>
                     ) : null}
                     {selectedOrder.deliveryDetails.containsAlcohol ? (
                       <div className="text-amber-100">Liquor order — ID check required.</div>

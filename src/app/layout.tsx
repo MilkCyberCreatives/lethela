@@ -92,10 +92,10 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: absoluteUrl("/hero.jpg"),
+        url: absoluteUrl("/social-preview.svg"),
         width: 1200,
         height: 630,
-        alt: `${SITE_NAME} delivery platform`,
+        alt: `${SITE_NAME} township delivery platform`,
       },
     ],
   },
@@ -103,7 +103,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${SITE_NAME} | Siyashesha`,
     description: SITE_DESCRIPTION,
-    images: [absoluteUrl("/hero.jpg")],
+    images: [absoluteUrl("/social-preview.svg")],
   },
   category: "Food delivery",
 };

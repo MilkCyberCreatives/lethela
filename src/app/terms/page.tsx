@@ -83,8 +83,9 @@ export default function TermsPage() {
 
       <Section title="Age-restricted products">
         <p>
-          Alcohol is hidden from public ordering while Lethela completes licence checks, age
-          verification, rider handover rules, refusal handling and refund logic.
+          Liquor is a restricted 18+ category. Lethela does not sell liquor directly; liquor is sold
+          by approved licensed vendors only, with age verification and rider handover rules applied
+          where required.
         </p>
         <p>
           Vendors may not list or fulfil restricted products publicly unless Lethela has approved

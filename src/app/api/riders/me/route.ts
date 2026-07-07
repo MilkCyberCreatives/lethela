@@ -14,6 +14,16 @@ function safeConsoleUrl(ref: string) {
   }
 }
 
+function readRiderTip(itemsJson: string | null | undefined) {
+  try {
+    const parsed = JSON.parse(itemsJson || "{}");
+    const value = parsed?.deliveryDetails?.riderTipCents;
+    return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
@@ -75,6 +85,7 @@ export async function GET() {
           status: true,
           totalCents: true,
           deliveryFeeCents: true,
+          itemsJson: true,
           riderLocatedAt: true,
           createdAt: true,
           updatedAt: true,
@@ -108,6 +119,7 @@ export async function GET() {
     },
     activeOrders: activeOrders.map((order) => {
       const ref = order.ozowReference || order.publicId;
+      const riderTipCents = readRiderTip(order.itemsJson);
       return {
         ref,
         status: order.status,
@@ -116,6 +128,8 @@ export async function GET() {
           [order.vendor?.suburb, order.vendor?.city].filter(Boolean).join(", ") || "Area not set",
         totalCents: order.totalCents,
         deliveryFeeCents: order.deliveryFeeCents,
+        riderTipCents,
+        riderPayoutCents: order.deliveryFeeCents + riderTipCents,
         riderLocatedAt: order.riderLocatedAt,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
