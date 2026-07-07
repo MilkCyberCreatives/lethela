@@ -29,7 +29,7 @@ function titleForCategory(category: TownshipCategory) {
 
 function optionsLabel(category: TownshipCategory, count: number) {
   const noun = category === "Groceries" ? "grocery option" : `${category.toLowerCase()} option`;
-  return `Showing ${count} ${noun}${count === 1 ? "" : "s"}`;
+  return `Showing ${count} ${noun}${count === 1 ? "" : "s"} on ${SITE_NAME}.`;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

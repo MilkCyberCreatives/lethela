@@ -149,6 +149,18 @@ export default function SignInForm() {
         >
           Create customer account
         </Link>
+        <Link
+          href="/vendors/signin"
+          className="rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
+        >
+          Vendor sign-in
+        </Link>
+        <Link
+          href="/rider/dashboard"
+          className="rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
+        >
+          Rider sign-in
+        </Link>
         <a
           href={whatsappHref}
           target="_blank"
