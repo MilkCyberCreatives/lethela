@@ -394,9 +394,7 @@ export default function OrdersManager() {
                       <div>Notes: {selectedOrder.deliveryDetails.deliveryNotes}</div>
                     ) : null}
                     {selectedOrder.deliveryDetails.containsAlcohol ? (
-                      <div className="text-amber-100">
-                        Alcohol order: ID check required on delivery.
-                      </div>
+                      <div className="text-amber-100">Liquor order — ID check required.</div>
                     ) : null}
                   </div>
                 ) : (

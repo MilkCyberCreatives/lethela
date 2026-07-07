@@ -55,6 +55,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const liveResults = query.length >= 2 ? await searchCatalog(query, { limit: 30 }) : [];
   const results = liveResults;
   const suggestions = ["kota", "chips", "chicken", "groceries", "braai", "breakfast", "mogodu"];
+  const categoryChips = [{ label: "Liquor 18+", href: "/categories/liquor" }];
   const discoverySuggestions = [
     "spaza shop delivery",
     "grocery delivery township",
@@ -120,6 +121,15 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
         </form>
 
         <div className="mt-4 flex flex-wrap gap-2">
+          {categoryChips.map((chip) => (
+            <Link
+              key={chip.label}
+              href={chip.href}
+              className="rounded-full border border-lethela-primary/40 px-3 py-1.5 text-sm font-semibold text-lethela-primary transition hover:border-lethela-primary hover:text-white"
+            >
+              {chip.label}
+            </Link>
+          ))}
           {[...suggestions, ...discoverySuggestions].map((term) => (
             <Link
               key={term}

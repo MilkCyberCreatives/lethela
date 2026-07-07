@@ -6,6 +6,7 @@ import {
   Coffee,
   Drumstick,
   Flame,
+  Martini,
   ShoppingBasket,
   Sandwich,
   Utensils,
@@ -14,6 +15,7 @@ import { categoryToSlug } from "@/lib/categories";
 
 const CATEGORIES = [
   { label: "Groceries", category: "Groceries", icon: ShoppingBasket },
+  { label: "Liquor", category: "Liquor", icon: Martini, badge: "18+" },
   { label: "Kota", category: "Kota", icon: Utensils },
   { label: "Chicken", category: "Chicken", icon: Drumstick },
   { label: "Burgers", category: "Burger", icon: Sandwich },
@@ -39,20 +41,27 @@ export default function CategoryCarousel() {
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-9">
         {CATEGORIES.map((item) => {
           const Icon = item.icon;
           return (
             <Link
               key={item.label}
               href={`/categories/${categoryToSlug(item.category)}`}
-              className="group rounded-xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-lethela-primary/60 hover:bg-white/[0.07]"
-              aria-label={item.label}
+              className="group min-h-[78px] rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 transition hover:border-lethela-primary/60 hover:bg-white/[0.07]"
+              aria-label={item.badge ? `${item.label} ${item.badge}` : item.label}
             >
-              <span className="grid h-11 w-11 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
+              <span className="mx-auto grid h-9 w-9 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
                 <Icon className="h-5 w-5" />
               </span>
-              <span className="mt-4 block text-lg font-semibold">{item.label}</span>
+              <span className="mt-2 flex items-center justify-center gap-1 text-center text-xs font-semibold">
+                {item.label}
+                {item.badge ? (
+                  <span className="rounded-full border border-lethela-primary/40 px-1.5 py-0.5 text-[10px] text-lethela-primary">
+                    {item.badge}
+                  </span>
+                ) : null}
+              </span>
             </Link>
           );
         })}

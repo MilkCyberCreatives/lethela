@@ -64,6 +64,16 @@ export async function POST(req: Request) {
     }
 
     const body = parsed.data;
+    if (body.isAlcohol) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Liquor products require an approved liquor licence before listing.",
+        },
+        { status: 403 },
+      );
+    }
+
     const moderation = await aiModerateProduct(body.name, body.description ?? "");
     if (!moderation.allowed) {
       return NextResponse.json(

@@ -1269,7 +1269,7 @@ export default function AdminPage() {
                     {
                       type: "Product",
                       issue: "Missing image or category review",
-                      area: "Spaza & Groceries",
+                      area: "Groceries",
                       assignedTo: "Vendor",
                       priority: "Low",
                       status: "Pending",

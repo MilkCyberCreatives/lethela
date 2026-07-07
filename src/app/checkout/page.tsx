@@ -419,8 +419,8 @@ export default function CheckoutPage() {
             {hasAlcohol ? (
               <div className="mt-4 rounded-lg border border-amber-200/25 bg-amber-300/10 p-4 text-sm text-amber-50">
                 <span>
-                  Restricted 18+ checkout is paused while compliance checks are completed. Please
-                  remove restricted items or contact support.
+                  Liquor is sold by licensed vendors only. Lethela provides marketplace and delivery
+                  support. Valid ID may be required on delivery.
                 </span>
               </div>
             ) : null}

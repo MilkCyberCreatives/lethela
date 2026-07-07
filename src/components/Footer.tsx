@@ -19,6 +19,7 @@ const POPULAR_SOCIALS = [
 const EXPLORE_LINKS = [
   { href: "/search", label: "Search" },
   { href: "/categories/groceries", label: "Groceries" },
+  { href: "/categories/liquor", label: "Liquor 18+" },
   { href: "/track", label: "Track Order" },
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },

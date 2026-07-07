@@ -46,7 +46,7 @@ export default function RefundPolicyPage() {
       />
       <PolicyItem
         title="Alcohol and restricted items"
-        body="Alcohol orders may be cancelled or refused where the customer cannot prove they are 18 or older, appears intoxicated, gives an unsafe delivery instruction, or asks the rider to leave alcohol unattended. Failed verification may affect refund handling where the order was correctly prepared and dispatched."
+        body="Liquor/alcohol orders may be cancelled or refused where the customer cannot prove they are 18 or older, appears intoxicated, gives an unsafe delivery instruction, or asks the rider to leave alcohol unattended. Failed verification may affect refund handling where the order was correctly prepared and dispatched."
       />
       <PolicyItem
         title="Delivery fee handling"

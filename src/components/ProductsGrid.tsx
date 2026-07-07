@@ -11,6 +11,10 @@ import { pushEcommerceEvent } from "@/lib/visitor";
 
 type ApiResp = { ok: boolean; items: ProductLite[] };
 
+function categoryLabel(category: string) {
+  return category === "Liquor" ? "Liquor 18+" : category;
+}
+
 export default function ProductsGrid({
   suburb,
   initialItems,
@@ -122,7 +126,7 @@ export default function ProductsGrid({
             className={`rounded-full border px-3 py-1.5 text-xs transition ${category === item ? "border-white/40 bg-white/10" : "border-white/15"}`}
             onClick={() => setCategory(item)}
           >
-            {item}
+            {categoryLabel(item)}
           </button>
         ))}
       </div>

@@ -94,7 +94,7 @@ export function buildVendorOrderWhatsAppMessage(input: {
     extraItems ? `- plus ${extraItems} more item(s)` : "",
     `Delivery fee: ${rand(input.deliveryFeeCents)}`,
     `Total paid: ${rand(input.totalCents)}`,
-    containsAlcohol ? "Alcohol order: check customer ID and age before handover." : "",
+    containsAlcohol ? "Liquor order — ID check required." : "",
     `Dashboard: ${input.dashboardUrl}`,
   ]
     .filter(Boolean)

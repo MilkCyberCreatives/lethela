@@ -4,6 +4,7 @@ export const TOWNSHIP_CATEGORIES = [
   "Burger",
   "Mogodu",
   "Groceries",
+  "Liquor",
   "Drinks",
   "Snacks",
   "Wings",
@@ -53,11 +54,17 @@ export const CATEGORY_CONTENT: Record<
     guidance:
       "Lethela supports simple grocery baskets, stock lists and customer-approved substitutions before dispatch where an item is unavailable.",
   },
+  Liquor: {
+    headline: "Liquor",
+    intro:
+      "For adults 18+ only. Liquor is sold by approved licensed vendors. Valid ID may be required on delivery.",
+    guidance:
+      "You must be 18 years or older to view liquor products. Liquor stays separate from groceries and is only available from licensed vendors.",
+  },
   Drinks: {
     headline: "Drinks",
     intro: "Browse cold drinks, juice, water and everyday refreshments from nearby vendors.",
-    guidance:
-      "Alcohol is hidden from public browsing until licence checks, age verification and handover rules are complete.",
+    guidance: "Drinks excludes liquor and other restricted 18+ products.",
   },
   Snacks: {
     headline: "Snacks",
@@ -109,6 +116,9 @@ export function categoryToSlug(category: TownshipCategory | string) {
 
 export function slugToCategory(slug: string): TownshipCategory | null {
   const normalizedSlug = categoryToSlug(slug);
+  if (["liquor", "alcohol", "beer", "wine", "cider"].includes(normalizedSlug)) {
+    return "Liquor";
+  }
   if (
     ["groceries", "grocery", "spaza", "spaza-groceries", "spaza-shop-delivery"].includes(
       normalizedSlug,
@@ -127,7 +137,7 @@ export function inferProductCategory(input: {
 }): TownshipCategory {
   const haystack = `${input.name} ${input.description || ""}`.toLowerCase();
 
-  if (input.isAlcohol) return "Groceries";
+  if (input.isAlcohol) return "Liquor";
   if (/kota|spatlho|magwinya/.test(haystack)) return "Kota";
   if (/wing|drumstick/.test(haystack)) return "Wings";
   if (/breakfast|vetkoek|oats|cereal/.test(haystack)) return "Breakfast";

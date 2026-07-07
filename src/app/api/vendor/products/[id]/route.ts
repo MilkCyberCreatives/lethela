@@ -63,6 +63,16 @@ export async function PATCH(req: Request, { params }: Params) {
     }
 
     const data = parsed.data;
+    if (data.isAlcohol) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Liquor products require an approved liquor licence before listing.",
+        },
+        { status: 403 },
+      );
+    }
+
     if (data.name || data.description) {
       const moderation = await aiModerateProduct(data.name ?? "", data.description ?? "");
       if (!moderation.allowed) {

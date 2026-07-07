@@ -94,8 +94,8 @@ function mockChat(messages: AIMessage[]) {
   if (/refund|refunds|cancel|cancellation/i.test(last)) {
     return `If your order is incorrect or delayed, message support on WhatsApp and we will resolve it quickly: ${WHATSAPP_SUPPORT}`;
   }
-  if (/alcohol|beer|wine|cider/i.test(last)) {
-    return "Alcohol is currently hidden from public ordering while Lethela completes licence checks, age verification, rider handover and refund rules.";
+  if (/liquor|alcohol|beer|wine|cider/i.test(last)) {
+    return "Liquor is a restricted 18+ category. It may only be sold by approved licensed vendors, and valid ID may be required on delivery.";
   }
   if (/vegan|halaal|vegetarian/i.test(last)) {
     return "We can suggest veg and halaal-friendly options. Share your area and preferred meal type.";

@@ -223,12 +223,12 @@ export default function ProductsManager() {
 
   const summary = useMemo(() => {
     const inStock = items.filter((item) => item.inStock).length;
-    const alcohol = items.filter((item) => item.isAlcohol).length;
+    const liquor = items.filter((item) => item.isAlcohol).length;
     return {
       total: items.length,
       inStock,
       outOfStock: items.length - inStock,
-      alcohol,
+      liquor,
     };
   }, [items]);
 
@@ -249,8 +249,8 @@ export default function ProductsManager() {
             <div className="mt-2 text-xl font-semibold">{summary.outOfStock}</div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-            <div className="text-xs uppercase tracking-[0.12em] text-white/60">18+ items</div>
-            <div className="mt-2 text-xl font-semibold">{summary.alcohol}</div>
+            <div className="text-xs uppercase tracking-[0.12em] text-white/60">Liquor 18+</div>
+            <div className="mt-2 text-xl font-semibold">{summary.liquor}</div>
           </div>
         </div>
 
@@ -353,7 +353,7 @@ export default function ProductsManager() {
                 setForm((current) => ({ ...current, isAlcohol: event.target.checked }))
               }
             />
-            Alcohol (18+)
+            Liquor (18+)
           </label>
 
           <label className="flex items-center gap-2 text-sm">
@@ -463,7 +463,7 @@ export default function ProductsManager() {
                 ) : null}
                 <div className="mt-2 line-clamp-3 text-sm">{product.description}</div>
                 <div className="mt-3 flex items-center justify-between text-xs text-white/70">
-                  <span>{product.isAlcohol ? "18+ Alcohol" : "Food/Drink"}</span>
+                  <span>{product.isAlcohol ? "Liquor 18+" : "Food/Drink"}</span>
                   <span>{product.inStock ? "In stock" : "Out of stock"}</span>
                 </div>
                 <div className="mt-3 flex items-center gap-3 text-xs">

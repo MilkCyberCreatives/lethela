@@ -54,7 +54,7 @@ export default function ProductCard({ p }: { p: ProductLite }) {
             </p>
           </div>
           {p.isAlcohol ? (
-            <span className="rounded bg-white/10 px-2 py-1 text-[10px]">18+</span>
+            <span className="rounded bg-white/10 px-2 py-1 text-[10px]">Liquor 18+</span>
           ) : null}
         </div>
 

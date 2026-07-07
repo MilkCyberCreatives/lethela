@@ -63,6 +63,12 @@ export default function MainHeader() {
             Groceries
           </Link>
           <Link
+            href="/categories/liquor"
+            className="hover:underline hover:text-lethela-primary font-medium"
+          >
+            Liquor <span className="text-[10px]">18+</span>
+          </Link>
+          <Link
             href="/restaurants"
             className="hover:underline hover:text-lethela-primary font-medium"
           >
@@ -129,6 +135,9 @@ export default function MainHeader() {
                 </Link>
                 <Link href="/categories/groceries" className="hover:underline">
                   Groceries
+                </Link>
+                <Link href="/categories/liquor" className="hover:underline">
+                  Liquor 18+
                 </Link>
                 <Link href="/restaurants" className="hover:underline">
                   Restaurants

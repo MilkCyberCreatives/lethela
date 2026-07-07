@@ -32,7 +32,7 @@ test("buildVendorOrderWhatsAppMessage gives vendors actionable order details", (
   assert.match(message, /Stand 12, Zone 4, Ga-Rankuwa/);
   assert.match(message, /2 x Castle Lite 6 pack/);
   assert.match(message, /Total paid: R428\.00/);
-  assert.match(message, /check customer ID and age/);
+  assert.match(message, /Liquor order — ID check required/);
   assert.match(message, /https:\/\/www\.lethela\.co\.za\/vendors\/dashboard/);
 });
 

@@ -129,7 +129,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
 
   if (items.some((item) => item.isAlcohol) && !ageConfirmed) {
     return NextResponse.json(
-      { ok: false, error: "Confirm that you are 18 or older before paying for alcohol." },
+      { ok: false, error: "Confirm that you are 18 or older before paying for liquor." },
       { status: 400 },
     );
   }
@@ -196,7 +196,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   const containsAlcohol = normalizedItems.some((item) => item.isAlcohol);
   if (containsAlcohol && !ageConfirmed) {
     return NextResponse.json(
-      { ok: false, error: "Confirm that you are 18 or older before paying for alcohol." },
+      { ok: false, error: "Confirm that you are 18 or older before paying for liquor." },
       { status: 400 },
     );
   }

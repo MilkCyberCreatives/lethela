@@ -849,7 +849,7 @@ const sectionsBySlug: Record<string, CatalogSection[]> = {
   "klipfontein-bottle-store": [
     {
       id: "section-klipfontein-bottle-store-main",
-      title: "Alcohol",
+      title: "Liquor",
       sortOrder: 1,
       items: [
         {
@@ -1002,6 +1002,8 @@ export function getFallbackVendorCards() {
 }
 
 export function getFallbackCategoryProducts(category: TownshipCategory) {
+  if (category === "Liquor") return [];
+
   return catalogProducts
     .filter((product) => {
       return (

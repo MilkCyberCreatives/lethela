@@ -30,6 +30,7 @@ const CACHE_TTL_MS = 60_000;
 const searchCache = new Map<string, { ts: number; hits: SearchHit[] }>();
 const RESTRICTED_PUBLIC_SEARCH_TERMS = new Set([
   "alcohol",
+  "liquor",
   "beer",
   "wine",
   "cider",
@@ -39,6 +40,7 @@ const RESTRICTED_PUBLIC_SEARCH_TERMS = new Set([
   "gin",
   "brandy",
   "booze",
+  "spirits",
 ]);
 
 const SEARCH_SYNONYMS: Record<string, string[]> = {

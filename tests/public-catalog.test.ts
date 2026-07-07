@@ -59,7 +59,9 @@ test("isPublicCatalogProduct hides legacy demo product records", () => {
   );
 });
 
-test("alcohol is hidden from public category navigation while compliance is paused", () => {
+test("liquor is separate from groceries and hides fallback samples", () => {
   assert.equal(TOWNSHIP_CATEGORIES.includes("Alcohol" as never), false);
+  assert.equal(TOWNSHIP_CATEGORIES.includes("Liquor" as never), true);
   assert.deepEqual(getFallbackCategoryProducts("Alcohol"), []);
+  assert.deepEqual(getFallbackCategoryProducts("Liquor" as never), []);
 });
