@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import MainHeader from "@/components/MainHeader";
+import PageShell from "@/components/PageShell";
 import UserProfileForm from "@/components/profile/UserProfileForm";
 import OrderHistoryPanel from "@/components/profile/OrderHistoryPanel";
 import ProfileExperiencePanel from "@/components/profile/ProfileExperiencePanel";
@@ -20,23 +20,20 @@ export default async function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-lethela-secondary text-white">
-      <MainHeader />
-      <section className="container py-10">
-        <div className="mb-6 max-w-2xl">
-          <p className="text-xs uppercase tracking-[0.14em] text-white/60">Account</p>
-          <h1 className="mt-2 text-3xl font-semibold">User profile</h1>
-          <p className="mt-3 text-sm text-white/75">
-            Update your name and upload your personal profile picture.
-          </p>
-        </div>
+    <PageShell>
+      <div className="mb-6 max-w-2xl">
+        <p className="text-xs uppercase tracking-[0.14em] text-white/60">Account</p>
+        <h1 className="mt-2 text-3xl font-semibold">User profile</h1>
+        <p className="mt-3 text-sm text-white/75">
+          Update your name and upload your personal profile picture.
+        </p>
+      </div>
 
-        <div className="grid gap-6">
-          <UserProfileForm />
-          <OrderHistoryPanel />
-          <ProfileExperiencePanel />
-        </div>
-      </section>
-    </main>
+      <div className="grid gap-6">
+        <UserProfileForm />
+        <OrderHistoryPanel />
+        <ProfileExperiencePanel />
+      </div>
+    </PageShell>
   );
 }

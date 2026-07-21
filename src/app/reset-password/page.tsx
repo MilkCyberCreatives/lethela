@@ -1,21 +1,24 @@
 import { Suspense } from "react";
-import PageShell from "@/components/PageShell";
+import AuthShell from "@/components/auth/AuthShell";
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 
 export default function ResetPasswordPage() {
   return (
-    <PageShell contentClassName="max-w-md">
+    <AuthShell
+      title="Choose a new password"
+      supportingText="Use at least 8 characters and choose a password you do not use anywhere else."
+    >
       <Suspense
         fallback={
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="h-6 w-40 animate-pulse rounded bg-white/10" />
-            <div className="mt-4 h-11 animate-pulse rounded bg-white/10" />
-            <div className="mt-3 h-11 animate-pulse rounded bg-white/10" />
+          <div className="space-y-3">
+            <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
+            <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
+            <div className="h-11 animate-pulse rounded-xl bg-slate-200" />
           </div>
         }
       >
         <ResetPasswordForm />
       </Suspense>
-    </PageShell>
+    </AuthShell>
   );
 }

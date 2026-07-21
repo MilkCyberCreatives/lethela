@@ -1,10 +1,13 @@
-import PageShell from "@/components/PageShell";
+import AuthShell from "@/components/auth/AuthShell";
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
 
 export default function ForgotPasswordPage() {
   return (
-    <PageShell contentClassName="max-w-md">
+    <AuthShell
+      title="Reset your password"
+      supportingText="Enter your account email and we will send a secure reset link if it matches our records."
+    >
       <ForgotPasswordForm />
-    </PageShell>
+    </AuthShell>
   );
 }

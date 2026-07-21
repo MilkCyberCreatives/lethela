@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import MainHeader from "@/components/MainHeader";
+import PageShell from "@/components/PageShell";
 import RiderProfileForm from "@/components/rider/RiderProfileForm";
 
 export default async function RiderProfilePage() {
@@ -14,11 +14,8 @@ export default async function RiderProfilePage() {
     );
   }
   return (
-    <main className="min-h-dvh bg-lethela-secondary text-white">
-      <MainHeader />
-      <section className="container max-w-5xl py-8">
-        <RiderProfileForm />
-      </section>
-    </main>
+    <PageShell contentClassName="max-w-5xl">
+      <RiderProfileForm />
+    </PageShell>
   );
 }
