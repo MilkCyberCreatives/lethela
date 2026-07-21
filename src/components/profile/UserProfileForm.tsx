@@ -8,6 +8,7 @@ type UserProfile = {
   id: string;
   name: string | null;
   email: string;
+  phone: string | null;
   role: string;
   image: string | null;
   createdAt: string;
@@ -18,6 +19,7 @@ export default function UserProfileForm() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [image, setImage] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -34,6 +36,7 @@ export default function UserProfileForm() {
       setProfile(json.user);
       setName(json.user.name || "");
       setImage(json.user.image || "");
+      setPhone(json.user.phone || "");
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "Failed to load profile.");
     } finally {
@@ -65,7 +68,7 @@ export default function UserProfileForm() {
       const response = await fetch("/api/me", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, image: image || null }),
+        body: JSON.stringify({ name, phone, image: image || null }),
       });
       const json = await response.json();
       if (!response.ok || !json.ok) {
@@ -74,12 +77,33 @@ export default function UserProfileForm() {
       setProfile(json.user);
       setName(json.user.name || "");
       setImage(json.user.image || "");
+      setPhone(json.user.phone || "");
       setStatus("User profile updated.");
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "Failed to save profile.");
     } finally {
       setSaving(false);
     }
+  }
+
+  async function requestPrivacy(type: "ACCESS" | "CORRECTION" | "CLOSURE") {
+    const details =
+      type === "CLOSURE"
+        ? "Please close my account, subject to required operational and legal retention."
+        : window.prompt("Add any helpful detail for the privacy team (optional).") || "";
+    if (type === "CLOSURE" && !window.confirm("Submit an account-closure request?")) return;
+    setStatus(null);
+    const response = await fetch("/api/me/privacy-requests", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type, details }),
+    });
+    const json = await response.json().catch(() => ({}));
+    setStatus(
+      response.ok && json.ok
+        ? `${type.toLowerCase()} request submitted.`
+        : json.error || "Could not submit the request.",
+    );
   }
 
   return (
@@ -152,6 +176,18 @@ export default function UserProfileForm() {
 
               <div>
                 <label className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60">
+                  Mobile number
+                </label>
+                <input
+                  className="w-full rounded bg-white px-3 py-2 text-black"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  autoComplete="tel"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60">
                   Profile photo URL
                 </label>
                 <input
@@ -160,6 +196,36 @@ export default function UserProfileForm() {
                   onChange={(event) => setImage(event.target.value)}
                   placeholder="https://..."
                 />
+              </div>
+              <div className="mt-2 rounded-xl border border-white/10 p-4 md:col-span-2">
+                <h3 className="text-sm font-semibold">Privacy requests</h3>
+                <p className="mt-1 text-xs text-white/60">
+                  Request a copy, correction review or account closure. Required transaction and
+                  compliance records may be retained lawfully.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void requestPrivacy("ACCESS")}
+                    className="rounded border border-white/20 px-3 py-2 text-xs"
+                  >
+                    Request my data
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void requestPrivacy("CORRECTION")}
+                    className="rounded border border-white/20 px-3 py-2 text-xs"
+                  >
+                    Request correction
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void requestPrivacy("CLOSURE")}
+                    className="rounded border border-red-300/40 px-3 py-2 text-xs text-red-100"
+                  >
+                    Request account closure
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2 pt-2">

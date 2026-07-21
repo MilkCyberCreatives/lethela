@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { aiModerateProduct } from "@/lib/ai";
-import { requireVendor } from "@/lib/authz";
+import { requireVendorAccount } from "@/lib/authz";
 
 const ProductInputSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -22,7 +22,7 @@ const ProductInputSchema = z.object({
 
 export async function GET() {
   try {
-    const { vendorId } = await requireVendor("STAFF");
+    const { vendorId } = await requireVendorAccount("STAFF");
     const items = await prisma.product.findMany({
       where: { vendorId },
       orderBy: { updatedAt: "desc" },
@@ -37,6 +37,8 @@ export async function GET() {
         isAlcohol: true,
         abv: true,
         inStock: true,
+        status: true,
+        reviewReason: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -52,7 +54,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { vendorId } = await requireVendor("MANAGER");
+    const { vendorId } = await requireVendorAccount("MANAGER");
     const raw = await req.json().catch(() => ({}));
     const parsed = ProductInputSchema.safeParse(raw);
     if (!parsed.success) {
@@ -65,13 +67,20 @@ export async function POST(req: Request) {
 
     const body = parsed.data;
     if (body.isAlcohol) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Liquor products require an approved liquor licence before listing.",
+      const licensed = await prisma.vendor.findFirst({
+        where: {
+          id: vendorId,
+          liquorVerificationStatus: "APPROVED",
+          liquorLicenceExpiry: { gt: new Date() },
         },
-        { status: 403 },
-      );
+        select: { id: true },
+      });
+      if (!licensed) {
+        return NextResponse.json(
+          { ok: false, error: "A verified, current liquor licence is required." },
+          { status: 403 },
+        );
+      }
     }
 
     const moderation = await aiModerateProduct(body.name, body.description ?? "");
@@ -104,6 +113,7 @@ export async function POST(req: Request) {
         isAlcohol: Boolean(body.isAlcohol),
         abv: body.abv ?? null,
         inStock: body.inStock ?? true,
+        status: "SUBMITTED",
       },
     });
 

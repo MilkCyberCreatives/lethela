@@ -18,33 +18,9 @@ function withVisitorCookie(req: NextRequest, response: NextResponse) {
 }
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  const isVendorDashboard = pathname.startsWith("/vendors/dashboard");
-  const isVendorApi = pathname.startsWith("/api/vendor");
-  const isVendorArea = isVendorDashboard || isVendorApi;
-  const isPublicVendorApi =
-    pathname === "/api/vendor/login" ||
-    pathname === "/api/vendor/logout" ||
-    pathname === "/api/vendor/apply";
-
-  if (isVendorArea && !isPublicVendorApi) {
-    const token = req.cookies.get("vendor_session")?.value;
-    if (!token) {
-      if (isVendorApi) {
-        return withVisitorCookie(
-          req,
-          NextResponse.json({ ok: false, error: "Not signed in as vendor." }, { status: 401 }),
-        );
-      }
-      const url = req.nextUrl.clone();
-      url.pathname = "/signin";
-      url.searchParams.set("next", pathname);
-      url.searchParams.set("tab", "vendor");
-      url.searchParams.set("callbackUrl", pathname);
-      url.searchParams.set("message", "Please sign in to open your vendor dashboard.");
-      return withVisitorCookie(req, NextResponse.redirect(url));
-    }
-  }
+  // Authorization is intentionally enforced in Server Components and Route Handlers.
+  // Middleware only assigns the anonymous visitor identifier, so it cannot become a
+  // single authorization gate that is vulnerable to middleware-bypass attacks.
   return withVisitorCookie(req, NextResponse.next());
 }
 

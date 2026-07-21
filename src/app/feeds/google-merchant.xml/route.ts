@@ -34,9 +34,11 @@ export async function GET() {
         prisma.product.findMany({
           where: {
             inStock: true,
+            status: "APPROVED",
             vendor: {
               isActive: true,
-              status: "ACTIVE",
+              status: { in: ["ACTIVE", "APPROVED"] },
+              temporaryClosed: false,
             },
           },
           include: {

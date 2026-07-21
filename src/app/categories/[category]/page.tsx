@@ -64,64 +64,85 @@ export default async function CategoryPage({ params }: PageProps) {
       ? await getSqliteCatalogProducts({ category: resolvedCategory, take: 120, alcohol: "false" })
       : null;
 
-  const dbItems =
-    isLiquorCategory || sqliteItems
-      ? []
-      : await runBoundedDbQuery((db) =>
-          db.product.findMany({
-            where: {
-              inStock: true,
-              isAlcohol: false,
-              vendor: {
+  const dbItems = sqliteItems
+    ? []
+    : await runBoundedDbQuery((db) =>
+        db.product.findMany({
+          where: {
+            inStock: true,
+            status: "APPROVED",
+            isAlcohol: isLiquorCategory,
+            vendor: {
+              isActive: true,
+              status: { in: ["ACTIVE", "APPROVED"] },
+              temporaryClosed: false,
+              ...(isLiquorCategory
+                ? {
+                    liquorVerificationStatus: "APPROVED",
+                    liquorLicenceUrl: { not: null },
+                    liquorLicenceExpiry: { gt: new Date() },
+                  }
+                : {}),
+            },
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 120,
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            priceCents: true,
+            image: true,
+            isAlcohol: true,
+            vendor: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                status: true,
                 isActive: true,
-                status: { in: ["ACTIVE", "APPROVED"] },
+                phone: true,
+                address: true,
+                suburb: true,
+                city: true,
+                province: true,
+                municipality: true,
+                township: true,
+                sectionArea: true,
+                storeType: true,
+                cuisine: true,
+                etaMins: true,
+                deliveryFee: true,
+                kycIdUrl: true,
+                kycProofUrl: true,
+                bankName: true,
+                bankAccountName: true,
+                bankAccountNumber: true,
+                bankBranchCode: true,
+                liquorLicenceUrl: true,
+                liquorLicenceExpiry: true,
+                liquorVerificationStatus: true,
+                _count: { select: { products: true, items: true, hours: true } },
               },
             },
-            orderBy: { updatedAt: "desc" },
-            take: 120,
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              priceCents: true,
-              image: true,
-              isAlcohol: true,
-              vendor: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  status: true,
-                  isActive: true,
-                  phone: true,
-                  address: true,
-                  suburb: true,
-                  city: true,
-                  province: true,
-                  municipality: true,
-                  township: true,
-                  sectionArea: true,
-                  storeType: true,
-                  cuisine: true,
-                  etaMins: true,
-                  deliveryFee: true,
-                  kycIdUrl: true,
-                  kycProofUrl: true,
-                  bankName: true,
-                  bankAccountName: true,
-                  bankAccountNumber: true,
-                  bankBranchCode: true,
-                  _count: { select: { products: true, items: true, hours: true } },
-                },
-              },
-            },
-          }),
-        ).catch(() => []);
+          },
+        }),
+      ).catch(() => []);
 
   const liveItems = sqliteItems
     ? sqliteItems
     : isLiquorCategory
-      ? []
+      ? dbItems.filter(
+          (item) =>
+            item.isAlcohol &&
+            item.vendor.liquorVerificationStatus === "APPROVED" &&
+            Boolean(item.vendor.liquorLicenceUrl) &&
+            Boolean(
+              item.vendor.liquorLicenceExpiry &&
+                new Date(item.vendor.liquorLicenceExpiry).getTime() > Date.now(),
+            ) &&
+            isPublicMarketplaceVendor(item.vendor),
+        )
       : dbItems.length > 0
         ? dbItems.filter(
             (item) =>

@@ -8,6 +8,13 @@ import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { getSqliteVendorDashboardData } from "@/lib/sqlite-vendor-dashboard";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 import { getVendorReadiness, vendorStatusLabel } from "@/lib/vendor-readiness";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata = buildNoIndexMetadata({
+  title: "Vendor Dashboard",
+  description: "Secure vendor operations dashboard.",
+  path: "/vendors/dashboard",
+});
 
 const InsightsCard = dynamic(() => import("@/components/dashboard/InsightsCard"), {
   loading: () => <DashboardPanelSkeleton lines={4} />,
@@ -218,6 +225,7 @@ export default async function VendorDashboardPage({
             bankAccountName: true,
             bankAccountNumber: true,
             bankBranchCode: true,
+            reviewReason: true,
             updatedAt: true,
             _count: {
               select: {
@@ -322,6 +330,7 @@ export default async function VendorDashboardPage({
     .slice(0, 3);
   const nextPromo = specials.find((item) => new Date(item.startsAt).getTime() > Date.now()) || null;
   const issues = [
+    vendor?.reviewReason ? `Review note: ${vendor.reviewReason}` : null,
     !vendor?.phone ? "Add a phone or WhatsApp number." : null,
     !vendor?.address ? "Add your full street address." : null,
     vendor?.latitude == null || vendor?.longitude == null
@@ -396,6 +405,11 @@ export default async function VendorDashboardPage({
         </div>
 
         <div className="rounded-2xl border border-emerald-200/20 bg-white/5 p-5">
+          {vendor?.reviewReason ? (
+            <div className="mb-4 rounded-xl border border-amber-200/30 bg-amber-300/10 p-4 text-sm text-amber-50">
+              <strong>Owner review:</strong> {vendor.reviewReason}
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.14em] text-white/60">

@@ -4,6 +4,7 @@ import { prisma } from "@/server/db";
 import { notifyVendorOfPaidOrder } from "@/lib/order-notifications";
 import { buildOzowResponseHash } from "@/lib/ozow";
 import { settleWithin } from "@/lib/notification-channels";
+import { recordOrderEvent } from "@/lib/order-operations";
 
 export const dynamic = "force-dynamic";
 
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
 
   const order = await prisma.order.findFirst({
     where: { OR: [{ ozowReference: ref }, { publicId: ref }, { publicId: ref.toUpperCase() }] },
-    select: { id: true, totalCents: true },
+    select: { id: true, totalCents: true, paymentStatus: true, ozowTxnId: true, status: true },
   });
 
   if (!order) {
@@ -149,6 +150,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Amount mismatch." }, { status: 409 });
   }
 
+  const transactionOwner = await prisma.order.findUnique({
+    where: { ozowTxnId: txnId },
+    select: { id: true },
+  });
+  if (transactionOwner && transactionOwner.id !== order.id) {
+    return NextResponse.json(
+      { ok: false, error: "Transaction reference is already reconciled." },
+      { status: 409 },
+    );
+  }
+
   const paymentStatus =
     status.includes("SUCCESS") || status === "PAID" || status === "COMPLETE"
       ? "PAID"
@@ -156,26 +168,60 @@ export async function POST(req: NextRequest) {
         ? "FAILED"
         : "PENDING";
 
+  if (order.paymentStatus === "PAID") {
+    if (order.ozowTxnId && order.ozowTxnId !== txnId) {
+      return NextResponse.json(
+        { ok: false, error: "Order is already linked to another payment." },
+        { status: 409 },
+      );
+    }
+    return NextResponse.json({ ok: true, duplicate: true });
+  }
+
   const data: {
     paymentStatus: "PAID" | "FAILED" | "PENDING";
-    status?: "PLACED" | "CANCELED";
+    status?: "NEW" | "FAILED";
     ozowTxnId?: string;
+    paymentCallbackAt?: Date;
   } = {
     paymentStatus,
     ozowTxnId: txnId || undefined,
+    paymentCallbackAt: new Date(),
   };
 
-  if (paymentStatus === "PAID") data.status = "PLACED";
-  if (paymentStatus === "FAILED") data.status = "CANCELED";
+  if (paymentStatus === "PAID") data.status = "NEW";
+  if (paymentStatus === "FAILED") data.status = "FAILED";
 
-  await prisma.order.update({
-    where: { id: order.id },
-    data,
-  });
+  let updated: { count: number };
+  try {
+    updated = await prisma.order.updateMany({
+      where: { id: order.id, paymentStatus: { not: "PAID" } },
+      data,
+    });
+  } catch (error: unknown) {
+    if (typeof error === "object" && error && "code" in error && error.code === "P2002") {
+      return NextResponse.json(
+        { ok: false, error: "Transaction reference is already reconciled." },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
 
-  if (paymentStatus === "PAID") {
+  if (updated.count === 1) {
+    await recordOrderEvent({
+      orderId: order.id,
+      publicId: ref,
+      type: `PAYMENT_${paymentStatus}`,
+      actor: "ozow-callback",
+      note: statusMessage || status,
+      meta: { transactionId: txnId, providerStatus: status },
+    });
+  }
+
+  if (paymentStatus === "PAID" && updated.count === 1) {
     await settleWithin(notifyVendorOfPaidOrder(order.id), 4_000);
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, duplicate: updated.count === 0 });
 }

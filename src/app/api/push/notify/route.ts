@@ -67,7 +67,7 @@ async function resolveSegmentVisitorIds(segment: CampaignSegment) {
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireAdminRequest(req);
+  const guard = await requireAdminRequest(req, "notifications:send");
   if (!guard.ok) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }

@@ -9,12 +9,25 @@ import {
   listOperationRows,
   recordOrderEvent,
 } from "@/lib/order-operations";
+import { canTransitionOrderStatus } from "@/lib/order-state";
+
+const ADMIN_OPERATIONAL_STATUSES = [
+  "NEW",
+  "VENDOR_ACCEPTED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "PICKED_UP",
+  "ON_THE_WAY",
+  "DELIVERED",
+  "CANCELLED",
+  "FAILED",
+] as const;
 
 const BodySchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("status"),
     orderRef: z.string().min(3),
-    status: z.enum(["PLACED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELED"]),
+    status: z.enum(ADMIN_OPERATIONAL_STATUSES),
     note: z.string().optional(),
   }),
   z.object({
@@ -48,6 +61,7 @@ async function findOrder(orderRef: string) {
       publicId: true,
       ozowReference: true,
       status: true,
+      assignedRiderId: true,
       paymentStatus: true,
       totalCents: true,
       createdAt: true,
@@ -108,6 +122,10 @@ export async function GET(req: NextRequest) {
         paymentStatus: true,
         subtotalCents: true,
         deliveryFeeCents: true,
+        riderTipCents: true,
+        riderPayoutCents: true,
+        vendorPayoutCents: true,
+        platformFeeCents: true,
         totalCents: true,
         itemsJson: true,
         createdAt: true,
@@ -144,10 +162,12 @@ export async function GET(req: NextRequest) {
         paymentStatus: order.paymentStatus,
         subtotalCents: order.subtotalCents,
         deliveryFeeCents: order.deliveryFeeCents,
-        riderTipCents: financials.riderTipCents,
-        riderPayoutCents: financials.riderPayoutCents || order.deliveryFeeCents,
-        vendorPayoutCents: financials.vendorPayoutCents || order.subtotalCents,
-        platformFeeCents: financials.platformFeeCents,
+        riderTipCents: order.riderTipCents || financials.riderTipCents,
+        riderPayoutCents:
+          order.riderPayoutCents || financials.riderPayoutCents || order.deliveryFeeCents,
+        vendorPayoutCents:
+          order.vendorPayoutCents || financials.vendorPayoutCents || order.subtotalCents,
+        platformFeeCents: order.platformFeeCents || financials.platformFeeCents,
         deliveryDistanceKm: financials.deliveryDistanceKm,
         containsAlcohol: financials.containsAlcohol,
         totalCents: order.totalCents,
@@ -175,14 +195,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid operations payload." }, { status: 400 });
   }
 
+  const requiredPermission =
+    parsed.data.action === "refund"
+      ? "refunds:manage"
+      : parsed.data.action === "event"
+        ? "admin:read"
+        : "orders:manage";
+  const actionGuard = await requireAdminRequest(req, requiredPermission);
+  if (!actionGuard.ok) {
+    return NextResponse.json(
+      { ok: false, error: actionGuard.error },
+      { status: actionGuard.status },
+    );
+  }
+
   const order = await findOrder(parsed.data.orderRef);
   if (!order) return NextResponse.json({ ok: false, error: "Order not found." }, { status: 404 });
 
-  const actor = guard.mode;
+  const actor = actionGuard.actor;
   if (parsed.data.action === "status") {
+    if (parsed.data.status === "CANCELLED" && !parsed.data.note?.trim()) {
+      return NextResponse.json(
+        { ok: false, error: "A cancellation reason is required." },
+        { status: 400 },
+      );
+    }
+    if (!canTransitionOrderStatus(order.status, parsed.data.status)) {
+      return NextResponse.json(
+        { ok: false, error: `Order cannot move from ${order.status} to ${parsed.data.status}.` },
+        { status: 409 },
+      );
+    }
     await prisma.order.update({
       where: { id: order.id },
-      data: { status: parsed.data.status },
+      data: { status: parsed.data.status, statusReason: parsed.data.note?.trim() || null },
     });
     await recordOrderEvent({
       orderId: order.id,
@@ -203,6 +249,15 @@ export async function POST(req: NextRequest) {
   }
 
   if (parsed.data.action === "refund") {
+    if (
+      !["PAID", "SUCCESS"].includes(order.paymentStatus) ||
+      parsed.data.amountCents > order.totalCents
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "Refund amount or payment state is invalid." },
+        { status: 409 },
+      );
+    }
     await createRefundCase({
       orderId: order.id,
       publicId: order.publicId,
@@ -220,6 +275,10 @@ export async function POST(req: NextRequest) {
       note: parsed.data.reason,
       meta: { amountCents: parsed.data.amountCents },
     });
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { status: "REFUND_REQUESTED", statusReason: parsed.data.reason },
+    });
     await logAdminAudit({
       actor,
       action: "create_refund_case",
@@ -234,6 +293,15 @@ export async function POST(req: NextRequest) {
   }
 
   if (parsed.data.action === "dispatch") {
+    if (
+      order.paymentStatus !== "PAID" ||
+      !["READY_FOR_PICKUP", "RIDER_ASSIGNED"].includes(order.status)
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "Only a paid order ready for pickup can be assigned." },
+        { status: 409 },
+      );
+    }
     const rider = await prisma.riderApplication.findUnique({
       where: { id: parsed.data.riderApplicationId },
       select: { id: true, fullName: true, phone: true, status: true },
@@ -250,7 +318,10 @@ export async function POST(req: NextRequest) {
       note: parsed.data.note,
       actor,
     });
-    await prisma.order.update({ where: { id: order.id }, data: { status: "OUT_FOR_DELIVERY" } });
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { status: "RIDER_ASSIGNED", assignedRiderId: rider.id },
+    });
     await recordOrderEvent({
       orderId: order.id,
       publicId: order.publicId,
@@ -265,7 +336,7 @@ export async function POST(req: NextRequest) {
       targetType: "order",
       targetId: order.id,
       before: { status: order.status },
-      after: { status: "OUT_FOR_DELIVERY", riderId: rider.id, riderName: rider.fullName },
+      after: { status: "RIDER_ASSIGNED", riderId: rider.id, riderName: rider.fullName },
     });
   }
 

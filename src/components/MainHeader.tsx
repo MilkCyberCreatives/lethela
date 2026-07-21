@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Menu } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import CartButton from "@/components/CartButton";
 import CartDrawer from "@/components/CartDrawer";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
+import { usePathname } from "next/navigation";
+import MobileCartBar from "@/components/MobileCartBar";
+import CartVendorNotice from "@/components/CartVendorNotice";
 
 export default function MainHeader() {
+  const pathname = usePathname();
   const sessionState = useSession();
   const session = sessionState?.data;
   const status = sessionState?.status ?? "unauthenticated";
@@ -26,15 +31,70 @@ export default function MainHeader() {
 
   async function handleSignOut() {
     await fetch("/api/admin/access", { method: "DELETE" }).catch(() => undefined);
+    if (pathname.startsWith("/vendors")) {
+      await fetch("/api/vendor/logout", { method: "POST" }).catch(() => undefined);
+    }
     await signOut({ callbackUrl: "/" });
+  }
+
+  const portal = pathname.startsWith("/vendors/dashboard")
+    ? "Vendor dashboard"
+    : pathname.startsWith("/rider/dashboard")
+      ? "Rider dashboard"
+      : null;
+  const hideCart =
+    Boolean(portal) ||
+    [
+      "/about",
+      "/faq",
+      "/privacy-policy",
+      "/terms",
+      "/popia",
+      "/refund-policy",
+      "/cookie-policy",
+      "/paia-manual",
+      "/owner-access",
+    ].some((route) => pathname === route || pathname.startsWith(`${route}/`));
+
+  if (portal) {
+    return (
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#05071D]/95 text-white backdrop-blur">
+        <div className="container flex h-16 items-center justify-between gap-4">
+          <Link
+            href={pathname.startsWith("/vendors") ? "/vendors/dashboard" : "/rider/dashboard"}
+            className="flex items-center gap-3"
+          >
+            <Image
+              src="/lethelalogo.svg"
+              alt="Lethela"
+              width={130}
+              height={32}
+              className="h-8 w-auto rounded bg-white px-2"
+            />
+            <span className="text-sm font-semibold">{portal}</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="rounded-lg border border-white/20 px-3 py-2 text-sm">
+              View marketplace
+            </Link>
+            <Button
+              variant="outline"
+              className="border-white/20 bg-transparent text-white"
+              onClick={() => void handleSignOut()}
+            >
+              Sign out
+            </Button>
+          </div>
+        </div>
+      </header>
+    );
   }
 
   return (
     <header className="sticky top-0 z-50 surface-header">
       <div className="container flex h-20 items-center justify-between text-sm text-black">
         <Link href="/" className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="/lethelalogo.svg"
             alt="Lethela - Siyashesha"
             width={170}
@@ -77,7 +137,7 @@ export default function MainHeader() {
           <Link href="/about" className="hover:underline hover:text-lethela-primary font-medium">
             About
           </Link>
-          <CartButton />
+          {!hideCart ? <CartButton /> : null}
           {status === "authenticated" && user ? (
             <div className="flex items-center gap-3">
               <Link
@@ -114,11 +174,16 @@ export default function MainHeader() {
         </nav>
 
         <div className="md:hidden flex items-center gap-3">
-          <CartButton />
+          {!hideCart ? <CartButton /> : null}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" className="border-black/20 text-black hover:bg-black/5">
-                <Menu className="h-5 w-5" />
+              <Button
+                variant="outline"
+                aria-label="Open navigation menu"
+                title="Open navigation menu"
+                className="border-black/20 text-black hover:bg-black/5"
+              >
+                <Menu className="h-5 w-5" aria-hidden="true" />
               </Button>
             </SheetTrigger>
 
@@ -170,7 +235,9 @@ export default function MainHeader() {
         </div>
       </div>
 
-      <CartDrawer />
+      {!hideCart ? <CartDrawer /> : null}
+      {!hideCart ? <MobileCartBar /> : null}
+      {!hideCart ? <CartVendorNotice /> : null}
     </header>
   );
 }

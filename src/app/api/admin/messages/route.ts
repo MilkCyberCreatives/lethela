@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     subject: payload.subject,
     body: payload.body,
     channel: payload.channel,
-    createdBy: `admin:${guard.mode}`,
+    createdBy: guard.actor,
   });
 
   const delivery =

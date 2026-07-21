@@ -55,11 +55,28 @@ export async function GET(req: NextRequest) {
       prisma.order.aggregate({ where: paidOrderWhere(month), _sum: { totalCents: true } }),
       { _sum: { totalCents: 0 } },
     ),
-    withQueryTimeout(prisma.vendor.count({ where: { status: "ACTIVE", isActive: true } }), 0),
+    withQueryTimeout(
+      prisma.vendor.count({ where: { status: { in: ["APPROVED", "ACTIVE"] }, isActive: true } }),
+      0,
+    ),
     withQueryTimeout(prisma.riderApplication.count({ where: { status: "APPROVED" } }), 0),
     withQueryTimeout(
       prisma.order.count({
-        where: { status: { in: ["PLACED", "PREPARING", "OUT_FOR_DELIVERY"] } },
+        where: {
+          status: {
+            in: [
+              "NEW",
+              "VENDOR_ACCEPTED",
+              "PREPARING",
+              "READY_FOR_PICKUP",
+              "RIDER_ASSIGNED",
+              "PICKED_UP",
+              "ON_THE_WAY",
+              "PLACED",
+              "OUT_FOR_DELIVERY",
+            ],
+          },
+        },
       }),
       0,
     ),
@@ -72,7 +89,7 @@ export async function GET(req: NextRequest) {
       prisma.order.count({ where: { status: { in: ["CANCELED", "CANCELLED"] } } }),
       0,
     ),
-    withQueryTimeout(prisma.user.count({ where: { role: "USER" } }), 0),
+    withQueryTimeout(prisma.user.count({ where: { role: { in: ["CUSTOMER", "USER"] } } }), 0),
     withQueryTimeout(prisma.userProductReview.aggregate({ _avg: { rating: true }, _count: true }), {
       _avg: { rating: 0 },
       _count: 0,

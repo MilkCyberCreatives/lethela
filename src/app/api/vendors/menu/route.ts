@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireVendor } from "@/lib/authz";
+import { requireVendorAccount } from "@/lib/authz";
 
 const SectionInputSchema = z.object({
   title: z.string().trim().min(2).max(80),
@@ -9,7 +9,7 @@ const SectionInputSchema = z.object({
 
 export async function GET() {
   try {
-    const { vendorId } = await requireVendor("STAFF");
+    const { vendorId } = await requireVendorAccount("STAFF");
     const sections = await prisma.menuSection.findMany({
       where: { vendorId },
       orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
@@ -25,6 +25,7 @@ export async function GET() {
             priceCents: true,
             tags: true,
             image: true,
+            isAlcohol: true,
             draft: true,
             updatedAt: true,
           },
@@ -50,7 +51,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { vendorId } = await requireVendor("MANAGER");
+    const { vendorId } = await requireVendorAccount("MANAGER");
     const body = await req.json().catch(() => ({}));
     const parsed = SectionInputSchema.safeParse(body);
 

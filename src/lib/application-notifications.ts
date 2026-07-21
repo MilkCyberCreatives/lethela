@@ -234,7 +234,7 @@ export async function notifyAdminsOfRiderApplication(
   application: AdminRiderApplicationNotification,
 ) {
   const pendingCount = await prisma.riderApplication.count({
-    where: { status: { in: ["PENDING", "UNDER_REVIEW"] } },
+    where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } },
   });
   const emailRecipients = adminNotificationEmails();
   const whatsAppRecipients = adminWhatsAppRecipients();

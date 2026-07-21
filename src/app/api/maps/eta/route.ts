@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { distanceMatrixETA, geocodeSuburb } from "@/lib/geo";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
+  const limited = await checkRateLimit({
+    key: "maps-eta",
+    limit: 40,
+    windowMs: 60_000,
+    headers: req.headers,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many route requests." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
+    );
+  }
   const originRaw = req.nextUrl.searchParams.get("origin");
   const destinationQuery = req.nextUrl.searchParams.get("dest");
 
-  if (!originRaw || !destinationQuery) {
+  if (!originRaw || !destinationQuery || destinationQuery.length > 160) {
     return NextResponse.json(
       { ok: false, error: "Missing origin or dest parameter." },
       { status: 400 },

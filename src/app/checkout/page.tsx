@@ -24,6 +24,7 @@ export default function CheckoutPage() {
   const items = useCart((s) => s.items);
   const subtotal = useCart((s) => s.subtotal());
   const checkoutTrackedRef = useRef("");
+  const checkoutKeyRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [destinationSuburb, setDestinationSuburb] = useState(
@@ -37,6 +38,7 @@ export default function CheckoutPage() {
   const [landmark, setLandmark] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [riderTipCents, setRiderTipCents] = useState(0);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [destinationPoint, setDestinationPoint] = useState<{ lat: number; lng: number } | null>(
     () => {
       const saved = readPreferredLocation();
@@ -113,7 +115,7 @@ export default function CheckoutPage() {
 
   const hasItems = items.length > 0;
   const hasAlcohol = items.some((item) => item.isAlcohol);
-  const onlineCheckoutAvailable = !hasAlcohol;
+  const onlineCheckoutAvailable = true;
   const deliveryFee = hasItems ? deliveryQuote.deliveryCents : 0;
   const tipCents = hasItems ? Math.max(0, Math.round(riderTipCents)) : 0;
   const total = subtotal + deliveryFee + tipCents;
@@ -192,10 +194,15 @@ export default function CheckoutPage() {
       setError("Online checkout is not available for this cart yet. Please use WhatsApp ordering.");
       return;
     }
+    if (hasAlcohol && !ageConfirmed) {
+      setError("Confirm that you are 18 or older before paying for liquor.");
+      return;
+    }
     const destination = destinationSuburb.trim() || "Klipfontein View, Midrand";
     setLoading(true);
     setError(null);
     try {
+      checkoutKeyRef.current ||= crypto.randomUUID();
       persistPreferredLocation({
         label: destination,
         suburb: destination,
@@ -225,6 +232,8 @@ export default function CheckoutPage() {
           streetSection,
           landmark,
           deliveryNotes,
+          ageConfirmed,
+          checkoutKey: checkoutKeyRef.current,
           items: items.map((i) => ({
             itemId: i.itemId,
             name: i.name,
@@ -241,6 +250,7 @@ export default function CheckoutPage() {
       });
       const json = await res.json();
       if (!res.ok || !json.ok) {
+        if (res.status >= 500) checkoutKeyRef.current = null;
         setError(json?.error ?? "Payment init failed");
         return;
       }
@@ -461,17 +471,33 @@ export default function CheckoutPage() {
 
             {hasAlcohol ? (
               <div className="mt-4 rounded-lg border border-amber-200/25 bg-amber-300/10 p-4 text-sm text-amber-50">
-                <span>
+                <p>
                   Liquor is sold by licensed vendors only. Lethela provides marketplace and delivery
                   support. Valid ID may be required on delivery.
-                </span>
+                </p>
+                <label className="mt-3 flex items-start gap-2 font-medium">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={ageConfirmed}
+                    onChange={(event) => setAgeConfirmed(event.target.checked)}
+                  />
+                  I confirm that I am 18 or older and will present valid ID on delivery.
+                </label>
               </div>
             ) : null}
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Button
                 className="bg-lethela-primary"
-                disabled={loading || deliveryQuote.manualQuoteRequired || !onlineCheckoutAvailable}
+                disabled={
+                  loading ||
+                  deliveryQuote.manualQuoteRequired ||
+                  !onlineCheckoutAvailable ||
+                  (hasAlcohol && !ageConfirmed) ||
+                  !customerName.trim() ||
+                  customerPhone.trim().length < 8
+                }
                 onClick={payOzow}
               >
                 {loading

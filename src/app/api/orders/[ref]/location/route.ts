@@ -5,7 +5,6 @@ import { DEMO_ORDER_REF, isDemoOrderRef } from "@/lib/demo-order";
 import { getOrderRealtimeChannel } from "@/lib/order-tracking-access";
 import { pusherServer } from "@/lib/pusher-server";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
-import { requireVendor } from "@/lib/authz";
 import { readRiderConsoleToken } from "@/lib/rider-console";
 
 const BodySchema = z.object({
@@ -29,19 +28,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, error: "Invalid location payload." }, { status: 400 });
   }
 
-  let vendorSession: Awaited<ReturnType<typeof requireVendor>> | null = null;
-  try {
-    vendorSession = await requireVendor("STAFF");
-  } catch {
-    vendorSession = null;
-  }
-
   const url = new URL(req.url);
   const riderToken = readRiderConsoleToken(
     req.headers.get("x-rider-token")?.trim() || url.searchParams.get("token")?.trim() || null,
   );
 
-  if (!vendorSession && !riderToken) {
+  if (!riderToken) {
     return NextResponse.json(
       { ok: false, error: "Authorized rider or vendor access required." },
       { status: 401 },
@@ -49,7 +41,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   if (isDemoOrderRef(cleanRef)) {
-    if (!vendorSession && riderToken?.ref !== DEMO_ORDER_REF) {
+    if (riderToken?.ref !== DEMO_ORDER_REF) {
       return NextResponse.json(
         { ok: false, error: "Authorized rider or vendor access required." },
         { status: 401 },
@@ -69,23 +61,20 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const order = await runBoundedDbQuery((db) =>
     db.order.findFirst({
-      where: riderToken
-        ? {
-            OR: [
-              { ozowReference: cleanRef },
-              { publicId: cleanRef },
-              { publicId: cleanRef.toUpperCase() },
-            ],
-          }
-        : {
-            vendorId: vendorSession?.vendorId,
-            OR: [
-              { ozowReference: cleanRef },
-              { publicId: cleanRef },
-              { publicId: cleanRef.toUpperCase() },
-            ],
-          },
-      select: { id: true, vendorId: true, ozowReference: true, publicId: true },
+      where: {
+        OR: [
+          { ozowReference: cleanRef },
+          { publicId: cleanRef },
+          { publicId: cleanRef.toUpperCase() },
+        ],
+      },
+      select: {
+        id: true,
+        vendorId: true,
+        ozowReference: true,
+        publicId: true,
+        assignedRiderId: true,
+      },
     }),
   ).catch(() => null);
   if (!order) {
@@ -99,10 +88,14 @@ export async function POST(req: NextRequest, { params }: Params) {
   const ozowRef = String(order.ozowReference || "")
     .trim()
     .toUpperCase();
-  const isVendorAuthorized = vendorSession?.vendorId === order.vendorId;
-  const isRiderAuthorized = Boolean(riderRef && (riderRef === publicRef || riderRef === ozowRef));
+  const isRiderAuthorized = Boolean(
+    riderRef &&
+      (riderRef === publicRef || riderRef === ozowRef) &&
+      order.assignedRiderId &&
+      riderToken?.riderId === order.assignedRiderId,
+  );
 
-  if (!isVendorAuthorized && !isRiderAuthorized) {
+  if (!isRiderAuthorized) {
     return NextResponse.json(
       { ok: false, error: "Authorized rider or vendor access required." },
       { status: 401 },

@@ -28,17 +28,18 @@ function withAdminAccessEnv(fn: () => void) {
 
 test("admin access token round-trips with a configured admin key", () => {
   withAdminAccessEnv(() => {
-    const token = createAdminAccessToken({ expiresInDays: 1 });
+    const token = createAdminAccessToken({ userId: "owner-1", expiresInHours: 24 });
     const payload = readAdminAccessToken(token);
 
     assert.ok(payload);
+    assert.equal(payload?.sub, "owner-1");
     assert.equal(typeof payload?.exp, "number");
   });
 });
 
 test("admin access token is rejected when tampered with", () => {
   withAdminAccessEnv(() => {
-    const token = createAdminAccessToken({ expiresInDays: 1 });
+    const token = createAdminAccessToken({ userId: "owner-1", expiresInHours: 24 });
     const [encoded] = token.split(".");
     const tampered = `${encoded}.invalid-signature`;
 
@@ -48,7 +49,7 @@ test("admin access token is rejected when tampered with", () => {
 
 test("admin access token becomes invalid once the admin key is unavailable", () => {
   withAdminAccessEnv(() => {
-    const token = createAdminAccessToken({ expiresInDays: 1 });
+    const token = createAdminAccessToken({ userId: "owner-1", expiresInHours: 24 });
     delete process.env.ADMIN_APPROVAL_KEY;
 
     assert.equal(readAdminAccessToken(token), null);

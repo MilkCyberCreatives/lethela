@@ -1,6 +1,6 @@
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
-export const LEGAL_LAST_UPDATED = "4 July 2026";
+export const LEGAL_LAST_UPDATED = "21 July 2026";
 export const LEGAL_COMPANY_NAME = process.env.NEXT_PUBLIC_LEGAL_ENTITY_NAME?.trim() || "Lethela";
 export const LEGAL_SERVICE_AREA =
   "township communities across South Africa, starting with Klipfontein View, Midrand";

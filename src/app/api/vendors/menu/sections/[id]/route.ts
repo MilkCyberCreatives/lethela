@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireVendor } from "@/lib/authz";
+import { requireVendorAccount } from "@/lib/authz";
 
 const SectionInputSchema = z.object({
   title: z.string().trim().min(2).max(80),
@@ -22,7 +22,7 @@ async function ensureSectionOwner(vendorId: string, id: string) {
 
 export async function PATCH(req: Request, { params }: Params) {
   try {
-    const { vendorId } = await requireVendor("MANAGER");
+    const { vendorId } = await requireVendorAccount("MANAGER");
     const { id } = await params;
     await ensureSectionOwner(vendorId, id);
 
@@ -53,7 +53,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
 export async function DELETE(_req: Request, { params }: Params) {
   try {
-    const { vendorId } = await requireVendor("MANAGER");
+    const { vendorId } = await requireVendorAccount("MANAGER");
     const { id } = await params;
     await ensureSectionOwner(vendorId, id);
     await prisma.menuSection.delete({ where: { id } });

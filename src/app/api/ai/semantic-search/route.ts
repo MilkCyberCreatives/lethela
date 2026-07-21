@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       score: Number(row.score.toFixed(4)),
       priceCents: row.priceCents,
       isAlcohol: row.isAlcohol,
+      href: row.href,
     })),
   });
 }

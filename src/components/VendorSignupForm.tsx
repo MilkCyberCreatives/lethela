@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
+import { signIn } from "next-auth/react";
 
 export default function VendorSignupForm() {
   const router = useRouter();
@@ -15,11 +16,13 @@ export default function VendorSignupForm() {
     email: "",
     storeName: "",
     password: "",
+    confirmPassword: "",
+    acceptTerms: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function update(key: keyof typeof form, value: string) {
+  function update(key: keyof typeof form, value: string | boolean) {
     setForm((state) => ({ ...state, [key]: value }));
   }
 
@@ -27,6 +30,14 @@ export default function VendorSignupForm() {
     event.preventDefault();
     if (form.password.length < 8) {
       setError("Use a password with at least 8 characters.");
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (!form.acceptTerms) {
+      setError("Accept the Terms and Privacy Policy to continue.");
       return;
     }
 
@@ -53,6 +64,13 @@ export default function VendorSignupForm() {
         vendor_slug: json.vendor?.slug,
       });
 
+      const login = await signIn("credentials", {
+        redirect: false,
+        email: form.email,
+        password: form.password,
+      });
+      if (!login?.ok) throw new Error("Account created. Please sign in to continue.");
+
       router.push(json.redirectTo || "/vendors/dashboard");
       router.refresh();
     } catch (submitError: unknown) {
@@ -67,82 +85,119 @@ export default function VendorSignupForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm md:p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
-            Start selling
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold">Create your vendor profile</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            This first step is short. After this, you will complete store details, township, trading
-            hours, products, banking and documents in your dashboard before approval.
-          </p>
-        </div>
-        <div className="hidden rounded-full bg-emerald-50 p-3 text-emerald-700 sm:block">
-          <ShieldCheck className="h-5 w-5" />
-        </div>
-      </div>
-
-      <form className="mt-6 grid gap-4" onSubmit={submit}>
-        <Input
-          placeholder="Full name"
-          value={form.fullName}
-          onChange={(event) => update("fullName", event.target.value)}
-          required
-          className="border-slate-300 bg-white text-slate-950"
-          autoComplete="name"
-        />
-        <Input
-          type="email"
-          placeholder="Email address"
-          value={form.email}
-          onChange={(event) => update("email", event.target.value)}
-          required
-          className="border-slate-300 bg-white text-slate-950"
-          autoComplete="email"
-        />
-        <Input
-          placeholder="Store name"
-          value={form.storeName}
-          onChange={(event) => update("storeName", event.target.value)}
-          required
-          className="border-slate-300 bg-white text-slate-950"
-        />
-        <Input
-          type="password"
-          placeholder="Create password"
-          value={form.password}
-          onChange={(event) => update("password", event.target.value)}
-          required
-          minLength={8}
-          className="border-slate-300 bg-white text-slate-950"
-          autoComplete="new-password"
-        />
+    <div>
+      <form className="grid gap-4" onSubmit={submit}>
+        <Field label="Full name">
+          <Input
+            placeholder="Full name"
+            value={form.fullName}
+            onChange={(event) => update("fullName", event.target.value)}
+            required
+            className="border-slate-300 bg-white text-slate-950"
+            autoComplete="name"
+          />
+        </Field>
+        <Field label="Email address">
+          <Input
+            type="email"
+            placeholder="Email address"
+            value={form.email}
+            onChange={(event) => update("email", event.target.value)}
+            required
+            className="border-slate-300 bg-white text-slate-950"
+            autoComplete="email"
+          />
+        </Field>
+        <Field label="Store name">
+          <Input
+            placeholder="Store name"
+            value={form.storeName}
+            onChange={(event) => update("storeName", event.target.value)}
+            required
+            className="border-slate-300 bg-white text-slate-950"
+            autoComplete="organization"
+          />
+        </Field>
+        <Field label="Create password">
+          <Input
+            type="password"
+            placeholder="Create password"
+            value={form.password}
+            onChange={(event) => update("password", event.target.value)}
+            required
+            minLength={8}
+            className="border-slate-300 bg-white text-slate-950"
+            autoComplete="new-password"
+          />
+        </Field>
+        <Field label="Confirm password">
+          <Input
+            type="password"
+            placeholder="Confirm password"
+            value={form.confirmPassword}
+            onChange={(event) => update("confirmPassword", event.target.value)}
+            required
+            minLength={8}
+            className="border-slate-300 bg-white text-slate-950"
+            autoComplete="new-password"
+          />
+        </Field>
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={form.acceptTerms}
+            onChange={(event) => update("acceptTerms", event.target.checked)}
+            className="mt-1"
+            required
+          />
+          <span>
+            I accept the{" "}
+            <Link href="/terms" className="underline">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy-policy" className="underline">
+              Privacy Policy
+            </Link>
+            .
+          </span>
+        </label>
 
         <Button
           type="submit"
           className="h-11 bg-lethela-primary text-white hover:opacity-90"
           disabled={loading}
         >
-          {loading ? "Creating profile..." : "Create profile and open dashboard"}
+          {loading ? "Creating vendor account..." : "Create vendor account"}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </form>
 
       {error ? (
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div
+          role="alert"
+          className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
           {error}
         </div>
       ) : null}
 
       <p className="mt-4 text-sm text-slate-600">
-        Already started?{" "}
+        Already registered?{" "}
         <Link href="/vendors/signin" className="font-semibold text-lethela-primary underline">
           Sign in to continue
         </Link>
         .
       </p>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="grid gap-1.5 text-sm font-medium text-slate-800">
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }

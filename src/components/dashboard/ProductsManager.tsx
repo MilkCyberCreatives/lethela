@@ -12,6 +12,8 @@ type Product = {
   isAlcohol: boolean;
   inStock: boolean;
   image?: string | null;
+  status: string;
+  reviewReason?: string | null;
 };
 
 type ProductFormState = {
@@ -465,6 +467,12 @@ export default function ProductsManager() {
                 <div className="mt-3 flex items-center justify-between text-xs text-white/70">
                   <span>{product.isAlcohol ? "Liquor 18+" : "Food/Drink"}</span>
                   <span>{product.inStock ? "In stock" : "Out of stock"}</span>
+                </div>
+                <div className="mt-2 text-xs text-white/60">
+                  Review: {product.status.replaceAll("_", " ")}
+                  {product.reviewReason ? (
+                    <span className="mt-1 block text-amber-100">{product.reviewReason}</span>
+                  ) : null}
                 </div>
                 <div className="mt-3 flex items-center gap-3 text-xs">
                   <button

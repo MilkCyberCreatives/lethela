@@ -75,11 +75,11 @@ export async function getSqliteReadinessCounts(): Promise<SqliteCounts | null> {
       ),
       pendingVendors: count(
         db,
-        "SELECT COUNT(*) AS n FROM Vendor WHERE status IN ('PENDING', 'SUBMITTED_FOR_APPROVAL', 'CHANGES_REQUESTED')",
+        "SELECT COUNT(*) AS n FROM Vendor WHERE status IN ('SUBMITTED', 'UNDER_REVIEW', 'CHANGES_REQUESTED')",
       ),
       pendingRiders: count(
         db,
-        "SELECT COUNT(*) AS n FROM RiderApplication WHERE status = 'PENDING'",
+        "SELECT COUNT(*) AS n FROM RiderApplication WHERE status = 'SUBMITTED'",
       ),
       underReviewRiders: count(
         db,

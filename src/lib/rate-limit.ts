@@ -102,7 +102,8 @@ export async function checkRateLimit({
 
   const now = Date.now();
   const identifier = clientIdentifier(headers);
-  const bucketId = crypto.createHash("sha256").update(`${key}::${identifier}`).digest("hex");
+  const identifierHash = crypto.createHash("sha256").update(identifier).digest("hex");
+  const bucketId = crypto.createHash("sha256").update(`${key}::${identifierHash}`).digest("hex");
   const nextResetAt = now + windowMs;
 
   try {
@@ -111,7 +112,7 @@ export async function checkRateLimit({
     const rows = await withTimeoutOrThrow(
       prisma.$queryRaw<Array<{ count: number; reset_at: number }>>`
         INSERT INTO app_rate_limits (bucket_id, scope_key, identifier, count, reset_at, updated_at)
-        VALUES (${bucketId}, ${key}, ${identifier}, 1, ${nextResetAt}, ${now})
+        VALUES (${bucketId}, ${key}, ${identifierHash}, 1, ${nextResetAt}, ${now})
         ON CONFLICT(bucket_id) DO UPDATE SET
           count = CASE
             WHEN app_rate_limits.reset_at <= ${now} THEN 1

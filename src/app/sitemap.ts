@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getFallbackVendorCards } from "@/lib/catalog-fallback";
+import { getFallbackProducts, getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { isPublicMarketplaceVendor } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
@@ -28,6 +28,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.55,
+    },
+    {
+      url: `${SITE_URL}/contact`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.5,
     },
     {
       url: `${SITE_URL}/search`,
@@ -102,6 +108,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.35,
     },
     {
+      url: `${SITE_URL}/cookie-policy`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
       url: `${SITE_URL}/popia`,
       lastModified: now,
       changeFrequency: "yearly",
@@ -140,7 +152,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             bankAccountName: { not: null },
             bankAccountNumber: { not: null },
             hours: { some: { closed: false } },
-            products: { some: { inStock: true, isAlcohol: false } },
+            products: { some: { inStock: true, isAlcohol: false, status: "APPROVED" } },
           },
           select: {
             id: true,
@@ -188,5 +200,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           }))
         : [];
 
-  return [...staticRoutes, ...categoryRoutes, ...vendorRoutes];
+  const productRows = shouldPreferCatalogFallback()
+    ? []
+    : await runBoundedDbQuery((db) =>
+        db.product.findMany({
+          where: {
+            inStock: true,
+            status: "APPROVED",
+            vendor: {
+              isActive: true,
+              status: { in: ["ACTIVE", "APPROVED"] },
+              temporaryClosed: false,
+            },
+          },
+          select: { id: true, updatedAt: true },
+          orderBy: { updatedAt: "desc" },
+          take: 5000,
+        }),
+      ).catch(() => []);
+  const productRoutes: MetadataRoute.Sitemap =
+    productRows.length > 0
+      ? productRows.map((product) => ({
+          url: `${SITE_URL}/products/${encodeURIComponent(product.id)}`,
+          lastModified: product.updatedAt,
+          changeFrequency: "daily" as const,
+          priority: 0.75,
+        }))
+      : shouldPreferCatalogFallback()
+        ? getFallbackProducts().map((product) => ({
+            url: `${SITE_URL}/products/${encodeURIComponent(product.id)}`,
+            lastModified: now,
+            changeFrequency: "daily" as const,
+            priority: 0.75,
+          }))
+        : [];
+
+  return [...staticRoutes, ...categoryRoutes, ...vendorRoutes, ...productRoutes];
 }

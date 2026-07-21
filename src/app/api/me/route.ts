@@ -5,6 +5,7 @@ import { prisma } from "@/server/db";
 
 const UserProfileSchema = z.object({
   name: z.string().trim().min(1).max(120),
+  phone: z.string().trim().min(8).max(30),
   image: z.string().trim().max(1000).nullable().optional(),
 });
 
@@ -20,6 +21,7 @@ export async function GET() {
       id: true,
       name: true,
       email: true,
+      phone: true,
       role: true,
       image: true,
       createdAt: true,
@@ -42,6 +44,7 @@ export async function PATCH(req: Request) {
   const body = await req.json().catch(() => ({}));
   const parsed = UserProfileSchema.safeParse({
     name: body?.name,
+    phone: body?.phone,
     image: body?.image ? String(body.image).trim() : null,
   });
 
@@ -60,12 +63,14 @@ export async function PATCH(req: Request) {
     where: { id: session.user.id },
     data: {
       name: parsed.data.name,
+      phone: parsed.data.phone,
       image: parsed.data.image || null,
     },
     select: {
       id: true,
       name: true,
       email: true,
+      phone: true,
       role: true,
       image: true,
       createdAt: true,

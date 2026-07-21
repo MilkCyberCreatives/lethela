@@ -1,28 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
-import { createRiderConsoleToken } from "@/lib/rider-console";
-
-function buildRiderConsoleUrl(origin: string, orderRef: string) {
-  const cleanOrderRef = String(orderRef || "").trim();
-  if (!cleanOrderRef) {
-    return null;
-  }
-
-  try {
-    const token = createRiderConsoleToken(cleanOrderRef);
-    return `${origin}/rider/${encodeURIComponent(cleanOrderRef)}?token=${encodeURIComponent(token)}`;
-  } catch {
-    return null;
-  }
-}
+import { normalizeOrderStatus } from "@/lib/order-state";
 
 export async function GET(req: Request) {
   try {
     const { vendorId } = await requireVendor("STAFF");
     const url = new URL(req.url);
     const take = Math.min(150, Math.max(10, Number(url.searchParams.get("take") ?? 60)));
-    const origin = process.env.NEXT_PUBLIC_SITE_URL?.trim() || url.origin;
 
     const orders = await prisma.order.findMany({
       where: { vendorId },
@@ -69,6 +54,7 @@ export async function GET(req: Request) {
         const { itemsJson, ...safeOrder } = order;
         return {
           ...safeOrder,
+          status: normalizeOrderStatus(safeOrder.status) || "FAILED",
           deliveryDetails: (() => {
             try {
               const parsed = JSON.parse(itemsJson || "[]");
@@ -79,10 +65,6 @@ export async function GET(req: Request) {
               return null;
             }
           })(),
-          riderConsoleUrl: buildRiderConsoleUrl(
-            origin,
-            order.publicId || order.ozowReference || "",
-          ),
         };
       }),
     });

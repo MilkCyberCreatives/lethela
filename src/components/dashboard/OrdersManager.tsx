@@ -4,7 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import OrderMap from "@/components/OrderMap";
 import DashCard from "./DashCard";
 
-type OrderStatus = "PLACED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELED";
+type OrderStatus =
+  | "PENDING_PAYMENT"
+  | "PAID"
+  | "NEW"
+  | "VENDOR_ACCEPTED"
+  | "PREPARING"
+  | "READY_FOR_PICKUP"
+  | "RIDER_ASSIGNED"
+  | "PICKED_UP"
+  | "ON_THE_WAY"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "REFUND_REQUESTED"
+  | "REFUNDED"
+  | "FAILED";
+
+type VendorOrderAction = "VENDOR_ACCEPTED" | "PREPARING" | "READY_FOR_PICKUP" | "CANCELLED";
 
 type Order = {
   publicId: string;
@@ -38,12 +54,28 @@ type Order = {
 };
 
 const STATUS: Array<OrderStatus> = [
-  "PLACED",
+  "PENDING_PAYMENT",
+  "PAID",
+  "NEW",
+  "VENDOR_ACCEPTED",
   "PREPARING",
-  "OUT_FOR_DELIVERY",
+  "READY_FOR_PICKUP",
+  "RIDER_ASSIGNED",
+  "PICKED_UP",
+  "ON_THE_WAY",
   "DELIVERED",
-  "CANCELED",
+  "CANCELLED",
+  "REFUND_REQUESTED",
+  "REFUNDED",
+  "FAILED",
 ];
+
+function vendorActions(status: OrderStatus): VendorOrderAction[] {
+  if (status === "NEW") return ["VENDOR_ACCEPTED", "CANCELLED"];
+  if (status === "VENDOR_ACCEPTED") return ["PREPARING", "CANCELLED"];
+  if (status === "PREPARING") return ["READY_FOR_PICKUP", "CANCELLED"];
+  return [];
+}
 
 export default function OrdersManager() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -109,7 +141,10 @@ export default function OrdersManager() {
   useEffect(() => {
     const timer = setInterval(async () => {
       const activeOrders = orders.filter(
-        (order) => order.status === "OUT_FOR_DELIVERY" || order.status === "PREPARING",
+        (order) =>
+          order.status === "RIDER_ASSIGNED" ||
+          order.status === "PICKED_UP" ||
+          order.status === "ON_THE_WAY",
       );
       if (activeOrders.length === 0) return;
 
@@ -119,15 +154,15 @@ export default function OrdersManager() {
             `/api/vendors/orders/track?id=${encodeURIComponent(order.publicId)}`,
           );
           const json = await response.json();
-          return json?.ok ? { id: order.publicId, driver: json.driver } : null;
+          return { id: order.publicId, driver: json?.ok ? json.driver : null };
         }),
       );
 
       setTracking((current) => {
         const next = { ...current };
         for (const update of updates) {
-          if (!update) continue;
-          next[update.id] = update.driver;
+          if (update.driver) next[update.id] = update.driver;
+          else delete next[update.id];
         }
         return next;
       });
@@ -139,11 +174,20 @@ export default function OrdersManager() {
   const statusCounts = useMemo(() => {
     const counts: Record<"ALL" | OrderStatus, number> = {
       ALL: orders.length,
-      PLACED: 0,
+      PENDING_PAYMENT: 0,
+      PAID: 0,
+      NEW: 0,
+      VENDOR_ACCEPTED: 0,
       PREPARING: 0,
-      OUT_FOR_DELIVERY: 0,
+      READY_FOR_PICKUP: 0,
+      RIDER_ASSIGNED: 0,
+      PICKED_UP: 0,
+      ON_THE_WAY: 0,
       DELIVERED: 0,
-      CANCELED: 0,
+      CANCELLED: 0,
+      REFUND_REQUESTED: 0,
+      REFUNDED: 0,
+      FAILED: 0,
     };
 
     for (const order of orders) {
@@ -183,12 +227,18 @@ export default function OrdersManager() {
     orders.find((order) => order.publicId === selectedId) ||
     null;
 
-  async function updateStatus(publicId: string, status: OrderStatus) {
+  async function updateStatus(publicId: string, status: VendorOrderAction) {
     setError(null);
+    const reason =
+      status === "CANCELLED"
+        ? window.prompt("Why is this order being cancelled? This is recorded for support.")
+        : null;
+    if (status === "CANCELLED" && !reason) return;
+    if (!window.confirm(`Change this order to ${status.replaceAll("_", " ")}?`)) return;
     const response = await fetch(`/api/vendors/orders/${encodeURIComponent(publicId)}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, reason }),
     });
     const json = await response.json();
     if (!response.ok || !json.ok) {
@@ -318,19 +368,18 @@ export default function OrdersManager() {
                   <div className="mt-1 text-lg font-semibold">{selectedOrder.publicId}</div>
                 </div>
 
-                <select
-                  value={selectedOrder.status}
-                  onChange={(event) =>
-                    void updateStatus(selectedOrder.publicId, event.target.value as OrderStatus)
-                  }
-                  className="rounded bg-white px-3 py-2 text-sm text-black"
-                >
-                  {STATUS.map((status) => (
-                    <option key={status} value={status}>
+                <div className="flex flex-wrap justify-end gap-2">
+                  {vendorActions(selectedOrder.status).map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => void updateStatus(selectedOrder.publicId, status)}
+                      className="rounded border border-white/20 px-3 py-2 text-xs hover:border-lethela-primary"
+                    >
                       {status.replaceAll("_", " ")}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">

@@ -16,7 +16,7 @@ export async function getVendorBySlug(slug: string) {
     where: { slug },
     include: {
       products: {
-        where: { inStock: true, isAlcohol: false },
+        where: { inStock: true, isAlcohol: false, status: "APPROVED" },
         orderBy: { updatedAt: "desc" },
         take: 80,
       },
@@ -42,7 +42,19 @@ export async function getVendorBySlug(slug: string) {
   const vendor = await withQueryTimeout<VendorRecord | null>(vendorQuery, null);
 
   if (!vendor) return fallback;
-  if (!isPublicMarketplaceVendor(vendor)) return null;
+  const liveMenuItemCount = vendor.sections.reduce((sum, section) => sum + section.items.length, 0);
+  if (
+    !isPublicMarketplaceVendor({
+      ...vendor,
+      _count: {
+        ...vendor._count,
+        products: vendor.products.length,
+        items: liveMenuItemCount,
+      },
+    })
+  ) {
+    return null;
+  }
 
   const cuisine = Array.isArray(vendor.cuisine)
     ? vendor.cuisine
@@ -61,6 +73,7 @@ export async function getVendorBySlug(slug: string) {
     isPublicCatalogProduct({
       id: product.id,
       name: product.name,
+      status: product.status,
       vendorName: vendor.name,
       vendorSlug: vendor.slug,
     }),

@@ -36,6 +36,7 @@ type PublicVendorSource = {
 type PublicProductSource = {
   id?: string | null;
   name: string;
+  status?: string | null;
   vendor?: {
     name?: string | null;
     slug?: string | null;
@@ -72,6 +73,7 @@ export function isPublicCatalogProduct(source: PublicProductSource) {
   const vendorName = source.vendor?.name ?? source.vendorName ?? "";
   const vendorSlug = source.vendor?.slug ?? source.vendorSlug ?? "";
 
+  if (source.status && source.status !== "APPROVED") return false;
   if (id.startsWith("demo-") || name.startsWith("demo ")) return false;
   return isPublicCatalogVendor({ name: vendorName, slug: vendorSlug });
 }

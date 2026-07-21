@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { searchCatalog } from "@/lib/search";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 async function runSearch(rawQuery: string) {
   const text = String(rawQuery || "")
@@ -32,12 +33,33 @@ async function runSearch(rawQuery: string) {
   });
 }
 
+async function enforceLimit(req: Request) {
+  return checkRateLimit({
+    key: "public-search",
+    limit: 40,
+    windowMs: 60_000,
+    headers: req.headers,
+  });
+}
+
 export async function GET(req: Request) {
+  const limited = await enforceLimit(req);
+  if (!limited.ok)
+    return NextResponse.json(
+      { ok: false, error: "Too many searches. Please wait a moment." },
+      { status: 429 },
+    );
   const url = new URL(req.url);
   return runSearch(url.searchParams.get("q") || "");
 }
 
 export async function POST(req: Request) {
+  const limited = await enforceLimit(req);
+  if (!limited.ok)
+    return NextResponse.json(
+      { ok: false, error: "Too many searches. Please wait a moment." },
+      { status: 429 },
+    );
   try {
     const { q } = await req.json().catch(() => ({ q: "" }));
     return runSearch(String(q || ""));

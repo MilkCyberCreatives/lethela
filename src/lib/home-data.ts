@@ -113,6 +113,7 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
       prisma.product.findMany({
         where: {
           inStock: true,
+          status: "APPROVED",
           isAlcohol: false,
           vendor: {
             isActive: true,
@@ -216,6 +217,8 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
         where: {
           isActive: true,
           status: { in: ["ACTIVE", "APPROVED"] },
+          temporaryClosed: false,
+          products: { some: { isAlcohol: false, inStock: true, status: "APPROVED" } },
           ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
         },
         select: {
@@ -247,7 +250,7 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
           bankBranchCode: true,
           products: {
             select: { isAlcohol: true },
-            where: { isAlcohol: false, inStock: true },
+            where: { isAlcohol: false, inStock: true, status: "APPROVED" },
             take: 6,
           },
           _count: { select: { products: true, items: true, hours: true } },

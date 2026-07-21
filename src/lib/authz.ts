@@ -1,8 +1,5 @@
-// src/lib/authz.ts
-import { prisma, prismaRuntimeInfo } from "@/lib/db";
-import { getCookie } from "@/lib/cookie-helpers";
-import { parseVendorSessionToken } from "@/lib/vendor-session";
-import { findSqliteVendorSession } from "@/lib/sqlite-vendor-auth";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
 
 export type VendorRoleType = "OWNER" | "MANAGER" | "STAFF";
 
@@ -20,116 +17,84 @@ type VendorSessionState = AuthedVendor & {
   status: string;
 };
 
-const ROLE_RANK: Record<VendorRoleType, number> = {
-  OWNER: 3,
-  MANAGER: 2,
-  STAFF: 1,
-};
+const ROLE_RANK: Record<VendorRoleType, number> = { OWNER: 3, MANAGER: 2, STAFF: 1 };
 
 function normalizeRole(value: string | null | undefined): VendorRoleType {
-  const upper = String(value || "").toUpperCase();
-  if (upper === "OWNER" || upper === "MANAGER" || upper === "STAFF") {
-    return upper;
-  }
-  return "STAFF";
+  const role = String(value || "").toUpperCase();
+  return role === "OWNER" || role === "MANAGER" || role === "STAFF" ? role : "STAFF";
 }
 
 export async function getVendorSession(): Promise<VendorSessionState> {
-  const sessionToken = await getCookie("vendor_session");
-  const parsed = parseVendorSessionToken(sessionToken);
-
-  if (!parsed) {
+  const session = await auth().catch(() => null);
+  if (!session?.user?.id || !session.user.email) {
     throw new Error("Vendor session expired. Please sign in again.");
   }
 
-  const sqliteSession =
-    prismaRuntimeInfo.provider === "sqlite"
-      ? await findSqliteVendorSession(parsed.userId, parsed.vendorId)
-      : null;
-  const [user, vendor] = sqliteSession
-    ? [sqliteSession.user, sqliteSession.vendor]
-    : await Promise.all([
-        prisma.user.findUnique({
-          where: { id: parsed.userId },
-          select: { id: true, email: true },
-        }),
-        prisma.vendor.findUnique({
-          where: { id: parsed.vendorId },
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            status: true,
-            isActive: true,
-            ownerId: true,
-          },
-        }),
-      ]);
-
-  if (!user || !vendor) {
-    throw new Error("Vendor session is no longer valid. Please sign in again.");
-  }
-
-  if (user.email.toLowerCase() !== parsed.email || vendor.slug !== parsed.vendorSlug) {
-    throw new Error("Vendor session does not match current account data. Please sign in again.");
-  }
-
-  let membership = sqliteSession
-    ? sqliteSession.membership
-    : await prisma.vendorMember.findUnique({
-        where: {
-          vendorId_userId: {
-            vendorId: vendor.id,
-            userId: user.id,
-          },
-        },
-        select: { role: true },
-      });
-
-  if (!membership && vendor.ownerId === user.id && prismaRuntimeInfo.provider !== "sqlite") {
-    membership = await prisma.vendorMember.create({
-      data: {
-        vendorId: vendor.id,
-        userId: user.id,
-        role: "OWNER",
+  let membership = await prisma.vendorMember.findFirst({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    select: {
+      role: true,
+      vendor: {
+        select: { id: true, slug: true, name: true, status: true, isActive: true },
       },
-      select: { role: true },
-    });
-  }
+    },
+  });
 
   if (!membership) {
-    throw new Error("Vendor membership not found for this account.");
+    const ownedVendor = await prisma.vendor.findFirst({
+      where: {
+        OR: [{ ownerId: session.user.id }, { email: session.user.email.toLowerCase() }],
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, slug: true, name: true, status: true, isActive: true },
+    });
+    if (ownedVendor) {
+      await prisma.vendorMember.upsert({
+        where: { vendorId_userId: { vendorId: ownedVendor.id, userId: session.user.id } },
+        create: { vendorId: ownedVendor.id, userId: session.user.id, role: "OWNER" },
+        update: { role: "OWNER" },
+      });
+      membership = { role: "OWNER", vendor: ownedVendor };
+    }
   }
 
-  const status = String(vendor.status || "").toUpperCase();
-  const isApproved =
-    vendor.isActive && (status === "ACTIVE" || status === "APPROVED" || status === "");
-
+  if (!membership) throw new Error("No vendor profile is linked to this account.");
+  const status = String(membership.vendor.status || "").toUpperCase();
   return {
-    userId: user.id,
-    vendorId: vendor.id,
+    userId: session.user.id,
+    vendorId: membership.vendor.id,
     role: normalizeRole(membership.role),
-    vendorSlug: vendor.slug,
-    email: user.email.toLowerCase(),
-    vendorName: vendor.name,
-    isApproved,
+    vendorSlug: membership.vendor.slug,
+    email: session.user.email.toLowerCase(),
+    vendorName: membership.vendor.name,
+    isApproved: membership.vendor.isActive && ["ACTIVE", "APPROVED"].includes(status),
     status,
   };
 }
 
 export async function requireVendor(minRole: VendorRoleType = "STAFF"): Promise<AuthedVendor> {
   const session = await getVendorSession();
-  const isApproved = session.isApproved;
-  if (!isApproved) {
-    if (session.status === "REJECTED") {
-      throw new Error("Vendor application was rejected.");
-    }
-    throw new Error("Vendor account pending admin approval.");
+  if (!session.isApproved) {
+    if (session.status === "REJECTED") throw new Error("Vendor application was rejected.");
+    if (session.status === "SUSPENDED") throw new Error("Vendor account is suspended.");
+    throw new Error("Vendor account is awaiting approval.");
   }
-  if (ROLE_RANK[session.role] < ROLE_RANK[minRole]) {
-    throw new Error("Insufficient role");
-  }
+  if (ROLE_RANK[session.role] < ROLE_RANK[minRole]) throw new Error("Insufficient role.");
+  return {
+    userId: session.userId,
+    vendorId: session.vendorId,
+    role: session.role,
+    vendorSlug: session.vendorSlug,
+  };
+}
 
+export async function requireVendorAccount(
+  minRole: VendorRoleType = "STAFF",
+): Promise<AuthedVendor> {
+  const session = await getVendorSession();
+  if (session.status === "SUSPENDED") throw new Error("Vendor account is suspended.");
+  if (ROLE_RANK[session.role] < ROLE_RANK[minRole]) throw new Error("Insufficient role.");
   return {
     userId: session.userId,
     vendorId: session.vendorId,

@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { createAdminAccessToken, ADMIN_ACCESS_COOKIE_NAME } from "@/lib/admin-access";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isAdminRole } from "@/lib/auth-security";
 
 const BodySchema = z.object({
   adminKey: z.string().trim().min(1),
@@ -56,20 +57,41 @@ export async function POST(req: NextRequest) {
   }
 
   const session = await auth().catch(() => null);
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Sign in with an authorised staff account before entering the security key.",
+      },
+      { status: 401 },
+    );
+  }
   let promoted = false;
   let message = "Admin access enabled for this browser.";
 
-  if (session?.user?.id && session.user.role !== "ADMIN") {
-    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
+  if (!isAdminRole(session.user.role)) {
+    const adminCount = await prisma.user.count({ where: { role: { in: ["OWNER", "ADMIN"] } } });
     if (adminCount === 0) {
       await prisma.user.update({
         where: { id: session.user.id },
-        data: { role: "ADMIN" },
+        data: { role: "OWNER", twoFactorEnabled: true, sessionVersion: { increment: 1 } },
       });
       promoted = true;
       message =
-        "Admin access enabled. Sign out and sign back in once to refresh your admin session.";
+        "Owner access enabled. Sign out and sign back in once to refresh your owner session.";
+    } else {
+      return NextResponse.json(
+        { ok: false, error: "This account is not authorised for the admin dashboard." },
+        { status: 403 },
+      );
     }
+  }
+
+  if (!promoted) {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { twoFactorEnabled: true },
+    });
   }
 
   const response = NextResponse.json({
@@ -78,13 +100,17 @@ export async function POST(req: NextRequest) {
     message,
   });
 
-  response.cookies.set(ADMIN_ACCESS_COOKIE_NAME, createAdminAccessToken(), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 30 * 24 * 60 * 60,
-  });
+  response.cookies.set(
+    ADMIN_ACCESS_COOKIE_NAME,
+    createAdminAccessToken({ userId: session.user.id, expiresInHours: 8 }),
+    {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 8 * 60 * 60,
+    },
+  );
 
   return response;
 }

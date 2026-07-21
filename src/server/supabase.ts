@@ -7,6 +7,7 @@ type UploadInput = {
   path: string;
   buffer: Buffer;
   contentType: string;
+  visibility?: "public" | "private";
 };
 
 const SAFE_PATH = /^[a-zA-Z0-9][a-zA-Z0-9/_\-.]{1,220}$/;
@@ -63,6 +64,12 @@ function localStorageRoot() {
   );
 }
 
+function localPrivateStorageRoot() {
+  return path.resolve(
+    process.env.STORAGE_PRIVATE_DIR || path.join(process.cwd(), ".data", "private-uploads"),
+  );
+}
+
 function assertSafeStoragePath(filename: string) {
   const normalized = filename.replace(/^\/+/, "").replace(/\/{2,}/g, "/");
   if (normalized.includes("..") || !SAFE_PATH.test(normalized)) {
@@ -89,10 +96,21 @@ export function publicUrl(path: string) {
 
 export async function uploadStoredFile(input: UploadInput) {
   const filename = assertSafeStoragePath(input.path);
+  const visibility = input.visibility || "public";
 
   if (storageProvider() === "supabase") {
     const supa = createAdminClient();
-    const bucket = process.env.SUPABASE_BUCKET!.trim();
+    const bucket =
+      visibility === "private"
+        ? process.env.SUPABASE_PRIVATE_BUCKET?.trim()
+        : process.env.SUPABASE_BUCKET?.trim();
+    if (!bucket) {
+      throw new Error(
+        visibility === "private"
+          ? "Private document storage is not configured."
+          : "Public storage bucket is not configured.",
+      );
+    }
     const { data, error } = await supa.storage.from(bucket).upload(filename, input.buffer, {
       contentType: input.contentType,
       upsert: false,
@@ -100,11 +118,13 @@ export async function uploadStoredFile(input: UploadInput) {
 
     if (error) throw new Error(error.message);
 
-    const { data: publicData } = supa.storage.from(bucket).getPublicUrl(filename);
+    const publicData =
+      visibility === "public" ? supa.storage.from(bucket).getPublicUrl(filename).data : null;
     return {
       path: data?.path || filename,
-      url: publicData?.publicUrl || publicUrl(filename),
+      url: publicData?.publicUrl || (visibility === "public" ? publicUrl(filename) : null),
       provider: "supabase" as const,
+      visibility,
     };
   }
 
@@ -112,7 +132,7 @@ export async function uploadStoredFile(input: UploadInput) {
     throw new Error("Durable storage is not configured for uploads.");
   }
 
-  const root = localStorageRoot();
+  const root = visibility === "private" ? localPrivateStorageRoot() : localStorageRoot();
   const target = path.resolve(root, filename);
   if (!target.startsWith(root + path.sep) && target !== root) {
     throw new Error("Unsafe upload path.");
@@ -123,7 +143,27 @@ export async function uploadStoredFile(input: UploadInput) {
 
   return {
     path: filename,
-    url: publicUrl(filename),
+    url: visibility === "public" ? publicUrl(filename) : null,
     provider: "local" as const,
+    visibility,
   };
+}
+
+export async function readPrivateStoredFile(filename: string) {
+  const safeFilename = assertSafeStoragePath(filename);
+  if (!safeFilename.startsWith("private/")) throw new Error("Private file path required.");
+
+  if (storageProvider() === "supabase") {
+    const bucket = process.env.SUPABASE_PRIVATE_BUCKET?.trim();
+    if (!bucket) throw new Error("Private document storage is not configured.");
+    const supa = createAdminClient();
+    const { data, error } = await supa.storage.from(bucket).download(safeFilename);
+    if (error || !data) throw new Error(error?.message || "Document not found.");
+    return Buffer.from(await data.arrayBuffer());
+  }
+
+  const root = localPrivateStorageRoot();
+  const target = path.resolve(root, safeFilename);
+  if (!target.startsWith(root + path.sep)) throw new Error("Unsafe private file path.");
+  return fs.readFile(target);
 }

@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
 
 const STATUS_VALUES = new Set([
+  "DRAFT",
+  "SUBMITTED",
+  "UNDER_REVIEW",
   "DRAFT_PROFILE",
   "SUBMITTED_FOR_APPROVAL",
   "CHANGES_REQUESTED",
@@ -15,17 +18,10 @@ const STATUS_VALUES = new Set([
 ]);
 
 function normalizeStatusFilter(value: string) {
-  if (value === "PENDING") return "SUBMITTED_FOR_APPROVAL";
+  if (value === "PENDING" || value === "SUBMITTED_FOR_APPROVAL") return "SUBMITTED";
+  if (value === "DRAFT_PROFILE") return "DRAFT";
   if (value === "ACTIVE") return "APPROVED";
   return value;
-}
-
-function isLocalSqliteRuntime() {
-  return (
-    !process.env.VERCEL &&
-    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
-      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
-  );
 }
 
 export async function GET(req: NextRequest) {
@@ -34,31 +30,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
 
-  const rawStatus = (
-    req.nextUrl.searchParams.get("status") || "SUBMITTED_FOR_APPROVAL"
-  ).toUpperCase();
+  const rawStatus = (req.nextUrl.searchParams.get("status") || "SUBMITTED").toUpperCase();
   if (!STATUS_VALUES.has(rawStatus)) {
     return NextResponse.json({ ok: false, error: "Invalid status filter." }, { status: 400 });
   }
   const statusFilter = normalizeStatusFilter(rawStatus);
-
-  if (isLocalSqliteRuntime()) {
-    return NextResponse.json({
-      ok: true,
-      authMode: guard.mode,
-      pendingCount: 0,
-      counts: {
-        draft: 0,
-        submitted: 0,
-        changesRequested: 0,
-        approved: 0,
-        rejected: 0,
-        suspended: 0,
-        total: 0,
-      },
-      items: [],
-    });
-  }
 
   const where =
     statusFilter === "ALL"
@@ -99,13 +75,20 @@ export async function GET(req: NextRequest) {
         deliveryFee: true,
         halaal: true,
         image: true,
+        liquorLicenceUrl: true,
+        liquorLicenceNumber: true,
+        liquorLicenceExpiry: true,
+        liquorVerificationStatus: true,
+        liquorReviewReason: true,
         createdAt: true,
         updatedAt: true,
       },
       take: 200,
     }),
-    prisma.vendor.count({ where: { status: "DRAFT_PROFILE" } }),
-    prisma.vendor.count({ where: { status: "SUBMITTED_FOR_APPROVAL" } }),
+    prisma.vendor.count({ where: { status: { in: ["DRAFT", "DRAFT_PROFILE"] } } }),
+    prisma.vendor.count({
+      where: { status: { in: ["SUBMITTED", "SUBMITTED_FOR_APPROVAL", "UNDER_REVIEW"] } },
+    }),
     prisma.vendor.count({ where: { status: "CHANGES_REQUESTED" } }),
     prisma.vendor.count({ where: { status: "APPROVED" } }),
     prisma.vendor.count({ where: { status: "REJECTED" } }),

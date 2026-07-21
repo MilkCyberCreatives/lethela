@@ -189,6 +189,10 @@ if (uploadStorage === "supabase") {
   requireNonPlaceholder("SUPABASE_URL", "must be set for Supabase uploads.");
   requireNonPlaceholder("SUPABASE_SERVICE_ROLE", "must be set for Supabase uploads.");
   requireNonPlaceholder("SUPABASE_BUCKET", "must be set for Supabase uploads.");
+  requireNonPlaceholder(
+    "SUPABASE_PRIVATE_BUCKET",
+    "must be set to a non-public bucket for KYC, banking, and licence documents.",
+  );
   const storageBucketUrl = requireNonPlaceholder(
     "STORAGE_BUCKET_URL",
     "should be set so uploaded media resolves to an absolute public URL.",
@@ -199,6 +203,10 @@ if (uploadStorage === "supabase") {
 } else {
   requireNonPlaceholder("STORAGE_LOCAL_DIR", "must be set to a persistent absolute upload folder.");
   requireNonPlaceholder("STORAGE_PUBLIC_PATH", "must be set to the public upload URL path.");
+  requireNonPlaceholder(
+    "STORAGE_PRIVATE_DIR",
+    "must be set to a persistent non-public folder for KYC, banking, and licence documents.",
+  );
 }
 
 requireNonPlaceholder("OZOW_SITE_CODE", "must be set for live payments.");

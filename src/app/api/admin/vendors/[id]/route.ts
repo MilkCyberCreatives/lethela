@@ -6,9 +6,11 @@ import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { notifyApplicant } from "@/lib/application-notifications";
 import { logAdminAudit } from "@/lib/admin-audit";
+import { getVendorReadiness } from "@/lib/vendor-readiness";
 
 const ActionSchema = z.object({
   action: z.enum(["approve", "reject", "changes_requested", "suspend"]),
+  reason: z.string().trim().max(500).optional(),
 });
 
 function isLocalSqliteRuntime() {
@@ -35,6 +37,7 @@ function statusForAction(action: z.infer<typeof ActionSchema>["action"]) {
 async function updateLocalSqliteVendorStatus(
   id: string,
   action: z.infer<typeof ActionSchema>["action"],
+  reason?: string,
 ) {
   const filePath = sqliteFilePath();
   if (!filePath || !fs.existsSync(filePath)) return null;
@@ -53,9 +56,10 @@ async function updateLocalSqliteVendorStatus(
     run("BEGIN IMMEDIATE");
     try {
       run(
-        "UPDATE Vendor SET status = ?, isActive = ?, updatedAt = ? WHERE id = ?",
+        "UPDATE Vendor SET status = ?, isActive = ?, reviewReason = ?, updatedAt = ? WHERE id = ?",
         next.status,
         next.isActive ? 1 : 0,
+        action === "approve" ? null : reason || null,
         now,
         id,
       );
@@ -145,7 +149,7 @@ type Params = {
 };
 
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const guard = await requireAdminRequest(req);
+  const guard = await requireAdminRequest(req, "vendors:approve");
   if (!guard.ok) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
@@ -158,10 +162,71 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const action = parsed.data.action;
+  if (action !== "approve" && !parsed.data.reason) {
+    return NextResponse.json(
+      { ok: false, error: "A reason is required for this action." },
+      { status: 400 },
+    );
+  }
   const next = statusForAction(action);
 
+  const reviewCandidate = await prisma.vendor.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      address: true,
+      suburb: true,
+      city: true,
+      province: true,
+      municipality: true,
+      township: true,
+      sectionArea: true,
+      storeType: true,
+      cuisine: true,
+      etaMins: true,
+      kycIdUrl: true,
+      kycProofUrl: true,
+      bankName: true,
+      bankAccountName: true,
+      bankAccountNumber: true,
+      bankBranchCode: true,
+      owner: { select: { passwordHash: true } },
+      _count: { select: { products: true, items: true, hours: true } },
+    },
+  });
+  if (!reviewCandidate) {
+    return NextResponse.json({ ok: false, error: "Vendor not found." }, { status: 404 });
+  }
+  if (action === "approve") {
+    const readiness = getVendorReadiness({
+      ...reviewCandidate,
+      productCount: reviewCandidate._count.products,
+      menuItemCount: reviewCandidate._count.items,
+      operatingHoursCount: reviewCandidate._count.hours,
+    });
+    if (!readiness.canSubmit) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "This vendor profile is incomplete and cannot be approved.",
+          readiness,
+        },
+        { status: 409 },
+      );
+    }
+    if (!reviewCandidate.owner?.passwordHash) {
+      return NextResponse.json(
+        { ok: false, error: "Link a securely registered owner account before approval." },
+        { status: 409 },
+      );
+    }
+  }
+
   if (isLocalSqliteRuntime()) {
-    const vendor = await updateLocalSqliteVendorStatus(id, action);
+    const vendor = await updateLocalSqliteVendorStatus(id, action, parsed.data.reason);
     if (!vendor) {
       return NextResponse.json({ ok: false, error: "Vendor not found." }, { status: 404 });
     }
@@ -187,6 +252,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       data: {
         status: next.status,
         isActive: next.isActive,
+        reviewReason: action === "approve" ? null : parsed.data.reason,
       },
       select: {
         id: true,
@@ -257,7 +323,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   });
 
   await logAdminAudit({
-    actor: guard.mode,
+    actor: guard.actor,
     action: `${action}_vendor`,
     targetType: "vendor",
     targetId: vendor.id,

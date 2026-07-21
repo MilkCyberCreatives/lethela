@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/rider/dashboard",
   },
+  robots: { index: false, follow: false },
 };
 
 export default async function RiderDashboardPage() {

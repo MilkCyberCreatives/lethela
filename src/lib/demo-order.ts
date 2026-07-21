@@ -19,7 +19,7 @@ export function isDemoOrderRef(value: string) {
 export function getDemoOrderSummary() {
   return {
     id: DEMO_ORDER_REF,
-    status: "OUT_FOR_DELIVERY" as const,
+    status: "ON_THE_WAY" as const,
     eta: "10-15 min",
     vendor: "Hello Tomato",
   };
@@ -29,8 +29,8 @@ export function getDemoOrderDetails() {
   return {
     id: DEMO_ORDER_REF,
     publicId: DEMO_ORDER_REF,
-    status: "OUT_FOR_DELIVERY" as const,
-    paymentStatus: "PENDING" as const,
+    status: "ON_THE_WAY" as const,
+    paymentStatus: "PAID" as const,
     createdAt: new Date("2026-03-06T12:00:00.000Z"),
     updatedAt: new Date("2026-03-06T12:28:00.000Z"),
     totalCents: 12999,
@@ -57,7 +57,7 @@ export function getDemoOrderDetails() {
       simulated: false,
     },
     tracking: {
-      status: "OUT_FOR_DELIVERY" as const,
+      status: "ON_THE_WAY" as const,
       statusLabel: "Rider is on the way",
       statusDetail: "Your rider is heading to your drop-off point now.",
       etaLabel: "10-15 min",

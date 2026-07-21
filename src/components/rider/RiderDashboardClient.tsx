@@ -56,6 +56,7 @@ type RiderMeResponse = {
     status: string;
     vendor: string;
     pickupArea: string;
+    pickupInstructions: string | null;
     totalCents: number;
     deliveryFeeCents: number;
     riderTipCents: number;
@@ -209,7 +210,7 @@ export default function RiderDashboardClient() {
               variant="outline"
               className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
             >
-              <Link href="/rider">Application</Link>
+              <Link href="/rider/dashboard/profile">Complete profile</Link>
             </Button>
           </div>
         </div>
@@ -281,6 +282,11 @@ export default function RiderDashboardClient() {
                     <MapPin className="h-4 w-4 text-lethela-primary" />
                     {order.pickupArea}
                   </div>
+                  {order.pickupInstructions ? (
+                    <p className="mt-2 rounded-lg border border-white/10 bg-black/15 p-3 text-xs text-white/65">
+                      Pickup: {order.pickupInstructions}
+                    </p>
+                  ) : null}
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     {order.consoleUrl ? (
                       <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
@@ -303,6 +309,9 @@ export default function RiderDashboardClient() {
               ))
             )}
           </div>
+          <Button asChild className="mt-4 bg-lethela-primary text-white">
+            <Link href="/rider/dashboard/profile">Open profile setup</Link>
+          </Button>
         </section>
 
         <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5">

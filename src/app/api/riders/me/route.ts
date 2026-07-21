@@ -2,12 +2,21 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createRiderConsoleToken } from "@/lib/rider-console";
 import { prisma } from "@/server/db";
+import { getRiderReadiness } from "@/lib/rider-readiness";
 
-const ACTIVE_ORDER_STATUSES = ["PLACED", "PREPARING", "OUT_FOR_DELIVERY"];
+const ACTIVE_ORDER_STATUSES = [
+  "NEW",
+  "VENDOR_ACCEPTED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "RIDER_ASSIGNED",
+  "PICKED_UP",
+  "ON_THE_WAY",
+];
 
-function safeConsoleUrl(ref: string) {
+function safeConsoleUrl(ref: string, riderId: string) {
   try {
-    const token = createRiderConsoleToken(ref, 12);
+    const token = createRiderConsoleToken(ref, 12, riderId);
     return `/rider/${encodeURIComponent(ref)}?token=${encodeURIComponent(token)}`;
   } catch {
     return null;
@@ -40,7 +49,7 @@ export async function GET() {
       select: { id: true, name: true, email: true, role: true, image: true, createdAt: true },
     }),
     prisma.riderApplication.findFirst({
-      where: { email: session.user.email.toLowerCase() },
+      where: { OR: [{ userId: session.user.id }, { email: session.user.email.toLowerCase() }] },
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,
@@ -60,6 +69,7 @@ export async function GET() {
         experience: true,
         aiSummary: true,
         status: true,
+        reviewReason: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -74,6 +84,7 @@ export async function GET() {
   const activeOrders = approved
     ? await prisma.order.findMany({
         where: {
+          assignedRiderId: application?.id || "__none__",
           status: { in: ACTIVE_ORDER_STATUSES },
           paymentStatus: { in: ["PAID", "SUCCESS"] },
         },
@@ -85,6 +96,8 @@ export async function GET() {
           status: true,
           totalCents: true,
           deliveryFeeCents: true,
+          riderTipCents: true,
+          riderPayoutCents: true,
           itemsJson: true,
           riderLocatedAt: true,
           createdAt: true,
@@ -96,6 +109,7 @@ export async function GET() {
               city: true,
               latitude: true,
               longitude: true,
+              pickupInstructions: true,
             },
           },
         },
@@ -116,24 +130,26 @@ export async function GET() {
         application?.hasSmartphone && application?.hasBankAccount && application?.licenseCode,
       ),
       area: application ? [application.suburb, application.city].filter(Boolean).join(", ") : null,
+      profile: application ? getRiderReadiness(application) : null,
     },
     activeOrders: activeOrders.map((order) => {
       const ref = order.ozowReference || order.publicId;
-      const riderTipCents = readRiderTip(order.itemsJson);
+      const riderTipCents = order.riderTipCents || readRiderTip(order.itemsJson);
       return {
         ref,
         status: order.status,
         vendor: order.vendor?.name || "Unknown vendor",
         pickupArea:
           [order.vendor?.suburb, order.vendor?.city].filter(Boolean).join(", ") || "Area not set",
+        pickupInstructions: order.vendor?.pickupInstructions || null,
         totalCents: order.totalCents,
         deliveryFeeCents: order.deliveryFeeCents,
         riderTipCents,
-        riderPayoutCents: order.deliveryFeeCents + riderTipCents,
+        riderPayoutCents: order.riderPayoutCents || order.deliveryFeeCents + riderTipCents,
         riderLocatedAt: order.riderLocatedAt,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
-        consoleUrl: safeConsoleUrl(ref),
+        consoleUrl: safeConsoleUrl(ref, application!.id),
       };
     }),
   });

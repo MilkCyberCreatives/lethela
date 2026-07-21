@@ -6,7 +6,6 @@ import {
   Activity,
   Bike,
   Bell,
-  CalendarDays,
   CheckCircle2,
   Clock,
   LayoutDashboard,
@@ -14,7 +13,6 @@ import {
   LifeBuoy,
   LogOut,
   Mail,
-  MapPin,
   MessageSquare,
   PackageCheck,
   RefreshCw,
@@ -32,22 +30,49 @@ import { Button } from "@/components/ui/button";
 type DashboardView =
   | "overview"
   | "vendors"
+  | "products"
   | "riders"
   | "users"
   | "orders"
   | "messages"
   | "operations";
 type VendorStatusOption =
-  | "DRAFT_PROFILE"
-  | "SUBMITTED_FOR_APPROVAL"
+  | "DRAFT"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
   | "CHANGES_REQUESTED"
   | "APPROVED"
   | "REJECTED"
   | "SUSPENDED"
   | "ALL";
-type RiderStatusFilter = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "ALL";
+type RiderStatusFilter =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "CHANGES_REQUESTED"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED"
+  | "ALL";
 type VendorActionType = "approve" | "reject" | "changes_requested" | "suspend";
-type RiderApplicationStatus = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+type RiderApplicationStatus = Exclude<RiderStatusFilter, "ALL" | "DRAFT">;
+type ProductStatusFilter = "SUBMITTED" | "APPROVED" | "CHANGES_REQUESTED" | "REJECTED" | "ALL";
+
+type ProductReview = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  priceCents: number;
+  image: string | null;
+  isAlcohol: boolean;
+  abv: number | null;
+  inStock: boolean;
+  status: string;
+  reviewReason: string | null;
+  updatedAt: string;
+  vendor: { id: string; name: string; status: string; isActive: boolean };
+};
 
 type VendorApplication = {
   id: string;
@@ -69,6 +94,11 @@ type VendorApplication = {
   halaal: boolean;
   createdAt: string;
   updatedAt: string;
+  liquorLicenceUrl: string | null;
+  liquorLicenceNumber: string | null;
+  liquorLicenceExpiry: string | null;
+  liquorVerificationStatus: string;
+  liquorReviewReason: string | null;
 };
 
 type VendorCounts = {
@@ -231,17 +261,26 @@ type AdminAuditLog = {
 };
 
 const VENDOR_STATUS_OPTIONS: VendorStatusOption[] = [
-  "SUBMITTED_FOR_APPROVAL",
+  "SUBMITTED",
+  "UNDER_REVIEW",
   "CHANGES_REQUESTED",
   "APPROVED",
   "REJECTED",
   "SUSPENDED",
-  "DRAFT_PROFILE",
+  "DRAFT",
   "ALL",
 ];
 const RIDER_STATUS_OPTIONS: RiderStatusFilter[] = [
-  "PENDING",
+  "SUBMITTED",
+  "CHANGES_REQUESTED",
   "UNDER_REVIEW",
+  "APPROVED",
+  "REJECTED",
+  "ALL",
+];
+const PRODUCT_STATUS_OPTIONS: ProductStatusFilter[] = [
+  "SUBMITTED",
+  "CHANGES_REQUESTED",
   "APPROVED",
   "REJECTED",
   "ALL",
@@ -263,58 +302,30 @@ const ADMIN_NAV_GROUPS: Array<{
     title: "Marketplace",
     items: [
       { id: "vendors", label: "Vendors", icon: Store },
-      { id: "orders", label: "Products", icon: PackageCheck },
-      { id: "orders", label: "Categories", icon: Search },
-      { id: "vendors", label: "Spaza shops", icon: Store },
-      { id: "vendors", label: "Restaurants", icon: Store },
-      { id: "operations", label: "Franchise partners", icon: Settings },
+      { id: "products", label: "Product reviews", icon: PackageCheck },
     ],
   },
   {
     title: "Orders",
     items: [
-      { id: "orders", label: "Live orders", icon: ShoppingBag },
-      { id: "orders", label: "Order history", icon: CalendarDays },
-      { id: "orders", label: "Cancelled orders", icon: Clock },
-      { id: "operations", label: "Refunds", icon: WalletCards },
+      { id: "orders", label: "Order summary", icon: ShoppingBag },
+      { id: "operations", label: "Dispatch and refunds", icon: WalletCards },
     ],
   },
   {
     title: "Riders",
-    items: [
-      { id: "riders", label: "Rider applications", icon: Bike },
-      { id: "riders", label: "Active riders", icon: Users },
-      { id: "riders", label: "Rider availability", icon: Clock },
-      { id: "operations", label: "Delivery zones", icon: MapPin },
-    ],
+    items: [{ id: "riders", label: "Rider applications", icon: Bike }],
   },
   {
     title: "Customers",
     items: [
-      { id: "users", label: "Users", icon: Users },
+      { id: "users", label: "Customer analytics", icon: Users },
       { id: "messages", label: "Messages", icon: MessageSquare },
-      { id: "messages", label: "Support tickets", icon: LifeBuoy },
-      { id: "operations", label: "Complaints", icon: Bell },
     ],
   },
   {
-    title: "Growth",
-    items: [
-      { id: "operations", label: "Townships", icon: MapPin },
-      { id: "messages", label: "Campaigns", icon: LineChart },
-      { id: "messages", label: "Promotions", icon: Bell },
-      { id: "messages", label: "WhatsApp broadcasts", icon: MessageSquare },
-    ],
-  },
-  {
-    title: "Settings",
-    items: [
-      { id: "operations", label: "Platform settings", icon: Settings },
-      { id: "operations", label: "Pricing and delivery fees", icon: WalletCards },
-      { id: "operations", label: "API integrations", icon: Activity },
-      { id: "operations", label: "Staff roles", icon: Users },
-      { id: "operations", label: "Audit logs", icon: CheckCircle2 },
-    ],
+    title: "Governance",
+    items: [{ id: "operations", label: "Operations and audit", icon: CheckCircle2 }],
   },
 ];
 
@@ -643,11 +654,14 @@ function NeedsAttentionTable({
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState("");
   const [view, setView] = useState<DashboardView>("overview");
-  const [vendorStatus, setVendorStatus] = useState<VendorStatusOption>("SUBMITTED_FOR_APPROVAL");
-  const [riderStatus, setRiderStatus] = useState<RiderStatusFilter>("PENDING");
+  const [vendorStatus, setVendorStatus] = useState<VendorStatusOption>("SUBMITTED");
+  const [riderStatus, setRiderStatus] = useState<RiderStatusFilter>("SUBMITTED");
+  const [productStatus, setProductStatus] = useState<ProductStatusFilter>("SUBMITTED");
   const [vendorSearch, setVendorSearch] = useState("");
   const [riderSearch, setRiderSearch] = useState("");
+  const [productSearch, setProductSearch] = useState("");
   const [vendors, setVendors] = useState<VendorApplication[]>([]);
+  const [products, setProducts] = useState<ProductReview[]>([]);
   const [vendorCounts, setVendorCounts] = useState<VendorCounts>({
     pending: 0,
     active: 0,
@@ -739,6 +753,7 @@ export default function AdminPage() {
 
       const [
         vendorsResponse,
+        productsResponse,
         ridersResponse,
         notificationsResponse,
         messagesResponse,
@@ -746,6 +761,7 @@ export default function AdminPage() {
         operationsResponse,
       ] = await Promise.all([
         fetch(`/api/admin/vendors?status=${vendorStatus}`, { method: "GET", cache: "no-store" }),
+        fetch(`/api/admin/products?status=${productStatus}`, { method: "GET", cache: "no-store" }),
         fetch(`/api/admin/riders?status=${riderStatus}`, { method: "GET", cache: "no-store" }),
         fetch("/api/admin/notifications", { method: "GET", cache: "no-store" }),
         fetch("/api/admin/messages", { method: "GET", cache: "no-store" }),
@@ -753,18 +769,28 @@ export default function AdminPage() {
         fetch("/api/admin/operations", { method: "GET", cache: "no-store" }),
       ]);
 
-      const [vendorsJson, ridersJson, notificationsJson, messagesJson, statsJson, operationsJson] =
-        await Promise.all([
-          vendorsResponse.json(),
-          ridersResponse.json(),
-          notificationsResponse.json(),
-          messagesResponse.json(),
-          statsResponse.json(),
-          operationsResponse.json(),
-        ]);
+      const [
+        vendorsJson,
+        productsJson,
+        ridersJson,
+        notificationsJson,
+        messagesJson,
+        statsJson,
+        operationsJson,
+      ] = await Promise.all([
+        vendorsResponse.json(),
+        productsResponse.json(),
+        ridersResponse.json(),
+        notificationsResponse.json(),
+        messagesResponse.json(),
+        statsResponse.json(),
+        operationsResponse.json(),
+      ]);
 
       if (!vendorsResponse.ok || !vendorsJson.ok)
         throw new Error(vendorsJson.error || "Failed to load vendor approvals.");
+      if (!productsResponse.ok || !productsJson.ok)
+        throw new Error(productsJson.error || "Failed to load product reviews.");
       if (!ridersResponse.ok || !ridersJson.ok)
         throw new Error(ridersJson.error || "Failed to load rider approvals.");
       if (!notificationsResponse.ok || !notificationsJson.ok) {
@@ -781,6 +807,7 @@ export default function AdminPage() {
       }
 
       setVendors(vendorsJson.items ?? []);
+      setProducts(productsJson.products ?? []);
       setVendorCounts(
         vendorsJson.counts ?? {
           pending: Number(vendorsJson.pendingCount ?? 0),
@@ -813,11 +840,12 @@ export default function AdminPage() {
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to load approvals."));
       setVendors([]);
+      setProducts([]);
       setRiders([]);
     } finally {
       setLoading(false);
     }
-  }, [riderStatus, syncAdminAccess, vendorStatus]);
+  }, [productStatus, riderStatus, syncAdminAccess, vendorStatus]);
 
   useEffect(() => {
     void load();
@@ -847,6 +875,18 @@ export default function AdminPage() {
   }
 
   async function updateVendorStatus(vendorId: string, action: VendorActionType) {
+    const reason =
+      action === "approve"
+        ? ""
+        : window
+            .prompt("Enter the exact reason. The vendor will see this in their dashboard.")
+            ?.trim();
+    if (action !== "approve" && !reason) return;
+    if (
+      action === "approve" &&
+      !window.confirm("Approve this vendor and make the store eligible to go live?")
+    )
+      return;
     setSavingKey(`vendor:${vendorId}`);
     setError(null);
     setNotice(null);
@@ -856,7 +896,7 @@ export default function AdminPage() {
       const response = await fetch(`/api/admin/vendors/${vendorId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, reason }),
       });
       const json = await response.json();
       if (!response.ok || !json.ok)
@@ -871,6 +911,13 @@ export default function AdminPage() {
   }
 
   async function updateRiderStatus(id: string, status: RiderApplicationStatus) {
+    const requiresReason = ["CHANGES_REQUESTED", "REJECTED", "SUSPENDED"].includes(status);
+    const reason = requiresReason
+      ? window.prompt("Enter the exact reason. The rider will see this in their dashboard.")?.trim()
+      : "";
+    if (requiresReason && !reason) return;
+    if (status === "APPROVED" && !window.confirm("Approve this rider for delivery assignments?"))
+      return;
     setSavingKey(`rider:${id}:${status}`);
     setError(null);
     setNotice(null);
@@ -880,7 +927,7 @@ export default function AdminPage() {
       const response = await fetch(`/api/admin/riders/${id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, reason }),
       });
       const json = await response.json();
       if (!response.ok || !json.ok)
@@ -889,6 +936,70 @@ export default function AdminPage() {
       await load();
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to update rider application."));
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function updateLiquorStatus(
+    vendorId: string,
+    status: "APPROVED" | "CHANGES_REQUESTED" | "REJECTED",
+  ) {
+    const reason =
+      status === "APPROVED"
+        ? ""
+        : window.prompt("Enter the liquor-review reason shown to the vendor.")?.trim();
+    if (status !== "APPROVED" && !reason) return;
+    if (status === "APPROVED" && !window.confirm("Approve this current liquor licence?")) return;
+    setSavingKey(`liquor:${vendorId}`);
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/vendors/${vendorId}/liquor`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status, reason }),
+      });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Liquor review failed.");
+      setNotice(`Liquor licence moved to ${status.replaceAll("_", " ").toLowerCase()}.`);
+      await load();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Liquor review failed."));
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function updateProductStatus(
+    productId: string,
+    status: "APPROVED" | "CHANGES_REQUESTED" | "REJECTED",
+  ) {
+    const reason =
+      status === "APPROVED"
+        ? ""
+        : window.prompt("Enter the exact review reason shown to the vendor.")?.trim();
+    if (status !== "APPROVED" && !reason) return;
+    if (
+      status === "APPROVED" &&
+      !window.confirm("Approve this product for the public marketplace?")
+    )
+      return;
+    setSavingKey(`product:${productId}`);
+    setError(null);
+    setNotice(null);
+    try {
+      await syncAdminAccess();
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status, reason }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.ok) throw new Error(json.error || "Product review failed.");
+      setNotice(`Product moved to ${status.replaceAll("_", " ").toLowerCase()}.`);
+      await load();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Product review failed."));
     } finally {
       setSavingKey(null);
     }
@@ -1023,6 +1134,21 @@ export default function AdminPage() {
         ]),
       ),
     [riderSearch, riders],
+  );
+
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((product) =>
+        matchesSearch(productSearch, [
+          product.name,
+          product.slug,
+          product.description,
+          product.status,
+          product.reviewReason,
+          product.vendor.name,
+        ]),
+      ),
+    [productSearch, products],
   );
 
   const orderMonitoring = [
@@ -1282,7 +1408,7 @@ export default function AdminPage() {
                       priority: "Low",
                       status: "Pending",
                       action: "Review product",
-                      target: "orders",
+                      target: "products",
                     },
                     {
                       type: "Rider",
@@ -1363,7 +1489,7 @@ export default function AdminPage() {
                         {vendor.phone ? ` | ${vendor.phone}` : ""}
                       </p>
                       <div className="mt-4 grid gap-2 text-xs text-white/65 md:grid-cols-3">
-                        <div>Delivery: R {(vendor.deliveryFee / 100).toFixed(2)}</div>
+                        <div>Delivery: Lethela R10/km (R10 minimum)</div>
                         <div>Owner linked: {vendor.ownerId ? "Yes" : "No"}</div>
                         <div>
                           KYC:{" "}
@@ -1376,6 +1502,7 @@ export default function AdminPage() {
                             : "Cuisine: Not set"}
                         </div>
                         <div>Applied: {formatDate(vendor.createdAt)}</div>
+                        <div>Liquor: {vendor.liquorVerificationStatus.replaceAll("_", " ")}</div>
                       </div>
                       <div className="mt-4 flex flex-wrap items-center gap-3">
                         <Button
@@ -1429,6 +1556,33 @@ export default function AdminPage() {
                             Proof of address
                           </a>
                         ) : null}
+                        {vendor.liquorLicenceUrl ? (
+                          <>
+                            <a
+                              href={vendor.liquorLicenceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sm underline"
+                            >
+                              Liquor licence
+                            </a>
+                            <Button
+                              className="bg-lethela-primary text-white hover:opacity-90"
+                              disabled={savingKey === `liquor:${vendor.id}`}
+                              onClick={() => updateLiquorStatus(vendor.id, "APPROVED")}
+                            >
+                              Approve liquor
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="border-amber-300/50 bg-transparent text-amber-100"
+                              disabled={savingKey === `liquor:${vendor.id}`}
+                              onClick={() => updateLiquorStatus(vendor.id, "CHANGES_REQUESTED")}
+                            >
+                              Liquor changes
+                            </Button>
+                          </>
+                        ) : null}
                       </div>
                     </article>
                   );
@@ -1437,6 +1591,104 @@ export default function AdminPage() {
                   <EmptyState
                     title="No vendors found"
                     text="There are no vendor applications for this filter yet."
+                  />
+                ) : null}
+              </section>
+            ) : null}
+
+            {view === "products" ? (
+              <section className="space-y-4">
+                <SearchBox
+                  label="Product review queue"
+                  value={productSearch}
+                  placeholder="Search products by name, vendor, status, or reason"
+                  onChange={setProductSearch}
+                />
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">
+                    Product status filter
+                  </label>
+                  <select
+                    value={productStatus}
+                    onChange={(event) =>
+                      setProductStatus(event.target.value as ProductStatusFilter)
+                    }
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black md:max-w-xs"
+                  >
+                    {PRODUCT_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option.replaceAll("_", " ")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {filteredProducts.map((product) => (
+                  <article
+                    key={product.id}
+                    className="rounded-lg border border-white/10 bg-white/[0.035] p-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold">{product.name}</h3>
+                        <p className="mt-1 text-xs text-white/60">
+                          {product.vendor.name} · /{product.slug} · {money(product.priceCents)}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs ${statusClass(product.status)}`}
+                      >
+                        {product.status.replaceAll("_", " ")}
+                      </span>
+                    </div>
+                    {product.description ? (
+                      <p className="mt-3 text-sm text-white/70">{product.description}</p>
+                    ) : null}
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-white/60">
+                      <span>{product.inStock ? "In stock" : "Out of stock"}</span>
+                      <span>
+                        {product.isAlcohol
+                          ? `Liquor 18+${product.abv ? ` · ${product.abv}% ABV` : ""}`
+                          : "Standard product"}
+                      </span>
+                      <span>Vendor: {product.vendor.status.replaceAll("_", " ")}</span>
+                      <span>Updated: {formatDate(product.updatedAt)}</span>
+                    </div>
+                    {product.reviewReason ? (
+                      <p className="mt-3 rounded-lg border border-amber-200/20 bg-amber-300/10 p-3 text-sm text-amber-50">
+                        Review reason: {product.reviewReason}
+                      </p>
+                    ) : null}
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Button
+                        className="bg-lethela-primary text-white hover:opacity-90"
+                        disabled={savingKey === `product:${product.id}`}
+                        onClick={() => updateProductStatus(product.id, "APPROVED")}
+                      >
+                        Approve product
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-amber-300/50 bg-transparent text-amber-100"
+                        disabled={savingKey === `product:${product.id}`}
+                        onClick={() => updateProductStatus(product.id, "CHANGES_REQUESTED")}
+                      >
+                        Request changes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-red-300/50 bg-transparent text-red-100"
+                        disabled={savingKey === `product:${product.id}`}
+                        onClick={() => updateProductStatus(product.id, "REJECTED")}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+                {!loading && filteredProducts.length === 0 ? (
+                  <EmptyState
+                    title="No products found"
+                    text="There are no products in this review filter."
                   />
                 ) : null}
               </section>
@@ -1532,10 +1784,12 @@ export default function AdminPage() {
                     <div className="mt-4 flex flex-wrap gap-3">
                       {(
                         [
-                          "PENDING",
+                          "SUBMITTED",
                           "UNDER_REVIEW",
+                          "CHANGES_REQUESTED",
                           "APPROVED",
                           "REJECTED",
+                          "SUSPENDED",
                         ] as RiderApplicationStatus[]
                       ).map((status) => (
                         <Button
@@ -1968,13 +2222,26 @@ export default function AdminPage() {
                             }))
                           }
                         >
-                          {["PLACED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELED"].map(
-                            (status) => (
-                              <option key={status} value={status}>
-                                {status.replaceAll("_", " ")}
-                              </option>
-                            ),
-                          )}
+                          {[
+                            "PENDING_PAYMENT",
+                            "PAID",
+                            "NEW",
+                            "VENDOR_ACCEPTED",
+                            "PREPARING",
+                            "READY_FOR_PICKUP",
+                            "RIDER_ASSIGNED",
+                            "PICKED_UP",
+                            "ON_THE_WAY",
+                            "DELIVERED",
+                            "CANCELLED",
+                            "REFUND_REQUESTED",
+                            "REFUNDED",
+                            "FAILED",
+                          ].map((status) => (
+                            <option key={status} value={status}>
+                              {status.replaceAll("_", " ")}
+                            </option>
+                          ))}
                         </select>
                       </label>
 

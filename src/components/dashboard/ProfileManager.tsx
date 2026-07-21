@@ -8,6 +8,8 @@ type VendorProfile = {
   id: string;
   slug: string;
   name: string;
+  description: string | null;
+  coverImage: string | null;
   phone: string | null;
   address: string | null;
   suburb: string | null;
@@ -16,10 +18,13 @@ type VendorProfile = {
   municipality: string | null;
   township: string | null;
   sectionArea: string | null;
+  pickupInstructions: string | null;
   storeType: string | null;
   cuisine: string | string[];
   deliveryFee: number;
   etaMins: number;
+  preparationMinutes: number;
+  orderCapacity: number;
   halaal: boolean;
   image: string | null;
   kycIdUrl: string | null;
@@ -27,11 +32,24 @@ type VendorProfile = {
   bankName: string | null;
   bankAccountName: string | null;
   bankAccountNumber: string | null;
+  bankAccountLast4?: string | null;
   bankBranchCode: string | null;
+  bankAccountType: string | null;
+  bankVerificationStatus: string;
+  liquorLicenceUrl: string | null;
+  liquorLicenceNumber: string | null;
+  liquorLicenceHolder: string | null;
+  liquorLicencePremises: string | null;
+  liquorLicenceProvince: string | null;
+  liquorLicenceType: string | null;
+  liquorLicenceExpiry: string | null;
+  liquorVerificationStatus: string;
+  liquorReviewReason: string | null;
   latitude: number | null;
   longitude: number | null;
   status: string;
   isActive: boolean;
+  temporaryClosed: boolean;
   _count?: {
     products: number;
     orders: number;
@@ -42,6 +60,8 @@ type VendorProfile = {
 
 type ProfileFormState = {
   name: string;
+  description: string;
+  coverImage: string;
   phone: string;
   address: string;
   suburb: string;
@@ -50,12 +70,14 @@ type ProfileFormState = {
   municipality: string;
   township: string;
   sectionArea: string;
+  pickupInstructions: string;
   storeType: string;
   cuisineInput: string;
-  deliveryFee: string;
   etaMins: string;
+  preparationMinutes: string;
+  orderCapacity: string;
   halaal: boolean;
-  isActive: boolean;
+  temporaryClosed: boolean;
   image: string;
   kycIdUrl: string;
   kycProofUrl: string;
@@ -63,6 +85,14 @@ type ProfileFormState = {
   bankAccountName: string;
   bankAccountNumber: string;
   bankBranchCode: string;
+  bankAccountType: string;
+  liquorLicenceUrl: string;
+  liquorLicenceNumber: string;
+  liquorLicenceHolder: string;
+  liquorLicencePremises: string;
+  liquorLicenceProvince: string;
+  liquorLicenceType: string;
+  liquorLicenceExpiry: string;
   latitude: string;
   longitude: string;
 };
@@ -85,6 +115,8 @@ function parseCuisine(value: string | string[] | null | undefined) {
 function buildFormState(vendor: VendorProfile): ProfileFormState {
   return {
     name: vendor.name,
+    description: vendor.description || "",
+    coverImage: vendor.coverImage || "",
     phone: vendor.phone || "",
     address: vendor.address || "",
     suburb: vendor.suburb || "",
@@ -93,19 +125,31 @@ function buildFormState(vendor: VendorProfile): ProfileFormState {
     municipality: vendor.municipality || "",
     township: vendor.township || vendor.suburb || "",
     sectionArea: vendor.sectionArea || "",
+    pickupInstructions: vendor.pickupInstructions || "",
     storeType: vendor.storeType || "",
     cuisineInput: parseCuisine(vendor.cuisine).join(", "),
-    deliveryFee: String(Math.round(vendor.deliveryFee / 100)),
     etaMins: String(vendor.etaMins),
+    preparationMinutes: String(vendor.preparationMinutes || vendor.etaMins || 30),
+    orderCapacity: String(vendor.orderCapacity || 20),
     halaal: vendor.halaal,
-    isActive: vendor.isActive,
+    temporaryClosed: vendor.temporaryClosed,
     image: vendor.image || "",
     kycIdUrl: vendor.kycIdUrl || "",
     kycProofUrl: vendor.kycProofUrl || "",
     bankName: vendor.bankName || "",
     bankAccountName: vendor.bankAccountName || "",
-    bankAccountNumber: vendor.bankAccountNumber || "",
+    bankAccountNumber: "",
     bankBranchCode: vendor.bankBranchCode || "",
+    bankAccountType: vendor.bankAccountType || "",
+    liquorLicenceUrl: vendor.liquorLicenceUrl || "",
+    liquorLicenceNumber: vendor.liquorLicenceNumber || "",
+    liquorLicenceHolder: vendor.liquorLicenceHolder || "",
+    liquorLicencePremises: vendor.liquorLicencePremises || "",
+    liquorLicenceProvince: vendor.liquorLicenceProvince || "",
+    liquorLicenceType: vendor.liquorLicenceType || "",
+    liquorLicenceExpiry: vendor.liquorLicenceExpiry
+      ? new Date(vendor.liquorLicenceExpiry).toISOString().slice(0, 10)
+      : "",
     latitude: vendor.latitude == null ? "" : String(vendor.latitude),
     longitude: vendor.longitude == null ? "" : String(vendor.longitude),
   };
@@ -167,9 +211,10 @@ export default function ProfileManager() {
     void load();
   }, []);
 
-  async function uploadImage(file: File) {
+  async function uploadFile(file: File, kind: "profile" | "document") {
     const fd = new FormData();
     fd.append("file", file);
+    fd.append("kind", kind);
 
     const response = await fetch("/api/upload", { method: "POST", body: fd });
     const json = await response.json();
@@ -191,6 +236,8 @@ export default function ProfileManager() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           name: form.name,
+          description: form.description || null,
+          coverImage: form.coverImage || null,
           phone: form.phone,
           address: form.address,
           suburb: form.suburb,
@@ -199,15 +246,17 @@ export default function ProfileManager() {
           municipality: form.municipality,
           township: form.township,
           sectionArea: form.sectionArea,
+          pickupInstructions: form.pickupInstructions || null,
           storeType: form.storeType,
           cuisine: form.cuisineInput
             .split(",")
             .map((item) => item.trim())
             .filter(Boolean),
-          deliveryFee: Math.max(0, Number(form.deliveryFee || "0")) * 100,
           etaMins: Number(form.etaMins),
+          preparationMinutes: Number(form.preparationMinutes),
+          orderCapacity: Number(form.orderCapacity),
           halaal: form.halaal,
-          isActive: form.isActive,
+          temporaryClosed: form.temporaryClosed,
           image: form.image || null,
           kycIdUrl: form.kycIdUrl || null,
           kycProofUrl: form.kycProofUrl || null,
@@ -215,6 +264,16 @@ export default function ProfileManager() {
           bankAccountName: form.bankAccountName,
           bankAccountNumber: form.bankAccountNumber,
           bankBranchCode: form.bankBranchCode || null,
+          bankAccountType: form.bankAccountType || null,
+          liquorLicenceUrl: form.liquorLicenceUrl || null,
+          liquorLicenceNumber: form.liquorLicenceNumber || null,
+          liquorLicenceHolder: form.liquorLicenceHolder || null,
+          liquorLicencePremises: form.liquorLicencePremises || null,
+          liquorLicenceProvince: form.liquorLicenceProvince || null,
+          liquorLicenceType: form.liquorLicenceType || null,
+          liquorLicenceExpiry: form.liquorLicenceExpiry
+            ? new Date(`${form.liquorLicenceExpiry}T00:00:00.000Z`).toISOString()
+            : null,
           latitude: form.latitude === "" ? null : Number(form.latitude),
           longitude: form.longitude === "" ? null : Number(form.longitude),
         }),
@@ -281,7 +340,7 @@ export default function ProfileManager() {
                   <span className="rounded-full border border-white/15 px-3 py-1">Halaal</span>
                 ) : null}
                 <span className="rounded-full border border-white/15 px-3 py-1">
-                  {form.isActive ? "Accepting orders" : "Store paused"}
+                  {form.temporaryClosed ? "Temporarily closed" : "Accepting orders when approved"}
                 </span>
               </div>
 
@@ -317,6 +376,27 @@ export default function ProfileManager() {
                 onChange={(event) =>
                   setForm((current) =>
                     current ? { ...current, phone: event.target.value } : current,
+                  )
+                }
+              />
+              <textarea
+                className="rounded bg-white px-3 py-2 text-black md:col-span-2"
+                placeholder="Short store description"
+                rows={3}
+                value={form.description}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, description: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black md:col-span-2"
+                placeholder="Store cover image URL"
+                value={form.coverImage}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, coverImage: event.target.value } : current,
                   )
                 }
               />
@@ -392,6 +472,17 @@ export default function ProfileManager() {
                   )
                 }
               />
+              <textarea
+                className="rounded bg-white px-3 py-2 text-black md:col-span-2"
+                placeholder="Pickup instructions for assigned riders"
+                rows={2}
+                value={form.pickupInstructions}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, pickupInstructions: event.target.value } : current,
+                  )
+                }
+              />
               <select
                 className="rounded bg-white px-3 py-2 text-black"
                 value={form.storeType}
@@ -418,18 +509,9 @@ export default function ProfileManager() {
                   )
                 }
               />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                type="number"
-                min={0}
-                placeholder="Delivery fee (R)"
-                value={form.deliveryFee}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, deliveryFee: event.target.value } : current,
-                  )
-                }
-              />
+              <div className="rounded border border-white/15 px-3 py-2 text-sm text-white/70">
+                Delivery is calculated by Lethela at R10/km with a R10 minimum.
+              </div>
               <input
                 className="rounded bg-white px-3 py-2 text-black"
                 type="number"
@@ -440,6 +522,32 @@ export default function ProfileManager() {
                 onChange={(event) =>
                   setForm((current) =>
                     current ? { ...current, etaMins: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                type="number"
+                min={5}
+                max={180}
+                placeholder="Preparation time (minutes)"
+                value={form.preparationMinutes}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, preparationMinutes: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                type="number"
+                min={1}
+                max={500}
+                placeholder="Maximum active order capacity"
+                value={form.orderCapacity}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, orderCapacity: event.target.value } : current,
                   )
                 }
               />
@@ -477,26 +585,46 @@ export default function ProfileManager() {
                   )
                 }
               />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="KYC ID document URL"
-                value={form.kycIdUrl}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, kycIdUrl: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black md:col-span-2"
-                placeholder="KYC proof of address URL"
-                value={form.kycProofUrl}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, kycProofUrl: event.target.value } : current,
-                  )
-                }
-              />
+              <label className="grid gap-2 rounded border border-white/15 p-3 text-sm text-white/80">
+                <span>
+                  {form.kycIdUrl ? "Identity document uploaded" : "Upload identity document"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif,application/pdf"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const url = await uploadFile(file, "document");
+                      setForm((current) => (current ? { ...current, kycIdUrl: url } : current));
+                      setStatus("Identity document uploaded privately.");
+                    } catch (error: unknown) {
+                      setStatus(error instanceof Error ? error.message : "Document upload failed.");
+                    }
+                  }}
+                />
+              </label>
+              <label className="grid gap-2 rounded border border-white/15 p-3 text-sm text-white/80">
+                <span>
+                  {form.kycProofUrl ? "Address document uploaded" : "Upload proof of address"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif,application/pdf"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const url = await uploadFile(file, "document");
+                      setForm((current) => (current ? { ...current, kycProofUrl: url } : current));
+                      setStatus("Proof of address uploaded privately.");
+                    } catch (error: unknown) {
+                      setStatus(error instanceof Error ? error.message : "Document upload failed.");
+                    }
+                  }}
+                />
+              </label>
               <input
                 className="rounded bg-white px-3 py-2 text-black"
                 placeholder="Bank name"
@@ -519,7 +647,11 @@ export default function ProfileManager() {
               />
               <input
                 className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Account number"
+                placeholder={
+                  vendor?.bankAccountLast4
+                    ? `New account number (current ends ${vendor.bankAccountLast4})`
+                    : "Account number"
+                }
                 value={form.bankAccountNumber}
                 onChange={(event) =>
                   setForm((current) =>
@@ -537,6 +669,121 @@ export default function ProfileManager() {
                   )
                 }
               />
+              <select
+                className="rounded bg-white px-3 py-2 text-black"
+                aria-label="Bank account type"
+                value={form.bankAccountType}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, bankAccountType: event.target.value } : current,
+                  )
+                }
+              >
+                <option value="">Account type</option>
+                <option value="CHEQUE">Cheque/current</option>
+                <option value="SAVINGS">Savings</option>
+                <option value="TRANSMISSION">Transmission</option>
+              </select>
+              <div className="rounded border border-white/15 px-3 py-2 text-sm text-white/70">
+                Bank verification: {vendor?.bankVerificationStatus || "UNVERIFIED"}
+              </div>
+              <div className="md:col-span-2 mt-2 border-t border-white/10 pt-4">
+                <h3 className="font-semibold">Liquor permission (only if applicable)</h3>
+                <p className="mt-1 text-xs text-white/60">
+                  Liquor products remain hidden until Lethela verifies a current licence.
+                </p>
+              </div>
+              <label className="grid gap-2 rounded border border-white/15 p-3 text-sm text-white/80">
+                <span>
+                  {form.liquorLicenceUrl ? "Liquor licence uploaded" : "Upload liquor licence"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif,application/pdf"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const url = await uploadFile(file, "document");
+                      setForm((current) =>
+                        current ? { ...current, liquorLicenceUrl: url } : current,
+                      );
+                      setStatus("Liquor licence uploaded privately.");
+                    } catch (error: unknown) {
+                      setStatus(error instanceof Error ? error.message : "Document upload failed.");
+                    }
+                  }}
+                />
+              </label>
+              <div className="rounded border border-white/15 px-3 py-2 text-sm text-white/70">
+                Licence verification: {vendor?.liquorVerificationStatus || "NOT_APPLICABLE"}
+                {vendor?.liquorReviewReason ? (
+                  <span className="mt-1 block text-amber-100">{vendor.liquorReviewReason}</span>
+                ) : null}
+              </div>
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Licence number"
+                value={form.liquorLicenceNumber}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, liquorLicenceNumber: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Licence holder"
+                value={form.liquorLicenceHolder}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, liquorLicenceHolder: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Licensed premises"
+                value={form.liquorLicencePremises}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, liquorLicencePremises: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Licence province"
+                value={form.liquorLicenceProvince}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, liquorLicenceProvince: event.target.value } : current,
+                  )
+                }
+              />
+              <input
+                className="rounded bg-white px-3 py-2 text-black"
+                placeholder="Licence type"
+                value={form.liquorLicenceType}
+                onChange={(event) =>
+                  setForm((current) =>
+                    current ? { ...current, liquorLicenceType: event.target.value } : current,
+                  )
+                }
+              />
+              <label className="grid gap-1 text-sm text-white/75">
+                <span>Licence expiry or renewal date</span>
+                <input
+                  className="rounded bg-white px-3 py-2 text-black"
+                  type="date"
+                  value={form.liquorLicenceExpiry}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, liquorLicenceExpiry: event.target.value } : current,
+                    )
+                  }
+                />
+              </label>
               <label className="inline-flex items-center gap-2 text-sm text-white/85">
                 <input
                   type="checkbox"
@@ -552,14 +799,14 @@ export default function ProfileManager() {
               <label className="inline-flex items-center gap-2 text-sm text-white/85">
                 <input
                   type="checkbox"
-                  checked={form.isActive}
+                  checked={form.temporaryClosed}
                   onChange={(event) =>
                     setForm((current) =>
-                      current ? { ...current, isActive: event.target.checked } : current,
+                      current ? { ...current, temporaryClosed: event.target.checked } : current,
                     )
                   }
                 />
-                Accept new orders
+                Temporarily close this store
               </label>
             </div>
           </div>
@@ -575,7 +822,7 @@ export default function ProfileManager() {
                 if (!file) return;
 
                 try {
-                  const url = await uploadImage(file);
+                  const url = await uploadFile(file, "profile");
                   setForm((current) => (current ? { ...current, image: url } : current));
                   setStatus("Store logo uploaded.");
                 } catch (error: unknown) {

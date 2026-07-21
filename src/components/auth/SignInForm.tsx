@@ -1,174 +1,107 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
-import { Building2, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
-
-type Tab = "customer" | "vendor" | "rider" | "admin";
-
-const TABS: Array<{ id: Tab; label: string; href?: string; icon: typeof ShoppingBag }> = [
-  { id: "customer", label: "Customer", icon: ShoppingBag },
-  { id: "vendor", label: "Vendor", href: "/vendors/signin", icon: Building2 },
-  { id: "rider", label: "Rider", href: "/rider/dashboard", icon: Truck },
-  { id: "admin", label: "Admin", icon: ShieldCheck },
-];
-
-function friendlyError(value: string | undefined) {
-  if (!value) return "We could not sign you in. Please check your email and password.";
-  if (value === "CredentialsSignin") return "Those login details do not match our records.";
-  return value;
-}
+import { safePostLoginPath, type AppRole } from "@/lib/auth-roles";
 
 export default function SignInForm() {
   const router = useRouter();
-  const params = useSearchParams();
-  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
-  const requestedTab = params?.get("tab") as Tab | null;
-  const [activeTab, setActiveTab] = useState<Tab>(
-    requestedTab && TABS.some((tab) => tab.id === requestedTab) ? requestedTab : "customer",
-  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [requestedPath, setRequestedPath] = useState("");
+  const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const rawCallbackUrl = params?.get("callbackUrl") ?? (activeTab === "admin" ? "/admin" : "/");
-  const callbackUrl =
-    rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//") ? rawCallbackUrl : "/";
-  const message = params?.get("message");
-  const tabConfig = TABS.find((tab) => tab.id === activeTab) ?? TABS[0];
-  const ActiveIcon = tabConfig.icon;
 
-  async function submit() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setRequestedPath(params.get("callbackUrl") || params.get("next") || "");
+    setMessage(params.get("message") || "");
+  }, []);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError(null);
     setSubmitting(true);
-    const res = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-    setSubmitting(false);
-    if (res?.ok) {
-      router.push(callbackUrl);
-      return;
+    try {
+      const result = await signIn("credentials", { redirect: false, email, password });
+      if (!result?.ok) {
+        throw new Error("We could not sign you in. Check your details or try again later.");
+      }
+      const profileResponse = await fetch("/api/me", { cache: "no-store" });
+      const profile = await profileResponse.json().catch(() => ({}));
+      const role = (profile?.user?.role || "CUSTOMER") as AppRole;
+      router.replace(safePostLoginPath(role, requestedPath));
+      router.refresh();
+    } catch (signInError) {
+      setError(
+        signInError instanceof Error
+          ? signInError.message
+          : "We could not sign you in. Check your details or try again later.",
+      );
+    } finally {
+      setSubmitting(false);
     }
-    setError(friendlyError(res?.error ?? undefined));
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm md:p-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
-        Secure access
-      </p>
-      <h1 className="mt-2 text-3xl font-semibold">Sign in to Lethela</h1>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        Customers, vendors, riders and admin users can access the right workspace from here.
-      </p>
+    <div>
       {message ? (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p
+          role="status"
+          className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+        >
           {message}
-        </div>
+        </p>
       ) : null}
-
-      <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-4">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                if (tab.href) {
-                  router.push(tab.href);
-                  return;
-                }
-                setActiveTab(tab.id);
-                setError(null);
-              }}
-              className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-                active
-                  ? "border-lethela-primary bg-lethela-primary text-white"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-lethela-primary/50"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <ActiveIcon className="h-4 w-4 text-lethela-primary" />
-          {tabConfig.label} sign in
-        </div>
-        <div className="grid gap-3">
+      <form className="grid gap-4" onSubmit={submit}>
+        <label className="grid gap-1.5 text-sm font-medium text-slate-800">
+          <span>Email</span>
           <Input
             type="email"
-            placeholder="you@example.co.za"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border-slate-300 bg-white text-black"
             autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
           />
+        </label>
+        <label className="grid gap-1.5 text-sm font-medium text-slate-800">
+          <span>Password</span>
           <Input
             type="password"
-            placeholder="Your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border-slate-300 bg-white text-black"
             autoComplete="current-password"
+            minLength={8}
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
           />
-          <Button onClick={submit} disabled={submitting} className="bg-lethela-primary text-white">
-            {submitting ? "Signing in..." : `Sign in as ${tabConfig.label}`}
-          </Button>
-        </div>
+        </label>
         {error ? (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p role="alert" className="text-sm text-red-700">
             {error}
-          </div>
+          </p>
         ) : null}
-      </div>
-
-      <div className="mt-5 grid gap-2 text-sm text-slate-600 md:grid-cols-3">
-        <Link
-          href="/forgot-password"
-          className="rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
-        >
-          Forgot password
+        <Button type="submit" className="h-11 bg-lethela-primary text-white" disabled={submitting}>
+          {submitting ? "Signing in..." : "Sign in"}
+        </Button>
+      </form>
+      <div className="mt-5 grid gap-2 text-sm text-slate-600">
+        <Link href="/forgot-password" className="underline">
+          Forgot password?
         </Link>
-        <Link
-          href="/signup"
-          className="rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
-        >
+        <Link href="/signup" className="underline">
           Create customer account
         </Link>
-        <Link
-          href="/vendors/signin"
-          className="rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
-        >
-          Vendor sign-in
+        <Link href="/vendors/register" className="underline">
+          Create vendor account
         </Link>
-        <Link
-          href="/rider/dashboard"
-          className="rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
-        >
-          Rider sign-in
+        <Link href="/rider" className="underline">
+          Create rider account
         </Link>
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
-        >
-          WhatsApp support
-        </a>
       </div>
     </div>
   );

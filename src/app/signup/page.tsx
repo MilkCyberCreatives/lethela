@@ -1,146 +1,188 @@
-// /src/app/signup/page.tsx
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, LifeBuoy, UserRound } from "lucide-react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import AuthShell from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import MainHeader from "@/components/MainHeader";
-import { useRouter } from "next/navigation";
-import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export default function SignUpPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const router = useRouter();
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    acceptTerms: false,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const submit = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      setError("Please add your full name, email address and password.");
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (!form.acceptTerms) {
+      setError("Accept the Terms and Privacy Policy to continue.");
       return;
     }
 
-    setError(null);
     setSubmitting(true);
+    setError(null);
     try {
-      const res = await fetch("/api/auth/register", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, email, password, role: "USER" }),
+        body: JSON.stringify(form),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) {
-        const fieldError =
-          data?.error?.fieldErrors?.email?.[0] ||
-          data?.error?.fieldErrors?.password?.[0] ||
-          data?.error?.fieldErrors?.name?.[0];
-        setError(fieldError || data?.error || "We could not create your account.");
-        return;
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        const fieldErrors = data?.error?.fieldErrors;
+        throw new Error(
+          fieldErrors?.email?.[0] ||
+            fieldErrors?.phone?.[0] ||
+            fieldErrors?.password?.[0] ||
+            fieldErrors?.confirmPassword?.[0] ||
+            (typeof data?.error === "string" ? data.error : "We could not create your account."),
+        );
       }
-      router.push("/signin?message=Account created. Please sign in to continue.");
-    } catch {
-      setError("We could not create your account. Please try again.");
+
+      const login = await signIn("credentials", {
+        redirect: false,
+        email: form.email,
+        password: form.password,
+      });
+      if (!login?.ok) throw new Error("Account created. Please sign in to continue.");
+
+      const params = new URLSearchParams(window.location.search);
+      const requested = params.get("next") || params.get("callbackUrl") || "/";
+      const destination =
+        requested.startsWith("/") && !requested.startsWith("//") ? requested : "/";
+      setSuccess("Account created. You are signed in.");
+      window.setTimeout(() => {
+        router.replace(destination);
+        router.refresh();
+      }, 500);
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error ? submitError.message : "We could not create your account.",
+      );
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <MainHeader />
-      <section className="container grid max-w-5xl items-center gap-8 py-10 md:grid-cols-[0.9fr,1.1fr]">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
-            Customer account
+    <AuthShell
+      title="Create your customer account"
+      supportingText="Save your orders and checkout faster. You can add delivery details later."
+    >
+      <form className="grid gap-4" onSubmit={submit}>
+        <Field label="Full name">
+          <Input
+            value={form.name}
+            onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))}
+            autoComplete="name"
+            required
+          />
+        </Field>
+        <Field label="Email address">
+          <Input
+            type="email"
+            value={form.email}
+            onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))}
+            autoComplete="email"
+            required
+          />
+        </Field>
+        <Field label="Mobile number">
+          <Input
+            type="tel"
+            value={form.phone}
+            onChange={(event) => setForm((value) => ({ ...value, phone: event.target.value }))}
+            autoComplete="tel"
+            required
+          />
+        </Field>
+        <Field label="Password">
+          <Input
+            type="password"
+            minLength={8}
+            value={form.password}
+            onChange={(event) => setForm((value) => ({ ...value, password: event.target.value }))}
+            autoComplete="new-password"
+            required
+          />
+        </Field>
+        <Field label="Confirm password">
+          <Input
+            type="password"
+            minLength={8}
+            value={form.confirmPassword}
+            onChange={(event) =>
+              setForm((value) => ({ ...value, confirmPassword: event.target.value }))
+            }
+            autoComplete="new-password"
+            required
+          />
+        </Field>
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={form.acceptTerms}
+            onChange={(event) =>
+              setForm((value) => ({ ...value, acceptTerms: event.target.checked }))
+            }
+            required
+          />
+          <span>
+            I accept the{" "}
+            <Link href="/terms" className="underline">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy-policy" className="underline">
+              Privacy Policy
+            </Link>
+            .
+          </span>
+        </label>
+        {error ? (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
           </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
-            Create your Lethela account.
-          </h1>
-          <p className="mt-4 text-base leading-7 text-slate-600">
-            Keep it quick: full name, email and password. You can still browse and use WhatsApp
-            checkout without creating an account first.
+        ) : null}
+        {success ? (
+          <p role="status" className="text-sm text-emerald-700">
+            {success}
           </p>
-        </div>
+        ) : null}
+        <Button type="submit" className="h-11 bg-lethela-primary text-white" disabled={submitting}>
+          {submitting ? "Creating account..." : "Create account"}
+        </Button>
+      </form>
+      <p className="mt-4 text-sm text-slate-600">
+        Already registered?{" "}
+        <Link href="/signin" className="font-semibold underline">
+          Sign in
+        </Link>
+      </p>
+    </AuthShell>
+  );
+}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <h2 className="text-2xl font-semibold">Sign up</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            This creates a customer account for ordering and tracking.
-          </p>
-          <div className="mt-6 space-y-3">
-            <Input
-              placeholder="Full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border-slate-300 bg-white text-black"
-              autoComplete="name"
-            />
-            <Input
-              type="email"
-              placeholder="you@example.co.za"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="border-slate-300 bg-white text-black"
-              autoComplete="email"
-            />
-            <Input
-              type="password"
-              placeholder="At least 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="border-slate-300 bg-white text-black"
-              autoComplete="new-password"
-            />
-
-            <Button
-              onClick={submit}
-              disabled={submitting || !name.trim() || !email.trim() || !password.trim()}
-              className="w-full bg-lethela-primary text-white"
-            >
-              <UserRound className="mr-2 h-4 w-4" />
-              {submitting ? "Creating..." : "Create account"}
-            </Button>
-            {error ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {error}
-              </div>
-            ) : null}
-
-            <div className="grid gap-2 pt-2 text-sm text-slate-600 md:grid-cols-2">
-              <Link
-                href="/signin"
-                className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
-              >
-                Sign in instead
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
-              >
-                WhatsApp help
-                <LifeBuoy className="h-4 w-4" />
-              </a>
-            </div>
-
-            <div className="grid gap-2 pt-2 text-sm text-slate-600">
-              <Link href="/vendors/register" className="underline underline-offset-4">
-                Register a vendor store
-              </Link>
-              <Link href="/riders/apply" className="underline underline-offset-4">
-                Apply to become a rider
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="grid gap-1.5 text-sm font-medium text-slate-800">
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }

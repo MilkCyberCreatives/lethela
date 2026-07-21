@@ -24,7 +24,7 @@ export async function getSqliteVendorDashboardData(vendorId: string, since: Date
         `SELECT id, name, slug, email, status, isActive, suburb, city, province,
                 municipality, township, sectionArea, storeType, phone, address, cuisine,
                 deliveryFee, etaMins, latitude, longitude, kycIdUrl, kycProofUrl,
-                bankName, bankAccountName, bankAccountNumber, bankBranchCode, updatedAt
+                bankName, bankAccountName, bankAccountNumber, bankBranchCode, reviewReason, updatedAt
          FROM Vendor
          WHERE id = ?`,
       )
@@ -131,6 +131,7 @@ export async function getSqliteVendorDashboardData(vendorId: string, since: Date
         bankAccountName: vendor.bankAccountName ? String(vendor.bankAccountName) : null,
         bankAccountNumber: vendor.bankAccountNumber ? String(vendor.bankAccountNumber) : null,
         bankBranchCode: vendor.bankBranchCode ? String(vendor.bankBranchCode) : null,
+        reviewReason: vendor.reviewReason ? String(vendor.reviewReason) : null,
         updatedAt: new Date(vendor.updatedAt),
         _count: {
           products: count(db, "SELECT COUNT(*) AS n FROM Product WHERE vendorId = ?", vendorId),
