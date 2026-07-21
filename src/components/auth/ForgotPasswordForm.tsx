@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { ArrowRight, LifeBuoy, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,8 @@ export default function ForgotPasswordForm() {
   const [resetUrl, setResetUrl] = useState<string | null>(null);
   const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
 
-  const submit = async () => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!email.trim()) return;
 
     setSubmitting(true);
@@ -47,39 +48,42 @@ export default function ForgotPasswordForm() {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm md:p-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
-        Account recovery
-      </p>
-      <h1 className="mt-2 text-3xl font-semibold">Reset your password</h1>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        Enter your account email. If it matches our records, we will send a secure reset link.
-      </p>
-
-      <div className="mt-6 grid gap-3">
-        <Input
-          type="email"
-          placeholder="you@example.co.za"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="border-slate-300 bg-white text-black"
-          autoComplete="email"
-        />
+    <div className="text-slate-950">
+      <form className="grid gap-3" onSubmit={submit}>
+        <label htmlFor="recovery-email" className="grid gap-1.5 text-sm font-medium text-slate-800">
+          <span>Email address</span>
+          <Input
+            id="recovery-email"
+            type="email"
+            placeholder="you@example.co.za"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="border-slate-300 bg-white text-black"
+            autoComplete="email"
+            required
+          />
+        </label>
         <Button
-          onClick={submit}
+          type="submit"
           disabled={submitting || !email.trim()}
-          className="bg-lethela-primary text-white"
+          className="h-11 bg-lethela-primary text-white"
         >
           <Mail className="mr-2 h-4 w-4" />
           {submitting ? "Sending..." : "Send reset link"}
         </Button>
         {message ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          <div
+            role="status"
+            className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+          >
             {message}
           </div>
         ) : null}
         {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          >
             {error}
           </div>
         ) : null}
@@ -91,7 +95,7 @@ export default function ForgotPasswordForm() {
             </a>
           </p>
         ) : null}
-      </div>
+      </form>
       <div className="mt-5 grid gap-2 text-sm text-slate-600 md:grid-cols-2">
         <Link
           href="/signin"
