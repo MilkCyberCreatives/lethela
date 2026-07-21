@@ -8,19 +8,14 @@ import {
 
 const VALID_STATUS = new Set<RiderApplicationStatus | "ALL">([
   "ALL",
-  "PENDING",
+  "DRAFT",
+  "SUBMITTED",
   "UNDER_REVIEW",
+  "CHANGES_REQUESTED",
   "APPROVED",
   "REJECTED",
+  "SUSPENDED",
 ]);
-
-function isLocalSqliteRuntime() {
-  return (
-    process.env.NODE_ENV !== "production" &&
-    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
-      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
-  );
-}
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdminRequest(req);
@@ -28,33 +23,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
 
-  const rawStatus = (req.nextUrl.searchParams.get("status") || "PENDING").toUpperCase() as
+  const rawStatus = (req.nextUrl.searchParams.get("status") || "SUBMITTED").toUpperCase() as
     | RiderApplicationStatus
     | "ALL";
   if (!VALID_STATUS.has(rawStatus)) {
     return NextResponse.json({ ok: false, error: "Invalid status filter." }, { status: 400 });
   }
 
-  if (isLocalSqliteRuntime()) {
-    return NextResponse.json({
-      ok: true,
-      authMode: guard.mode,
-      counts: {
-        pending: 0,
-        underReview: 0,
-        approved: 0,
-        rejected: 0,
-        total: 0,
-      },
-      items: [],
-    });
-  }
-
   const take = Math.min(200, Math.max(1, Number(req.nextUrl.searchParams.get("take") || 100)));
   const [items, pendingCount, underReviewCount, approvedCount, rejectedCount, totalCount] =
     await Promise.all([
       listRiderApplications(rawStatus, take),
-      countRiderApplications("PENDING"),
+      countRiderApplications("SUBMITTED"),
       countRiderApplications("UNDER_REVIEW"),
       countRiderApplications("APPROVED"),
       countRiderApplications("REJECTED"),

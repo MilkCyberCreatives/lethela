@@ -1,6 +1,7 @@
 export const VENDOR_STATUS = {
-  DRAFT: "DRAFT_PROFILE",
-  SUBMITTED: "SUBMITTED_FOR_APPROVAL",
+  DRAFT: "DRAFT",
+  SUBMITTED: "SUBMITTED",
+  UNDER_REVIEW: "UNDER_REVIEW",
   CHANGES_REQUESTED: "CHANGES_REQUESTED",
   APPROVED: "APPROVED",
   REJECTED: "REJECTED",
@@ -54,6 +55,7 @@ export function normalizeVendorStatus(status: string | null | undefined) {
   if (normalized === "ACTIVE") return VENDOR_STATUS.APPROVED;
   if (normalized === "APPROVED") return VENDOR_STATUS.APPROVED;
   if (normalized === "DRAFT" || normalized === "DRAFT_PROFILE") return VENDOR_STATUS.DRAFT;
+  if (normalized === "UNDER_REVIEW") return VENDOR_STATUS.UNDER_REVIEW;
   if (normalized === "CHANGES_REQUESTED") return VENDOR_STATUS.CHANGES_REQUESTED;
   if (normalized === "SUBMITTED" || normalized === "SUBMITTED_FOR_APPROVAL") {
     return VENDOR_STATUS.SUBMITTED;
@@ -125,10 +127,10 @@ export function getVendorReadiness(input: VendorReadinessInput) {
       complete: Number(input.operatingHoursCount || 0) > 0,
     },
     {
-      key: "delivery-radius",
-      label: "Delivery radius and fee",
+      key: "preparation-time",
+      label: "Preparation time",
       required: true,
-      complete: Number(input.deliveryFee || 0) >= 0 && Number(input.etaMins || 0) >= 10,
+      complete: Number(input.etaMins || 0) >= 10,
     },
     {
       key: "products-menu",

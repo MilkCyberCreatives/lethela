@@ -25,6 +25,7 @@ async function runSearch(rawQuery: string) {
       slug: row.slug,
       priceCents: row.priceCents,
       isAlcohol: row.isAlcohol,
+      href: row.href,
       score: Number(row.score.toFixed(4)),
     })),
   });

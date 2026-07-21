@@ -136,7 +136,9 @@ export function getAdminNotificationChannelStatus() {
 export async function notifyAdminsOfVendorApplication(
   application: AdminVendorApplicationNotification,
 ) {
-  const pendingCount = await prisma.vendor.count({ where: { status: "PENDING" } });
+  const pendingCount = await prisma.vendor.count({
+    where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } },
+  });
   const channels = getAdminNotificationChannelStatus();
   const tasks: Promise<unknown>[] = [];
 

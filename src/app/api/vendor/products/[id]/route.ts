@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { aiModerateProduct } from "@/lib/ai";
-import { requireVendor } from "@/lib/authz";
+import { requireVendorAccount } from "@/lib/authz";
 
 const ProductPatchSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
@@ -24,16 +24,17 @@ const ProductPatchSchema = z.object({
 async function assertOwnership(vendorId: string, id: string) {
   const product = await prisma.product.findFirst({
     where: { id, vendorId },
-    select: { id: true, name: true },
+    select: { id: true, name: true, status: true },
   });
   if (!product) throw new Error("Product not found");
+  return product;
 }
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function DELETE(_req: Request, { params }: Params) {
   try {
-    const { vendorId } = await requireVendor("MANAGER");
+    const { vendorId } = await requireVendorAccount("MANAGER");
     const { id } = await params;
     await assertOwnership(vendorId, id);
     await prisma.product.delete({ where: { id } });
@@ -48,9 +49,9 @@ export async function DELETE(_req: Request, { params }: Params) {
 
 export async function PATCH(req: Request, { params }: Params) {
   try {
-    const { vendorId } = await requireVendor("MANAGER");
+    const { vendorId } = await requireVendorAccount("MANAGER");
     const { id } = await params;
-    await assertOwnership(vendorId, id);
+    const ownedProduct = await assertOwnership(vendorId, id);
 
     const raw = await req.json().catch(() => ({}));
     const parsed = ProductPatchSchema.safeParse(raw);
@@ -64,13 +65,20 @@ export async function PATCH(req: Request, { params }: Params) {
 
     const data = parsed.data;
     if (data.isAlcohol) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Liquor products require an approved liquor licence before listing.",
+      const licensed = await prisma.vendor.findFirst({
+        where: {
+          id: vendorId,
+          liquorVerificationStatus: "APPROVED",
+          liquorLicenceExpiry: { gt: new Date() },
         },
-        { status: 403 },
-      );
+        select: { id: true },
+      });
+      if (!licensed) {
+        return NextResponse.json(
+          { ok: false, error: "A verified, current liquor licence is required." },
+          { status: 403 },
+        );
+      }
     }
 
     if (data.name || data.description) {
@@ -96,9 +104,22 @@ export async function PATCH(req: Request, { params }: Params) {
       }
     }
 
+    const approvalSensitiveChange =
+      data.name !== undefined ||
+      data.slug !== undefined ||
+      data.description !== undefined ||
+      data.priceCents !== undefined ||
+      data.image !== undefined ||
+      data.isAlcohol !== undefined ||
+      data.abv !== undefined;
     const product = await prisma.product.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        ...(ownedProduct.status === "APPROVED" && approvalSensitiveChange
+          ? { status: "SUBMITTED", reviewReason: null }
+          : {}),
+      },
     });
     return NextResponse.json({ ok: true, product });
   } catch (error: any) {

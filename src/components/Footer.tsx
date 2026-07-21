@@ -38,6 +38,8 @@ const LEGAL_LINKS = [
   { href: "/terms", label: "Terms of Service" },
   { href: "/popia", label: "POPIA Notice" },
   { href: "/refund-policy", label: "Refunds & Cancellations" },
+  { href: "/cookie-policy", label: "Cookie Policy" },
+  { href: "/contact", label: "Contact & Support" },
 ] as const;
 
 export default function Footer() {

@@ -10,7 +10,11 @@ function isPaid(paymentStatus: string) {
 function isFailed(paymentStatus: string, orderStatus: string) {
   const payment = String(paymentStatus || "").toUpperCase();
   const status = String(orderStatus || "").toUpperCase();
-  return payment === "FAILED" || payment === "CANCELLED" || status === "CANCELED";
+  return (
+    payment === "FAILED" ||
+    payment === "CANCELLED" ||
+    ["CANCELED", "CANCELLED", "FAILED"].includes(status)
+  );
 }
 
 function parseDeliveryDetails(itemsJson: string | null | undefined) {
@@ -84,6 +88,14 @@ export async function GET() {
             paymentStatus: true,
             subtotalCents: true,
             deliveryFeeCents: true,
+            riderTipCents: true,
+            riderPayoutCents: true,
+            vendorPayoutCents: true,
+            platformFeeCents: true,
+            riderPayoutStatus: true,
+            vendorPayoutStatus: true,
+            vendorPayoutReference: true,
+            vendorPayoutDate: true,
             totalCents: true,
             itemsJson: true,
             createdAt: true,
@@ -149,37 +161,41 @@ export async function GET() {
 
     const completedOrders = orders.filter((order) => !isFailed(order.paymentStatus, order.status));
     const paidOrders = completedOrders.filter((order) => isPaid(order.paymentStatus));
-    const pendingSettlementOrders = completedOrders.filter((order) => !isPaid(order.paymentStatus));
+    const payableOrders = paidOrders.filter((order) => order.status === "DELIVERED");
+    const availableOrders = payableOrders.filter((order) => order.vendorPayoutStatus !== "PAID");
+    const settledOrders = payableOrders.filter((order) => order.vendorPayoutStatus === "PAID");
+    const pendingSettlementOrders = paidOrders.filter((order) => order.status !== "DELIVERED");
     const failedOrders = orders.filter((order) => isFailed(order.paymentStatus, order.status));
     const recentPaidOrders = paidOrders.filter((order) => new Date(order.createdAt) >= since7);
-    const latestPaidOrder = paidOrders[0] || null;
     const riderTipFor = (order: (typeof orders)[number]) =>
       numberDetail(parseDeliveryDetails(order.itemsJson), "riderTipCents");
     const riderPayoutFor = (order: (typeof orders)[number]) =>
-      order.deliveryFeeCents + riderTipFor(order);
+      order.riderPayoutCents || order.deliveryFeeCents + riderTipFor(order);
+    const vendorPayoutFor = (order: (typeof orders)[number]) =>
+      order.vendorPayoutCents || Math.max(0, order.subtotalCents - order.platformFeeCents);
 
     const payouts = {
-      availableCents: paidOrders.reduce((sum, order) => sum + order.subtotalCents, 0),
-      pendingCents: pendingSettlementOrders.reduce((sum, order) => sum + order.subtotalCents, 0),
-      failedCents: failedOrders.reduce((sum, order) => sum + order.subtotalCents, 0),
-      last7DaysCents: recentPaidOrders.reduce((sum, order) => sum + order.subtotalCents, 0),
+      availableCents: availableOrders.reduce((sum, order) => sum + vendorPayoutFor(order), 0),
+      pendingCents: pendingSettlementOrders.reduce((sum, order) => sum + vendorPayoutFor(order), 0),
+      failedCents: failedOrders.reduce((sum, order) => sum + vendorPayoutFor(order), 0),
+      last7DaysCents: recentPaidOrders.reduce((sum, order) => sum + vendorPayoutFor(order), 0),
       averagePaidOrderCents: paidOrders.length
         ? Math.round(
-            paidOrders.reduce((sum, order) => sum + order.subtotalCents, 0) / paidOrders.length,
+            paidOrders.reduce((sum, order) => sum + vendorPayoutFor(order), 0) / paidOrders.length,
           )
         : 0,
       riderDeliveryFeeCents: paidOrders.reduce((sum, order) => sum + order.deliveryFeeCents, 0),
       riderTipCents: paidOrders.reduce((sum, order) => sum + riderTipFor(order), 0),
       riderPayoutCents: paidOrders.reduce((sum, order) => sum + riderPayoutFor(order), 0),
-      paidOrdersCount: paidOrders.length,
+      paidOrdersCount: settledOrders.length,
       pendingOrdersCount: pendingSettlementOrders.length,
       failedOrdersCount: failedOrders.length,
       nextEstimatedPayoutAt: nextPayoutDate().toISOString(),
-      latestPaidAt: latestPaidOrder ? latestPaidOrder.createdAt.toISOString() : null,
-      recentSettlements: paidOrders.slice(0, 6).map((order) => ({
+      latestPaidAt: settledOrders[0]?.vendorPayoutDate?.toISOString() || null,
+      recentSettlements: payableOrders.slice(0, 6).map((order) => ({
         publicId: order.publicId,
         createdAt: order.createdAt.toISOString(),
-        amountCents: order.subtotalCents,
+        amountCents: vendorPayoutFor(order),
         deliveryFeeCents: order.deliveryFeeCents,
         riderTipCents: riderTipFor(order),
         riderPayoutCents: riderPayoutFor(order),
@@ -319,7 +335,7 @@ export async function GET() {
       onTimeRate,
       paymentSuccessRate,
       menuReadinessPct,
-      publicReadiness: vendor.isActive && vendor.status.toUpperCase() !== "PENDING",
+      publicReadiness: vendor.isActive && vendor.status.toUpperCase() === "APPROVED",
       highlights: [
         paidOrders.length > 0
           ? `${paidOrders.length} paid order(s) cleared in the last 30 days.`

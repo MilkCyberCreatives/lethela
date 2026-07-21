@@ -9,28 +9,32 @@ import { quoteDelivery } from "@/lib/pricing";
 import { z } from "zod";
 import { withSentryRoute } from "@/server/withSentryRoute";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { DEMO_ORDER_REF } from "@/lib/demo-order";
-import { canReadSqliteCatalog } from "@/lib/sqlite-catalog";
+import { calculateOrderFinancials } from "@/lib/order-financials";
+import { isStoreOpenNow } from "@/lib/store-availability";
 
 const BodySchema = z
   .object({
     vendorId: z.string().min(1),
+    checkoutKey: z.string().uuid(),
     vendorSlug: z.string().min(1).optional().default(""),
     destinationSuburb: z.string().trim().min(2).max(140).optional(),
     destinationLat: z.number().min(-90).max(90).optional(),
     destinationLng: z.number().min(-180).max(180).optional(),
-    items: z.array(
-      z.object({
-        itemId: z.string(),
-        name: z.string(),
-        priceCents: z.number().int().nonnegative(),
-        qty: z.number().int().positive(),
-        image: z.string().trim().max(1000).optional().nullable(),
-        isAlcohol: z.boolean().optional().default(false),
-      }),
-    ),
-    customerName: z.string().trim().max(120).optional().default(""),
-    customerPhone: z.string().trim().max(40).optional().default(""),
+    items: z
+      .array(
+        z.object({
+          itemId: z.string(),
+          name: z.string(),
+          priceCents: z.number().int().nonnegative(),
+          qty: z.number().int().positive().max(99),
+          image: z.string().trim().max(1000).optional().nullable(),
+          isAlcohol: z.boolean().optional().default(false),
+        }),
+      )
+      .min(1)
+      .max(50),
+    customerName: z.string().trim().min(2).max(120),
+    customerPhone: z.string().trim().min(8).max(40),
     whatsappNumber: z.string().trim().max(40).optional().default(""),
     standNumber: z.string().trim().max(120).optional().default(""),
     streetSection: z.string().trim().max(120).optional().default(""),
@@ -51,19 +55,6 @@ const BodySchema = z
       path: ["destinationSuburb"],
     },
   );
-
-function isLocalSqliteRuntime() {
-  return (
-    !process.env.VERCEL &&
-    (process.env.DATABASE_PROVIDER?.trim().toLowerCase() === "sqlite" ||
-      process.env.DATABASE_URL?.trim().toLowerCase().startsWith("file:"))
-  );
-}
-
-function isLocalhostRequest(req: NextRequest) {
-  const hostname = req.nextUrl.hostname;
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-}
 
 export const POST = withSentryRoute(async (req: NextRequest) => {
   const limited = await checkRateLimit({
@@ -94,20 +85,18 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   const siteCode = process.env.OZOW_SITE_CODE || "";
   const privateKey = process.env.OZOW_PRIVATE_KEY || "";
   if (!siteCode || !privateKey) {
-    if (isLocalSqliteRuntime()) {
-      const trackingToken = createOrderTrackingToken(DEMO_ORDER_REF);
-      const redirectUrl = `${baseUrl}/checkout/success?ref=${encodeURIComponent(DEMO_ORDER_REF)}&t=${encodeURIComponent(trackingToken)}`;
-      return NextResponse.json({ ok: true, redirectUrl, ref: DEMO_ORDER_REF, localDemo: true });
-    }
-
     return NextResponse.json(
-      { ok: false, error: "OZOW_SITE_CODE or OZOW_PRIVATE_KEY not set" },
-      { status: 500 },
+      {
+        ok: false,
+        error:
+          "Online payment is temporarily unavailable. Please use the supported offline order option.",
+      },
+      { status: 503 },
     );
   }
   const {
     vendorId,
-    vendorSlug,
+    checkoutKey,
     destinationSuburb,
     destinationLat,
     destinationLng,
@@ -136,17 +125,16 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     );
   }
 
-  if (isLocalhostRequest(req) && canReadSqliteCatalog()) {
-    const trackingToken = createOrderTrackingToken(DEMO_ORDER_REF);
-    const redirectUrl = `${baseUrl}/checkout/success?ref=${encodeURIComponent(DEMO_ORDER_REF)}&t=${encodeURIComponent(trackingToken)}`;
-    return NextResponse.json({ ok: true, redirectUrl, ref: DEMO_ORDER_REF, localDemo: true });
-  }
-
   const session = await auth();
   const userId = session?.user?.id ?? null;
 
   const vendor = await prisma.vendor.findFirst({
-    where: { id: vendorId, isActive: true, status: "ACTIVE" },
+    where: {
+      id: vendorId,
+      isActive: true,
+      status: { in: ["ACTIVE", "APPROVED"] },
+      temporaryClosed: false,
+    },
     select: {
       id: true,
       slug: true,
@@ -156,20 +144,31 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       address: true,
       suburb: true,
       city: true,
+      temporaryClosed: true,
+      hours: true,
+      liquorLicenceUrl: true,
+      liquorLicenceExpiry: true,
+      liquorVerificationStatus: true,
     },
   });
   if (!vendor) {
     return NextResponse.json({ ok: false, error: "Vendor is unavailable." }, { status: 400 });
   }
+  if (!isStoreOpenNow(vendor.hours, { temporaryClosed: vendor.temporaryClosed })) {
+    return NextResponse.json(
+      { ok: false, error: "This store is currently closed." },
+      { status: 409 },
+    );
+  }
 
   const itemIds = [...new Set(items.map((item) => item.itemId))];
   const products = await prisma.product.findMany({
-    where: { vendorId, id: { in: itemIds }, inStock: true },
+    where: { vendorId, id: { in: itemIds }, inStock: true, status: "APPROVED" },
     select: { id: true, name: true, priceCents: true, isAlcohol: true },
   });
   const menuItems = await prisma.item.findMany({
     where: { vendorId, id: { in: itemIds }, draft: false },
-    select: { id: true, name: true, priceCents: true },
+    select: { id: true, name: true, priceCents: true, isAlcohol: true },
   });
   const productById = new Map(products.map((product) => [product.id, product]));
   const menuItemById = new Map(menuItems.map((item) => [item.id, item]));
@@ -191,7 +190,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       productId: product?.id ?? null,
       name: resolved!.name,
       priceCents: resolved!.priceCents,
-      isAlcohol: Boolean(item.isAlcohol || product?.isAlcohol),
+      isAlcohol: Boolean(product?.isAlcohol || menuItem?.isAlcohol),
     };
   });
 
@@ -200,6 +199,18 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     return NextResponse.json(
       { ok: false, error: "Confirm that you are 18 or older before paying for liquor." },
       { status: 400 },
+    );
+  }
+  if (
+    containsAlcohol &&
+    (vendor.liquorVerificationStatus !== "APPROVED" ||
+      !vendor.liquorLicenceUrl ||
+      !vendor.liquorLicenceExpiry ||
+      vendor.liquorLicenceExpiry.getTime() <= Date.now())
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "This vendor is not currently approved for liquor orders." },
+      { status: 409 },
     );
   }
 
@@ -214,11 +225,20 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     baseFeeCents: vendor.deliveryFee,
   });
   const resolvedDeliveryCents = deliveryQuote.deliveryCents;
-  const resolvedRiderTipCents = Math.max(0, Math.round(riderTipCents || 0));
-  const riderPayoutCents = resolvedDeliveryCents + resolvedRiderTipCents;
-  const vendorPayoutCents = calcSubtotal;
-  const platformFeeCents = 0;
-  const totalCents = calcSubtotal + resolvedDeliveryCents + resolvedRiderTipCents;
+  const commissionBps = Number(process.env.PLATFORM_COMMISSION_BPS || 0);
+  const financials = calculateOrderFinancials({
+    subtotalCents: calcSubtotal,
+    deliveryFeeCents: resolvedDeliveryCents,
+    riderTipCents,
+    platformCommissionBps: commissionBps,
+  });
+  const {
+    riderTipCents: resolvedRiderTipCents,
+    riderPayoutCents,
+    vendorPayoutCents,
+    platformFeeCents,
+    totalCents,
+  } = financials;
 
   const deliveryDetails = {
     customerName,
@@ -304,9 +324,38 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   }
 
   const ozowReference = createOrderReference();
-  const order = await prisma.order.create({
-    data: {
+  const existingOrder = await prisma.order.findUnique({
+    where: { checkoutKey },
+    select: { publicId: true, ozowReference: true, totalCents: true, vendorId: true },
+  });
+  if (existingOrder) {
+    if (existingOrder.vendorId !== vendorId || existingOrder.totalCents !== totalCents) {
+      return NextResponse.json(
+        { ok: false, error: "This checkout request no longer matches the cart." },
+        { status: 409 },
+      );
+    }
+    const reference = existingOrder.ozowReference || existingOrder.publicId;
+    const trackingToken = createOrderTrackingToken(reference);
+    const redirectUrl = buildOzowRedirectUrl({
+      siteCode,
+      privateKey,
+      amountCents: totalCents,
+      transactionReference: reference,
+      bankReference: `Lethela ${vendor.slug}`,
+      successUrl: `${baseUrl}/checkout/success?ref=${encodeURIComponent(reference)}&t=${encodeURIComponent(trackingToken)}`,
+      cancelUrl: `${baseUrl}/checkout/cancel?ref=${encodeURIComponent(reference)}`,
+      notifyUrl: `${baseUrl}/api/payments/ozow/notify`,
+      isTest: process.env.OZOW_IS_TEST === "true",
+    });
+    return NextResponse.json({ ok: true, redirectUrl, ref: reference, idempotent: true });
+  }
+  const order = await prisma.order.upsert({
+    where: { checkoutKey },
+    update: {},
+    create: {
       publicId: ozowReference,
+      checkoutKey,
       userId,
       vendorId,
       itemsJson: JSON.stringify({
@@ -315,9 +364,14 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
       }),
       subtotalCents: calcSubtotal,
       deliveryFeeCents: resolvedDeliveryCents,
+      distanceKm: deliveryQuote.distanceKm,
+      riderTipCents: resolvedRiderTipCents,
+      riderPayoutCents,
+      vendorPayoutCents,
+      platformFeeCents,
       totalCents,
       amountCents: totalCents,
-      status: "PLACED",
+      status: "PENDING_PAYMENT",
       paymentStatus: "PENDING",
       ozowReference,
       customerLat: destinationPoint?.lat ?? null,
@@ -330,8 +384,20 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
         })),
       },
     },
-    select: { id: true, ozowReference: true, publicId: true },
+    select: {
+      id: true,
+      ozowReference: true,
+      publicId: true,
+      vendorId: true,
+      totalCents: true,
+    },
   });
+  if (order.vendorId !== vendorId || order.totalCents !== totalCents) {
+    return NextResponse.json(
+      { ok: false, error: "This checkout request no longer matches the cart." },
+      { status: 409 },
+    );
+  }
   const reference = order.ozowReference ?? order.publicId ?? ozowReference;
   const trackingToken = createOrderTrackingToken(reference);
 
@@ -345,7 +411,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     privateKey,
     amountCents: totalCents,
     transactionReference: reference,
-    bankReference: `Lethela ${vendorSlug || vendor.slug}`,
+    bankReference: `Lethela ${vendor.slug}`,
     successUrl,
     cancelUrl,
     errorUrl,

@@ -5,10 +5,18 @@ import { requireVendor } from "@/lib/authz";
 import { pusherServer } from "@/lib/pusher-server";
 import { notifyOrderStatusPush } from "@/lib/order-notifications";
 import { settleWithin } from "@/lib/notification-channels";
+import { canTransitionOrderStatus, normalizeOrderStatus } from "@/lib/order-state";
+import { recordOrderEvent } from "@/lib/order-operations";
 
-const StatusSchema = z.object({
-  status: z.enum(["PLACED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELED"]),
-});
+const StatusSchema = z
+  .object({
+    status: z.enum(["VENDOR_ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "CANCELLED"]),
+    reason: z.string().trim().min(5).max(500).optional(),
+  })
+  .refine((value) => value.status !== "CANCELLED" || Boolean(value.reason), {
+    message: "A cancellation reason is required.",
+    path: ["reason"],
+  });
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -32,17 +40,41 @@ export async function PATCH(req: Request, { params }: Params) {
         vendorId,
         OR: [{ publicId: cleanId }, { ozowReference: cleanId }],
       },
-      select: { id: true, publicId: true, ozowReference: true },
+      select: {
+        id: true,
+        publicId: true,
+        ozowReference: true,
+        status: true,
+        paymentStatus: true,
+      },
     });
     if (!order) {
       return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
+    }
+
+    if (!new Set(["PAID", "SUCCESS"]).has(order.paymentStatus.toUpperCase())) {
+      return NextResponse.json(
+        { ok: false, error: "This order has not been verified as paid." },
+        { status: 409 },
+      );
+    }
+    const currentStatus = normalizeOrderStatus(order.status);
+    if (!currentStatus || !canTransitionOrderStatus(currentStatus, parsed.data.status)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Order cannot move from ${currentStatus} to ${parsed.data.status}.`,
+        },
+        { status: 409 },
+      );
     }
 
     const updated = await prisma.order.update({
       where: { id: order.id },
       data: {
         status: parsed.data.status,
-        ...(parsed.data.status === "DELIVERED" || parsed.data.status === "CANCELED"
+        statusReason: parsed.data.reason || null,
+        ...(parsed.data.status === "CANCELLED"
           ? {
               riderLat: null,
               riderLng: null,
@@ -50,6 +82,14 @@ export async function PATCH(req: Request, { params }: Params) {
             }
           : {}),
       },
+    });
+    await recordOrderEvent({
+      orderId: order.id,
+      publicId: order.publicId,
+      type: "STATUS_CHANGED",
+      actor: `vendor:${vendorId}`,
+      note: parsed.data.reason || `${currentStatus} -> ${parsed.data.status}`,
+      meta: { from: currentStatus, to: parsed.data.status },
     });
 
     try {

@@ -1,8 +1,10 @@
 import crypto from "crypto";
 
-export const ADMIN_ACCESS_COOKIE_NAME = "lethela_admin_access";
+export const ADMIN_ACCESS_COOKIE_NAME =
+  process.env.NODE_ENV === "production" ? "__Secure-lethela.admin-access" : "lethela.admin-access";
 
 type AdminAccessPayload = {
+  sub: string;
   exp: number;
 };
 
@@ -25,13 +27,14 @@ function signValue(value: string) {
   return crypto.createHmac("sha256", adminAccessSecret()).update(value, "utf8").digest("base64url");
 }
 
-export function createAdminAccessToken(input?: { expiresInDays?: number }) {
+export function createAdminAccessToken(input: { userId: string; expiresInHours?: number }) {
   if (!adminAccessSecret()) {
     throw new Error("ADMIN_APPROVAL_KEY is required.");
   }
 
   const payload: AdminAccessPayload = {
-    exp: Date.now() + (input?.expiresInDays ?? 30) * 24 * 60 * 60 * 1000,
+    sub: input.userId,
+    exp: Date.now() + (input.expiresInHours ?? 8) * 60 * 60 * 1000,
   };
 
   const encoded = base64UrlEncode(JSON.stringify(payload));
@@ -58,7 +61,7 @@ export function readAdminAccessToken(token: string) {
 
   try {
     const parsed = JSON.parse(base64UrlDecode(encoded)) as AdminAccessPayload;
-    if (!parsed || typeof parsed.exp !== "number") return null;
+    if (!parsed || typeof parsed.sub !== "string" || typeof parsed.exp !== "number") return null;
     if (parsed.exp < Date.now()) return null;
     return parsed;
   } catch {

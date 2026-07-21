@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { ProductLite } from "@/components/ProductCard";
 import { pushEcommerceEvent, trackVisitorEvent } from "@/lib/visitor";
@@ -23,7 +24,10 @@ export default function HomeProductCard({ product }: { product: ProductLite }) {
 
   return (
     <article className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] transition hover:border-lethela-primary/50">
-      <div className="relative aspect-[4/3] w-full bg-white/10">
+      <Link
+        href={`/products/${encodeURIComponent(product.id)}`}
+        className="relative block aspect-[4/3] w-full bg-white/10"
+      >
         {product.image ? (
           <Image
             src={product.image}
@@ -33,10 +37,17 @@ export default function HomeProductCard({ product }: { product: ProductLite }) {
             className="object-cover"
           />
         ) : null}
-      </div>
+      </Link>
       <div className="p-4">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold">{product.name}</h3>
+          <h3 className="truncate text-base font-semibold">
+            <Link
+              href={`/products/${encodeURIComponent(product.id)}`}
+              className="hover:text-lethela-primary"
+            >
+              {product.name}
+            </Link>
+          </h3>
           <p className="mt-1 text-sm font-semibold text-white">
             R {(product.priceCents / 100).toFixed(2)}
           </p>

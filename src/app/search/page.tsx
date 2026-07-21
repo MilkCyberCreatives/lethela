@@ -75,7 +75,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           itemListElement: results.slice(0, 10).map((item, index) => ({
             "@type": "ListItem",
             position: index + 1,
-            url: item.slug ? absoluteUrl(`/vendors/${item.slug}`) : absoluteUrl("/"),
+            url: absoluteUrl(item.href || (item.slug ? `/vendors/${item.slug}` : "/")),
             name: item.title,
           })),
         }
@@ -161,7 +161,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
               {results.map((item, index) => (
                 <Link
                   key={`${item.kind}-${item.slug ?? "result"}-${index}`}
-                  href={item.slug ? `/vendors/${item.slug}` : "/"}
+                  href={item.href || (item.slug ? `/vendors/${item.slug}` : "/")}
                   className="group overflow-hidden rounded-lg border border-white/15 bg-white/7 transition hover:border-lethela-primary/80 hover:bg-white/10"
                 >
                   <div className="aspect-[16/9] bg-white/10">

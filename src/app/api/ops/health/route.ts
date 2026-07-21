@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
               bankAccountName: { not: null },
               bankAccountNumber: { not: null },
               hours: { some: { closed: false } },
-              products: { some: { inStock: true, isAlcohol: false } },
+              products: { some: { inStock: true, isAlcohol: false, status: "APPROVED" } },
             },
           }),
           0,
@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
           prisma.product.count({
             where: {
               inStock: true,
+              status: "APPROVED",
               isAlcohol: false,
               vendor: {
                 isActive: true,
@@ -80,11 +81,11 @@ export async function GET(req: NextRequest) {
         ),
         withQueryTimeout(
           prisma.vendor.count({
-            where: { status: { in: ["PENDING", "SUBMITTED_FOR_APPROVAL", "CHANGES_REQUESTED"] } },
+            where: { status: { in: ["SUBMITTED", "UNDER_REVIEW", "CHANGES_REQUESTED"] } },
           }),
           0,
         ),
-        withQueryTimeout(countRiderApplications("PENDING"), 0),
+        withQueryTimeout(countRiderApplications("SUBMITTED"), 0),
         withQueryTimeout(countRiderApplications("UNDER_REVIEW"), 0),
         withQueryTimeout(
           prisma.order.count({

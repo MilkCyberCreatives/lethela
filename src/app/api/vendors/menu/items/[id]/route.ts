@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireVendor } from "@/lib/authz";
+import { requireVendorAccount } from "@/lib/authz";
 
 const ItemInputSchema = z.object({
   sectionId: z.string().trim().min(1),
@@ -10,6 +10,7 @@ const ItemInputSchema = z.object({
   priceCents: z.number().int().min(100).max(2_000_000),
   tags: z.array(z.string().trim().min(1).max(32)).max(12).default([]),
   image: z.string().trim().max(1000).nullable().optional(),
+  isAlcohol: z.boolean().default(false),
   draft: z.boolean().optional(),
 });
 
@@ -39,7 +40,7 @@ async function ensureSectionOwner(vendorId: string, sectionId: string) {
 
 export async function PATCH(req: Request, { params }: Params) {
   try {
-    const { vendorId } = await requireVendor("MANAGER");
+    const { vendorId } = await requireVendorAccount("MANAGER");
     const { id } = await params;
     await ensureItemOwner(vendorId, id);
 
@@ -53,6 +54,7 @@ export async function PATCH(req: Request, { params }: Params) {
       description: body?.description ? String(body.description).trim() : null,
       image: body?.image ? String(body.image).trim() : null,
       draft: Boolean(body?.draft),
+      isAlcohol: Boolean(body?.isAlcohol),
     });
 
     if (!parsed.success) {
@@ -77,6 +79,7 @@ export async function PATCH(req: Request, { params }: Params) {
         priceCents: parsed.data.priceCents,
         tags: JSON.stringify(parsed.data.tags),
         image: parsed.data.image || null,
+        isAlcohol: parsed.data.isAlcohol,
         draft: parsed.data.draft ?? false,
       },
     });
@@ -96,7 +99,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
 export async function DELETE(_req: Request, { params }: Params) {
   try {
-    const { vendorId } = await requireVendor("MANAGER");
+    const { vendorId } = await requireVendorAccount("MANAGER");
     const { id } = await params;
     await ensureItemOwner(vendorId, id);
     await prisma.item.delete({ where: { id } });

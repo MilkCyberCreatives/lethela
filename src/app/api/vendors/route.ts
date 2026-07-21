@@ -88,7 +88,7 @@ export async function GET(req: Request) {
             bankBranchCode: true,
             products: {
               select: { isAlcohol: true },
-              where: { isAlcohol: false, inStock: true },
+              where: { isAlcohol: false, inStock: true, status: "APPROVED" },
               take: 6,
             },
             _count: { select: { products: true, items: true, hours: true } },

@@ -4,6 +4,7 @@ import { hash } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logAdminAudit } from "@/lib/admin-audit";
 
 const BootstrapOwnerSchema = z.object({
   adminKey: z.string().trim().optional(),
@@ -64,19 +65,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid admin approval key." }, { status: 401 });
   }
 
-  const passwordHash = await hash(parsed.data.password, 10);
+  const existingOwner = await prisma.user.findFirst({
+    where: { role: "OWNER" },
+    select: { id: true },
+  });
+  if (existingOwner) {
+    return NextResponse.json(
+      { ok: false, error: "Owner bootstrap is already complete." },
+      { status: 409 },
+    );
+  }
+
+  const passwordHash = await hash(parsed.data.password, 12);
   const user = await prisma.user.upsert({
     where: { email: parsed.data.email },
     update: {
       name: parsed.data.name,
       passwordHash,
-      role: "ADMIN",
+      role: "OWNER",
+      twoFactorEnabled: true,
+      sessionVersion: { increment: 1 },
     },
     create: {
       email: parsed.data.email,
       name: parsed.data.name,
       passwordHash,
-      role: "ADMIN",
+      role: "OWNER",
+      twoFactorEnabled: true,
     },
     select: {
       id: true,
@@ -85,6 +100,14 @@ export async function POST(req: NextRequest) {
       role: true,
       updatedAt: true,
     },
+  });
+
+  await logAdminAudit({
+    actor: "owner-bootstrap-key",
+    action: "bootstrap_owner",
+    targetType: "user",
+    targetId: user.id,
+    after: { role: "OWNER", twoFactorEnabled: true },
   });
 
   return NextResponse.json({

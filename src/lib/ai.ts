@@ -260,7 +260,20 @@ export async function aiRecommend(
         db.vendor.findMany({
           where: {
             isActive: true,
-            status: "ACTIVE",
+            status: { in: ["ACTIVE", "APPROVED"] },
+            temporaryClosed: false,
+            phone: { not: null },
+            address: { not: null },
+            city: { not: null },
+            province: { not: null },
+            storeType: { not: null },
+            kycIdUrl: { not: null },
+            kycProofUrl: { not: null },
+            bankName: { not: null },
+            bankAccountName: { not: null },
+            bankAccountNumber: { not: null },
+            hours: { some: { closed: false } },
+            products: { some: { isAlcohol: false, inStock: true, status: "APPROVED" } },
             ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
           },
           orderBy: [{ rating: "desc" }, { updatedAt: "desc" }],
@@ -276,6 +289,7 @@ export async function aiRecommend(
             etaMins: true,
             products: {
               select: { isAlcohol: true },
+              where: { isAlcohol: false, inStock: true, status: "APPROVED" },
               take: 4,
             },
             reviews: {

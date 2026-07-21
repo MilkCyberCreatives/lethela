@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 
 type RiderConsolePayload = {
   ref: string;
+  riderId?: string;
   exp: number;
 };
 
@@ -24,7 +25,7 @@ function sign(value: string) {
     .digest("base64url");
 }
 
-export function createRiderConsoleToken(ref: string, expiresInHours = 12) {
+export function createRiderConsoleToken(ref: string, expiresInHours = 12, riderId?: string) {
   const secret = riderConsoleSecret();
   if (!secret) {
     throw new Error("RIDER_CONSOLE_SECRET or NEXTAUTH_SECRET is required.");
@@ -34,6 +35,7 @@ export function createRiderConsoleToken(ref: string, expiresInHours = 12) {
     ref: String(ref || "")
       .trim()
       .toUpperCase(),
+    riderId: riderId?.trim() || undefined,
     exp: Date.now() + expiresInHours * 60 * 60 * 1000,
   };
   const encoded = encode(JSON.stringify(payload));
@@ -72,6 +74,7 @@ export function readRiderConsoleToken(token?: string | null) {
 
     return {
       ref: parsed.ref.trim().toUpperCase(),
+      riderId: typeof parsed.riderId === "string" ? parsed.riderId : undefined,
       exp: parsed.exp,
     };
   } catch {

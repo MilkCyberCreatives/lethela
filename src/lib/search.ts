@@ -8,10 +8,11 @@ import {
   isPublicMarketplaceVendor,
 } from "@/lib/public-catalog";
 import { runBoundedDbQuery, withQueryTimeout } from "@/lib/query-timeout";
+import { TOWNSHIP_CATEGORIES, categoryToSlug } from "@/lib/categories";
 
 export type SearchHit = {
   id: string;
-  kind: "vendor" | "product";
+  kind: "vendor" | "product" | "category";
   title: string;
   image: string | null;
   slug: string | null;
@@ -20,6 +21,7 @@ export type SearchHit = {
   subtitle: string | null;
   priceCents: number | null;
   isAlcohol: boolean;
+  href?: string;
 };
 
 type SearchOptions = {
@@ -474,7 +476,7 @@ async function searchFallback(
           bankAccountName: { not: null },
           bankAccountNumber: { not: null },
           hours: { some: { closed: false } },
-          products: { some: { inStock: true, isAlcohol: false } },
+          products: { some: { inStock: true, isAlcohol: false, status: "APPROVED" } },
           OR: vendorOr,
         },
         take: candidateLimit,
@@ -505,6 +507,8 @@ async function searchFallback(
       }),
       prisma.product.findMany({
         where: {
+          inStock: true,
+          status: "APPROVED",
           isAlcohol: false,
           vendor: {
             isActive: true,
@@ -652,9 +656,7 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
 
   const limit = Math.min(24, Math.max(1, opts.limit ?? 12));
   const tokens = tokenize(query);
-  if (tokens.some((token) => RESTRICTED_PUBLIC_SEARCH_TERMS.has(token))) {
-    return [] as SearchHit[];
-  }
+  const isLiquorSearch = tokens.some((token) => RESTRICTED_PUBLIC_SEARCH_TERMS.has(token));
 
   const cacheKey = `${query.toLowerCase()}::${limit}`;
   const cached = searchCache.get(cacheKey);
@@ -662,11 +664,84 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
     return cached.hits;
   }
 
-  const hits =
-    prismaRuntimeInfo.provider === "postgresql"
+  const catalogHits = isLiquorSearch
+    ? await searchLiquorCatalog(tokens, limit)
+    : prismaRuntimeInfo.provider === "postgresql"
       ? await searchPostgres(query, tokens, limit)
       : await searchFallback(query, tokens, limit);
+  const categoryNames = Array.from(
+    new Set([...TOWNSHIP_CATEGORIES, "Groceries", "Liquor", "Restaurants"]),
+  );
+  const categoryHits: SearchHit[] = categoryNames
+    .map((name) => ({ name, score: lexicalScore(tokens, name) }))
+    .filter((item) => item.score > 0)
+    .map((item) => ({
+      id: `category-${categoryToSlug(item.name)}`,
+      kind: "category",
+      title: item.name,
+      image: null,
+      slug: null,
+      vendorName: null,
+      subtitle: "Browse category",
+      priceCents: null,
+      isAlcohol: item.name.toLowerCase() === "liquor",
+      score: item.score,
+      href:
+        item.name.toLowerCase() === "restaurants"
+          ? "/restaurants"
+          : `/categories/${categoryToSlug(item.name)}`,
+    }));
+  const rank = { product: 0, vendor: 1, category: 2 } as const;
+  const hits = [...catalogHits, ...categoryHits]
+    .sort((left, right) => rank[left.kind] - rank[right.kind] || right.score - left.score)
+    .slice(0, limit);
 
   searchCache.set(cacheKey, { ts: Date.now(), hits });
   return hits;
+}
+
+async function searchLiquorCatalog(tokens: string[], limit: number): Promise<SearchHit[]> {
+  const products = await withQueryTimeout(
+    prisma.product.findMany({
+      where: {
+        isAlcohol: true,
+        inStock: true,
+        status: "APPROVED",
+        vendor: {
+          isActive: true,
+          status: { in: ["ACTIVE", "APPROVED"] },
+          temporaryClosed: false,
+          liquorVerificationStatus: "APPROVED",
+          liquorLicenceUrl: { not: null },
+          liquorLicenceExpiry: { gt: new Date() },
+          hours: { some: { closed: false } },
+        },
+      },
+      take: Math.max(30, limit * 8),
+      orderBy: { updatedAt: "desc" },
+      include: { vendor: { select: { name: true, slug: true } } },
+    }),
+    [],
+  );
+  return scoreAndLimitRows(
+    products.map((product) => ({
+      id: product.id,
+      kind: "product" as const,
+      title: product.name,
+      searchText: [
+        product.name,
+        product.description || "",
+        product.vendor.name,
+        "liquor alcohol",
+      ].join(" "),
+      image: product.image,
+      slug: product.vendor.slug,
+      vendorName: product.vendor.name,
+      subtitle: `${product.vendor.name} · Liquor 18+`,
+      priceCents: product.priceCents,
+      isAlcohol: true,
+    })),
+    tokens,
+    limit,
+  );
 }

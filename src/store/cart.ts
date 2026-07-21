@@ -41,7 +41,18 @@ export function sanitizePersistedCartState(input: unknown) {
 
   const candidate = input as Partial<CartState>;
   const items = Array.isArray(candidate.items)
-    ? candidate.items.filter((item) => item && !isLegacyDemoCartItem(item))
+    ? candidate.items.filter(
+        (item) =>
+          item &&
+          !isLegacyDemoCartItem(item) &&
+          typeof item.itemId === "string" &&
+          typeof item.vendorId === "string" &&
+          Number.isInteger(item.qty) &&
+          Number(item.qty) > 0 &&
+          Number(item.qty) <= 99 &&
+          Number.isInteger(item.priceCents) &&
+          Number(item.priceCents) >= 0,
+      )
     : [];
 
   return {
@@ -58,22 +69,27 @@ export const useCart = create<CartState>()(
       vendorLockedTo: null,
       add: (item, qty = 1) => {
         const st = get();
-        // Keep checkout scoped to one vendor by replacing the cart when the vendor changes.
-        const nextItemsBase =
-          st.vendorLockedTo && st.vendorLockedTo !== item.vendorId ? [] : st.items;
+        if (st.vendorLockedTo && st.vendorLockedTo !== item.vendorId) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("lethela:cart-vendor-conflict"));
+          }
+          return;
+        }
+        const safeQty = Math.min(99, Math.max(1, Math.round(qty)));
+        const nextItemsBase = st.items;
         const existing = nextItemsBase.find((i) => i.itemId === item.itemId);
         if (existing) {
           set({
             items: nextItemsBase.map((cartItem) =>
               cartItem.itemId === item.itemId
-                ? { ...cartItem, ...item, qty: cartItem.qty + qty }
+                ? { ...cartItem, ...item, qty: Math.min(99, cartItem.qty + safeQty) }
                 : cartItem,
             ),
             vendorLockedTo: item.vendorId,
           });
         } else {
           set({
-            items: [...nextItemsBase, { ...item, qty }],
+            items: [...nextItemsBase, { ...item, qty: safeQty }],
             vendorLockedTo: item.vendorId,
           });
         }
@@ -82,7 +98,7 @@ export const useCart = create<CartState>()(
         const st = get();
         const it = st.items.find((i) => i.itemId === itemId);
         if (it) {
-          it.qty += 1;
+          it.qty = Math.min(99, it.qty + 1);
           set({ items: [...st.items] });
         }
       },

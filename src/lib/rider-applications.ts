@@ -1,6 +1,16 @@
 import { prisma } from "@/lib/db";
 
-export type RiderApplicationStatus = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+export type RiderApplicationStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "CHANGES_REQUESTED"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED"
+  | "OFFLINE"
+  | "AVAILABLE"
+  | "BUSY";
 
 export type RiderApplicationRecord = {
   id: string;
@@ -28,11 +38,25 @@ export type RiderApplicationRecord = {
 type RiderApplicationModel = Awaited<ReturnType<typeof prisma.riderApplication.findFirst>>;
 
 function normalizeStatus(value: string | null | undefined): RiderApplicationStatus {
-  const upper = String(value || "PENDING").toUpperCase();
-  if (upper === "UNDER_REVIEW" || upper === "APPROVED" || upper === "REJECTED") {
-    return upper;
+  const upper = String(value || "DRAFT").toUpperCase();
+  if (upper === "PENDING") return "SUBMITTED";
+  if (
+    [
+      "DRAFT",
+      "SUBMITTED",
+      "UNDER_REVIEW",
+      "CHANGES_REQUESTED",
+      "APPROVED",
+      "REJECTED",
+      "SUSPENDED",
+      "OFFLINE",
+      "AVAILABLE",
+      "BUSY",
+    ].includes(upper)
+  ) {
+    return upper as RiderApplicationStatus;
   }
-  return "PENDING";
+  return "DRAFT";
 }
 
 function normalizeRow(row: NonNullable<RiderApplicationModel>): RiderApplicationRecord {
@@ -98,7 +122,7 @@ export async function createRiderApplication(input: {
       hasBankAccount: input.hasBankAccount,
       experience: input.experience || null,
       aiSummary: input.aiSummary || null,
-      status: "PENDING",
+      status: "SUBMITTED",
     },
   });
 }

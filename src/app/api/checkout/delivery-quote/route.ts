@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import {
-  DEFAULT_DELIVERY_FEE_CENTS,
-  EXTRA_DELIVERY_FEE_PER_KM_CENTS,
-  INCLUDED_DELIVERY_RADIUS_KM,
-  quoteDelivery,
-} from "@/lib/pricing";
-import { canReadSqliteCatalog, getSqliteDeliveryVendor } from "@/lib/sqlite-catalog";
+import { quoteDelivery } from "@/lib/pricing";
 
 const QuerySchema = z
   .object({
@@ -26,21 +20,6 @@ const QuerySchema = z
     },
   );
 
-function localSqliteQuote() {
-  const deliveryCents = DEFAULT_DELIVERY_FEE_CENTS;
-  return {
-    ok: true,
-    originResolved: true,
-    destinationResolved: true,
-    locationResolved: false,
-    baseFeeCents: deliveryCents,
-    deliveryCents,
-    distanceKm: null,
-    includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
-    extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
-  };
-}
-
 export async function GET(req: NextRequest) {
   const parsed = QuerySchema.safeParse({
     vendorId: req.nextUrl.searchParams.get("vendorId"),
@@ -56,22 +35,11 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (canReadSqliteCatalog()) {
-    if (parsed.data.vendorId.startsWith("vendor-")) {
-      return NextResponse.json(localSqliteQuote());
-    }
-
-    const sqliteVendor = await getSqliteDeliveryVendor(parsed.data.vendorId);
-    if (sqliteVendor) {
-      return NextResponse.json(localSqliteQuote());
-    }
-  }
-
   const vendor = await prisma.vendor.findFirst({
     where: {
       id: parsed.data.vendorId,
       isActive: true,
-      status: "ACTIVE",
+      status: { in: ["APPROVED", "ACTIVE"] },
     },
     select: {
       id: true,

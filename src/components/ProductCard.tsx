@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import MealPreferenceControls from "@/components/MealPreferenceControls";
 import { Button } from "@/components/ui/button";
 import { pushEcommerceEvent, trackVisitorEvent } from "@/lib/visitor";
@@ -33,7 +34,7 @@ export default function ProductCard({ p }: { p: ProductLite }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-lethela-secondary transition">
       {p.image ? (
-        <div className="relative h-40 w-full">
+        <Link href={`/products/${encodeURIComponent(p.id)}`} className="relative block h-40 w-full">
           <Image
             src={p.image}
             alt={p.name}
@@ -41,14 +42,21 @@ export default function ProductCard({ p }: { p: ProductLite }) {
             sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
             className="object-cover"
           />
-        </div>
+        </Link>
       ) : (
         <div className="h-40 w-full bg-white/10" />
       )}
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate font-semibold">{p.name}</h3>
+            <h3 className="truncate font-semibold">
+              <Link
+                href={`/products/${encodeURIComponent(p.id)}`}
+                className="hover:text-lethela-primary"
+              >
+                {p.name}
+              </Link>
+            </h3>
             <p className="truncate text-xs text-white/70">
               {p.vendor?.name ? `${p.vendor.name} • ` : ""}R {(p.priceCents / 100).toFixed(2)}
             </p>

@@ -8,22 +8,45 @@ generator client {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String?
-  image        String?
-  passwordHash String?
-  role         String   @default("USER")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String?
+  phone               String?
+  image               String?
+  passwordHash        String?
+  role                String    @default("CUSTOMER")
+  emailVerifiedAt     DateTime?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  sessionVersion      Int       @default(0)
+  twoFactorEnabled    Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   memberships      VendorMember[]
-  orders           Order[]
+  orders           Order[]               @relation("CustomerOrders")
   ownedVendors     Vendor[]              @relation("VendorOwner")
   favoriteProducts UserFavoriteProduct[]
   productReviews   UserProductReview[]
   pushPreferences  PushPreference[]
   pushCampaigns    PushCampaign[]        @relation("PushCampaignCreator")
+  riderApplication RiderApplication?
+  privacyRequests  PrivacyRequest[]
+}
+
+model PrivacyRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  status    String   @default("OPEN")
+  details   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }
 
 model Visitor {
@@ -95,36 +118,55 @@ model PushPreference {
 }
 
 model Vendor {
-  id                String  @id @default(cuid())
-  name              String
-  slug              String  @unique
-  email             String? @unique
-  phone             String?
-  address           String?
-  suburb            String?
-  city              String?
-  province          String?
-  municipality      String?
-  township          String?
-  sectionArea       String?
-  storeType         String?
-  latitude          Float?
-  longitude         Float?
-  isActive          Boolean @default(true)
-  status            String  @default("ACTIVE")
-  ownerId           String?
-  kycIdUrl          String?
-  kycProofUrl       String?
-  bankName          String?
-  bankAccountName   String?
-  bankAccountNumber String?
-  bankBranchCode    String?
-  cuisine           String  @default("[]")
-  rating            Float   @default(4.4)
-  deliveryFee       Int     @default(1500)
-  etaMins           Int     @default(30)
-  halaal            Boolean @default(false)
-  image             String?
+  id                       String    @id @default(cuid())
+  name                     String
+  slug                     String    @unique
+  email                    String?   @unique
+  phone                    String?
+  address                  String?
+  suburb                   String?
+  city                     String?
+  province                 String?
+  municipality             String?
+  township                 String?
+  sectionArea              String?
+  storeType                String?
+  latitude                 Float?
+  longitude                Float?
+  isActive                 Boolean   @default(false)
+  status                   String    @default("DRAFT")
+  ownerId                  String?
+  description              String?
+  coverImage               String?
+  pickupInstructions       String?
+  temporaryClosed          Boolean   @default(false)
+  preparationMinutes       Int       @default(30)
+  orderCapacity            Int       @default(20)
+  reviewReason             String?
+  submittedAt              DateTime?
+  kycIdUrl                 String?
+  kycProofUrl              String?
+  bankName                 String?
+  bankAccountName          String?
+  bankAccountNumber        String?
+  bankBranchCode           String?
+  bankAccountType          String?
+  bankVerificationStatus   String    @default("UNVERIFIED")
+  liquorLicenceUrl         String?
+  liquorLicenceNumber      String?
+  liquorLicenceHolder      String?
+  liquorLicencePremises    String?
+  liquorLicenceProvince    String?
+  liquorLicenceType        String?
+  liquorLicenceExpiry      DateTime?
+  liquorVerificationStatus String    @default("NOT_APPLICABLE")
+  liquorReviewReason       String?
+  cuisine                  String    @default("[]")
+  rating                   Float     @default(4.4)
+  deliveryFee              Int       @default(1500)
+  etaMins                  Int       @default(30)
+  halaal                   Boolean   @default(false)
+  image                    String?
 
   owner     User?               @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   products  Product[]
@@ -161,18 +203,20 @@ model VendorMember {
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  vendorId    String
-  name        String
-  slug        String
-  description String?
-  priceCents  Int
-  image       String?
-  isAlcohol   Boolean  @default(false)
-  abv         Float?
-  inStock     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  vendorId     String
+  name         String
+  slug         String
+  description  String?
+  priceCents   Int
+  image        String?
+  isAlcohol    Boolean  @default(false)
+  status       String   @default("SUBMITTED")
+  reviewReason String?
+  abv          Float?
+  inStock      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   vendor     Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   specials   Special[]
@@ -184,6 +228,7 @@ model Product {
 
   @@unique([vendorId, slug])
   @@index([vendorId, updatedAt])
+  @@index([status, updatedAt])
   @@index([name])
 }
 
@@ -244,6 +289,7 @@ model Item {
   priceCents  Int
   tags        String   @default("[]")
   image       String?
+  isAlcohol   Boolean  @default(false)
   draft       Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -269,36 +315,53 @@ model OperatingHour {
 }
 
 model Order {
-  id               String    @id @default(cuid())
-  publicId         String    @unique @default(cuid())
-  vendorId         String
-  userId           String?
-  status           String    @default("PLACED")
-  paymentStatus    String    @default("PENDING")
-  ozowReference    String?   @unique
-  ozowTxnId        String?
-  customerLat      Float?
-  customerLng      Float?
-  riderLat         Float?
-  riderLng         Float?
-  riderSpeed       Float?
-  riderLocatedAt   DateTime?
-  distanceKm       Float?
-  subtotalCents    Int       @default(0)
-  deliveryFeeCents Int       @default(0)
-  totalCents       Int       @default(0)
-  amountCents      Int       @default(0)
-  itemsJson        String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  publicId              String    @unique @default(cuid())
+  vendorId              String
+  userId                String?
+  status                String    @default("PENDING_PAYMENT")
+  statusReason          String?
+  liquorIdVerifiedAt    DateTime?
+  paymentStatus         String    @default("PENDING")
+  ozowReference         String?   @unique
+  ozowTxnId             String?   @unique
+  checkoutKey           String?   @unique
+  paymentCallbackAt     DateTime?
+  assignedRiderId       String?
+  customerLat           Float?
+  customerLng           Float?
+  riderLat              Float?
+  riderLng              Float?
+  riderSpeed            Float?
+  riderLocatedAt        DateTime?
+  distanceKm            Float?
+  subtotalCents         Int       @default(0)
+  deliveryFeeCents      Int       @default(0)
+  riderTipCents         Int       @default(0)
+  riderPayoutCents      Int       @default(0)
+  vendorPayoutCents     Int       @default(0)
+  platformFeeCents      Int       @default(0)
+  riderPayoutStatus     String    @default("PENDING")
+  riderPayoutReference  String?
+  riderPayoutDate       DateTime?
+  vendorPayoutStatus    String    @default("PENDING")
+  vendorPayoutReference String?
+  vendorPayoutDate      DateTime?
+  totalCents            Int       @default(0)
+  amountCents           Int       @default(0)
+  itemsJson             String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-  vendor    Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items     OrderItem[]
-  lateFlags LateOrderFlag[]
+  vendor        Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user          User?             @relation("CustomerOrders", fields: [userId], references: [id], onDelete: SetNull)
+  assignedRider RiderApplication? @relation(fields: [assignedRiderId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  lateFlags     LateOrderFlag[]
 
   @@index([vendorId, createdAt])
   @@index([status, createdAt])
+  @@index([assignedRiderId, status, createdAt])
 }
 
 model OrderItem {
@@ -400,26 +463,56 @@ model PlatformMessage {
 }
 
 model RiderApplication {
-  id                    String   @id
-  fullName              String
-  email                 String
-  phone                 String
-  idNumberLast4         String
-  licenseCode           String
-  suburb                String
-  city                  String
-  vehicleType           String
-  vehicleRegistration   String?
-  availableHours        String
-  emergencyContactName  String
-  emergencyContactPhone String
-  hasSmartphone         Boolean  @default(true)
-  hasBankAccount        Boolean  @default(true)
-  experience            String?
-  aiSummary             String?
-  status                String   @default("PENDING")
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                     String    @id
+  userId                 String?   @unique
+  fullName               String
+  email                  String
+  phone                  String
+  idNumberLast4          String    @default("")
+  idDocumentUrl          String?
+  profilePhotoUrl        String?
+  licenseCode            String    @default("")
+  licenceDocumentUrl     String?
+  licenceExpiry          DateTime?
+  suburb                 String    @default("")
+  city                   String    @default("")
+  province               String    @default("")
+  municipality           String    @default("")
+  township               String    @default("")
+  sectionArea            String?
+  preferredZones         String    @default("[]")
+  vehicleType            String    @default("")
+  vehicleMakeModel       String?
+  vehicleRegistration    String?
+  vehicleDocumentUrl     String?
+  availableNow           Boolean   @default(false)
+  workingDays            String    @default("[]")
+  startTime              String?
+  endTime                String?
+  availableHours         String    @default("")
+  emergencyContactName   String    @default("")
+  emergencyContactPhone  String    @default("")
+  hasSmartphone          Boolean   @default(false)
+  hasBankAccount         Boolean   @default(false)
+  lawfulWorkDeclared     Boolean   @default(false)
+  conductAccepted        Boolean   @default(false)
+  liquorIdCheckAccepted  Boolean   @default(false)
+  bankAccountName        String?
+  bankName               String?
+  bankAccountNumber      String?
+  bankBranchCode         String?
+  bankAccountType        String?
+  bankVerificationStatus String    @default("UNVERIFIED")
+  experience             String?
+  aiSummary              String?
+  status                 String    @default("DRAFT")
+  reviewReason           String?
+  submittedAt            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  user           User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedOrders Order[]
 
   @@index([status, createdAt])
   @@index([email])

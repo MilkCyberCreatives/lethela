@@ -14,23 +14,25 @@ import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
 
 type Suggestion = {
   id: string;
-  kind: "vendor" | "product";
+  kind: "vendor" | "product" | "category";
   title: string;
   image?: string | null;
   slug?: string | null;
   vendorName?: string | null;
   score: number;
+  href?: string;
 };
 
 type SearchResult = {
   id: string;
-  kind: "vendor" | "product";
+  kind: "vendor" | "product" | "category";
   title: string;
   subtitle?: string;
   image?: string | null;
   slug?: string | null;
   vendor?: string | null;
   priceCents?: number;
+  href?: string;
 };
 
 type SearchResponse = {
@@ -521,7 +523,8 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
               {resp.ok && Array.isArray(resp.results) && resp.results.length > 0 ? (
                 <div className="mt-3 grid gap-3">
                   {resp.results.slice(0, 4).map((result) => {
-                    const href = result.slug ? `/vendors/${result.slug}` : "/search";
+                    const href =
+                      result.href || (result.slug ? `/vendors/${result.slug}` : "/search");
                     return (
                       <Link
                         key={`${result.kind}-${result.id}`}

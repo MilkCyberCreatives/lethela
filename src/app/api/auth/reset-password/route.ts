@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/server/db";
 import { passwordResetFingerprint, readPasswordResetToken } from "@/lib/password-reset";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { recordAuthSecurityEvent } from "@/lib/auth-security";
 
 const BodySchema = z
   .object({
@@ -63,10 +64,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const passwordHash = await hash(parsed.data.password, 10);
+  const passwordHash = await hash(parsed.data.password, 12);
   await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash },
+    data: {
+      passwordHash,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      sessionVersion: { increment: 1 },
+    },
+  });
+  await recordAuthSecurityEvent({
+    userId: user.id,
+    email: user.email,
+    eventType: "PASSWORD_RESET",
+    outcome: "SUCCESS",
   });
 
   return NextResponse.json({ ok: true, message: "Password updated. You can now sign in." });

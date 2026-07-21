@@ -72,7 +72,12 @@ export async function POST() {
 
   const updated = await prisma.vendor.update({
     where: { id: vendor.id },
-    data: { status: VENDOR_STATUS.SUBMITTED, isActive: false },
+    data: {
+      status: VENDOR_STATUS.SUBMITTED,
+      isActive: false,
+      submittedAt: new Date(),
+      reviewReason: null,
+    },
     select: {
       id: true,
       name: true,

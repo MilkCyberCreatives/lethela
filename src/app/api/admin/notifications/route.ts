@@ -35,9 +35,9 @@ export async function GET(req: NextRequest) {
 
   const [pendingCount, latestPending, riderPendingCount, riderUnderReviewCount, recentCampaigns] =
     await Promise.all([
-      prisma.vendor.count({ where: { status: "PENDING" } }),
+      prisma.vendor.count({ where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } } }),
       prisma.vendor.findMany({
-        where: { status: "PENDING" },
+        where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } },
         orderBy: [{ updatedAt: "desc" }],
         take: 5,
         select: {
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
           updatedAt: true,
         },
       }),
-      countRiderApplications("PENDING"),
+      countRiderApplications("SUBMITTED"),
       countRiderApplications("UNDER_REVIEW"),
       prisma.pushCampaign.findMany({
         orderBy: { createdAt: "desc" },

@@ -1,10 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  buildTrackingSnapshot,
-  getSimulatedRiderPoint,
-  normalizeTrackingStatus,
-} from "../src/lib/order-tracking";
+import { buildTrackingSnapshot, normalizeTrackingStatus } from "../src/lib/order-tracking";
 
 test("normalizeTrackingStatus maps legacy values into tracking states", () => {
   assert.equal(normalizeTrackingStatus("placed"), "PENDING");
@@ -15,17 +11,15 @@ test("normalizeTrackingStatus maps legacy values into tracking states", () => {
   assert.equal(normalizeTrackingStatus("unknown"), "PENDING");
 });
 
-test("getSimulatedRiderPoint returns a point between vendor and destination", () => {
-  const point = getSimulatedRiderPoint({
+test("tracking never invents a rider position when no live coordinates exist", () => {
+  const snapshot = buildTrackingSnapshot({
     status: "OUT_FOR_DELIVERY",
     createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     vendor: { lat: -26.0, lng: 28.0 },
     destination: { lat: -26.1, lng: 28.1 },
   });
-
-  assert.ok(point);
-  assert.ok(point!.lat < -26.0 && point!.lat > -26.1);
-  assert.ok(point!.lng > 28.0 && point!.lng < 28.1);
+  assert.equal(snapshot.rider, null);
+  assert.equal(snapshot.hasLiveRider, false);
 });
 
 test("buildTrackingSnapshot exposes live rider state when rider coordinates are present", () => {

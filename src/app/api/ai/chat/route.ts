@@ -17,13 +17,14 @@ type AssistantMode = "tracking" | "recommendations" | "support" | "general";
 
 type SearchResult = {
   id: string;
-  kind: "vendor" | "product";
+  kind: "vendor" | "product" | "category";
   title: string;
   subtitle?: string | null;
   image?: string | null;
   slug?: string | null;
   vendor?: string | null;
   priceCents?: number | null;
+  href?: string | null;
 };
 
 type SupportSource = {
@@ -208,6 +209,7 @@ function normalizeSearchResults(rows: Awaited<ReturnType<typeof searchCatalog>>)
     slug: row.slug,
     vendor: row.vendorName,
     priceCents: row.priceCents,
+    href: row.href,
   }));
 }
 

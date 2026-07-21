@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
 
-const STAGES = ["PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELED"] as const;
+const STAGES = ["READY_FOR_PICKUP", "PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED"] as const;
 
 export default function RiderOrderPage({ params }: { params: { ref: string } }) {
   const ref = params.ref;
@@ -15,6 +15,7 @@ export default function RiderOrderPage({ params }: { params: { ref: string } }) 
   const [sharingLocation, setSharingLocation] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [liquorIdVerified, setLiquorIdVerified] = useState(false);
   const watchId = useRef<number | null>(null);
   const riderToken = searchParams?.get("token")?.trim() || "";
 
@@ -34,7 +35,20 @@ export default function RiderOrderPage({ params }: { params: { ref: string } }) 
       const response = await fetch(`/api/orders/${ref}/status`, {
         method: "POST",
         headers: { "content-type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          status,
+          liquorIdVerified: status === "DELIVERED" ? liquorIdVerified : undefined,
+          reason:
+            status === "CANCELLED" || status === "READY_FOR_PICKUP"
+              ? window
+                  .prompt(
+                    status === "READY_FOR_PICKUP"
+                      ? "Enter the reason for declining this assignment."
+                      : "Enter the failed or refused delivery reason.",
+                  )
+                  ?.trim()
+              : undefined,
+        }),
       });
       const json = await response.json();
       if (!response.ok || !json.ok) throw new Error(json.error || "Failed to update status.");
@@ -133,10 +147,20 @@ export default function RiderOrderPage({ params }: { params: { ref: string } }) 
               disabled={sending || !riderToken}
               onClick={() => updateStatus(stage)}
             >
-              {stage.replaceAll("_", " ")}
+              {stage === "READY_FOR_PICKUP" ? "Decline assignment" : stage.replaceAll("_", " ")}
             </Button>
           ))}
         </div>
+
+        <label className="mt-5 flex items-start gap-3 rounded-lg border border-amber-200/20 bg-amber-300/10 p-4 text-sm text-amber-50">
+          <input
+            type="checkbox"
+            checked={liquorIdVerified}
+            onChange={(event) => setLiquorIdVerified(event.target.checked)}
+            className="mt-0.5 h-4 w-4"
+          />
+          <span>I checked valid adult ID at handover if this order contains liquor.</span>
+        </label>
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button className="bg-lethela-primary" onClick={startShare} disabled={!riderToken}>

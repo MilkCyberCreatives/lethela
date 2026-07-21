@@ -106,37 +106,9 @@ export function getTrackingProgress(status: string | null | undefined) {
   return STATUS_PROGRESS[normalizeTrackingStatus(status)];
 }
 
-function toDate(value: string | Date | null | undefined) {
-  if (!value) return null;
-  const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function interpolatePoint(start: TrackingPoint, end: TrackingPoint, t: number): TrackingPoint {
-  return {
-    lat: start.lat + (end.lat - start.lat) * t,
-    lng: start.lng + (end.lng - start.lng) * t,
-  };
-}
-
-export function getSimulatedRiderPoint(order: TrackingShape): TrackingPoint | null {
-  const status = normalizeTrackingStatus(order.status);
-  const vendor = order.vendor;
-  const destination = order.destination;
-  if (!vendor || !destination || (status !== "OUT_FOR_DELIVERY" && status !== "ON_THE_WAY"))
-    return null;
-
-  const anchor = toDate(order.riderLocatedAt) || toDate(order.updatedAt) || toDate(order.createdAt);
-  if (!anchor) return interpolatePoint(vendor, destination, 0.25);
-
-  const elapsedMs = Date.now() - anchor.getTime();
-  const t = Math.min(0.96, Math.max(0.08, elapsedMs / (22 * 60 * 1000)));
-  return interpolatePoint(vendor, destination, t);
-}
-
 export function buildTrackingSnapshot(order: TrackingShape) {
   const status = normalizeTrackingStatus(order.status);
-  const rider = order.rider ?? getSimulatedRiderPoint(order);
+  const rider = order.rider ?? null;
   const baseProgress = getTrackingProgress(status);
   let liveProgress = baseProgress;
 

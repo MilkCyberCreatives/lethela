@@ -13,6 +13,7 @@ type MenuItem = {
   priceCents: number;
   tags: string[];
   image: string | null;
+  isAlcohol: boolean;
   draft: boolean;
   updatedAt: string;
 };
@@ -35,6 +36,7 @@ type ItemFormState = {
   price: string;
   tags: string;
   image: string;
+  isAlcohol: boolean;
   draft: boolean;
 };
 
@@ -49,6 +51,7 @@ const emptyItem: ItemFormState = {
   price: "",
   tags: "",
   image: "",
+  isAlcohol: false,
   draft: false,
 };
 
@@ -60,6 +63,7 @@ function itemToForm(item: MenuItem): ItemFormState {
     price: (item.priceCents / 100).toFixed(2),
     tags: item.tags.join(", "),
     image: item.image || "",
+    isAlcohol: item.isAlcohol,
     draft: item.draft,
   };
 }
@@ -188,6 +192,7 @@ export default function MenuManager() {
             .map((tag) => tag.trim())
             .filter(Boolean),
           image: itemForm.image.trim() || null,
+          isAlcohol: itemForm.isAlcohol,
           draft: itemForm.draft,
         }),
       });
@@ -444,6 +449,16 @@ export default function MenuManager() {
                   setItemForm((current) => ({ ...current, description: event.target.value }))
                 }
               />
+              <label className="flex items-center gap-2 text-sm text-white/80 md:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={itemForm.isAlcohol}
+                  onChange={(event) =>
+                    setItemForm((current) => ({ ...current, isAlcohol: event.target.checked }))
+                  }
+                />
+                Liquor item (requires a verified vendor licence and customer age check)
+              </label>
               <label className="flex items-center gap-2 text-sm text-white/80 md:col-span-2">
                 <input
                   type="checkbox"

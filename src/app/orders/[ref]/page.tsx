@@ -41,7 +41,7 @@ type OrderPayload = {
   paymentStatus: string;
   createdAt: string;
   updatedAt?: string;
-  totalCents: number;
+  totalCents: number | null;
   items?: OrderItem[];
   vendor?: {
     name?: string;
@@ -304,10 +304,12 @@ export default function OrderTrackingPage() {
                 <div>
                   ETA: <span className="font-semibold text-white">{tracking.etaLabel}</span>
                 </div>
-                <div>
-                  Total:{" "}
-                  <span className="font-semibold text-white">{formatZAR(order.totalCents)}</span>
-                </div>
+                {order.totalCents != null ? (
+                  <div>
+                    Total:{" "}
+                    <span className="font-semibold text-white">{formatZAR(order.totalCents)}</span>
+                  </div>
+                ) : null}
               </div>
             </div>
 

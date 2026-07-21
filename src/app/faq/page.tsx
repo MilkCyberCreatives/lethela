@@ -31,11 +31,11 @@ const faq = [
   },
   {
     q: "Which areas are currently served?",
-    a: "Lethela is built for township delivery across South Africa. It is live in Klipfontein View first before expanding to more townships.",
+    a: "Lethela serves active delivery zones shown during checkout, starting with Klipfontein View and expanding across more South African townships.",
   },
   {
     q: "How does Lethela handle alcohol?",
-    a: "Liquor is a restricted 18+ category. It may only be sold by approved licensed vendors, and valid ID may be required on delivery.",
+    a: "The live Liquor category is restricted to customers aged 18 or older. Only approved vendors with a current licence may list liquor, checkout requires age confirmation, and the rider must verify acceptable ID at delivery.",
   },
   {
     q: "Are prices and delivery fees shown before I pay?",

@@ -90,6 +90,7 @@ export async function getSqliteCatalogProducts({
          FROM Product p
          INNER JOIN Vendor v ON v.id = p.vendorId
          WHERE p.inStock = 1
+           AND p.status = 'APPROVED'
            AND p.isAlcohol = 0
            AND v.isActive = 1
            AND v.status IN ('ACTIVE', 'APPROVED')
@@ -210,7 +211,7 @@ export async function getSqliteCatalogVendors({
            AVG(r.rating) AS averageRating,
            MAX(CASE WHEN p.isAlcohol = 1 THEN 1 ELSE 0 END) AS hasAlcohol
          FROM Vendor v
-         LEFT JOIN Product p ON p.vendorId = v.id AND p.inStock = 1 AND p.isAlcohol = 0
+         LEFT JOIN Product p ON p.vendorId = v.id AND p.inStock = 1 AND p.isAlcohol = 0 AND p.status = 'APPROVED'
          LEFT JOIN UserProductReview r ON r.vendorId = v.id
          WHERE v.isActive = 1
            AND v.status IN ('ACTIVE', 'APPROVED')
@@ -225,7 +226,7 @@ export async function getSqliteCatalogVendors({
            AND v.bankAccountName IS NOT NULL
            AND v.bankAccountNumber IS NOT NULL
            AND EXISTS (SELECT 1 FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0)
-           AND EXISTS (SELECT 1 FROM Product vp WHERE vp.vendorId = v.id AND vp.inStock = 1 AND vp.isAlcohol = 0)${clauses.sql}
+           AND EXISTS (SELECT 1 FROM Product vp WHERE vp.vendorId = v.id AND vp.inStock = 1 AND vp.isAlcohol = 0 AND vp.status = 'APPROVED')${clauses.sql}
          GROUP BY v.id
          ORDER BY v.updatedAt DESC
          LIMIT ?`,

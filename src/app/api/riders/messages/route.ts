@@ -14,7 +14,10 @@ export async function GET() {
   }
 
   const application = await prisma.riderApplication.findFirst({
-    where: { email: session.user.email.toLowerCase() },
+    where:
+      session.user.role === "ADMIN"
+        ? { email: session.user.email.toLowerCase() }
+        : { userId: session.user.id },
     orderBy: { updatedAt: "desc" },
     select: { id: true },
   });

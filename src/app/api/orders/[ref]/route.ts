@@ -3,6 +3,7 @@ import { getDemoOrderDetails, isDemoOrderRef } from "@/lib/demo-order";
 import { getOrderRealtimeChannel, verifyOrderTrackingToken } from "@/lib/order-tracking-access";
 import { buildTrackingSnapshot } from "@/lib/order-tracking";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
+import { auth } from "@/auth";
 
 type Params = { params: Promise<{ ref: string }> };
 
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest, { params }: Params) {
         ozowReference: true,
         status: true,
         paymentStatus: true,
+        userId: true,
         createdAt: true,
         updatedAt: true,
         customerLat: true,
@@ -62,10 +64,10 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const trackingToken =
     req.nextUrl.searchParams.get("t")?.trim() || req.headers.get("x-tracking-token")?.trim() || "";
-  const hasDetailedTracking = verifyOrderTrackingToken(
-    trackingToken,
-    order.ozowReference || order.publicId,
-  );
+  const session = await auth().catch(() => null);
+  const hasDetailedTracking =
+    verifyOrderTrackingToken(trackingToken, order.ozowReference || order.publicId) ||
+    Boolean(session?.user?.id && session.user.id === order.userId);
 
   const destination =
     order.customerLat != null && order.customerLng != null
@@ -116,19 +118,25 @@ export async function GET(req: NextRequest, { params }: Params) {
       paymentStatus: order.paymentStatus,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
-      totalCents: order.totalCents,
-      items,
+      totalCents: hasDetailedTracking ? order.totalCents : null,
+      items: hasDetailedTracking ? items : [],
       deliveryDetails: hasDetailedTracking ? deliveryDetails : null,
-      vendor: order.vendor,
+      vendor: {
+        name: order.vendor?.name,
+        suburb: order.vendor?.suburb,
+        city: order.vendor?.city,
+        latitude: hasDetailedTracking ? order.vendor?.latitude : null,
+        longitude: hasDetailedTracking ? order.vendor?.longitude : null,
+      },
       destination: hasDetailedTracking ? destination : null,
       rider:
-        hasDetailedTracking && (riderPoint || tracking.rider)
+        hasDetailedTracking && riderPoint
           ? {
-              lat: (riderPoint || tracking.rider)!.lat,
-              lng: (riderPoint || tracking.rider)!.lng,
+              lat: riderPoint.lat,
+              lng: riderPoint.lng,
               speed: order.riderSpeed,
               locatedAt: order.riderLocatedAt,
-              simulated: !riderPoint,
+              simulated: false,
             }
           : null,
       channel: hasDetailedTracking
