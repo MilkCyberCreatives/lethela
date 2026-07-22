@@ -152,22 +152,34 @@ export default function UserProfileForm() {
 
             <div className="grid gap-3">
               <div>
-                <label className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60">
+                <label
+                  htmlFor="profile-name"
+                  className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60"
+                >
                   Full name
                 </label>
                 <input
+                  id="profile-name"
+                  name="name"
                   className="w-full rounded bg-white px-3 py-2 text-black"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="Your full name"
+                  autoComplete="name"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60">
+                <label
+                  htmlFor="profile-email"
+                  className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60"
+                >
                   Email
                 </label>
                 <input
+                  id="profile-email"
+                  name="email"
+                  type="email"
                   className="w-full rounded bg-white/90 px-3 py-2 text-black"
                   value={profile?.email || ""}
                   readOnly
@@ -175,10 +187,16 @@ export default function UserProfileForm() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60">
+                <label
+                  htmlFor="profile-phone"
+                  className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60"
+                >
                   Mobile number
                 </label>
                 <input
+                  id="profile-phone"
+                  name="phone"
+                  type="tel"
                   className="w-full rounded bg-white px-3 py-2 text-black"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
@@ -187,10 +205,16 @@ export default function UserProfileForm() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60">
+                <label
+                  htmlFor="profile-image"
+                  className="mb-1 block text-xs uppercase tracking-[0.12em] text-white/60"
+                >
                   Profile photo URL
                 </label>
                 <input
+                  id="profile-image"
+                  name="image"
+                  type="url"
                   className="w-full rounded bg-white px-3 py-2 text-black"
                   value={image}
                   onChange={(event) => setImage(event.target.value)}

@@ -1,26 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-
-const RiderRegisterSchema = z
-  .object({
-    fullName: z.string().trim().min(2).max(120),
-    email: z
-      .string()
-      .email()
-      .transform((value) => value.trim().toLowerCase()),
-    phone: z.string().trim().min(8).max(30),
-    password: z.string().min(8).max(200),
-    confirmPassword: z.string().min(8).max(200),
-    acceptTerms: z.literal(true),
-  })
-  .refine((value) => value.password === value.confirmPassword, {
-    path: ["confirmPassword"],
-    message: "Passwords do not match.",
-  });
+import { isUniqueConstraintError, MinimalRegistrationSchema } from "@/lib/registration-schema";
 
 export async function POST(req: Request) {
   const limited = await checkRateLimit({
@@ -37,7 +20,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const parsed = RiderRegisterSchema.safeParse(body);
+  const parsed = MinimalRegistrationSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       {
@@ -61,35 +44,43 @@ export async function POST(req: Request) {
   }
 
   const passwordHash = await hash(parsed.data.password, 12);
-  const result = await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        name: parsed.data.fullName,
-        email: parsed.data.email,
-        phone: parsed.data.phone,
-        passwordHash,
-        role: "RIDER",
-      },
-      select: { id: true, email: true, name: true, role: true },
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: parsed.data.email,
+          passwordHash,
+          role: "RIDER",
+        },
+        select: { id: true, email: true, name: true, role: true },
+      });
+      const profile = await tx.riderApplication.create({
+        data: {
+          id: randomUUID(),
+          userId: user.id,
+          fullName: "",
+          email: parsed.data.email,
+          phone: "",
+          status: "DRAFT",
+        },
+        select: { id: true, status: true },
+      });
+      return { user, profile };
     });
-    const profile = await tx.riderApplication.create({
-      data: {
-        id: randomUUID(),
-        userId: user.id,
-        fullName: parsed.data.fullName,
-        email: parsed.data.email,
-        phone: parsed.data.phone,
-        status: "DRAFT",
-      },
-      select: { id: true, status: true },
-    });
-    return { user, profile };
-  });
 
-  return NextResponse.json({
-    ok: true,
-    ...result,
-    message: "Rider account created. Complete your profile in the dashboard.",
-    redirectTo: "/rider/dashboard",
-  });
+    return NextResponse.json({
+      ok: true,
+      ...result,
+      message: "Rider account created. Complete your profile in the dashboard.",
+      redirectTo: "/rider/dashboard/profile?welcome=1",
+    });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return NextResponse.json(
+        { ok: false, error: "We could not create this account. Try signing in instead." },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
 }
