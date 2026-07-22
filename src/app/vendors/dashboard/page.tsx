@@ -68,7 +68,9 @@ const AdvancedAutomationsPanel = dynamic(
   },
 );
 
-type SearchParams = Promise<{ tab?: string }> | { tab?: string };
+type SearchParams =
+  | Promise<{ tab?: string; welcome?: string }>
+  | { tab?: string; welcome?: string };
 type DashboardTab =
   | "overview"
   | "analytics"
@@ -641,6 +643,21 @@ export default async function VendorDashboardPage({
       break;
     default:
       break;
+  }
+
+  if (resolved.welcome === "1") {
+    content = (
+      <div className="grid gap-4">
+        <div className="rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-4 text-sm text-emerald-50">
+          <p className="font-semibold">Your vendor account is ready.</p>
+          <p className="mt-1 text-emerald-50/75">
+            Add your store details here. Your draft stays private until the approval checklist is
+            complete.
+          </p>
+        </div>
+        {content}
+      </div>
+    );
   }
 
   return (

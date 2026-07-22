@@ -13,7 +13,8 @@ export default function RiderPage() {
   return (
     <AuthShell
       title="Create your rider account"
-      supportingText="Create your account first. Complete your rider details after signing in."
+      supportingText="Use your email and a secure password now. Complete rider setup in your dashboard."
+      compact
     >
       <RiderSignupForm />
     </AuthShell>
