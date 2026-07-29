@@ -1,25 +1,8 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
-import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-
-const RegisterSchema = z
-  .object({
-    name: z.string().trim().min(1).max(120),
-    email: z
-      .string()
-      .email()
-      .transform((value) => value.trim().toLowerCase()),
-    phone: z.string().trim().min(8).max(30),
-    password: z.string().min(8).max(200),
-    confirmPassword: z.string().min(8).max(200),
-    acceptTerms: z.literal(true),
-  })
-  .refine((value) => value.password === value.confirmPassword, {
-    path: ["confirmPassword"],
-    message: "Passwords do not match.",
-  });
+import { isUniqueConstraintError, MinimalRegistrationSchema } from "@/lib/registration-schema";
 
 export async function POST(req: Request) {
   const rateLimit = await checkRateLimit({
@@ -36,12 +19,12 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const parsed = RegisterSchema.safeParse(body);
+  const parsed = MinimalRegistrationSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, email: normalizedEmail, phone, password } = parsed.data;
+  const { email: normalizedEmail, password } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (existing) {
@@ -52,21 +35,29 @@ export async function POST(req: Request) {
   }
 
   const passwordHash = await hash(password, 12);
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email: normalizedEmail,
-      phone,
-      passwordHash,
-      role: "CUSTOMER",
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-    },
-  });
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        passwordHash,
+        role: "CUSTOMER",
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+      },
+    });
 
-  return NextResponse.json({ ok: true, user });
+    return NextResponse.json({ ok: true, user, redirectTo: "/profile?welcome=1" });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return NextResponse.json(
+        { ok: false, error: "We could not create this account. Try signing in instead." },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
 }

@@ -13,7 +13,8 @@ export default function VendorRegisterPage() {
   return (
     <AuthShell
       title="Create your vendor account"
-      supportingText="Start with your basic details. Complete your store profile after signing in."
+      supportingText="Use your email and a secure password now. Build your store profile in the dashboard."
+      compact
     >
       <VendorSignupForm />
     </AuthShell>

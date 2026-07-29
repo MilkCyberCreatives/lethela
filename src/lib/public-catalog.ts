@@ -14,6 +14,7 @@ type PublicVendorSource = {
   status?: string | null;
   isActive?: boolean | null;
   phone?: string | null;
+  email?: string | null;
   address?: string | null;
   suburb?: string | null;
   city?: string | null;
@@ -28,19 +29,27 @@ type PublicVendorSource = {
   bankAccountName?: string | null;
   bankAccountNumber?: string | null;
   bankBranchCode?: string | null;
+  temporaryClosed?: boolean | null;
+  liquorLicenceUrl?: string | null;
+  liquorLicenceExpiry?: Date | string | null;
+  liquorVerificationStatus?: string | null;
   _count?: { products?: number; items?: number; hours?: number };
   products?: Array<{ isAlcohol?: boolean | null }>;
   reviews?: Array<{ rating?: number | null }>;
+};
+
+type PublicProductVendorSource = Partial<PublicVendorSource> & {
+  name?: string | null;
+  slug?: string | null;
 };
 
 type PublicProductSource = {
   id?: string | null;
   name: string;
   status?: string | null;
-  vendor?: {
-    name?: string | null;
-    slug?: string | null;
-  } | null;
+  inStock?: boolean | null;
+  isAlcohol?: boolean | null;
+  vendor?: PublicProductVendorSource | null;
   vendorName?: string | null;
   vendorSlug?: string | null;
 };
@@ -76,6 +85,31 @@ export function isPublicCatalogProduct(source: PublicProductSource) {
   if (source.status && source.status !== "APPROVED") return false;
   if (id.startsWith("demo-") || name.startsWith("demo ")) return false;
   return isPublicCatalogVendor({ name: vendorName, slug: vendorSlug });
+}
+
+export function isPublicMarketplaceProduct(source: PublicProductSource) {
+  if (!isPublicCatalogProduct(source) || source.inStock === false) return false;
+  if (
+    !source.vendor?.id ||
+    !source.vendor.name ||
+    !source.vendor.slug ||
+    source.vendor.temporaryClosed
+  ) {
+    return false;
+  }
+  if (!isPublicMarketplaceVendor(source.vendor as PublicVendorSource)) return false;
+  if (!source.isAlcohol) return true;
+
+  const expiryValue = source.vendor.liquorLicenceExpiry;
+  const expiry =
+    expiryValue instanceof Date ? expiryValue : expiryValue ? new Date(expiryValue) : null;
+  return Boolean(
+    source.vendor.liquorVerificationStatus === "APPROVED" &&
+      source.vendor.liquorLicenceUrl &&
+      expiry &&
+      Number.isFinite(expiry.getTime()) &&
+      expiry.getTime() > Date.now(),
+  );
 }
 
 export function parseCuisineList(value: unknown) {

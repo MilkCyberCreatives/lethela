@@ -54,6 +54,13 @@ export default function MainHeader() {
       "/cookie-policy",
       "/paia-manual",
       "/owner-access",
+      "/signin",
+      "/signup",
+      "/forgot-password",
+      "/reset-password",
+      "/vendors/signin",
+      "/vendors/register",
+      "/rider",
     ].some((route) => pathname === route || pathname.startsWith(`${route}/`));
 
   if (portal) {

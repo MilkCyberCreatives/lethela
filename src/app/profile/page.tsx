@@ -13,7 +13,12 @@ export const metadata: Metadata = buildNoIndexMetadata({
   path: "/profile",
 });
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }> | { welcome?: string };
+}) {
+  const resolved = await Promise.resolve(searchParams);
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/signin?callbackUrl=/profile");
@@ -21,6 +26,14 @@ export default async function ProfilePage() {
 
   return (
     <PageShell>
+      {resolved.welcome === "1" ? (
+        <div className="mb-6 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-4 text-sm text-emerald-50">
+          <p className="font-semibold">Your account is ready.</p>
+          <p className="mt-1 text-emerald-50/75">
+            Add your name and mobile number now, or return whenever you are ready.
+          </p>
+        </div>
+      ) : null}
       <div className="mb-6 max-w-2xl">
         <p className="text-xs uppercase tracking-[0.14em] text-white/60">Account</p>
         <h1 className="mt-2 text-3xl font-semibold">User profile</h1>

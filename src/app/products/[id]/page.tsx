@@ -11,7 +11,7 @@ import StructuredData from "@/components/StructuredData";
 import { getFallbackProducts } from "@/lib/catalog-fallback";
 import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
 import { formatZAR } from "@/lib/format";
-import { isPublicCatalogProduct, isPublicMarketplaceVendor } from "@/lib/public-catalog";
+import { isPublicMarketplaceProduct } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { buildPageMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
@@ -47,7 +47,10 @@ const getProduct = cache(async (id: string) => {
             id: true,
             name: true,
             slug: true,
+            email: true,
             deliveryFee: true,
+            etaMins: true,
+            cuisine: true,
             status: true,
             isActive: true,
             phone: true,
@@ -65,6 +68,7 @@ const getProduct = cache(async (id: string) => {
             bankAccountName: true,
             bankAccountNumber: true,
             bankBranchCode: true,
+            temporaryClosed: true,
             liquorLicenceUrl: true,
             liquorLicenceExpiry: true,
             liquorVerificationStatus: true,
@@ -75,23 +79,16 @@ const getProduct = cache(async (id: string) => {
     }),
   ).catch(() => null);
 
-  if (!product || !isPublicCatalogProduct(product)) return fallback;
-  if (
-    !isPublicMarketplaceVendor({
+  if (!product) return fallback;
+  const publicProduct = {
+    ...product,
+    inStock: true,
+    vendor: {
       ...product.vendor,
       _count: { ...product.vendor._count, products: 1 },
-    })
-  )
-    return null;
-  if (
-    product.isAlcohol &&
-    (product.vendor.liquorVerificationStatus !== "APPROVED" ||
-      !product.vendor.liquorLicenceUrl ||
-      !product.vendor.liquorLicenceExpiry ||
-      product.vendor.liquorLicenceExpiry.getTime() <= Date.now())
-  )
-    return null;
-  return product;
+    },
+  };
+  return isPublicMarketplaceProduct(publicProduct) ? product : fallback;
 });
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

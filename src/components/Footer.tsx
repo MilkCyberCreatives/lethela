@@ -42,11 +42,32 @@ const LEGAL_LINKS = [
   { href: "/contact", label: "Contact & Support" },
 ] as const;
 
-export default function Footer() {
+export default function Footer({ compact = false }: { compact?: boolean }) {
   const whatsappLink = `https://wa.me/${getOrderWhatsAppPhone()}`;
   const socialLinks = getFooterSocialLinks();
   const socialByKey = new Map(socialLinks.map((item) => [item.key, item]));
   const visibleSocials = POPULAR_SOCIALS.filter((item) => socialByKey.has(item.key));
+
+  if (compact) {
+    return (
+      <footer className="shrink-0 border-t border-white/10 bg-lethela-secondary text-white">
+        <div className="container flex min-h-12 flex-wrap items-center justify-center gap-x-4 gap-y-1 py-2 text-center text-[11px] text-white/65 sm:justify-between sm:text-left">
+          <p>&copy; {new Date().getFullYear()} Lethela</p>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy-policy" className="hover:text-white">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-white">
+              Terms
+            </Link>
+            <button type="button" onClick={reopenCookieConsent} className="hover:text-white">
+              Cookies
+            </button>
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="mt-auto border-t border-white/10 bg-lethela-secondary">
