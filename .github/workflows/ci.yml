@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DATABASE_PROVIDER: sqlite
+      DATABASE_URL: file:./ci.db
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ci-only-nextauth-secret-not-for-production
+      VENDOR_SESSION_SECRET: ci-only-vendor-secret
+      RIDER_CONSOLE_SECRET: ci-only-rider-secret
+      ADMIN_APPROVAL_KEY: ci-only-admin-key
+      BANK_DATA_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      ALLOW_DEV_ADMIN_BYPASS: "false"
+      DEMO_CATALOG_MODE: "false"
+      ALLOW_PUBLIC_DEMO_ORDER: "false"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run regression tests
+        run: npm test
+
+      - name: Check TypeScript
+        run: npm run typecheck
+
+      - name: Check lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Build production application
+        run: npm run build

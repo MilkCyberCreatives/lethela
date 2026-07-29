@@ -5,12 +5,14 @@ import { prisma } from "@/server/db";
 import { passwordResetFingerprint, readPasswordResetToken } from "@/lib/password-reset";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { recordAuthSecurityEvent } from "@/lib/auth-security";
+import { AccountPasswordSchema } from "@/lib/registration-schema";
+import { emailAddressesMatch } from "@/lib/identity";
 
 const BodySchema = z
   .object({
     token: z.string().min(1),
-    password: z.string().min(8).max(200),
-    confirmPassword: z.string().min(8).max(200),
+    password: AccountPasswordSchema,
+    confirmPassword: AccountPasswordSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
     select: { id: true, email: true, passwordHash: true },
   });
 
-  if (!user?.passwordHash || user.email.toLowerCase() !== payload.email.toLowerCase()) {
+  if (!user?.passwordHash || !emailAddressesMatch(user.email, payload.email)) {
     return NextResponse.json(
       { ok: false, error: "Reset link is invalid or expired." },
       { status: 400 },

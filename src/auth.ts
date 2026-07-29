@@ -14,6 +14,7 @@ import {
   type AppRole,
 } from "@/lib/auth-security";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { NormalizedEmailSchema } from "@/lib/identity";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -47,7 +48,7 @@ declare module "next-auth/jwt" {
 }
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: NormalizedEmailSchema,
   password: z.string().min(8).max(200),
 });
 

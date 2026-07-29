@@ -13,6 +13,7 @@
     "test": "node --import tsx --test tests/**/*.test.ts",
     "smoke": "node scripts/smoke-site.mjs",
     "check:production-env": "node scripts/check-production-env.mjs",
+    "check:security-env": "node scripts/check-security-env.mjs",
     "check:operating-readiness": "node scripts/check-operating-readiness.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -25,7 +26,8 @@
     "db:deploy": "node scripts/prisma-run.mjs migrate deploy",
     "db:push": "node scripts/prisma-run.mjs db push",
     "db:studio": "node scripts/prisma-run.mjs studio",
-    "db:seed": "node scripts/seed-sqlite.mjs"
+    "db:seed": "node scripts/seed-sqlite.mjs",
+    "security:encrypt-bank-data": "node --import tsx scripts/encrypt-bank-account-numbers.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",

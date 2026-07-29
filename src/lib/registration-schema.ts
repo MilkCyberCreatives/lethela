@@ -1,25 +1,23 @@
 import { z } from "zod";
+import { NormalizedEmailSchema } from "@/lib/identity";
 import {
   REGISTRATION_PASSWORD_MAX_LENGTH,
   REGISTRATION_PASSWORD_MIN_LENGTH,
   registrationPasswordFitsHashLimit,
 } from "@/lib/registration-policy";
 
+export const AccountPasswordSchema = z
+  .string()
+  .min(
+    REGISTRATION_PASSWORD_MIN_LENGTH,
+    `Use at least ${REGISTRATION_PASSWORD_MIN_LENGTH} characters.`,
+  )
+  .max(REGISTRATION_PASSWORD_MAX_LENGTH, "Password is too long.")
+  .refine(registrationPasswordFitsHashLimit, "Password is too long.");
+
 export const MinimalRegistrationSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .email("Enter a valid email address.")
-    .max(254)
-    .transform((value) => value.toLowerCase()),
-  password: z
-    .string()
-    .min(
-      REGISTRATION_PASSWORD_MIN_LENGTH,
-      `Use at least ${REGISTRATION_PASSWORD_MIN_LENGTH} characters.`,
-    )
-    .max(REGISTRATION_PASSWORD_MAX_LENGTH, "Password is too long.")
-    .refine(registrationPasswordFitsHashLimit, "Password is too long."),
+  email: NormalizedEmailSchema,
+  password: AccountPasswordSchema,
   acceptTerms: z.literal(true),
 });
 

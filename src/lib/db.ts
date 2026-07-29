@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { encryptBankAccountNumber } from "@/lib/bank-data";
 
 type DatabaseProvider = "sqlite" | "postgresql";
 
@@ -135,6 +136,37 @@ function redactDatabaseUrl(value: string) {
   }
 }
 
+function protectBankAccountField(value: unknown) {
+  if (Array.isArray(value)) {
+    value.forEach(protectBankAccountField);
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.bankAccountNumber === "string" && record.bankAccountNumber.trim()) {
+    record.bankAccountNumber = encryptBankAccountNumber(record.bankAccountNumber);
+  }
+}
+
+function addSensitiveDataMiddleware(client: PrismaClient) {
+  client.$use(async (params, next) => {
+    if (params.model !== "Vendor" && params.model !== "RiderApplication") {
+      return next(params);
+    }
+
+    if (["create", "createMany", "update", "updateMany"].includes(params.action)) {
+      protectBankAccountField(params.args?.data);
+    } else if (params.action === "upsert") {
+      protectBankAccountField(params.args?.create);
+      protectBankAccountField(params.args?.update);
+    }
+
+    return next(params);
+  });
+  return client;
+}
+
 if (process.env.NODE_ENV === "production") {
   console.info("[prisma-runtime]", {
     source: prismaRuntimeInfo.source,
@@ -149,14 +181,16 @@ if (process.env.NODE_ENV === "production") {
 
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient({
-    datasources: {
-      db: {
-        url: prismaRuntimeInfo.url,
+  addSensitiveDataMiddleware(
+    new PrismaClient({
+      datasources: {
+        db: {
+          url: prismaRuntimeInfo.url,
+        },
       },
-    },
-    log: ["warn", "error"], // add "query" if you want verbose SQL logs
-  });
+      log: ["warn", "error"], // add "query" if you want verbose SQL logs
+    }),
+  );
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
