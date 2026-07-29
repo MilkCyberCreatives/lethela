@@ -68,9 +68,7 @@ function aad(id: KeyId) {
   return Buffer.from(`${CONTEXT}:${id}`, "utf8");
 }
 
-export function isEncryptedBankAccountNumber(
-  value: string | null | undefined,
-) {
+export function isEncryptedBankAccountNumber(value: string | null | undefined) {
   return Boolean(value?.startsWith(`${FORMAT_PREFIX}:`));
 }
 
@@ -149,8 +147,6 @@ export function encryptBankAccountNumber(value: string) {
   ].join(":");
 }
 
-export function bankDataUsesDedicatedKey(
-  value: string | null | undefined,
-) {
+export function bankDataUsesDedicatedKey(value: string | null | undefined) {
   return Boolean(value?.startsWith(`${FORMAT_PREFIX}:bank:`));
 }

@@ -26,7 +26,8 @@ function parseEnvFile(contents) {
 function loadValues(fileArg) {
   if (!fileArg) return { values: { ...process.env }, source: "process.env" };
   const filePath = path.resolve(process.cwd(), fileArg);
-  if (!fs.existsSync(filePath)) throw new Error(`Env file not found: ${filePath}`);
+  if (!fs.existsSync(filePath))
+    throw new Error(`Env file not found: ${filePath}`);
   return {
     values: parseEnvFile(fs.readFileSync(filePath, "utf8")),
     source: filePath,
@@ -46,9 +47,7 @@ const errors = [];
 const warnings = [];
 
 for (const key of ["NEXT_PUBLIC_SITE_URL", "NEXTAUTH_URL"]) {
-  const value = String(values[key] || "")
-    .trim()
-    .replace(/\/+$/, "");
+  const value = String(values[key] || "").trim().replace(/\/+$/, "");
   if (value !== CANONICAL_SITE_URL) {
     errors.push(`${key}: must be exactly ${CANONICAL_SITE_URL}.`);
   }
