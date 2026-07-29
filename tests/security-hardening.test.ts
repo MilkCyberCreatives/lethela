@@ -46,6 +46,8 @@ test("tampered bank ciphertext is rejected", () => {
   process.env.BANK_DATA_ENCRYPTION_KEY = Buffer.alloc(32, 9).toString("base64");
   const encrypted = encryptBankAccountNumber("1234567890");
   const parts = encrypted.split(":");
-  parts[5] = `${parts[5].slice(0, -1)}${parts[5].endsWith("A") ? "B" : "A"}`;
+  const tag = Buffer.from(parts[4], "base64url");
+  tag[0] ^= 1;
+  parts[4] = tag.toString("base64url");
   assert.throws(() => decryptBankAccountNumber(parts.join(":")));
 });
