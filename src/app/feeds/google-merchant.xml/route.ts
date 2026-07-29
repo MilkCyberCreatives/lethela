@@ -5,7 +5,7 @@ import {
   shouldFallbackWhenCatalogEmpty,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
-import { isPublicCatalogVendor } from "@/lib/public-catalog";
+import { isPublicMarketplaceProduct } from "@/lib/public-catalog";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 
@@ -39,13 +39,41 @@ export async function GET() {
               isActive: true,
               status: { in: ["ACTIVE", "APPROVED"] },
               temporaryClosed: false,
+              hours: { some: { closed: false } },
             },
           },
           include: {
             vendor: {
               select: {
+                id: true,
                 name: true,
                 slug: true,
+                email: true,
+                status: true,
+                isActive: true,
+                phone: true,
+                address: true,
+                suburb: true,
+                city: true,
+                province: true,
+                municipality: true,
+                township: true,
+                sectionArea: true,
+                cuisine: true,
+                storeType: true,
+                kycIdUrl: true,
+                kycProofUrl: true,
+                bankName: true,
+                bankAccountName: true,
+                bankAccountNumber: true,
+                bankBranchCode: true,
+                temporaryClosed: true,
+                liquorLicenceUrl: true,
+                liquorLicenceExpiry: true,
+                liquorVerificationStatus: true,
+                deliveryFee: true,
+                etaMins: true,
+                _count: { select: { products: true, items: true, hours: true } },
               },
             },
           },
@@ -57,11 +85,7 @@ export async function GET() {
 
   const products =
     dbProducts.length > 0
-      ? dbProducts.filter((product) =>
-          product.vendor
-            ? isPublicCatalogVendor({ name: product.vendor.name, slug: product.vendor.slug })
-            : true,
-        )
+      ? dbProducts.filter((product) => isPublicMarketplaceProduct(product))
       : preferFallback || shouldFallbackWhenCatalogEmpty()
         ? getFallbackProducts()
             .slice(0, 5000)
@@ -77,9 +101,7 @@ export async function GET() {
 
   const itemsXml = products
     .map((product) => {
-      const url = product.vendor?.slug
-        ? absoluteUrl(`/vendors/${product.vendor.slug}`)
-        : absoluteUrl("/");
+      const url = absoluteUrl(`/products/${encodeURIComponent(product.id)}`);
       const title = xmlEscape(product.name);
       const description = xmlEscape(
         product.description || `${product.name} from ${product.vendor?.name || SITE_NAME}`,
