@@ -56,9 +56,15 @@ for (const key of ["NEXT_PUBLIC_SITE_URL", "NEXTAUTH_URL"]) {
 
 const bankKey = String(values.BANK_DATA_ENCRYPTION_KEY || "").trim();
 if (!bankKey) {
-  errors.push(
-    "BANK_DATA_ENCRYPTION_KEY: generate a dedicated 32-byte key before the production banking migration.",
-  );
+  if (!String(values.NEXTAUTH_SECRET || "").trim()) {
+    errors.push(
+      "BANK_DATA_ENCRYPTION_KEY or NEXTAUTH_SECRET: one protected server secret is required for bank data encryption.",
+    );
+  } else {
+    warnings.push(
+      "BANK_DATA_ENCRYPTION_KEY: not configured; banking data will use a key derived from NEXTAUTH_SECRET until a dedicated key is added.",
+    );
+  }
 } else {
   try {
     if (decodeKey(bankKey).length !== 32) {

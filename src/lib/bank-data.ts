@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 
 const FORMAT_PREFIX = "enc:v1";
 const CONTEXT = "lethela:bank-account-data:v1";
-type KeyId = "bank" | "dev";
+type KeyId = "bank" | "auth" | "dev";
 
 type ResolvedKey = {
   id: KeyId;
@@ -45,6 +45,12 @@ function keyForId(id: KeyId): ResolvedKey {
     return { id, key: decodeDedicatedKey(configured) };
   }
 
+  if (id === "auth") {
+    const secret = process.env.NEXTAUTH_SECRET?.trim();
+    if (!secret) throw new Error("NEXTAUTH_SECRET is required to decrypt transitional bank data.");
+    return { id, key: deriveKey(secret, id) };
+  }
+
   if (process.env.NODE_ENV === "production") {
     throw new Error("Development bank encryption keys are not valid in production.");
   }
@@ -55,9 +61,12 @@ function activeKey(): ResolvedKey {
   const dedicated = process.env.BANK_DATA_ENCRYPTION_KEY?.trim();
   if (dedicated) return { id: "bank", key: decodeDedicatedKey(dedicated) };
 
+  const authSecret = process.env.NEXTAUTH_SECRET?.trim();
+  if (authSecret) return { id: "auth", key: deriveKey(authSecret, "auth") };
+
   if (process.env.NODE_ENV !== "production") return keyForId("dev");
   throw new Error(
-    "BANK_DATA_ENCRYPTION_KEY must be configured before banking details can be saved.",
+    "NEXTAUTH_SECRET or BANK_DATA_ENCRYPTION_KEY must be configured before banking details can be saved.",
   );
 }
 
@@ -89,7 +98,7 @@ export function decryptBankAccountNumber(value: string) {
 
   const [prefix, version, keyIdValue, ivValue, tagValue, encryptedValue] = normalized.split(":");
   if (prefix !== "enc" || version !== "v1") throw new Error("Unsupported bank data format.");
-  if (!(["bank", "dev"] as const).includes(keyIdValue as KeyId)) {
+  if (!(["bank", "auth", "dev"] as const).includes(keyIdValue as KeyId)) {
     throw new Error("Unsupported bank data key identifier.");
   }
 

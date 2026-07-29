@@ -11,12 +11,15 @@ import { AccountPasswordSchema } from "../src/lib/registration-schema";
 
 const originalBankKey = process.env.BANK_DATA_ENCRYPTION_KEY;
 const originalAuthSecret = process.env.NEXTAUTH_SECRET;
+const originalNodeEnv = process.env.NODE_ENV;
 
 function restoreEnvironment() {
   if (originalBankKey === undefined) delete process.env.BANK_DATA_ENCRYPTION_KEY;
   else process.env.BANK_DATA_ENCRYPTION_KEY = originalBankKey;
   if (originalAuthSecret === undefined) delete process.env.NEXTAUTH_SECRET;
   else process.env.NEXTAUTH_SECRET = originalAuthSecret;
+  if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+  else process.env.NODE_ENV = originalNodeEnv;
 }
 
 test.after(restoreEnvironment);
@@ -40,6 +43,16 @@ test("bank account values use authenticated encryption and retain only a display
   assert.equal(encrypted.includes("001234567890"), false);
   assert.equal(bankAccountLast4(encrypted), "7890");
   assert.equal(decryptBankAccountNumber(encrypted), "001234567890");
+});
+
+test("production can use the protected authentication secret as a transitional bank key", () => {
+  delete process.env.BANK_DATA_ENCRYPTION_KEY;
+  process.env.NEXTAUTH_SECRET = "a-long-production-authentication-secret";
+  process.env.NODE_ENV = "production";
+
+  const encrypted = encryptBankAccountNumber("1234567890");
+  assert.match(encrypted, /^enc:v1:auth:/);
+  assert.equal(decryptBankAccountNumber(encrypted), "1234567890");
 });
 
 test("tampered bank ciphertext is rejected", () => {
