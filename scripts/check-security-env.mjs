@@ -26,8 +26,7 @@ function parseEnvFile(contents) {
 function loadValues(fileArg) {
   if (!fileArg) return { values: { ...process.env }, source: "process.env" };
   const filePath = path.resolve(process.cwd(), fileArg);
-  if (!fs.existsSync(filePath))
-    throw new Error(`Env file not found: ${filePath}`);
+  if (!fs.existsSync(filePath)) throw new Error(`Env file not found: ${filePath}`);
   return {
     values: parseEnvFile(fs.readFileSync(filePath, "utf8")),
     source: filePath,
@@ -47,7 +46,9 @@ const errors = [];
 const warnings = [];
 
 for (const key of ["NEXT_PUBLIC_SITE_URL", "NEXTAUTH_URL"]) {
-  const value = String(values[key] || "").trim().replace(/\/+$/, "");
+  const value = String(values[key] || "")
+    .trim()
+    .replace(/\/+$/, "");
   if (value !== CANONICAL_SITE_URL) {
     errors.push(`${key}: must be exactly ${CANONICAL_SITE_URL}.`);
   }
@@ -64,16 +65,12 @@ if (!bankKey) {
       errors.push("BANK_DATA_ENCRYPTION_KEY: must decode to exactly 32 bytes.");
     }
   } catch {
-    errors.push(
-      "BANK_DATA_ENCRYPTION_KEY: must be valid base64, base64url, or 64-character hex.",
-    );
+    errors.push("BANK_DATA_ENCRYPTION_KEY: must be valid base64, base64url, or 64-character hex.");
   }
 }
 
 if (!String(values.SUPABASE_PRIVATE_BUCKET || "").trim()) {
-  warnings.push(
-    "SUPABASE_PRIVATE_BUCKET: private KYC and licence storage is not configured.",
-  );
+  warnings.push("SUPABASE_PRIVATE_BUCKET: private KYC and licence storage is not configured.");
 }
 
 console.log(`Checking Lethela security environment from ${source}`);
@@ -85,8 +82,6 @@ if (errors.length) {
   process.exitCode = 1;
 } else {
   console.log(
-    warnings.length
-      ? `Result: PASS with ${warnings.length} warning(s).`
-      : "Result: PASS.",
+    warnings.length ? `Result: PASS with ${warnings.length} warning(s).` : "Result: PASS.",
   );
 }
