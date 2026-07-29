@@ -8,12 +8,10 @@ import {
   sendPasswordResetEmail,
 } from "@/lib/password-reset";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { NormalizedEmailSchema } from "@/lib/identity";
 
 const BodySchema = z.object({
-  email: z
-    .string()
-    .email()
-    .transform((value) => value.toLowerCase().trim()),
+  email: NormalizedEmailSchema,
 });
 
 export async function POST(req: NextRequest) {

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getFallbackProducts, getFallbackVendorCards } from "@/lib/catalog-fallback";
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
-import { isPublicMarketplaceVendor } from "@/lib/public-catalog";
+import { isPublicMarketplaceProduct, isPublicMarketplaceVendor } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { SITE_URL } from "@/lib/site";
 import { TOWNSHIP_CATEGORIES, categoryToSlug } from "@/lib/categories";
@@ -152,19 +152,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             bankAccountName: { not: null },
             bankAccountNumber: { not: null },
             hours: { some: { closed: false } },
-            products: { some: { inStock: true, isAlcohol: false, status: "APPROVED" } },
+            products: { some: { inStock: true, status: "APPROVED" } },
           },
           select: {
             id: true,
             name: true,
             slug: true,
+            email: true,
             updatedAt: true,
             status: true,
             isActive: true,
             phone: true,
             address: true,
+            suburb: true,
             city: true,
             province: true,
+            municipality: true,
+            township: true,
+            sectionArea: true,
             cuisine: true,
             storeType: true,
             kycIdUrl: true,
@@ -172,25 +177,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             bankName: true,
             bankAccountName: true,
             bankAccountNumber: true,
+            bankBranchCode: true,
+            temporaryClosed: true,
+            liquorLicenceUrl: true,
+            liquorLicenceExpiry: true,
+            liquorVerificationStatus: true,
             deliveryFee: true,
             etaMins: true,
-            _count: { select: { products: true, hours: true } },
+            _count: { select: { products: true, items: true, hours: true } },
           },
           orderBy: { updatedAt: "desc" },
           take: 5000,
         }),
       ).catch(() => []);
 
+  const publicVendorRows = vendorRows.filter((vendor) => isPublicMarketplaceVendor(vendor));
   const vendorRoutes: MetadataRoute.Sitemap =
-    vendorRows.length > 0
-      ? vendorRows
-          .filter((vendor) => isPublicMarketplaceVendor(vendor))
-          .map((vendor) => ({
-            url: `${SITE_URL}/vendors/${vendor.slug}`,
-            lastModified: vendor.updatedAt,
-            changeFrequency: "daily",
-            priority: 0.9,
-          }))
+    publicVendorRows.length > 0
+      ? publicVendorRows.map((vendor) => ({
+          url: `${SITE_URL}/vendors/${vendor.slug}`,
+          lastModified: vendor.updatedAt,
+          changeFrequency: "daily",
+          priority: 0.9,
+        }))
       : shouldPreferCatalogFallback()
         ? getFallbackVendorCards().map((vendor) => ({
             url: `${SITE_URL}/vendors/${vendor.slug}`,
@@ -200,32 +209,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           }))
         : [];
 
-  const productRows = shouldPreferCatalogFallback()
-    ? []
-    : await runBoundedDbQuery((db) =>
-        db.product.findMany({
-          where: {
-            inStock: true,
-            status: "APPROVED",
-            vendor: {
-              isActive: true,
-              status: { in: ["ACTIVE", "APPROVED"] },
-              temporaryClosed: false,
+  const publicVendorIds = publicVendorRows.map((vendor) => vendor.id);
+  const productRows =
+    shouldPreferCatalogFallback() || publicVendorIds.length === 0
+      ? []
+      : await runBoundedDbQuery((db) =>
+          db.product.findMany({
+            where: {
+              vendorId: { in: publicVendorIds },
+              inStock: true,
+              status: "APPROVED",
+              vendor: {
+                isActive: true,
+                status: { in: ["ACTIVE", "APPROVED"] },
+                temporaryClosed: false,
+              },
             },
-          },
-          select: { id: true, updatedAt: true },
-          orderBy: { updatedAt: "desc" },
-          take: 5000,
-        }),
-      ).catch(() => []);
+            select: {
+              id: true,
+              vendorId: true,
+              name: true,
+              status: true,
+              inStock: true,
+              isAlcohol: true,
+              updatedAt: true,
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 5000,
+          }),
+        ).catch(() => []);
+
+  const publicVendorsById = new Map(publicVendorRows.map((vendor) => [vendor.id, vendor]));
   const productRoutes: MetadataRoute.Sitemap =
     productRows.length > 0
-      ? productRows.map((product) => ({
-          url: `${SITE_URL}/products/${encodeURIComponent(product.id)}`,
-          lastModified: product.updatedAt,
-          changeFrequency: "daily" as const,
-          priority: 0.75,
-        }))
+      ? productRows
+          .filter((product) =>
+            isPublicMarketplaceProduct({
+              ...product,
+              vendor: publicVendorsById.get(product.vendorId) || null,
+            }),
+          )
+          .map((product) => ({
+            url: `${SITE_URL}/products/${encodeURIComponent(product.id)}`,
+            lastModified: product.updatedAt,
+            changeFrequency: "daily" as const,
+            priority: 0.75,
+          }))
       : shouldPreferCatalogFallback()
         ? getFallbackProducts().map((product) => ({
             url: `${SITE_URL}/products/${encodeURIComponent(product.id)}`,
