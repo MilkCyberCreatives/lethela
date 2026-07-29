@@ -40,10 +40,7 @@ jobs:
         run: npm ci
 
       - name: Apply compatible npm security fixes
-        run: npm audit fix
-
-      - name: Verify production dependency audit
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit fix || true
 
       - name: Commit dependency updates
         run: |
@@ -56,6 +53,9 @@ jobs:
           git add package.json package-lock.json
           git commit -m "Apply compatible npm security fixes"
           git push origin HEAD:${{ github.head_ref }}
+
+      - name: Report remaining production advisories
+        run: npm audit --omit=dev --audit-level=high
 
   validate:
     name: Validate
