@@ -6,12 +6,38 @@ import Footer from "@/components/Footer";
 import StructuredData from "@/components/StructuredData";
 import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 
+const pageTitle = "Restaurant and Franchise Delivery Integration";
+const pageDescription =
+  "Lethela supports local restaurants, multi-branch food outlets and established brands with branch setup, menu sync, order routing, delivery zones and API-ready integrations.";
+const pageUrl = absoluteUrl("/restaurants");
+
 export const metadata: Metadata = {
-  title: "Restaurant and Franchise Delivery Integration | Lethela",
-  description:
-    "Lethela supports local restaurants, multi-branch food outlets and established brands with branch setup, menu sync, order routing, delivery zones and API-ready integrations.",
+  title: pageTitle,
+  description: pageDescription,
   alternates: {
     canonical: "/restaurants",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_ZA",
+    url: pageUrl,
+    siteName: SITE_NAME,
+    title: `${pageTitle} | ${SITE_NAME}`,
+    description: pageDescription,
+    images: [
+      {
+        url: absoluteUrl("/social-preview.png"),
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} restaurant and franchise delivery integration`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${pageTitle} | ${SITE_NAME}`,
+    description: pageDescription,
+    images: [absoluteUrl("/social-preview.png")],
   },
 };
 
@@ -30,7 +56,7 @@ const pageSchema = {
   "@context": "https://schema.org",
   "@type": "WebPage",
   name: "Restaurant and franchise delivery integration",
-  url: absoluteUrl("/restaurants"),
+  url: pageUrl,
   isPartOf: { "@id": `${SITE_URL}/#website` },
   about: ["Restaurant delivery", "Franchise delivery", "API integration"],
 };
