@@ -14,49 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dependency-fix:
-    name: Refresh secured dependency lockfile
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.head_ref == 'agent/production-hardening' &&
-      github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write
-    steps:
-      - name: Check out pull-request branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Use Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Resolve secured dependency tree
-        run: npm install
-
-      - name: Apply remaining compatible npm security fixes
-        run: npm audit fix || true
-
-      - name: Commit dependency updates
-        run: |
-          if git diff --quiet -- package.json package-lock.json; then
-            echo "Dependency manifest and lockfile are already current."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "Refresh secured dependency lockfile"
-          git push origin HEAD:${{ github.head_ref }}
-
-      - name: Report remaining production advisories
-        run: npm audit --omit=dev --audit-level=high
-
   validate:
     name: Validate
     runs-on: ubuntu-latest
