@@ -24,7 +24,8 @@ function buildChanges(rows: ProtectedRow[]) {
     const expected = isEncryptedBankAccountNumber(current)
       ? decryptBankAccountNumber(current)
       : current.replace(/\s+/g, "");
-    if (decrypted !== expected) throw new Error(`Encryption verification failed for record ${row.id}.`);
+    if (decrypted !== expected)
+      throw new Error(`Encryption verification failed for record ${row.id}.`);
 
     if (current === encrypted && bankDataUsesDedicatedKey(current)) return [];
     return [{ id: row.id, encrypted }];
@@ -60,7 +61,9 @@ async function main() {
   );
 
   if (!apply) {
-    console.log("Dry run complete. Re-run with --apply only after a verified database backup/restore test.");
+    console.log(
+      "Dry run complete. Re-run with --apply only after a verified database backup/restore test.",
+    );
     return;
   }
 

@@ -41,7 +41,10 @@ function deriveKey(secret: string, id: KeyId) {
 function keyForId(id: KeyId): ResolvedKey {
   if (id === "bank") {
     const configured = process.env.BANK_DATA_ENCRYPTION_KEY?.trim();
-    if (!configured) throw new Error("BANK_DATA_ENCRYPTION_KEY is required to decrypt bank data.");
+    if (!configured)
+      throw new Error(
+        "BANK_DATA_ENCRYPTION_KEY is required to decrypt bank data.",
+      );
     return { id, key: decodeDedicatedKey(configured) };
   }
 
@@ -56,14 +59,18 @@ function activeKey(): ResolvedKey {
   if (dedicated) return { id: "bank", key: decodeDedicatedKey(dedicated) };
 
   if (process.env.NODE_ENV !== "production") return keyForId("dev");
-  throw new Error("BANK_DATA_ENCRYPTION_KEY must be configured before banking details can be saved.");
+  throw new Error(
+    "BANK_DATA_ENCRYPTION_KEY must be configured before banking details can be saved.",
+  );
 }
 
 function aad(id: KeyId) {
   return Buffer.from(`${CONTEXT}:${id}`, "utf8");
 }
 
-export function isEncryptedBankAccountNumber(value: string | null | undefined) {
+export function isEncryptedBankAccountNumber(
+  value: string | null | undefined,
+) {
   return Boolean(value?.startsWith(`${FORMAT_PREFIX}:`));
 }
 
@@ -83,17 +90,24 @@ export function bankAccountLast4(value: string | null | undefined) {
 export function decryptBankAccountNumber(value: string) {
   const normalized = value.trim();
   if (!normalized) return "";
-  if (!isEncryptedBankAccountNumber(normalized)) return normalizeAccountNumber(normalized);
+  if (!isEncryptedBankAccountNumber(normalized))
+    return normalizeAccountNumber(normalized);
 
-  const [prefix, version, keyIdValue, ivValue, tagValue, encryptedValue] = normalized.split(":");
-  if (prefix !== "enc" || version !== "v1") throw new Error("Unsupported bank data format.");
+  const [prefix, version, keyIdValue, ivValue, tagValue, encryptedValue] =
+    normalized.split(":");
+  if (prefix !== "enc" || version !== "v1")
+    throw new Error("Unsupported bank data format.");
   if (!(["bank", "dev"] as const).includes(keyIdValue as KeyId)) {
     throw new Error("Unsupported bank data key identifier.");
   }
 
   const keyId = keyIdValue as KeyId;
   const { key } = keyForId(keyId);
-  const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(ivValue, "base64url"));
+  const decipher = crypto.createDecipheriv(
+    "aes-256-gcm",
+    key,
+    Buffer.from(ivValue, "base64url"),
+  );
   decipher.setAAD(aad(keyId));
   decipher.setAuthTag(Buffer.from(tagValue, "base64url"));
   const plaintext = Buffer.concat([
@@ -118,7 +132,10 @@ export function encryptBankAccountNumber(value: string) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", target.key, iv);
   cipher.setAAD(aad(target.id));
-  const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(plaintext, "utf8"),
+    cipher.final(),
+  ]);
   const tag = cipher.getAuthTag();
   const last4 = plaintext.replace(/\D/g, "").slice(-4) || plaintext.slice(-4);
 
@@ -132,6 +149,8 @@ export function encryptBankAccountNumber(value: string) {
   ].join(":");
 }
 
-export function bankDataUsesDedicatedKey(value: string | null | undefined) {
+export function bankDataUsesDedicatedKey(
+  value: string | null | undefined,
+) {
   return Boolean(value?.startsWith(`${FORMAT_PREFIX}:bank:`));
 }
