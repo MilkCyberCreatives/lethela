@@ -95,6 +95,14 @@ export async function POST(req: NextRequest) {
     if (adminCount === 0) {
       const allowedEmails = configuredBootstrapEmails();
       const sessionEmail = session.user.email?.trim().toLowerCase() || "";
+
+      if (process.env.NODE_ENV === "production" && allowedEmails.length === 0) {
+        return json(
+          { ok: false, error: "Owner bootstrap email allowlist is not configured." },
+          503,
+        );
+      }
+
       if (allowedEmails.length > 0 && !allowedEmails.includes(sessionEmail)) {
         return json(
           { ok: false, error: "This account is not authorised to initialise owner access." },
