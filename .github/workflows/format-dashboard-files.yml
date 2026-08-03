@@ -1,4 +1,4 @@
-name: Format dashboard files
+name: Remove completed dashboard formatter
 
 on:
   push:
@@ -6,13 +6,12 @@ on:
       - agent/dashboard-command-centre
     paths:
       - .github/workflows/format-dashboard-files.yml
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  format:
+  remove-workflow:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out dashboard branch
@@ -20,26 +19,10 @@ jobs:
         with:
           ref: agent/dashboard-command-centre
 
-      - name: Use Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Format changed dashboard files
-        run: npx prettier --write package.json src/app/api/admin/access/route.ts src/app/dashboard.css
-
-      - name: Commit formatting
+      - name: Remove completed temporary workflow
         run: |
-          if git diff --quiet -- package.json src/app/api/admin/access/route.ts src/app/dashboard.css; then
-            echo "Dashboard files already formatted."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json src/app/api/admin/access/route.ts src/app/dashboard.css
-          git commit -m "Format dashboard command-centre files [skip ci]"
+          git rm .github/workflows/format-dashboard-files.yml
+          git commit -m "Remove completed temporary formatter [skip ci]"
           git push origin HEAD:agent/dashboard-command-centre
