@@ -64,10 +64,7 @@ export async function POST(req: NextRequest) {
   const configuredKey = process.env.ADMIN_APPROVAL_KEY?.trim();
   const authSecret = process.env.NEXTAUTH_SECRET?.trim();
   if (!configuredKey || (process.env.NODE_ENV === "production" && !authSecret)) {
-    return json(
-      { ok: false, error: "Secure admin access is not fully configured." },
-      503,
-    );
+    return json({ ok: false, error: "Secure admin access is not fully configured." }, 503);
   }
 
   const body = await req.json().catch(() => ({}));

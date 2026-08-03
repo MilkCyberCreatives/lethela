@@ -14,8 +14,7 @@ body[data-lethela-dashboard] {
 
 body[data-lethela-dashboard] main {
   min-height: 100dvh;
-  background:
-    radial-gradient(circle at 88% 2%, rgba(225, 29, 72, 0.08), transparent 26rem),
+  background: radial-gradient(circle at 88% 2%, rgba(225, 29, 72, 0.08), transparent 26rem),
     var(--dashboard-canvas) !important;
   color: var(--dashboard-text) !important;
 }
@@ -45,8 +44,7 @@ body[data-lethela-dashboard="vendor"] main > section > div > aside,
 .dashboard-sidebar {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 24px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 38%),
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 38%),
     var(--dashboard-sidebar) !important;
   color: #fff !important;
   box-shadow: 0 24px 55px rgba(8, 13, 43, 0.22);
@@ -100,8 +98,18 @@ body[data-lethela-dashboard="vendor"] main > section > div > div:last-child,
 }
 
 /* Turn repeated dark panels into real workspace surfaces. */
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child :is(section, article, div)[class*="border-white/"],
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(section, article, div)[class*="border-white/"],
+body[data-lethela-dashboard="admin"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(section, article, div)[class*="border-white/"],
+body[data-lethela-dashboard="vendor"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(section, article, div)[class*="border-white/"],
 .dashboard-workspace :is(section, article, div)[class*="border-white/"] {
   border-color: var(--dashboard-border) !important;
   background: var(--dashboard-surface) !important;
@@ -109,8 +117,18 @@ body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(
   box-shadow: var(--dashboard-shadow);
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child :is(section, article, div)[class*="border-emerald"],
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(section, article, div)[class*="border-emerald"],
+body[data-lethela-dashboard="admin"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(section, article, div)[class*="border-emerald"],
+body[data-lethela-dashboard="vendor"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(section, article, div)[class*="border-emerald"],
 .dashboard-workspace :is(section, article, div)[class*="border-emerald"] {
   background: #f0fdf4 !important;
   border-color: #bbf7d0 !important;
@@ -118,16 +136,36 @@ body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(
   box-shadow: 0 12px 34px rgba(22, 101, 52, 0.08);
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child :is(section, article, div)[class*="border-amber"],
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(section, article, div)[class*="border-amber"],
+body[data-lethela-dashboard="admin"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(section, article, div)[class*="border-amber"],
+body[data-lethela-dashboard="vendor"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(section, article, div)[class*="border-amber"],
 .dashboard-workspace :is(section, article, div)[class*="border-amber"] {
   background: #fffbeb !important;
   border-color: #fde68a !important;
   color: #78350f !important;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child :is(section, article, div)[class*="border-red"],
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(section, article, div)[class*="border-red"],
+body[data-lethela-dashboard="admin"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(section, article, div)[class*="border-red"],
+body[data-lethela-dashboard="vendor"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(section, article, div)[class*="border-red"],
 .dashboard-workspace :is(section, article, div)[class*="border-red"] {
   background: #fff1f2 !important;
   border-color: #fecdd3 !important;
@@ -141,14 +179,34 @@ body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(
   letter-spacing: -0.025em;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child :is(p, span, div)[class*="text-white/"],
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(p, span, div)[class*="text-white/"],
+body[data-lethela-dashboard="admin"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(p, span, div)[class*="text-white/"],
+body[data-lethela-dashboard="vendor"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(p, span, div)[class*="text-white/"],
 .dashboard-workspace :is(p, span, div)[class*="text-white/"] {
   color: var(--dashboard-muted) !important;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child :is(p, span, div)[class~="text-white"],
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(p, span, div)[class~="text-white"],
+body[data-lethela-dashboard="admin"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(p, span, div)[class~="text-white"],
+body[data-lethela-dashboard="vendor"]
+  main
+  > section
+  > div
+  > div:last-child
+  :is(p, span, div)[class~="text-white"],
 .dashboard-workspace :is(p, span, div)[class~="text-white"] {
   color: var(--dashboard-text) !important;
 }
