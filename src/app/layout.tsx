@@ -4,11 +4,13 @@ import ConsentAnalytics from "@/components/ConsentAnalytics";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 import MarketingScripts from "@/components/MarketingScripts";
 import Providers from "@/components/Providers";
+import RouteThemeMarker from "@/components/RouteThemeMarker";
 import StructuredData from "@/components/StructuredData";
 import VisitorTelemetry from "@/components/VisitorTelemetry";
 import { getFooterSocialLinks, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 import "./globals.css";
+import "./dashboard.css";
 
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION?.trim();
@@ -170,6 +172,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-dvh bg-lethela-secondary text-white">
+        <RouteThemeMarker />
         <StructuredData data={globalSchema} />
         <MarketingScripts />
         <Providers>
