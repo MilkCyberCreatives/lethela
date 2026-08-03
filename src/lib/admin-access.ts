@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 export const ADMIN_ACCESS_COOKIE_NAME =
-  process.env.NODE_ENV === "production" ? "__Secure-lethela.admin-access" : "lethela.admin-access";
+  process.env.NODE_ENV === "production" ? "__Host-lethela.admin-access" : "lethela.admin-access";
 
 type AdminAccessPayload = {
   sub: string;
@@ -18,18 +18,22 @@ function base64UrlDecode(value: string) {
 
 function adminAccessSecret() {
   const adminKey = process.env.ADMIN_APPROVAL_KEY?.trim();
+  const authSecret = process.env.NEXTAUTH_SECRET?.trim();
   if (!adminKey) return "";
+  if (process.env.NODE_ENV === "production" && !authSecret) return "";
 
-  return `${process.env.NEXTAUTH_SECRET?.trim() || "lethela-admin-access"}:${adminKey}`;
+  return `${authSecret || "lethela-admin-access-development"}:${adminKey}`;
 }
 
 function signValue(value: string) {
-  return crypto.createHmac("sha256", adminAccessSecret()).update(value, "utf8").digest("base64url");
+  const secret = adminAccessSecret();
+  if (!secret) throw new Error("Secure admin access secrets are not configured.");
+  return crypto.createHmac("sha256", secret).update(value, "utf8").digest("base64url");
 }
 
 export function createAdminAccessToken(input: { userId: string; expiresInHours?: number }) {
   if (!adminAccessSecret()) {
-    throw new Error("ADMIN_APPROVAL_KEY is required.");
+    throw new Error("ADMIN_APPROVAL_KEY and NEXTAUTH_SECRET are required for secure admin access.");
   }
 
   const payload: AdminAccessPayload = {
