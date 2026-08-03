@@ -34,7 +34,7 @@ function readRiderTip(itemsJson: string | null | undefined) {
 }
 
 export async function GET() {
-  const session = await auth();
+  const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: "Sign in required." }, { status: 401 });
   }
@@ -43,13 +43,19 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: "Rider access required." }, { status: 403 });
   }
 
+  const sessionEmail = session.user.email?.trim().toLowerCase() || null;
+  const riderIdentityFilters = [
+    { userId: session.user.id },
+    ...(sessionEmail ? [{ email: sessionEmail }] : []),
+  ];
+
   const [user, application] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { id: true, name: true, email: true, role: true, image: true, createdAt: true },
     }),
     prisma.riderApplication.findFirst({
-      where: { OR: [{ userId: session.user.id }, { email: session.user.email.toLowerCase() }] },
+      where: { OR: riderIdentityFilters },
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,
@@ -149,7 +155,7 @@ export async function GET() {
         riderLocatedAt: order.riderLocatedAt,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
-        consoleUrl: safeConsoleUrl(ref, application!.id),
+        consoleUrl: application ? safeConsoleUrl(ref, application.id) : null,
       };
     }),
   });

@@ -11,6 +11,24 @@ const BodySchema = z.object({
   adminKey: z.string().trim().min(1),
 });
 
+const PRIVATE_HEADERS = {
+  "cache-control": "private, no-store, max-age=0, must-revalidate",
+  pragma: "no-cache",
+  expires: "0",
+  "x-robots-tag": "noindex, nofollow, noarchive, nosnippet",
+};
+
+function json(
+  body: Record<string, unknown>,
+  status = 200,
+  additionalHeaders: Record<string, string> = {},
+) {
+  return NextResponse.json(body, {
+    status,
+    headers: { ...PRIVATE_HEADERS, ...additionalHeaders },
+  });
+}
+
 function keysMatch(provided: string, expected: string) {
   const providedBuffer = Buffer.from(provided, "utf8");
   const expectedBuffer = Buffer.from(expected, "utf8");
@@ -21,6 +39,13 @@ function keysMatch(provided: string, expected: string) {
   );
 }
 
+function configuredBootstrapEmails() {
+  return (process.env.ADMIN_BOOTSTRAP_EMAILS || process.env.ADMIN_NOTIFICATION_EMAILS || "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export async function POST(req: NextRequest) {
   const rateLimit = await checkRateLimit({
     key: "admin-access",
@@ -29,41 +54,37 @@ export async function POST(req: NextRequest) {
     headers: req.headers,
   });
   if (!rateLimit.ok) {
-    return NextResponse.json(
+    return json(
       { ok: false, error: "Too many admin access attempts. Please try again later." },
-      { status: 429, headers: { "retry-after": String(rateLimit.retryAfterSec) } },
+      429,
+      { "retry-after": String(rateLimit.retryAfterSec) },
     );
   }
 
   const configuredKey = process.env.ADMIN_APPROVAL_KEY?.trim();
-  if (!configuredKey) {
-    return NextResponse.json(
-      { ok: false, error: "Admin approval key is not configured." },
-      { status: 400 },
-    );
+  const authSecret = process.env.NEXTAUTH_SECRET?.trim();
+  if (!configuredKey || (process.env.NODE_ENV === "production" && !authSecret)) {
+    return json({ ok: false, error: "Secure admin access is not fully configured." }, 503);
   }
 
   const body = await req.json().catch(() => ({}));
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { ok: false, error: "Enter a valid admin approval key." },
-      { status: 400 },
-    );
+    return json({ ok: false, error: "Enter a valid admin approval key." }, 400);
   }
 
   if (!keysMatch(parsed.data.adminKey, configuredKey)) {
-    return NextResponse.json({ ok: false, error: "Invalid admin approval key." }, { status: 401 });
+    return json({ ok: false, error: "Invalid admin approval key." }, 401);
   }
 
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
-    return NextResponse.json(
+    return json(
       {
         ok: false,
         error: "Sign in with an authorised staff account before entering the security key.",
       },
-      { status: 401 },
+      401,
     );
   }
   let promoted = false;
@@ -72,6 +93,23 @@ export async function POST(req: NextRequest) {
   if (!isAdminRole(session.user.role)) {
     const adminCount = await prisma.user.count({ where: { role: { in: ["OWNER", "ADMIN"] } } });
     if (adminCount === 0) {
+      const allowedEmails = configuredBootstrapEmails();
+      const sessionEmail = session.user.email?.trim().toLowerCase() || "";
+
+      if (process.env.NODE_ENV === "production" && allowedEmails.length === 0) {
+        return json(
+          { ok: false, error: "Owner bootstrap email allowlist is not configured." },
+          503,
+        );
+      }
+
+      if (allowedEmails.length > 0 && !allowedEmails.includes(sessionEmail)) {
+        return json(
+          { ok: false, error: "This account is not authorised to initialise owner access." },
+          403,
+        );
+      }
+
       await prisma.user.update({
         where: { id: session.user.id },
         data: { role: "OWNER", twoFactorEnabled: true, sessionVersion: { increment: 1 } },
@@ -80,9 +118,9 @@ export async function POST(req: NextRequest) {
       message =
         "Owner access enabled. Sign out and sign back in once to refresh your owner session.";
     } else {
-      return NextResponse.json(
+      return json(
         { ok: false, error: "This account is not authorised for the admin dashboard." },
-        { status: 403 },
+        403,
       );
     }
   }
@@ -94,7 +132,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const response = NextResponse.json({
+  const response = json({
     ok: true,
     promoted,
     message,
@@ -105,7 +143,7 @@ export async function POST(req: NextRequest) {
     createAdminAccessToken({ userId: session.user.id, expiresInHours: 8 }),
     {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 8 * 60 * 60,
@@ -116,10 +154,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE() {
-  const response = NextResponse.json({ ok: true });
+  const response = json({ ok: true });
   response.cookies.set(ADMIN_ACCESS_COOKIE_NAME, "", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 0,
