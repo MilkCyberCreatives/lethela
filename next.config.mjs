@@ -66,6 +66,47 @@ const contentSecurityPolicy = [
   .filter(Boolean)
   .join("; ");
 
+const privateRoutePatterns = [
+  "/admin/:path*",
+  "/owner-access",
+  "/vendors/dashboard/:path*",
+  "/rider/dashboard/:path*",
+  "/account/:path*",
+  "/profile/:path*",
+  "/api/admin/:path*",
+  "/api/vendor/:path*",
+  "/api/vendors/:path*",
+  "/api/riders/:path*",
+  "/api/me/:path*",
+  "/api/files/:path*",
+  "/api/storage/:path*",
+  "/api/upload/:path*",
+  "/api/payments/:path*",
+];
+
+const privateResponseHeaders = [
+  {
+    key: "Cache-Control",
+    value: "private, no-store, max-age=0, must-revalidate",
+  },
+  {
+    key: "Pragma",
+    value: "no-cache",
+  },
+  {
+    key: "Expires",
+    value: "0",
+  },
+  {
+    key: "X-Robots-Tag",
+    value: "noindex, nofollow, noarchive, nosnippet",
+  },
+  {
+    key: "Cross-Origin-Resource-Policy",
+    value: "same-origin",
+  },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
@@ -109,6 +150,10 @@ const nextConfig = {
           },
         ],
       },
+      ...privateRoutePatterns.map((source) => ({
+        source,
+        headers: privateResponseHeaders,
+      })),
     ];
   },
   experimental: {
