@@ -82,8 +82,7 @@ export default function PricingPage() {
             <p>First 50 approved vendors register for free.</p>
             <p>The first month is free.</p>
             <p>
-              1 July to 30 September 2026 pilot fee: 5% per completed order, capped at R5 per
-              order.
+              1 July to 30 September 2026 pilot fee: 5% per completed order, capped at R5 per order.
             </p>
             <p>No hidden charges. Vendors remain in control of their product prices.</p>
           </div>

@@ -144,9 +144,7 @@ export async function GET(req: NextRequest) {
   const publicMode = mode === "public";
   const publicSeverity = publicMode ? "required" : "recommended";
   const privateStorageConfigured =
-    hasStorageConfig() &&
-    storageProvider() === "supabase" &&
-    configured("SUPABASE_PRIVATE_BUCKET");
+    hasStorageConfig() && storageProvider() === "supabase" && configured("SUPABASE_PRIVATE_BUCKET");
 
   const checks = [
     item(

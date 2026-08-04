@@ -156,9 +156,7 @@ export default function MinimalSignupForm({ accountType }: { accountType: Accoun
       setNotice(data?.message || "A new verification email has been sent.");
     } catch (resendError) {
       setError(
-        resendError instanceof Error
-          ? resendError.message
-          : "Could not resend verification email.",
+        resendError instanceof Error ? resendError.message : "Could not resend verification email.",
       );
     } finally {
       setResending(false);
@@ -173,8 +171,8 @@ export default function MinimalSignupForm({ accountType }: { accountType: Accoun
           <div>
             <h2 className="font-semibold">Check your email</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              We sent a verification link to <span className="font-semibold">{email}</span>. Open
-              it within 24 hours, then sign in to continue your setup.
+              We sent a verification link to <span className="font-semibold">{email}</span>. Open it
+              within 24 hours, then sign in to continue your setup.
             </p>
           </div>
         </div>

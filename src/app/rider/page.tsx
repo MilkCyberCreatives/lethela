@@ -10,12 +10,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   openGraph: {
     title: "Create your rider account | Lethela",
-    description: "Join Lethela as a community rider and complete your private profile after signup.",
+    description:
+      "Join Lethela as a community rider and complete your private profile after signup.",
     url: "/rider",
   },
   twitter: {
     title: "Create your rider account | Lethela",
-    description: "Join Lethela as a community rider and complete your private profile after signup.",
+    description:
+      "Join Lethela as a community rider and complete your private profile after signup.",
   },
 };
 

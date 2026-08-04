@@ -13,7 +13,8 @@ type VerificationState = "sent" | "success" | "invalid" | "";
 const verificationMessages: Record<Exclude<VerificationState, "">, string> = {
   sent: "Check your email and open the verification link before signing in.",
   success: "Your email has been verified. You can sign in now.",
-  invalid: "That verification link is invalid or expired. Enter your email below and request a new one.",
+  invalid:
+    "That verification link is invalid or expired. Enter your email below and request a new one.",
 };
 
 export default function SignInForm() {
@@ -82,9 +83,7 @@ export default function SignInForm() {
       setResendNotice(data?.message || "A verification email has been sent.");
     } catch (resendError) {
       setError(
-        resendError instanceof Error
-          ? resendError.message
-          : "Could not resend verification email.",
+        resendError instanceof Error ? resendError.message : "Could not resend verification email.",
       );
     } finally {
       setResending(false);

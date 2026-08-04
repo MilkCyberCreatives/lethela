@@ -28,7 +28,14 @@ import {
 import { Button } from "@/components/ui/button";
 
 type DashboardView =
-  "overview" | "vendors" | "products" | "riders" | "users" | "orders" | "messages" | "operations";
+  | "overview"
+  | "vendors"
+  | "products"
+  | "riders"
+  | "users"
+  | "orders"
+  | "messages"
+  | "operations";
 
 const DASHBOARD_VIEWS: DashboardView[] = [
   "overview",

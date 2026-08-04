@@ -3,26 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-import {
-  escapeHtml,
-  sendResendEmail,
-  settleWithin,
-  splitCsv,
-} from "@/lib/notification-channels";
+import { escapeHtml, sendResendEmail, settleWithin, splitCsv } from "@/lib/notification-channels";
 
 const BodySchema = z.object({
   name: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(8).max(40),
   email: z.string().trim().email().max(200).optional().or(z.literal("")),
-  issueType: z.enum([
-    "ACTIVE_ORDER",
-    "PAYMENT",
-    "REFUND",
-    "ACCOUNT",
-    "VENDOR",
-    "RIDER",
-    "OTHER",
-  ]),
+  issueType: z.enum(["ACTIVE_ORDER", "PAYMENT", "REFUND", "ACCOUNT", "VENDOR", "RIDER", "OTHER"]),
   orderRef: z.string().trim().max(80).optional().default(""),
   description: z.string().trim().min(10).max(2000),
   evidenceUrl: z.string().trim().url().max(1000).optional().or(z.literal("")),

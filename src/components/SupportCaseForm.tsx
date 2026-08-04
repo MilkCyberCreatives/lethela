@@ -74,7 +74,13 @@ export default function SupportCaseForm() {
           />
         </Field>
         <Field label="Email address (optional)">
-          <input name="email" type="email" maxLength={200} autoComplete="email" className={inputClass} />
+          <input
+            name="email"
+            type="email"
+            maxLength={200}
+            autoComplete="email"
+            className={inputClass}
+          />
         </Field>
         <Field label="Issue type">
           <select name="issueType" required defaultValue="ACTIVE_ORDER" className={inputClass}>

@@ -24,8 +24,7 @@ export function getMarketplaceLaunchStatus({
   if (vendors === 0 || products === 0) {
     return {
       phase: "PRE_LAUNCH",
-      eyebrow:
-        "Launching shortly in Klipfontein View. Vendors and riders are joining now.",
+      eyebrow: "Launching shortly in Klipfontein View. Vendors and riders are joining now.",
       headline: "Lethela — Siyashesha",
       description:
         "Local stores, affordable township delivery and community riders — all in one place.",

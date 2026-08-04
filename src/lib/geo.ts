@@ -129,7 +129,10 @@ export async function routeDistance(origin: LatLng, destination: LatLng): Promis
   }
 
   const straightLineKm = haversineKm(origin.lat, origin.lng, destination.lat, destination.lng);
-  const estimatedRoadKm = Math.max(straightLineKm, straightLineKm * ROAD_DISTANCE_FALLBACK_MULTIPLIER);
+  const estimatedRoadKm = Math.max(
+    straightLineKm,
+    straightLineKm * ROAD_DISTANCE_FALLBACK_MULTIPLIER,
+  );
   const durationMin = Math.max(6, Math.ceil((estimatedRoadKm / 28) * 60 + 8));
   return {
     distanceKm: Number(estimatedRoadKm.toFixed(2)),

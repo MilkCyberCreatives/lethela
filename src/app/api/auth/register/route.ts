@@ -3,10 +3,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isUniqueConstraintError, MinimalRegistrationSchema } from "@/lib/registration-schema";
-import {
-  isEmailVerificationRequired,
-  sendEmailVerification,
-} from "@/lib/email-verification";
+import { isEmailVerificationRequired, sendEmailVerification } from "@/lib/email-verification";
 import { settleWithin } from "@/lib/notification-channels";
 
 export async function POST(req: Request) {

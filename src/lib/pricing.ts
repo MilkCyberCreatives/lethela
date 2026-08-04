@@ -78,7 +78,8 @@ export async function quoteDelivery({
         : Promise.resolve(null),
   ]);
 
-  const route = originPoint && destinationPoint ? await routeDistance(originPoint, destinationPoint) : null;
+  const route =
+    originPoint && destinationPoint ? await routeDistance(originPoint, destinationPoint) : null;
   const distanceKm = route?.distanceKm ?? null;
 
   return {

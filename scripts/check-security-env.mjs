@@ -110,9 +110,7 @@ if (verificationRequired === "true") {
 
 const launchMode = read(values, "NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE").toLowerCase() || "prelaunch";
 if (!["prelaunch", "pilot", "public"].includes(launchMode)) {
-  errors.push(
-    "NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE: must be prelaunch, pilot or public.",
-  );
+  errors.push("NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE: must be prelaunch, pilot or public.");
 }
 if (launchMode === "public") {
   for (const key of [
@@ -138,7 +136,9 @@ if (!read(values, "PRIVATE_STORAGE_VERIFIED_AT")) {
   );
 }
 if (!read(values, "DATABASE_RESTORE_TESTED_AT")) {
-  warnings.push("DATABASE_RESTORE_TESTED_AT: record a successful restore drill before public launch.");
+  warnings.push(
+    "DATABASE_RESTORE_TESTED_AT: record a successful restore drill before public launch.",
+  );
 }
 
 console.log(`Checking Lethela security environment from ${source}`);

@@ -9,12 +9,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact and Support | Lethela",
-    description: "Open a support case for an order, payment, refund, account, vendor or rider issue.",
+    description:
+      "Open a support case for an order, payment, refund, account, vendor or rider issue.",
     url: "/contact",
   },
   twitter: {
     title: "Contact and Support | Lethela",
-    description: "Open a support case for an order, payment, refund, account, vendor or rider issue.",
+    description:
+      "Open a support case for an order, payment, refund, account, vendor or rider issue.",
   },
 };
 

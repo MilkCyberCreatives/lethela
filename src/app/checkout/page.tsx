@@ -116,7 +116,9 @@ export default function CheckoutPage() {
         if (quoteFailure instanceof Error && quoteFailure.name === "AbortError") {
           return;
         }
-        setQuoteError("We could not refresh the delivery quote. Check your connection and try again.");
+        setQuoteError(
+          "We could not refresh the delivery quote. Check your connection and try again.",
+        );
       } finally {
         setQuoteLoading(false);
       }
@@ -134,7 +136,8 @@ export default function CheckoutPage() {
   const deliveryFee = hasItems ? deliveryQuote.deliveryCents : 0;
   const tipCents = hasItems ? Math.max(0, Math.round(riderTipCents)) : 0;
   const total = subtotal + deliveryFee + tipCents;
-  const contactDetailsComplete = customerName.trim().length >= 2 && customerPhone.trim().length >= 8;
+  const contactDetailsComplete =
+    customerName.trim().length >= 2 && customerPhone.trim().length >= 8;
   const supportLink = useMemo(
     () =>
       buildWhatsAppSupportLink(
@@ -553,7 +556,10 @@ export default function CheckoutPage() {
                     target="_blank"
                     rel="noreferrer"
                     onClick={() =>
-                      trackWhatsAppClick("checkout", { item_count: items.length, total_cents: total })
+                      trackWhatsAppClick("checkout", {
+                        item_count: items.length,
+                        total_cents: total,
+                      })
                     }
                   >
                     Order via WhatsApp

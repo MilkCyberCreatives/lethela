@@ -8,8 +8,7 @@ function supportNumber() {
 
 export function buildWhatsAppSupportLink(message?: string) {
   const text =
-    message?.trim() ||
-    "Hello Lethela, I need help with ordering or with the launch in my area.";
+    message?.trim() || "Hello Lethela, I need help with ordering or with the launch in my area.";
   return `https://wa.me/${supportNumber()}?text=${encodeURIComponent(text)}`;
 }
 

@@ -10,12 +10,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   openGraph: {
     title: "Create your vendor account | Lethela",
-    description: "Join Lethela as a local vendor and complete your private store profile after signup.",
+    description:
+      "Join Lethela as a local vendor and complete your private store profile after signup.",
     url: "/vendors/register",
   },
   twitter: {
     title: "Create your vendor account | Lethela",
-    description: "Join Lethela as a local vendor and complete your private store profile after signup.",
+    description:
+      "Join Lethela as a local vendor and complete your private store profile after signup.",
   },
 };
 

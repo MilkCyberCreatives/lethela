@@ -1,10 +1,6 @@
 import crypto from "node:crypto";
 import { absoluteUrl } from "@/lib/site";
-import {
-  escapeHtml,
-  hasEmailChannel,
-  sendResendEmail,
-} from "@/lib/notification-channels";
+import { escapeHtml, hasEmailChannel, sendResendEmail } from "@/lib/notification-channels";
 
 const TOKEN_VERSION = "v1";
 const TOKEN_TTL_SEC = 24 * 60 * 60;
@@ -46,7 +42,9 @@ export function createEmailVerificationToken(user: { id: string; email: string }
 }
 
 export function verifyEmailVerificationToken(token: string) {
-  const parts = String(token || "").trim().split(".");
+  const parts = String(token || "")
+    .trim()
+    .split(".");
   if (parts.length !== 5) return null;
   const [version, userId, encodedEmail, expiresRaw, signature] = parts;
   if (version !== TOKEN_VERSION || !userId || !encodedEmail || !signature) return null;
@@ -80,9 +78,7 @@ export async function sendEmailVerification(user: { id: string; email: string })
   }
 
   const token = createEmailVerificationToken(user);
-  const verificationUrl = absoluteUrl(
-    `/api/auth/verify-email?token=${encodeURIComponent(token)}`,
-  );
+  const verificationUrl = absoluteUrl(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
   const safeEmail = escapeHtml(user.email);
   const result = await sendResendEmail({
     to: user.email,
