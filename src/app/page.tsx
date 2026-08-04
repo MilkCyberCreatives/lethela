@@ -1,25 +1,31 @@
+import { BellRing, CheckCircle2, MapPin, ShoppingBag, Store, Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BellRing, CheckCircle2, MapPin, ShoppingBag, Store, Truck } from "lucide-react";
-import MainHeader from "@/components/MainHeader";
-import Hero from "@/components/Hero";
 import CategoryCarousel from "@/components/CategoryCarousel";
-import VendorCard from "@/components/VendorCard";
 import Footer from "@/components/Footer";
+import Hero from "@/components/Hero";
 import HomeProductCard from "@/components/HomeProductCard";
-import StructuredData from "@/components/StructuredData";
+import MainHeader from "@/components/MainHeader";
 import type { ProductLite } from "@/components/ProductCard";
-import { getDisplaySuburb } from "@/lib/location";
-import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
+import StructuredData from "@/components/StructuredData";
+import VendorCard from "@/components/VendorCard";
 import { getHomeProducts, getHomeVendors } from "@/lib/home-data";
 import { getMarketplaceLaunchStatus } from "@/lib/launch-readiness";
+import { getDisplaySuburb } from "@/lib/location";
+import { buildPageMetadata } from "@/lib/seo";
+import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
 import { buildLaunchNotificationLink } from "@/lib/support";
 import type { Vendor } from "@/types";
 
+const homeDescription =
+  "Lethela is a township delivery marketplace for South Africa, launching from Klipfontein View with approved local vendors and community riders.";
+
 export const metadata: Metadata = {
-  title: "Lethela | Township Delivery South Africa",
-  description:
-    "Lethela is a township delivery marketplace for South Africa, launching from Klipfontein View with approved local vendors and community riders.",
+  ...buildPageMetadata({
+    title: "Township Delivery South Africa",
+    description: homeDescription,
+    path: "/",
+  }),
   keywords: [
     "Township delivery South Africa",
     "Spaza shop delivery",
@@ -30,20 +36,6 @@ export const metadata: Metadata = {
     "Sell groceries online in South Africa",
     "Delivery platform for spaza shops",
   ],
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    title: "Lethela | Township Delivery South Africa",
-    description:
-      "Local stores, affordable township delivery and community riders — starting in Klipfontein View.",
-    url: "/",
-  },
-  twitter: {
-    title: "Lethela | Township Delivery South Africa",
-    description:
-      "Local stores, affordable township delivery and community riders — starting in Klipfontein View.",
-  },
 };
 
 export const revalidate = 180;
@@ -85,17 +77,7 @@ export default async function HomePage() {
       <StructuredData data={homeWebPageSchema} />
       <MainHeader />
 
-      <Hero
-        initialArea={address}
-        launchStatus={launchStatus}
-        initialNearbyVendors={vendors.slice(0, 3).map((vendor) => ({
-          id: vendor.id,
-          name: vendor.name,
-          slug: vendor.slug,
-          cuisines: vendor.cuisines,
-          eta: vendor.eta,
-        }))}
-      />
+      <Hero initialArea={address} launchStatus={launchStatus} />
 
       <section className="container py-10">
         <CategoryCarousel />
