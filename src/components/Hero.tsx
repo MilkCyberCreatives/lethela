@@ -9,6 +9,7 @@ import LocationPicker from "@/components/LocationPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatZAR } from "@/lib/format";
+import type { MarketplaceLaunchStatus } from "@/lib/launch-readiness";
 import { persistPreferredLocation, readPreferredLocation } from "@/lib/location-preference";
 import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
 
@@ -78,9 +79,22 @@ declare global {
 type HeroProps = {
   initialArea?: string | null;
   initialNearbyVendors?: NearbyVendor[];
+  launchStatus?: MarketplaceLaunchStatus;
 };
 
-export default function Hero({ initialArea = null, initialNearbyVendors = [] }: HeroProps) {
+const fallbackLaunchStatus: MarketplaceLaunchStatus = {
+  phase: "PRE_LAUNCH",
+  eyebrow: "Launching shortly in Klipfontein View. Vendors and riders are joining now.",
+  headline: "Lethela — Siyashesha",
+  description:
+    "Local stores, affordable township delivery and community riders — all in one place.",
+};
+
+export default function Hero({
+  initialArea = null,
+  initialNearbyVendors = [],
+  launchStatus = fallbackLaunchStatus,
+}: HeroProps) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [resp, setResp] = useState<SearchResponse | null>(null);
@@ -361,13 +375,13 @@ export default function Hero({ initialArea = null, initialNearbyVendors = [] }: 
       <div className="relative container py-12 md:py-20">
         <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary">
-            Now live in Klipfontein View. Built for township delivery across South Africa.
+            {launchStatus.eyebrow}
           </p>
           <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">
-            Lethela &mdash; Siyashesha
+            {launchStatus.headline}
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-white/78 md:text-lg">
-            Fast deliveries near you.
+            {launchStatus.description}
           </p>
 
           <div className="mt-8 flex w-full max-w-2xl flex-col gap-3" ref={acRef}>
