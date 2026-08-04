@@ -27,6 +27,7 @@ jobs:
       VENDOR_SESSION_SECRET: ci-only-vendor-secret
       RIDER_CONSOLE_SECRET: ci-only-rider-secret
       ADMIN_APPROVAL_KEY: ci-only-admin-key
+      CRON_SECRET: ci-only-cron-secret
       BANK_DATA_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       ALLOW_DEV_ADMIN_BYPASS: "false"
       DEMO_CATALOG_MODE: "false"
