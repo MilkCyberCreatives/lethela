@@ -27,10 +27,12 @@ jobs:
       - name: Verify production dependency audit
         run: npm audit --omit=dev --audit-level=high
 
-      - name: Upload refreshed lockfile
+      - name: Upload refreshed files
         uses: actions/upload-artifact@v4
         with:
           name: secure-package-lock
-          path: package-lock.json
+          path: |
+            package-lock.json
+            src/app/admin/page.tsx
           if-no-files-found: error
           retention-days: 1
