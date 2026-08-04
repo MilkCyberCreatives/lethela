@@ -61,6 +61,7 @@ for (const key of [
   "VENDOR_SESSION_SECRET",
   "RIDER_CONSOLE_SECRET",
   "ADMIN_APPROVAL_KEY",
+  "CRON_SECRET",
 ]) {
   if (!read(values, key)) errors.push(`${key}: must be configured with a protected server secret.`);
 }
