@@ -20,7 +20,22 @@ Core:
 - `NEXT_PUBLIC_SITE_URL`
 - `NEXTAUTH_URL`
 - `NEXTAUTH_SECRET`
+- `VENDOR_SESSION_SECRET`
+- `RIDER_CONSOLE_SECRET`
+- `ADMIN_APPROVAL_KEY`
+- `CRON_SECRET`
+- `BANK_DATA_ENCRYPTION_KEY`
 - `DATABASE_URL`
+
+Production launch controls:
+
+- `NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE` — `prelaunch`, `pilot`, or `public`
+- `EMAIL_VERIFICATION_REQUIRED` — enable only after existing accounts and the email channel are verified
+- `DATABASE_RESTORE_TESTED_AT`
+- `PRIVATE_STORAGE_VERIFIED_AT`
+- `REFUND_FLOW_TESTED_AT`
+
+The public homepage remains in pre-launch or pilot mode until real approved inventory and the configured operating thresholds are available. Public mode must not be used to bypass the owner launch-readiness checks.
 
 SEO + marketing:
 
@@ -64,11 +79,17 @@ SEO + marketing:
 ## Quality checks
 
 ```bash
-npx tsc --noEmit --incremental false
-npx eslint src
+npm audit --omit=dev --audit-level=high
+npm test
+npm run check:security-env
+npm run typecheck
+npm run lint
+npm run format:check
+npm run build
 ```
 
 ## Operating readiness
 
-Use `/admin/launch-checklist` after deployment to verify the controlled pilot and public marketing
-gates. The owner runbook is in `docs/OPERATIONS_RUNBOOK.md`.
+Use `/admin/launch-checklist` after deployment to verify the controlled pilot and public marketing gates. The owner runbook is in `docs/OPERATIONS_RUNBOOK.md`.
+
+Public launch additionally requires real approved vendors, products and riders; a controlled Ozow payment and delivery; a refund test; private-storage verification; and a successful provider-side database restore drill.

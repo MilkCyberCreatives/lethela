@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LifeBuoy, RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
+import { buildWhatsAppSupportLink } from "@/lib/support";
 
 type OrderHistoryItem = {
   publicId: string;
@@ -25,7 +25,6 @@ export default function OrderHistoryPanel() {
   const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
 
   useEffect(() => {
     let alive = true;
@@ -80,7 +79,7 @@ export default function OrderHistoryPanel() {
       ) : orders.length === 0 ? (
         <div className="mt-5 rounded-lg border border-white/10 bg-black/10 p-4 text-sm text-white/65">
           No account orders yet. Guest and WhatsApp-assisted orders can still be tracked with their
-          order reference.
+          order reference and checkout phone number.
         </div>
       ) : (
         <div className="mt-5 grid gap-3">
@@ -108,9 +107,9 @@ export default function OrderHistoryPanel() {
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button asChild className="bg-lethela-primary text-white">
-                  <Link href={`/track?ref=${encodeURIComponent(order.trackingRef)}`}>
+                  <Link href={`/orders/${encodeURIComponent(order.trackingRef)}`}>
                     <RotateCcw className="mr-2 h-4 w-4" />
-                    Track order
+                    Open secure tracking
                   </Link>
                 </Button>
                 <Button
@@ -118,7 +117,13 @@ export default function OrderHistoryPanel() {
                   variant="outline"
                   className="border-white/30 bg-transparent text-white"
                 >
-                  <a href={whatsappHref} target="_blank" rel="noreferrer">
+                  <a
+                    href={buildWhatsAppSupportLink(
+                      `Hello Lethela, I need support with order ${order.trackingRef}.`,
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     <LifeBuoy className="mr-2 h-4 w-4" />
                     Support
                   </a>

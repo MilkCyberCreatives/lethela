@@ -3,20 +3,47 @@ import { getDemoOrderDetails, isDemoOrderRef } from "@/lib/demo-order";
 import { getOrderRealtimeChannel, verifyOrderTrackingToken } from "@/lib/order-tracking-access";
 import { buildTrackingSnapshot } from "@/lib/order-tracking";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { auth } from "@/auth";
 
 type Params = { params: Promise<{ ref: string }> };
 
+const privateHeaders = {
+  "Cache-Control": "private, no-store, max-age=0",
+};
+
 export async function GET(req: NextRequest, { params }: Params) {
+  const limited = await checkRateLimit({
+    key: "order-tracking-details",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+    headers: req.headers,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many tracking requests. Please try again later." },
+      {
+        status: 429,
+        headers: { ...privateHeaders, "retry-after": String(limited.retryAfterSec) },
+      },
+    );
+  }
+
   const { ref } = await params;
   const cleanRef = String(ref || "").trim();
   const normalizedRef = cleanRef.toUpperCase().replace(/\s+/g, "-").replace(/-+/g, "-");
   if (!cleanRef) {
-    return NextResponse.json({ ok: false, error: "Order reference is required." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Order reference is required." },
+      { status: 400, headers: privateHeaders },
+    );
   }
 
   if (isDemoOrderRef(normalizedRef)) {
-    return NextResponse.json({ ok: true, order: getDemoOrderDetails() });
+    return NextResponse.json(
+      { ok: true, order: getDemoOrderDetails() },
+      { headers: privateHeaders },
+    );
   }
 
   const order = await runBoundedDbQuery((db) =>
@@ -59,7 +86,10 @@ export async function GET(req: NextRequest, { params }: Params) {
   ).catch(() => null);
 
   if (!order) {
-    return NextResponse.json({ ok: false, error: "Order not found." }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: "Order not found." },
+      { status: 404, headers: privateHeaders },
+    );
   }
 
   const trackingToken =
@@ -68,6 +98,13 @@ export async function GET(req: NextRequest, { params }: Params) {
   const hasDetailedTracking =
     verifyOrderTrackingToken(trackingToken, order.ozowReference || order.publicId) ||
     Boolean(session?.user?.id && session.user.id === order.userId);
+
+  if (!hasDetailedTracking) {
+    return NextResponse.json(
+      { ok: false, error: "Order not found." },
+      { status: 404, headers: privateHeaders },
+    );
+  }
 
   const destination =
     order.customerLat != null && order.customerLng != null
@@ -105,32 +142,32 @@ export async function GET(req: NextRequest, { params }: Params) {
     updatedAt: order.updatedAt,
     riderLocatedAt: order.riderLocatedAt,
     vendor: vendorPoint,
-    destination: hasDetailedTracking ? destination : null,
-    rider: hasDetailedTracking ? riderPoint : null,
+    destination,
+    rider: riderPoint,
   });
 
-  return NextResponse.json({
-    ok: true,
-    order: {
-      id: order.ozowReference || order.publicId,
-      publicId: order.publicId,
-      status: order.status,
-      paymentStatus: order.paymentStatus,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      totalCents: hasDetailedTracking ? order.totalCents : null,
-      items: hasDetailedTracking ? items : [],
-      deliveryDetails: hasDetailedTracking ? deliveryDetails : null,
-      vendor: {
-        name: order.vendor?.name,
-        suburb: order.vendor?.suburb,
-        city: order.vendor?.city,
-        latitude: hasDetailedTracking ? order.vendor?.latitude : null,
-        longitude: hasDetailedTracking ? order.vendor?.longitude : null,
-      },
-      destination: hasDetailedTracking ? destination : null,
-      rider:
-        hasDetailedTracking && riderPoint
+  return NextResponse.json(
+    {
+      ok: true,
+      order: {
+        id: order.ozowReference || order.publicId,
+        publicId: order.publicId,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        totalCents: order.totalCents,
+        items,
+        deliveryDetails,
+        vendor: {
+          name: order.vendor?.name,
+          suburb: order.vendor?.suburb,
+          city: order.vendor?.city,
+          latitude: order.vendor?.latitude,
+          longitude: order.vendor?.longitude,
+        },
+        destination,
+        rider: riderPoint
           ? {
               lat: riderPoint.lat,
               lng: riderPoint.lng,
@@ -139,10 +176,10 @@ export async function GET(req: NextRequest, { params }: Params) {
               simulated: false,
             }
           : null,
-      channel: hasDetailedTracking
-        ? getOrderRealtimeChannel(order.ozowReference || order.publicId)
-        : null,
-      tracking,
+        channel: getOrderRealtimeChannel(order.ozowReference || order.publicId),
+        tracking,
+      },
     },
-  });
+    { headers: privateHeaders },
+  );
 }

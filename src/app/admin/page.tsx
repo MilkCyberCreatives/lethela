@@ -36,6 +36,21 @@ type DashboardView =
   | "orders"
   | "messages"
   | "operations";
+
+const DASHBOARD_VIEWS: DashboardView[] = [
+  "overview",
+  "vendors",
+  "products",
+  "riders",
+  "users",
+  "orders",
+  "messages",
+  "operations",
+];
+
+function isDashboardView(value: string | null): value is DashboardView {
+  return Boolean(value && DASHBOARD_VIEWS.includes(value as DashboardView));
+}
 type VendorStatusOption =
   | "DRAFT"
   | "SUBMITTED"
@@ -727,6 +742,26 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
+    const syncViewFromUrl = () => {
+      const candidate = new URL(window.location.href).searchParams.get("view");
+      setView(isDashboardView(candidate) ? candidate : "overview");
+    };
+
+    syncViewFromUrl();
+    window.addEventListener("popstate", syncViewFromUrl);
+    return () => window.removeEventListener("popstate", syncViewFromUrl);
+  }, []);
+
+  const navigateView = useCallback((nextView: DashboardView) => {
+    setView(nextView);
+    const url = new URL(window.location.href);
+    if (nextView === "overview") url.searchParams.delete("view");
+    else url.searchParams.set("view", nextView);
+    window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
     adminKeyRef.current = adminKey.trim();
   }, [adminKey]);
 
@@ -1151,6 +1186,109 @@ export default function AdminPage() {
     [productSearch, products],
   );
 
+  const attentionRows = useMemo<AttentionRow[]>(() => {
+    const rows: AttentionRow[] = [];
+
+    operationsOrders
+      .filter((order) =>
+        [
+          "NEW",
+          "ACCEPTED",
+          "PREPARING",
+          "READY",
+          "PICKED_UP",
+          "OUT_FOR_DELIVERY",
+          "FAILED",
+        ].includes(order.status),
+      )
+      .slice(0, 4)
+      .forEach((order) => {
+        const reference = order.ozowReference || order.publicId;
+        const failed = order.status === "FAILED" || order.paymentStatus === "FAILED";
+        rows.push({
+          type: "Order",
+          issue: `${reference}: ${order.status.replaceAll("_", " ")}`,
+          area: order.vendorName || "Live order",
+          assignedTo: order.status === "NEW" ? "Vendor / Admin" : "Operations",
+          priority: failed ? "High" : "Medium",
+          status: order.paymentStatus,
+          action: "Open order",
+          target: "operations",
+        });
+      });
+
+    vendors
+      .filter((vendor) =>
+        ["SUBMITTED", "UNDER_REVIEW", "CHANGES_REQUESTED"].includes(vendor.status),
+      )
+      .slice(0, 3)
+      .forEach((vendor) => {
+        rows.push({
+          type: "Vendor",
+          issue: `${vendor.name}: ${vendor.status.replaceAll("_", " ")}`,
+          area: [vendor.suburb, vendor.city].filter(Boolean).join(", ") || "Location incomplete",
+          assignedTo: vendor.status === "CHANGES_REQUESTED" ? "Vendor" : "Admin",
+          priority: vendor.status === "SUBMITTED" ? "Medium" : "Low",
+          status: vendor.status.replaceAll("_", " "),
+          action: "Review vendor",
+          target: "vendors",
+        });
+      });
+
+    products
+      .filter((product) => ["SUBMITTED", "CHANGES_REQUESTED"].includes(product.status))
+      .slice(0, 3)
+      .forEach((product) => {
+        rows.push({
+          type: "Product",
+          issue: `${product.name}${product.image ? "" : ": image required"}`,
+          area: product.vendor.name,
+          assignedTo: product.status === "CHANGES_REQUESTED" ? "Vendor" : "Admin",
+          priority: product.image ? "Low" : "Medium",
+          status: product.status.replaceAll("_", " "),
+          action: "Review product",
+          target: "products",
+        });
+      });
+
+    riders
+      .filter((rider) => ["SUBMITTED", "UNDER_REVIEW", "CHANGES_REQUESTED"].includes(rider.status))
+      .slice(0, 3)
+      .forEach((rider) => {
+        rows.push({
+          type: "Rider",
+          issue: `${rider.fullName || rider.email}: ${rider.status.replaceAll("_", " ")}`,
+          area: [rider.suburb, rider.city].filter(Boolean).join(", ") || "Location incomplete",
+          assignedTo: rider.status === "CHANGES_REQUESTED" ? "Rider" : "Admin",
+          priority: rider.status === "SUBMITTED" ? "Medium" : "Low",
+          status: rider.status.replaceAll("_", " "),
+          action: "Review rider",
+          target: "riders",
+        });
+      });
+
+    operationsRefunds
+      .filter(
+        (refund) =>
+          !["COMPLETED", "PAID", "REJECTED", "CANCELLED", "CLOSED"].includes(refund.status),
+      )
+      .slice(0, 3)
+      .forEach((refund) => {
+        rows.push({
+          type: "Refund",
+          issue: `${refund.publicId}: ${refund.reason}`,
+          area: "Support",
+          assignedTo: "Finance / Support",
+          priority: "High",
+          status: refund.status.replaceAll("_", " "),
+          action: "Review refund",
+          target: "operations",
+        });
+      });
+
+    return rows;
+  }, [operationsOrders, operationsRefunds, products, riders, vendors]);
+
   const orderMonitoring = [
     {
       label: "Pending deliveries",
@@ -1228,7 +1366,7 @@ export default function AdminPage() {
                               : "bg-white/[0.025] text-white/68 hover:bg-white/[0.075] hover:text-white"
                           }`}
                           type="button"
-                          onClick={() => setView(item.id)}
+                          onClick={() => navigateView(item.id)}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
                           <span className="truncate">{item.label}</span>
@@ -1309,28 +1447,28 @@ export default function AdminPage() {
                     value={stats?.pendingDeliveries ?? 0}
                     note="Orders waiting, preparing or out for delivery."
                     icon={ShoppingBag}
-                    onClick={() => setView("orders")}
+                    onClick={() => navigateView("orders")}
                   />
                   <PriorityCard
                     label="Orders needing action"
                     value={(stats?.delayedOrders ?? 0) + (stats?.failedDeliveries ?? 0)}
                     note="Delayed, failed or exception orders."
                     icon={Bell}
-                    onClick={() => setView("operations")}
+                    onClick={() => navigateView("operations")}
                   />
                   <PriorityCard
                     label="Pending vendor approvals"
                     value={vendorCounts.submitted ?? vendorCounts.pending ?? 0}
                     note="Complete vendor profiles waiting for owner review."
                     icon={Store}
-                    onClick={() => setView("vendors")}
+                    onClick={() => navigateView("vendors")}
                   />
                   <PriorityCard
                     label="Riders available now"
                     value={riderCounts.approved}
                     note="Approved riders ready for dispatch planning."
                     icon={Bike}
-                    onClick={() => setView("riders")}
+                    onClick={() => navigateView("riders")}
                   />
                 </section>
 
@@ -1375,64 +1513,7 @@ export default function AdminPage() {
                   />
                 </section>
 
-                <NeedsAttentionTable
-                  rows={[
-                    {
-                      type: "Order",
-                      issue:
-                        (stats?.delayedOrders ?? 0) > 0
-                          ? "Delayed order waiting for action"
-                          : "No rider assigned",
-                      area: "Klipfontein View",
-                      assignedTo: "Admin",
-                      priority: "High",
-                      status: (stats?.pendingDeliveries ?? 0) > 0 ? "Waiting" : "Clear",
-                      action: "Assign rider",
-                      target: "operations",
-                    },
-                    {
-                      type: "Vendor",
-                      issue: "Profile incomplete or waiting approval",
-                      area: "Township onboarding",
-                      assignedTo: "Vendor",
-                      priority: "Medium",
-                      status: `${vendorCounts.pending ?? 0} pending`,
-                      action: "Review vendor",
-                      target: "vendors",
-                    },
-                    {
-                      type: "Product",
-                      issue: "Missing image or category review",
-                      area: "Groceries",
-                      assignedTo: "Vendor",
-                      priority: "Low",
-                      status: "Pending",
-                      action: "Review product",
-                      target: "products",
-                    },
-                    {
-                      type: "Rider",
-                      issue: "KYC pending",
-                      area: "Klipfontein View",
-                      assignedTo: "Admin",
-                      priority: "Medium",
-                      status: `${riderCounts.pending + riderCounts.underReview} in queue`,
-                      action: "Review rider",
-                      target: "riders",
-                    },
-                    {
-                      type: "Refund",
-                      issue: "Refund request waiting",
-                      area: "Support",
-                      assignedTo: "Support",
-                      priority: "High",
-                      status: operationsRefunds.length > 0 ? "Open" : "Clear",
-                      action: "Review refund",
-                      target: "operations",
-                    },
-                  ]}
-                  onNavigate={setView}
-                />
+                <NeedsAttentionTable rows={attentionRows} onNavigate={navigateView} />
               </div>
             ) : null}
 

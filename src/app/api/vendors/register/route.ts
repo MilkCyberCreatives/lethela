@@ -6,6 +6,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { VENDOR_STATUS } from "@/lib/vendor-readiness";
 import { auth } from "@/auth";
 import { isUniqueConstraintError, MinimalRegistrationSchema } from "@/lib/registration-schema";
+import { isEmailVerificationRequired, sendEmailVerification } from "@/lib/email-verification";
+import { settleWithin } from "@/lib/notification-channels";
 
 export async function GET() {
   const session = await auth();
@@ -69,14 +71,14 @@ export async function POST(req: Request) {
   const passwordHash = await hash(payload.password, 12);
   const slug = `vendor-${randomUUID().replaceAll("-", "").slice(0, 16)}`;
   try {
-    const { vendor } = await prisma.$transaction(async (tx) => {
+    const { vendor, user } = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email: payload.email,
           passwordHash,
           role: "VENDOR",
         },
-        select: { id: true },
+        select: { id: true, email: true },
       });
       const vendor = await tx.vendor.create({
         data: {
@@ -93,14 +95,22 @@ export async function POST(req: Request) {
       await tx.vendorMember.create({
         data: { vendorId: vendor.id, userId: user.id, role: "OWNER" },
       });
-      return { vendor };
+      return { vendor, user };
     });
+
+    const verificationRequired = isEmailVerificationRequired();
+    await settleWithin(sendEmailVerification(user), 4_000);
 
     return NextResponse.json({
       ok: true,
-      message: "Draft vendor account created. Complete your profile in the dashboard.",
+      message: verificationRequired
+        ? "Vendor account created. Verify your email before continuing."
+        : "Draft vendor account created. Complete your profile in the dashboard.",
       vendor,
-      redirectTo: "/vendors/dashboard?tab=profile&welcome=1",
+      verificationRequired,
+      redirectTo: verificationRequired
+        ? "/signin?verification=sent"
+        : "/vendors/dashboard?tab=profile&welcome=1",
     });
   } catch (error) {
     if (isUniqueConstraintError(error)) {

@@ -22,6 +22,7 @@ const EXPLORE_LINKS = [
   { href: "/categories/groceries", label: "Groceries" },
   { href: "/categories/liquor", label: "Liquor 18+" },
   { href: "/track", label: "Track Order" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
 ] as const;
@@ -29,6 +30,7 @@ const EXPLORE_LINKS = [
 const BUSINESS_LINKS = [
   { href: "/vendors/register", label: "Become a Vendor" },
   { href: "/rider", label: "Become a Rider" },
+  { href: "/pricing", label: "Vendor & Rider Pricing" },
   { href: "/vendors/dashboard", label: "Vendor Dashboard" },
   { href: "/rider/dashboard", label: "Rider Dashboard" },
 ] as const;
@@ -137,7 +139,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
             <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Business</div>
             <ul className="mt-4 space-y-2.5 text-sm text-white/80">
               {BUSINESS_LINKS.map((item) => (
-                <li key={item.href}>
+                <li key={`${item.href}-${item.label}`}>
                   <Link href={item.href} className="transition-colors hover:text-white">
                     {item.label}
                   </Link>

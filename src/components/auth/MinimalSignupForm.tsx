@@ -4,7 +4,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -56,6 +56,7 @@ type RegistrationResponse = {
   error?: string | { fieldErrors?: Record<string, string[]> };
   fieldErrors?: Record<string, string[]>;
   redirectTo?: string;
+  verificationRequired?: boolean;
   vendor?: { slug?: string };
 };
 
@@ -76,6 +77,9 @@ export default function MinimalSignupForm({ accountType }: { accountType: Accoun
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const passwordLength = registrationPasswordLength(password);
   const passwordFits = registrationPasswordFitsHashLimit(password);
@@ -92,6 +96,7 @@ export default function MinimalSignupForm({ accountType }: { accountType: Accoun
 
     setLoading(true);
     setError(null);
+    setNotice(null);
     try {
       const response = await fetch(config.endpoint, {
         method: "POST",
@@ -108,6 +113,12 @@ export default function MinimalSignupForm({ accountType }: { accountType: Accoun
           meta: { signupStage: "account_created" },
         });
         pushDataLayerEvent("generate_lead", { lead_type: "vendor_account_created" });
+      }
+
+      if (data.verificationRequired) {
+        setPassword("");
+        setVerificationSent(true);
+        return;
       }
 
       const login = await signIn("credentials", {
@@ -128,6 +139,60 @@ export default function MinimalSignupForm({ accountType }: { accountType: Accoun
     } finally {
       setLoading(false);
     }
+  }
+
+  async function resendVerification() {
+    setResending(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/auth/verify-email/resend", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || "Could not resend verification email.");
+      setNotice(data?.message || "A new verification email has been sent.");
+    } catch (resendError) {
+      setError(
+        resendError instanceof Error ? resendError.message : "Could not resend verification email.",
+      );
+    } finally {
+      setResending(false);
+    }
+  }
+
+  if (verificationSent) {
+    return (
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-slate-800">
+        <div className="flex items-start gap-3">
+          <MailCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true" />
+          <div>
+            <h2 className="font-semibold">Check your email</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              We sent a verification link to <span className="font-semibold">{email}</span>. Open it
+              within 24 hours, then sign in to continue your setup.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={resending}
+            onClick={() => void resendVerification()}
+          >
+            {resending ? "Sending..." : "Resend verification email"}
+          </Button>
+          <Button asChild className="bg-lethela-primary text-white">
+            <Link href={config.signInHref}>Go to sign in</Link>
+          </Button>
+        </div>
+        {notice ? <p className="mt-3 text-sm text-emerald-700">{notice}</p> : null}
+        {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
+      </div>
+    );
   }
 
   return (

@@ -3,6 +3,8 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isUniqueConstraintError, MinimalRegistrationSchema } from "@/lib/registration-schema";
+import { isEmailVerificationRequired, sendEmailVerification } from "@/lib/email-verification";
+import { settleWithin } from "@/lib/notification-channels";
 
 export async function POST(req: Request) {
   const rateLimit = await checkRateLimit({
@@ -50,7 +52,15 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ ok: true, user, redirectTo: "/profile?welcome=1" });
+    const verificationRequired = isEmailVerificationRequired();
+    await settleWithin(sendEmailVerification(user), 4_000);
+
+    return NextResponse.json({
+      ok: true,
+      user,
+      verificationRequired,
+      redirectTo: verificationRequired ? "/signin?verification=sent" : "/profile?welcome=1",
+    });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
       return NextResponse.json(

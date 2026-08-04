@@ -27,10 +27,13 @@ jobs:
       VENDOR_SESSION_SECRET: ci-only-vendor-secret
       RIDER_CONSOLE_SECRET: ci-only-rider-secret
       ADMIN_APPROVAL_KEY: ci-only-admin-key
+      CRON_SECRET: ci-only-cron-secret
       BANK_DATA_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       ALLOW_DEV_ADMIN_BYPASS: "false"
       DEMO_CATALOG_MODE: "false"
       ALLOW_PUBLIC_DEMO_ORDER: "false"
+      EMAIL_VERIFICATION_REQUIRED: "false"
+      NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE: prelaunch
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -49,6 +52,17 @@ jobs:
 
       - name: Run regression tests
         run: npm test
+
+      - name: Check security configuration rules
+        env:
+          NEXT_PUBLIC_SITE_URL: https://www.lethela.co.za
+          NEXTAUTH_URL: https://www.lethela.co.za
+          UPLOAD_STORAGE: supabase
+          SUPABASE_URL: https://ci-example.supabase.co
+          SUPABASE_SERVICE_ROLE: ci-only-service-role
+          SUPABASE_PRIVATE_BUCKET: private-ci-documents
+          SUPPORT_EMAIL_TO: support@example.test
+        run: npm run check:security-env
 
       - name: Check TypeScript
         run: npm run typecheck

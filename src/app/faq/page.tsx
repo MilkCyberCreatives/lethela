@@ -6,44 +6,59 @@ import StructuredData from "@/components/StructuredData";
 export const metadata: Metadata = {
   title: "FAQ",
   description:
-    "Answers to common questions about ordering, vendor onboarding, rider applications, delivery areas and support on Lethela.",
+    "Answers to common questions about ordering, vendor onboarding, rider applications, delivery areas, pricing and support on Lethela.",
   alternates: {
     canonical: "/faq",
+  },
+  openGraph: {
+    title: "Frequently Asked Questions | Lethela",
+    description:
+      "Answers about Lethela ordering, road-distance delivery fees, vendor and rider onboarding, secure tracking and support.",
+    url: "/faq",
+  },
+  twitter: {
+    title: "Frequently Asked Questions | Lethela",
+    description:
+      "Answers about Lethela ordering, road-distance delivery fees, vendor and rider onboarding, secure tracking and support.",
   },
 };
 
 const faq = [
   {
     q: "What can I order on Lethela?",
-    a: "You can browse township favourites such as kota, chips, burgers, wings, braai, mogodu and breakfast items, plus groceries from approved participating vendors.",
+    a: "When approved vendors are available in your area, you can browse township favourites such as kota, chips, burgers, wings, braai, mogodu and breakfast items, plus groceries from participating stores.",
   },
   {
     q: "How do vendors join Lethela?",
-    a: "Vendors apply online, submit business details, trading location, category, operating hours and readiness information. Stores only go live after approval and commercial terms are confirmed.",
+    a: "Vendors create a simple account, then complete business, location, operating-hours, banking, document and product details in the private dashboard. Stores only go live after approval and commercial terms are confirmed.",
   },
   {
     q: "Can riders apply online?",
-    a: "Yes. Riders can apply through the rider page and receive follow-up from operations after review.",
+    a: "Yes. Riders create a simple account, complete personal, vehicle, banking and document details in the private dashboard, and receive dispatch access only after Lethela approval.",
   },
   {
     q: "How do I track my order?",
-    a: "After checkout you receive an order reference. Use it on the tracking page to see status updates and, where available, rider movement on the map preview.",
+    a: "Use the order reference and the phone number entered at checkout. Lethela then opens a signed tracking link so that a reference alone cannot reveal order, location or rider information.",
   },
   {
     q: "Which areas are currently served?",
-    a: "Lethela serves active delivery zones shown during checkout, starting with Klipfontein View and expanding across more South African townships.",
+    a: "Lethela starts with Klipfontein View. The marketplace clearly shows pre-launch, pilot or public-delivery status according to the approved vendors, products, riders and completed proof orders available in the area.",
+  },
+  {
+    q: "How is the delivery fee calculated?",
+    a: "Delivery is R10 per road kilometre, with a R10 minimum. The full delivery fee goes to the assigned rider. Google road routing is used where available, with a clearly labelled conservative estimate only as a fallback.",
   },
   {
     q: "How does Lethela handle alcohol?",
-    a: "The live Liquor category is restricted to customers aged 18 or older. Only approved vendors with a current licence may list liquor, checkout requires age confirmation, and the rider must verify acceptable ID at delivery.",
+    a: "The Liquor category is restricted to customers aged 18 or older. Only approved vendors with a current licence may list liquor, checkout requires age confirmation, and the rider must verify acceptable ID or refuse delivery.",
   },
   {
     q: "Are prices and delivery fees shown before I pay?",
-    a: "Yes. Customers should see item prices, delivery fees and any manual-quote limits before completing checkout. Vendor commercial pricing is not public and is only available to approved vendors.",
+    a: "Yes. Customers see item prices, the calculated delivery fee, any rider tip and manual-quote limits before completing checkout. Public vendor and rider pilot pricing is also available on the Pricing page.",
   },
   {
     q: "What happens if something is missing or wrong?",
-    a: "Contact support quickly with the order reference, phone number and photos if useful. Depending on the issue, Lethela may arrange a correction, replacement, credit, partial refund or full refund.",
+    a: "Open a support case quickly with the order reference, phone number and evidence link where useful. Depending on the issue, Lethela may arrange a correction, replacement, credit, partial refund or full refund.",
   },
 ];
 

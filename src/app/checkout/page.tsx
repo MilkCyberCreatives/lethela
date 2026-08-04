@@ -10,6 +10,7 @@ import {
   INCLUDED_DELIVERY_RADIUS_KM,
 } from "@/lib/pricing";
 import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
+import { buildWhatsAppSupportLink } from "@/lib/support";
 import Link from "next/link";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
@@ -20,6 +21,8 @@ import { pushEcommerceEvent, trackWhatsAppClick } from "@/lib/visitor";
 
 const isOzowSandbox = process.env.NEXT_PUBLIC_OZOW_IS_TEST === "true";
 
+type DistanceSource = "ROAD" | "ESTIMATED" | null;
+
 export default function CheckoutPage() {
   const items = useCart((s) => s.items);
   const subtotal = useCart((s) => s.subtotal());
@@ -27,6 +30,7 @@ export default function CheckoutPage() {
   const checkoutKeyRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [destinationSuburb, setDestinationSuburb] = useState(
     () => readPreferredLocation()?.label || "Klipfontein View, Midrand",
   );
@@ -49,6 +53,7 @@ export default function CheckoutPage() {
     baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
     deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
     distanceKm: null as number | null,
+    distanceSource: null as DistanceSource,
     manualQuoteRequired: false,
     includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
     extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
@@ -58,10 +63,12 @@ export default function CheckoutPage() {
   useEffect(() => {
     const vendorId = items[0]?.vendorId;
     if (!vendorId) {
+      setQuoteError(null);
       setDeliveryQuote({
         baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
         deliveryCents: DEFAULT_DELIVERY_FEE_CENTS,
         distanceKm: null,
+        distanceSource: null,
         manualQuoteRequired: false,
         includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
         extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
@@ -73,6 +80,7 @@ export default function CheckoutPage() {
     const destination = destinationSuburb.trim() || "Klipfontein View, Midrand";
     const timeoutId = window.setTimeout(async () => {
       setQuoteLoading(true);
+      setQuoteError(null);
       try {
         const params = new URLSearchParams({
           vendorId,
@@ -88,20 +96,29 @@ export default function CheckoutPage() {
         });
         const json = await response.json();
         if (!response.ok || !json.ok) {
+          setQuoteError(
+            typeof json?.error === "string"
+              ? json.error
+              : "We could not confirm the delivery quote. Review the address and try again.",
+          );
           return;
         }
         setDeliveryQuote({
           baseFeeCents: Number(json.baseFeeCents ?? DEFAULT_DELIVERY_FEE_CENTS),
           deliveryCents: Number(json.deliveryCents ?? DEFAULT_DELIVERY_FEE_CENTS),
           distanceKm: typeof json.distanceKm === "number" ? json.distanceKm : null,
+          distanceSource: json.distanceSource === "ROAD" ? "ROAD" : "ESTIMATED",
           manualQuoteRequired: Boolean(json.manualQuoteRequired),
           includedRadiusKm: Number(json.includedRadiusKm ?? INCLUDED_DELIVERY_RADIUS_KM),
           extraPerKmCents: Number(json.extraPerKmCents ?? EXTRA_DELIVERY_FEE_PER_KM_CENTS),
         });
-      } catch (quoteError: unknown) {
-        if (quoteError instanceof Error && quoteError.name === "AbortError") {
+      } catch (quoteFailure: unknown) {
+        if (quoteFailure instanceof Error && quoteFailure.name === "AbortError") {
           return;
         }
+        setQuoteError(
+          "We could not refresh the delivery quote. Check your connection and try again.",
+        );
       } finally {
         setQuoteLoading(false);
       }
@@ -119,6 +136,15 @@ export default function CheckoutPage() {
   const deliveryFee = hasItems ? deliveryQuote.deliveryCents : 0;
   const tipCents = hasItems ? Math.max(0, Math.round(riderTipCents)) : 0;
   const total = subtotal + deliveryFee + tipCents;
+  const contactDetailsComplete =
+    customerName.trim().length >= 2 && customerPhone.trim().length >= 8;
+  const supportLink = useMemo(
+    () =>
+      buildWhatsAppSupportLink(
+        "Hello Lethela, I need help with ordering or with availability in my area.",
+      ),
+    [],
+  );
   const whatsappLink = useMemo(() => {
     const deliveryAddress = [
       standNumber ? `Stand/house: ${standNumber}` : null,
@@ -198,6 +224,10 @@ export default function CheckoutPage() {
       setError("Confirm that you are 18 or older before paying for liquor.");
       return;
     }
+    if (quoteError) {
+      setError("Confirm the delivery quote before paying.");
+      return;
+    }
     const destination = destinationSuburb.trim() || "Klipfontein View, Midrand";
     setLoading(true);
     setError(null);
@@ -275,21 +305,24 @@ export default function CheckoutPage() {
         {items.length === 0 ? (
           <div className="mt-5 max-w-xl rounded-2xl border border-white/10 bg-white/5 p-5">
             <h2 className="text-lg font-semibold">No items in your cart yet.</h2>
-            <p className="mt-2 text-sm text-white/70">
-              Browse vendors first, or message Lethela on WhatsApp for help placing an order.
+            <p className="mt-2 text-sm leading-6 text-white/70">
+              Add a product from an approved vendor before creating an order. WhatsApp support can
+              help with availability, but it will not create an empty R0.00 order.
             </p>
-            <Button asChild className="mt-4 bg-lethela-primary text-white">
-              <Link href="/">Browse approved vendors</Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="ml-3 mt-4 border-white/30 text-white hover:border-white/60"
-            >
-              <a href={whatsappLink} target="_blank" rel="noreferrer">
-                Order via WhatsApp
-              </a>
-            </Button>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button asChild className="bg-lethela-primary text-white">
+                <Link href="/">Browse approved vendors</Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="border-white/30 text-white hover:border-white/60"
+              >
+                <a href={supportLink} target="_blank" rel="noreferrer">
+                  Get ordering help
+                </a>
+              </Button>
+            </div>
           </div>
         ) : (
           <>
@@ -414,11 +447,11 @@ export default function CheckoutPage() {
                 <span>Subtotal</span>
                 <span>{formatZAR(subtotal)}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-4">
                 <span>
                   Delivery
                   {deliveryQuote.distanceKm != null
-                    ? ` (${deliveryQuote.distanceKm.toFixed(2)} km from store)`
+                    ? ` (${deliveryQuote.distanceKm.toFixed(2)} ${deliveryQuote.distanceSource === "ROAD" ? "road km" : "estimated km"} from store)`
                     : ""}
                 </span>
                 <span>{formatZAR(deliveryFee)}</span>
@@ -459,9 +492,11 @@ export default function CheckoutPage() {
               <p className="text-xs text-white/60">
                 {quoteLoading
                   ? "Refreshing delivery quote..."
-                  : deliveryQuote.manualQuoteRequired
-                    ? "This address is outside the current delivery zone. Use WhatsApp for a manual quote."
-                    : DELIVERY_PRICING_WORDING}
+                  : quoteError
+                    ? quoteError
+                    : deliveryQuote.manualQuoteRequired
+                      ? "This address is outside the current delivery zone. Use WhatsApp for a manual quote."
+                      : DELIVERY_PRICING_WORDING}
               </p>
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
@@ -492,11 +527,11 @@ export default function CheckoutPage() {
                 className="bg-lethela-primary"
                 disabled={
                   loading ||
+                  Boolean(quoteError) ||
                   deliveryQuote.manualQuoteRequired ||
                   !onlineCheckoutAvailable ||
                   (hasAlcohol && !ageConfirmed) ||
-                  !customerName.trim() ||
-                  customerPhone.trim().length < 8
+                  !contactDetailsComplete
                 }
                 onClick={payOzow}
               >
@@ -510,22 +545,36 @@ export default function CheckoutPage() {
                         ? "Pay with Ozow (sandbox)"
                         : "Pay with Ozow"}
               </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="border-white/30 text-white hover:border-white/60"
-              >
-                <a
-                  href={whatsappLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() =>
-                    trackWhatsAppClick("checkout", { item_count: items.length, total_cents: total })
-                  }
+              {contactDetailsComplete ? (
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-white/30 text-white hover:border-white/60"
                 >
-                  Order via WhatsApp
-                </a>
-              </Button>
+                  <a
+                    href={whatsappLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() =>
+                      trackWhatsAppClick("checkout", {
+                        item_count: items.length,
+                        total_cents: total,
+                      })
+                    }
+                  >
+                    Order via WhatsApp
+                  </a>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="border-white/20 text-white/55"
+                  disabled
+                  title="Enter your name and phone number first"
+                >
+                  Complete contact details first
+                </Button>
+              )}
               <Button variant="outline" asChild>
                 <Link href="/">Continue shopping</Link>
               </Button>
@@ -533,9 +582,8 @@ export default function CheckoutPage() {
 
             {error ? <p className="mt-3 text-sm text-red-200">{error}</p> : null}
             <p className="mt-2 text-xs text-white/70">
-              Prefer not to pay online? Use{" "}
-              <span className="font-semibold">Order via WhatsApp</span> and we will confirm
-              manually.
+              Prefer not to pay online? Complete your contact details, then use{" "}
+              <span className="font-semibold">Order via WhatsApp</span> for manual confirmation.
             </p>
 
             {isOzowSandbox ? (

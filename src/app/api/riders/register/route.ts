@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isUniqueConstraintError, MinimalRegistrationSchema } from "@/lib/registration-schema";
+import { isEmailVerificationRequired, sendEmailVerification } from "@/lib/email-verification";
+import { settleWithin } from "@/lib/notification-channels";
 
 export async function POST(req: Request) {
   const limited = await checkRateLimit({
@@ -68,11 +70,19 @@ export async function POST(req: Request) {
       return { user, profile };
     });
 
+    const verificationRequired = isEmailVerificationRequired();
+    await settleWithin(sendEmailVerification(result.user), 4_000);
+
     return NextResponse.json({
       ok: true,
       ...result,
-      message: "Rider account created. Complete your profile in the dashboard.",
-      redirectTo: "/rider/dashboard/profile?welcome=1",
+      verificationRequired,
+      message: verificationRequired
+        ? "Rider account created. Verify your email before continuing."
+        : "Rider account created. Complete your profile in the dashboard.",
+      redirectTo: verificationRequired
+        ? "/signin?verification=sent"
+        : "/rider/dashboard/profile?welcome=1",
     });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
