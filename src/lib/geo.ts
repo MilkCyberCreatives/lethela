@@ -1,4 +1,11 @@
 export type LatLng = { lat: number; lng: number };
+export type RouteDistanceSource = "ROAD" | "ESTIMATED";
+
+export type RouteDistance = {
+  distanceKm: number;
+  durationMin: number | null;
+  source: RouteDistanceSource;
+};
 
 type KnownArea = {
   key: string;
@@ -43,8 +50,21 @@ const FALLBACK_AREAS: KnownArea[] = [
   },
 ];
 
+const ROAD_DISTANCE_FALLBACK_MULTIPLIER = 1.25;
+
 function normalize(value: string) {
   return value.toLowerCase().trim();
+}
+
+function mapsApiKey() {
+  return process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+}
+
+function parseGoogleDurationMinutes(value: unknown) {
+  const match = String(value || "").match(/^([0-9]+(?:\.[0-9]+)?)s$/);
+  if (!match) return null;
+  const seconds = Number(match[1]);
+  return Number.isFinite(seconds) ? Math.max(1, Math.ceil(seconds / 60)) : null;
 }
 
 export function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number) {
@@ -59,11 +79,70 @@ export function haversineKm(aLat: number, aLng: number, bLat: number, bLng: numb
   return R * c;
 }
 
+export async function routeDistance(origin: LatLng, destination: LatLng): Promise<RouteDistance> {
+  const googleKey = mapsApiKey();
+  if (googleKey) {
+    try {
+      const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+        method: "POST",
+        cache: "no-store",
+        signal: AbortSignal.timeout(4_500),
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": googleKey,
+          "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
+        },
+        body: JSON.stringify({
+          origin: {
+            location: {
+              latLng: { latitude: origin.lat, longitude: origin.lng },
+            },
+          },
+          destination: {
+            location: {
+              latLng: { latitude: destination.lat, longitude: destination.lng },
+            },
+          },
+          travelMode: "DRIVE",
+          routingPreference: "TRAFFIC_AWARE",
+          computeAlternativeRoutes: false,
+          languageCode: "en-ZA",
+          units: "METRIC",
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const route = json?.routes?.[0];
+        const distanceMeters = Number(route?.distanceMeters);
+        if (Number.isFinite(distanceMeters) && distanceMeters > 0) {
+          return {
+            distanceKm: Number((distanceMeters / 1000).toFixed(2)),
+            durationMin: parseGoogleDurationMinutes(route?.duration),
+            source: "ROAD",
+          };
+        }
+      }
+    } catch {
+      // Use a conservative road-distance estimate below.
+    }
+  }
+
+  const straightLineKm = haversineKm(origin.lat, origin.lng, destination.lat, destination.lng);
+  const estimatedRoadKm = Math.max(straightLineKm, straightLineKm * ROAD_DISTANCE_FALLBACK_MULTIPLIER);
+  const durationMin = Math.max(6, Math.ceil((estimatedRoadKm / 28) * 60 + 8));
+  return {
+    distanceKm: Number(estimatedRoadKm.toFixed(2)),
+    durationMin,
+    source: "ESTIMATED",
+  };
+}
+
 export async function geocodeSuburb(query: string): Promise<LatLng | null> {
   const clean = normalize(query);
   if (!clean) return null;
 
-  const googleKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const googleKey = mapsApiKey();
   if (googleKey) {
     try {
       const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
@@ -90,7 +169,7 @@ export async function geocodeSuburb(query: string): Promise<LatLng | null> {
 }
 
 export async function reverseGeocodePoint(point: LatLng) {
-  const googleKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const googleKey = mapsApiKey();
   if (googleKey) {
     try {
       const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
@@ -148,20 +227,18 @@ export async function reverseGeocodePoint(point: LatLng) {
 }
 
 export async function distanceMatrixETA(origin: LatLng, dest: LatLng) {
-  const distanceKm = haversineKm(origin.lat, origin.lng, dest.lat, dest.lng);
-  const avgSpeedKmh = 32;
-  const rushHour = (() => {
-    const hour = new Date().getHours();
-    if (hour >= 17 && hour <= 20) return 1.35;
-    if (hour >= 7 && hour <= 9) return 1.25;
-    return 1;
-  })();
+  const route = await routeDistance(origin, dest);
+  const hour = new Date().getHours();
+  const rush = hour >= 18 && hour <= 20 ? 1.25 : hour >= 12 && hour <= 13 ? 1.15 : 1;
+  const durationMin = route.durationMin
+    ? Math.max(6, Math.round(route.durationMin * rush))
+    : Math.max(6, Math.round(((route.distanceKm / 32) * 60 + 8) * rush));
 
-  const minutes = Math.max(6, Math.round(((distanceKm / avgSpeedKmh) * 60 + 8) * rushHour));
   return {
-    distanceKm: Number(distanceKm.toFixed(2)),
-    distanceText: `${distanceKm.toFixed(1)} km`,
-    durationMin: minutes,
-    durationText: `${minutes} min`,
+    distanceKm: route.distanceKm,
+    distanceText: `${route.distanceKm.toFixed(1)} km`,
+    durationMin,
+    durationText: `${durationMin} min`,
+    distanceSource: route.source,
   };
 }
