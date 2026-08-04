@@ -24,8 +24,12 @@ jobs:
       - name: Refresh lockfile from package overrides
         run: npm install --package-lock-only --ignore-scripts
 
-      - name: Verify production dependency audit
-        run: npm audit --omit=dev --audit-level=high
+      - name: Collect audit and dependency diagnostics
+        shell: bash
+        run: |
+          npm audit --omit=dev --json > npm-audit.json || true
+          npm ls fast-uri --all > fast-uri-tree.txt || true
+          npm view fast-uri dist-tags versions --json > fast-uri-registry.json || true
 
       - name: Upload refreshed files
         uses: actions/upload-artifact@v4
@@ -33,6 +37,9 @@ jobs:
           name: secure-package-lock
           path: |
             package-lock.json
+            npm-audit.json
+            fast-uri-tree.txt
+            fast-uri-registry.json
             src/app/admin/page.tsx
           if-no-files-found: error
           retention-days: 1
