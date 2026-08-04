@@ -154,8 +154,7 @@ export function getVendorReadiness(input: VendorReadinessInput) {
       label: "Owner documents",
       required: true,
       complete:
-        Boolean(input.hasKycDocuments) ||
-        (hasText(input.kycIdUrl) && hasText(input.kycProofUrl)),
+        Boolean(input.hasKycDocuments) || (hasText(input.kycIdUrl) && hasText(input.kycProofUrl)),
     },
   ];
 

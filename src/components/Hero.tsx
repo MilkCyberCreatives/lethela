@@ -507,7 +507,8 @@ export default function Hero({
               {resp.ok && Array.isArray(resp.results) && resp.results.length > 0 ? (
                 <div className="mt-3 grid gap-3">
                   {resp.results.slice(0, 4).map((result) => {
-                    const href = result.href || (result.slug ? `/vendors/${result.slug}` : "/search");
+                    const href =
+                      result.href || (result.slug ? `/vendors/${result.slug}` : "/search");
                     return (
                       <Link
                         key={`${result.kind}-${result.id}`}

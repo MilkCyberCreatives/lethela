@@ -296,9 +296,7 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
   }
 
   const mapped = dbVendors
-    .filter((vendor: VendorWithAlcohol) =>
-      isPublicMarketplaceVendor(publicReadinessFlags(vendor)),
-    )
+    .filter((vendor: VendorWithAlcohol) => isPublicMarketplaceVendor(publicReadinessFlags(vendor)))
     .map((vendor: VendorWithAlcohol) =>
       buildPublicVendorCard({
         id: vendor.id,
