@@ -99,7 +99,7 @@ export default function Hero({
   const [suggests, setSuggests] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const acRef = useRef<HTMLDivElement>(null);
-  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const blurTimeout = useRef<number | null>(null);
   const suggestionCache = useRef<Map<string, Suggestion[]>>(new Map());
   const [listening, setListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
