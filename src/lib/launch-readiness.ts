@@ -7,8 +7,9 @@ export type MarketplaceLaunchStatus = {
   description: string;
 };
 
-const publicModeEnabled =
-  process.env.NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE?.trim().toLowerCase() === "public";
+function publicModeEnabled() {
+  return process.env.NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE?.trim().toLowerCase() === "public";
+}
 
 export function getMarketplaceLaunchStatus({
   approvedVendorCount,
@@ -31,7 +32,7 @@ export function getMarketplaceLaunchStatus({
     };
   }
 
-  if (!publicModeEnabled || vendors < 3 || products < 20) {
+  if (!publicModeEnabled() || vendors < 3 || products < 20) {
     return {
       phase: "PILOT",
       eyebrow: "Pilot now open in Klipfontein View.",
