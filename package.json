@@ -83,7 +83,7 @@
     ]
   },
   "overrides": {
-    "fast-uri": "4.1.1",
+    "fast-uri": "4.1.2",
     "next": {
       "postcss": "8.5.23",
       "sharp": "0.35.3"
