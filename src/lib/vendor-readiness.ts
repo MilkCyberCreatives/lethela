@@ -45,6 +45,7 @@ export type VendorReadinessInput = {
   menuItemCount?: number | null;
   operatingHoursCount?: number | null;
   hasBanking?: boolean | null;
+  hasKycDocuments?: boolean | null;
 };
 
 export function normalizeVendorStatus(status: string | null | undefined) {
@@ -152,7 +153,9 @@ export function getVendorReadiness(input: VendorReadinessInput) {
       key: "owner-documents",
       label: "Owner documents",
       required: true,
-      complete: hasText(input.kycIdUrl) && hasText(input.kycProofUrl),
+      complete:
+        Boolean(input.hasKycDocuments) ||
+        (hasText(input.kycIdUrl) && hasText(input.kycProofUrl)),
     },
   ];
 
