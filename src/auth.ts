@@ -13,6 +13,7 @@ import {
   recordAuthSecurityEvent,
   type AppRole,
 } from "@/lib/auth-security";
+import { isEmailVerificationRequired } from "@/lib/email-verification";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NormalizedEmailSchema } from "@/lib/identity";
 
@@ -134,6 +135,16 @@ export const authOptions: NextAuthOptions = {
             email,
             eventType: shouldLock ? "ACCOUNT_LOCKED" : "LOGIN",
             outcome: "FAILED",
+          });
+          return null;
+        }
+
+        if (isEmailVerificationRequired() && !user.emailVerifiedAt) {
+          await recordAuthSecurityEvent({
+            userId: user.id,
+            email,
+            eventType: "LOGIN",
+            outcome: "BLOCKED",
           });
           return null;
         }
