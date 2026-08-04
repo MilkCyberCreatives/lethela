@@ -18,6 +18,14 @@ function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+function orderEarnings(order: {
+  riderPayoutCents: number;
+  deliveryFeeCents: number;
+  riderTipCents: number;
+}) {
+  return order.riderPayoutCents || order.deliveryFeeCents + order.riderTipCents;
+}
+
 function sumOrders(
   orders: Array<{
     riderPayoutCents: number;
@@ -27,11 +35,7 @@ function sumOrders(
 ) {
   return orders.reduce(
     (totals, order) => ({
-      totalCents:
-        totals.totalCents || order.riderPayoutCents
-          ? totals.totalCents +
-            (order.riderPayoutCents || order.deliveryFeeCents + order.riderTipCents)
-          : 0,
+      totalCents: totals.totalCents + orderEarnings(order),
       deliveryCents: totals.deliveryCents + order.deliveryFeeCents,
       tipCents: totals.tipCents + order.riderTipCents,
       deliveries: totals.deliveries + 1,
@@ -93,7 +97,7 @@ export async function GET() {
     recent: orders.slice(0, 8).map((order) => ({
       ref: order.ozowReference || order.publicId,
       vendor: order.vendor?.name || "Vendor",
-      totalCents: order.riderPayoutCents || order.deliveryFeeCents + order.riderTipCents,
+      totalCents: orderEarnings(order),
       deliveryCents: order.deliveryFeeCents,
       tipCents: order.riderTipCents,
       deliveredAt: order.updatedAt,
