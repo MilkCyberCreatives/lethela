@@ -1,0 +1,67 @@
+name: Format launch readiness changes
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    name: Format changed files
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/launch-readiness-actions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out pull request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Check one-time request
+        id: request
+        shell: bash
+        run: |
+          if [ -f .github/format-launch-readiness.request ]; then
+            echo "requested=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "requested=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Use Node.js 24
+        if: steps.request.outputs.requested == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.request.outputs.requested == 'true'
+        run: npm ci
+
+      - name: Apply Prettier formatting
+        if: steps.request.outputs.requested == 'true'
+        run: npx prettier --write .
+
+      - name: Remove one-time formatting workflow
+        if: steps.request.outputs.requested == 'true'
+        run: |
+          rm -f .github/format-launch-readiness.request
+          rm -f .github/workflows/format-launch-readiness.yml
+
+      - name: Commit formatted files
+        if: steps.request.outputs.requested == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No formatting changes to commit."
+            exit 0
+          fi
+          git commit -m "Format launch readiness implementation"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
