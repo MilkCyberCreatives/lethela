@@ -41,30 +41,35 @@ function decodeKey(value) {
   return Buffer.from(padded, "base64");
 }
 
+function read(values, key) {
+  return String(values[key] || "").trim();
+}
+
 const { values, source } = loadValues(process.argv[2]);
 const errors = [];
 const warnings = [];
 
 for (const key of ["NEXT_PUBLIC_SITE_URL", "NEXTAUTH_URL"]) {
-  const value = String(values[key] || "")
-    .trim()
-    .replace(/\/+$/, "");
+  const value = read(values, key).replace(/\/+$/, "");
   if (value !== CANONICAL_SITE_URL) {
     errors.push(`${key}: must be exactly ${CANONICAL_SITE_URL}.`);
   }
 }
 
-const bankKey = String(values.BANK_DATA_ENCRYPTION_KEY || "").trim();
+for (const key of [
+  "NEXTAUTH_SECRET",
+  "VENDOR_SESSION_SECRET",
+  "RIDER_CONSOLE_SECRET",
+  "ADMIN_APPROVAL_KEY",
+]) {
+  if (!read(values, key)) errors.push(`${key}: must be configured with a protected server secret.`);
+}
+
+const bankKey = read(values, "BANK_DATA_ENCRYPTION_KEY");
 if (!bankKey) {
-  if (!String(values.NEXTAUTH_SECRET || "").trim()) {
-    errors.push(
-      "BANK_DATA_ENCRYPTION_KEY or NEXTAUTH_SECRET: one protected server secret is required for bank data encryption.",
-    );
-  } else {
-    warnings.push(
-      "BANK_DATA_ENCRYPTION_KEY: not configured; banking data will use a key derived from NEXTAUTH_SECRET until a dedicated key is added.",
-    );
-  }
+  errors.push(
+    "BANK_DATA_ENCRYPTION_KEY: a dedicated 32-byte production key is required; do not rely on a session-secret fallback for launch.",
+  );
 } else {
   try {
     if (decodeKey(bankKey).length !== 32) {
@@ -75,8 +80,64 @@ if (!bankKey) {
   }
 }
 
-if (!String(values.SUPABASE_PRIVATE_BUCKET || "").trim()) {
-  warnings.push("SUPABASE_PRIVATE_BUCKET: private KYC and licence storage is not configured.");
+const uploadStorage = read(values, "UPLOAD_STORAGE").toLowerCase();
+if (uploadStorage !== "supabase") {
+  errors.push("UPLOAD_STORAGE: production must use durable private-capable Supabase storage.");
+}
+if (!read(values, "SUPABASE_URL")) errors.push("SUPABASE_URL: must be configured.");
+if (!read(values, "SUPABASE_SERVICE_ROLE")) {
+  errors.push("SUPABASE_SERVICE_ROLE: must be configured as a server-only secret.");
+}
+if (!read(values, "SUPABASE_PRIVATE_BUCKET")) {
+  errors.push("SUPABASE_PRIVATE_BUCKET: a non-public KYC, banking and licence bucket is required.");
+}
+
+const verificationRequired = read(values, "EMAIL_VERIFICATION_REQUIRED").toLowerCase();
+if (verificationRequired && !["true", "false"].includes(verificationRequired)) {
+  errors.push("EMAIL_VERIFICATION_REQUIRED: must be exactly true or false.");
+}
+if (verificationRequired === "true") {
+  if (!read(values, "RESEND_API_KEY")) {
+    errors.push("RESEND_API_KEY: required when mandatory email verification is enabled.");
+  }
+  if (!read(values, "EMAIL_VERIFICATION_SECRET") && !read(values, "NEXTAUTH_SECRET")) {
+    errors.push(
+      "EMAIL_VERIFICATION_SECRET or NEXTAUTH_SECRET: required to sign email verification links.",
+    );
+  }
+}
+
+const launchMode = read(values, "NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE").toLowerCase() || "prelaunch";
+if (!["prelaunch", "pilot", "public"].includes(launchMode)) {
+  errors.push(
+    "NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE: must be prelaunch, pilot or public.",
+  );
+}
+if (launchMode === "public") {
+  for (const key of [
+    "DATABASE_RESTORE_TESTED_AT",
+    "PRIVATE_STORAGE_VERIFIED_AT",
+    "REFUND_FLOW_TESTED_AT",
+  ]) {
+    if (!read(values, key)) {
+      errors.push(`${key}: required before public launch mode may be enabled.`);
+    }
+  }
+}
+
+if (!read(values, "SENTRY_DSN")) {
+  warnings.push("SENTRY_DSN: production error monitoring is strongly recommended.");
+}
+if (!read(values, "SUPPORT_EMAIL_TO") && !read(values, "ADMIN_NOTIFICATION_EMAILS")) {
+  warnings.push("SUPPORT_EMAIL_TO: configure a monitored support-case inbox.");
+}
+if (!read(values, "PRIVATE_STORAGE_VERIFIED_AT")) {
+  warnings.push(
+    "PRIVATE_STORAGE_VERIFIED_AT: record the last cross-account access and signed-link expiry test.",
+  );
+}
+if (!read(values, "DATABASE_RESTORE_TESTED_AT")) {
+  warnings.push("DATABASE_RESTORE_TESTED_AT: record a successful restore drill before public launch.");
 }
 
 console.log(`Checking Lethela security environment from ${source}`);
