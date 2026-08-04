@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { LayoutDashboard, LifeBuoy, ShieldCheck, Store, UserRoundCog } from "lucide-react";
 import MainHeader from "@/components/MainHeader";
 import RiderDashboardClient from "@/components/rider/RiderDashboardClient";
+import RiderOperationsPanel from "@/components/rider/RiderOperationsPanel";
 import { auth } from "@/auth";
 
 export const metadata: Metadata = {
@@ -128,7 +129,10 @@ export default async function RiderDashboardPage() {
               Secure session
             </span>
           </header>
-          <RiderDashboardClient />
+          <div className="space-y-5">
+            <RiderOperationsPanel />
+            <RiderDashboardClient />
+          </div>
         </div>
       </section>
     </main>
