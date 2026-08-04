@@ -1,1 +1,0 @@
-Build the validated main branch in GitHub Actions and deploy the prebuilt output to Lethela production once.
