@@ -1,0 +1,82 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+async function source(path: string) {
+  return readFile(new URL(`../${path}`, import.meta.url), "utf8");
+}
+
+test("generated app icons and branded social images are configured", async () => {
+  const [icon, appleIcon, openGraph, twitter, layout] = await Promise.all([
+    source("src/app/icon.tsx"),
+    source("src/app/apple-icon.tsx"),
+    source("src/app/opengraph-image.tsx"),
+    source("src/app/twitter-image.tsx"),
+    source("src/app/layout.tsx"),
+  ]);
+
+  assert.match(icon, /ImageResponse/);
+  assert.match(appleIcon, /180/);
+  assert.match(openGraph, /createBrandSocialImage/);
+  assert.match(twitter, /createBrandSocialImage/);
+  assert.match(layout, /defaultSocialImage/);
+  assert.match(layout, /\/apple-icon/);
+});
+
+test("the hero does not fetch hidden nearby-vendor content", async () => {
+  const hero = await source("src/components/Hero.tsx");
+  assert.doesNotMatch(hero, /NearbyVendorResponse/);
+  assert.doesNotMatch(hero, /fetch\(`\/api\/vendors/);
+  assert.doesNotMatch(hero, /\{false \? \(/);
+  assert.match(hero, /fetchPriority="high"/);
+  assert.match(hero, /dynamic\(\(\) => import\("@\/components\/LocationPicker"\)/);
+});
+
+test("public catalogue code does not select private bank or KYC values", async () => {
+  const [home, product, sitemap] = await Promise.all([
+    source("src/lib/home-data.ts"),
+    source("src/app/products/[id]/page.tsx"),
+    source("src/app/sitemap.ts"),
+  ]);
+
+  for (const publicSource of [home, product, sitemap]) {
+    assert.doesNotMatch(publicSource, /bankAccountNumber:\s*true/);
+    assert.doesNotMatch(publicSource, /kycIdUrl:\s*true/);
+    assert.doesNotMatch(publicSource, /kycProofUrl:\s*true/);
+  }
+});
+
+test("public vendor profiles use an explicit public-field query", async () => {
+  const queries = await source("src/server/queries.ts");
+  assert.match(queries, /select:\s*\{/);
+  assert.doesNotMatch(queries, /include:\s*\{\s*products/);
+  assert.doesNotMatch(queries, /bankAccountNumber:\s*true/);
+  assert.doesNotMatch(queries, /kycIdUrl:\s*true/);
+});
+
+test("marketing scripts are consent-gated and lazy loaded", async () => {
+  const marketing = await source("src/components/MarketingScripts.tsx");
+  assert.match(marketing, /canUseAnalyticsCookies/);
+  assert.match(marketing, /strategy="lazyOnload"/);
+  assert.doesNotMatch(marketing, /strategy="afterInteractive"/);
+});
+
+test("the sitemap is cached and omits private or utility routes", async () => {
+  const sitemap = await source("src/app/sitemap.ts");
+  assert.match(sitemap, /export const revalidate = 3600/);
+  assert.doesNotMatch(sitemap, /force-dynamic/);
+  assert.doesNotMatch(sitemap, /\/track`/);
+  assert.doesNotMatch(sitemap, /\/llms\.txt`/);
+  assert.doesNotMatch(sitemap, /\/feeds\/google-merchant\.xml`/);
+});
+
+test("image optimisation and session polling safeguards remain enabled", async () => {
+  const [nextConfig, providers] = await Promise.all([
+    source("next.config.mjs"),
+    source("src/components/Providers.tsx"),
+  ]);
+  assert.match(nextConfig, /image\/avif/);
+  assert.match(nextConfig, /minimumCacheTTL:\s*86400/);
+  assert.match(providers, /refetchOnWindowFocus=\{false\}/);
+  assert.match(providers, /refetchInterval=\{0\}/);
+});
