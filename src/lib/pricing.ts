@@ -1,5 +1,5 @@
 // src/lib/pricing.ts
-import { geocodeSuburb, haversineKm, type LatLng } from "@/lib/geo";
+import { geocodeSuburb, routeDistance, type LatLng } from "@/lib/geo";
 
 export const DEFAULT_DELIVERY_FEE_CENTS = 1000;
 export const INCLUDED_DELIVERY_RADIUS_KM = 1;
@@ -7,7 +7,7 @@ export const DELIVERY_FEE_PER_KM_CENTS = 1000;
 export const EXTRA_DELIVERY_FEE_PER_KM_CENTS = DELIVERY_FEE_PER_KM_CENTS;
 export const MAX_LAUNCH_DELIVERY_DISTANCE_KM = 10;
 export const DELIVERY_PRICING_WORDING =
-  "Lethela delivery is R10 per km with a R10 minimum. The full delivery fee goes to the rider.";
+  "Lethela delivery is R10 per road kilometre with a R10 minimum. The full delivery fee goes to the rider.";
 
 export const DELIVERY_FEE_TIERS = [
   { maxKm: 1, feeCents: 1000, label: "0-1 km" },
@@ -78,17 +78,8 @@ export async function quoteDelivery({
         : Promise.resolve(null),
   ]);
 
-  const distanceKm =
-    originPoint && destinationPoint
-      ? Number(
-          haversineKm(
-            originPoint.lat,
-            originPoint.lng,
-            destinationPoint.lat,
-            destinationPoint.lng,
-          ).toFixed(2),
-        )
-      : null;
+  const route = originPoint && destinationPoint ? await routeDistance(originPoint, destinationPoint) : null;
+  const distanceKm = route?.distanceKm ?? null;
 
   return {
     originResolved: Boolean(originPoint),
@@ -97,6 +88,8 @@ export async function quoteDelivery({
     baseFeeCents: DEFAULT_DELIVERY_FEE_CENTS,
     deliveryCents: deliveryFeeCents(distanceKm),
     distanceKm,
+    distanceSource: route?.source ?? null,
+    durationMin: route?.durationMin ?? null,
     manualQuoteRequired: needsManualDeliveryQuote(distanceKm),
     maxLaunchDistanceKm: MAX_LAUNCH_DELIVERY_DISTANCE_KM,
     includedRadiusKm: INCLUDED_DELIVERY_RADIUS_KM,
