@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
       where: {
         status: { in: ["DRAFT", "CHANGES_REQUESTED"] },
         createdAt: { gte: eightDaysAgo },
-        owner: { email: { not: "" } },
+        owner: { is: { email: { not: "" } } },
       },
       select: {
         id: true,
