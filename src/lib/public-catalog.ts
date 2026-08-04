@@ -29,6 +29,8 @@ type PublicVendorSource = {
   bankAccountName?: string | null;
   bankAccountNumber?: string | null;
   bankBranchCode?: string | null;
+  hasBanking?: boolean | null;
+  hasKycDocuments?: boolean | null;
   temporaryClosed?: boolean | null;
   liquorLicenceUrl?: string | null;
   liquorLicenceExpiry?: Date | string | null;
