@@ -8,6 +8,7 @@ import RouteThemeMarker from "@/components/RouteThemeMarker";
 import StructuredData from "@/components/StructuredData";
 import VisitorTelemetry from "@/components/VisitorTelemetry";
 import { getFooterSocialLinks, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
+import { buildSocialCardUrl } from "@/lib/social-card";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 import "./globals.css";
 import "./dashboard.css";
@@ -15,6 +16,7 @@ import "./dashboard.css";
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION?.trim();
 const facebookDomainVerification = process.env.NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION?.trim();
+const defaultSocialImage = buildSocialCardUrl(`${SITE_NAME} | Siyashesha`, SITE_DESCRIPTION);
 
 const otherVerification: Record<string, string> = {};
 if (bingVerification) otherVerification["msvalidate.01"] = bingVerification;
@@ -28,6 +30,12 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  manifest: "/manifest.webmanifest",
+  formatDetection: { email: false, address: false, telephone: false },
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "black-translucent" },
   keywords: [
     "food delivery South Africa",
     "takeaway delivery South Africa",
@@ -80,9 +88,12 @@ export const metadata: Metadata = {
     other: Object.keys(otherVerification).length > 0 ? otherVerification : undefined,
   },
   icons: {
-    icon: "/favicon.svg",
-    apple: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: [
+      { url: "/icon", type: "image/png", sizes: "64x64" },
+      { url: "/favicon.svg", type: "image/svg+xml", sizes: "any" },
+    ],
+    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+    shortcut: "/icon",
   },
   referrer: "origin-when-cross-origin",
   openGraph: {
@@ -94,10 +105,11 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: absoluteUrl("/social-preview.png"),
+        url: defaultSocialImage,
         width: 1200,
         height: 630,
         alt: `${SITE_NAME} township delivery platform`,
+        type: "image/png",
       },
     ],
   },
@@ -105,7 +117,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${SITE_NAME} | Siyashesha`,
     description: SITE_DESCRIPTION,
-    images: [absoluteUrl("/social-preview.png")],
+    images: [defaultSocialImage],
   },
   category: "Food delivery",
 };

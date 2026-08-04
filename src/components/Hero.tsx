@@ -1,17 +1,29 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MapPin, Mic, Navigation, Search } from "lucide-react";
-import LocationPicker from "@/components/LocationPicker";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatZAR } from "@/lib/format";
 import type { MarketplaceLaunchStatus } from "@/lib/launch-readiness";
 import { persistPreferredLocation, readPreferredLocation } from "@/lib/location-preference";
 import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
+
+const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="rounded-lg border border-white/15 bg-white/5 p-4 text-sm text-white/65"
+      role="status"
+    >
+      Loading location search…
+    </div>
+  ),
+});
 
 type Suggestion = {
   id: string;
@@ -42,20 +54,6 @@ type SearchResponse = {
   error?: string;
 };
 
-type NearbyVendor = {
-  id: string;
-  name: string;
-  slug: string;
-  cuisines?: string[];
-  eta?: string;
-  badge?: string | null;
-};
-
-type NearbyVendorResponse = {
-  ok?: boolean;
-  items?: NearbyVendor[];
-};
-
 type SpeechRecognitionEventLike = {
   results: ArrayLike<ArrayLike<{ transcript: string }>>;
 };
@@ -78,7 +76,6 @@ declare global {
 
 type HeroProps = {
   initialArea?: string | null;
-  initialNearbyVendors?: NearbyVendor[];
   launchStatus?: MarketplaceLaunchStatus;
 };
 
@@ -92,7 +89,6 @@ const fallbackLaunchStatus: MarketplaceLaunchStatus = {
 
 export default function Hero({
   initialArea = null,
-  initialNearbyVendors = [],
   launchStatus = fallbackLaunchStatus,
 }: HeroProps) {
   const router = useRouter();
@@ -100,13 +96,11 @@ export default function Hero({
   const [resp, setResp] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchNotice, setSearchNotice] = useState<string | null>(null);
-
   const [suggests, setSuggests] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const acRef = useRef<HTMLDivElement>(null);
-  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const blurTimeout = useRef<number | null>(null);
   const suggestionCache = useRef<Map<string, Suggestion[]>>(new Map());
-
   const [listening, setListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
@@ -116,9 +110,6 @@ export default function Hero({
   const [activeArea, setActiveArea] = useState<string | null>(
     () => readPreferredLocation()?.label || initialArea || null,
   );
-  const [nearbyVendors, setNearbyVendors] = useState<NearbyVendor[]>(initialNearbyVendors);
-  const [nearbyLoading, setNearbyLoading] = useState(false);
-  const seededNearbyRef = useRef(false);
 
   useEffect(() => {
     const syncLocation = () => {
@@ -139,68 +130,33 @@ export default function Hero({
     };
   }, [initialArea]);
 
-  useEffect(() => {
-    if (!activeArea) {
-      setNearbyVendors([]);
-      setNearbyLoading(false);
-      return;
-    }
-
-    if (!seededNearbyRef.current && initialNearbyVendors.length > 0 && activeArea === initialArea) {
-      seededNearbyRef.current = true;
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(async () => {
-      setNearbyLoading(true);
-      try {
-        const params = new URLSearchParams({ suburb: activeArea, take: "3" });
-        const response = await fetch(`/api/vendors?${params.toString()}`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const json = (await response.json().catch(() => ({}))) as NearbyVendorResponse;
-        if (!response.ok || !json.ok) {
-          setNearbyVendors([]);
-          return;
-        }
-        setNearbyVendors(Array.isArray(json.items) ? json.items.slice(0, 3) : []);
-      } catch (error: unknown) {
-        if (error instanceof Error && error.name === "AbortError") return;
-        setNearbyVendors([]);
-      } finally {
-        setNearbyLoading(false);
-      }
-    }, 180);
-
-    return () => {
-      controller.abort();
-      window.clearTimeout(timeoutId);
-    };
-  }, [activeArea, initialArea, initialNearbyVendors]);
-
   const runSearch = async () => {
+    const query = q.trim();
+    if (query.length < 2) {
+      setSearchNotice("Enter at least two letters to search.");
+      return;
+    }
+
     setSearchNotice(null);
     setLoading(true);
     try {
       void trackVisitorEvent({
         type: "search",
         path: typeof window !== "undefined" ? window.location.pathname : undefined,
-        searchQuery: q,
+        searchQuery: query,
         preferredArea: activeArea,
       });
       pushDataLayerEvent("search", {
-        search_term: q,
+        search_term: query,
         preferred_area: activeArea,
       });
       const response = await fetch("/api/ai/search", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ q }),
+        body: JSON.stringify({ q: query }),
       });
-      const data = await response.json();
-      setResp(data);
+      const data = (await response.json().catch(() => ({}))) as SearchResponse;
+      setResp(response.ok ? data : { ok: false, error: data.error || "Search failed" });
     } catch {
       setResp({ ok: false, error: "Search failed" });
     } finally {
@@ -225,7 +181,7 @@ export default function Hero({
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(async () => {
+    const timeoutId = window.setTimeout(async () => {
       try {
         const response = await fetch("/api/ai/semantic-search", {
           method: "POST",
@@ -233,18 +189,19 @@ export default function Hero({
           body: JSON.stringify({ q: text }),
           signal: controller.signal,
         });
-        const json = await response.json();
-        const results = Array.isArray(json?.results) ? json.results : [];
+        const json = await response.json().catch(() => ({}));
+        const results = Array.isArray(json?.results) ? (json.results as Suggestion[]) : [];
         suggestionCache.current.set(cacheKey, results);
         setSuggests(results);
         setOpen(results.length > 0);
-      } catch {
-        // ignore
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setSuggests([]);
       }
     }, 320);
 
     return () => {
-      clearTimeout(timeoutId);
+      window.clearTimeout(timeoutId);
       controller.abort();
     };
   }, [q]);
@@ -260,6 +217,12 @@ export default function Hero({
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (blurTimeout.current) window.clearTimeout(blurTimeout.current);
+    };
+  }, []);
+
+  useEffect(() => {
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) {
       setVoiceSupported(false);
@@ -272,7 +235,7 @@ export default function Hero({
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onresult = (event: SpeechRecognitionEventLike) => {
-      const text = event.results[0][0].transcript;
+      const text = event.results[0]?.[0]?.transcript || "";
       setQ(text);
     };
     recognition.onend = () => setListening(false);
@@ -362,10 +325,16 @@ export default function Hero({
 
   return (
     <section className="relative overflow-hidden">
-      <div
+      <Image
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-25"
-        style={{ backgroundImage: "url('/hero.jpg')" }}
+        src="/hero.jpg"
+        alt=""
+        fill
+        priority
+        fetchPriority="high"
+        sizes="100vw"
+        quality={72}
+        className="pointer-events-none object-cover object-center opacity-25"
       />
       <div
         aria-hidden
@@ -401,7 +370,7 @@ export default function Hero({
                   onFocus={() => suggests.length > 0 && setOpen(true)}
                   onChange={(event) => setQ(event.target.value)}
                   onBlur={() => {
-                    blurTimeout.current = setTimeout(() => setOpen(false), 120);
+                    blurTimeout.current = window.setTimeout(() => setOpen(false), 120);
                   }}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") setOpen(false);
@@ -409,20 +378,21 @@ export default function Hero({
                   className="bg-white text-black pr-10"
                   aria-label="AI search query"
                 />
-                <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-black/60 pointer-events-none" />
+                <Search className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-black/60" />
                 {open && suggests.length > 0 ? (
                   <div
                     role="listbox"
-                    className="absolute mt-1 w-full rounded-lg border border-white/10 bg-lethela-secondary shadow-2xl z-10"
+                    className="absolute z-10 mt-1 w-full rounded-lg border border-white/10 bg-lethela-secondary shadow-2xl"
                     onMouseDown={(event) => event.preventDefault()}
                   >
                     {suggests.map((suggestion) => {
                       const href =
-                        suggestion.kind === "vendor" && suggestion.slug
+                        suggestion.href ||
+                        (suggestion.kind === "vendor" && suggestion.slug
                           ? `/vendors/${suggestion.slug}`
                           : suggestion.slug
                             ? `/vendors/${suggestion.slug}`
-                            : null;
+                            : null);
 
                       const content = (
                         <>
@@ -479,7 +449,7 @@ export default function Hero({
                 type="button"
                 onClick={startListening}
                 disabled={!voiceSupported}
-                className={`bg-lethela-secondary text-white border border-white/20 hover:bg-lethela-secondary ${listening ? "opacity-80" : ""}`}
+                className={`border border-white/20 bg-lethela-secondary text-white hover:bg-lethela-secondary ${listening ? "opacity-80" : ""}`}
                 aria-label="Voice search"
                 title="Voice search"
               >
@@ -505,7 +475,7 @@ export default function Hero({
                   setShowLocationPicker((value) => !value);
                 }}
               >
-                <MapPin className="h-3.5 w-3.5 mr-2" />
+                <MapPin className="mr-2 h-3.5 w-3.5" />
                 Enter address
               </Button>
               <Button
@@ -515,7 +485,7 @@ export default function Hero({
                 onClick={() => void handleUseCurrentLocation()}
                 disabled={locationLoading}
               >
-                <Navigation className="h-3.5 w-3.5 mr-2" />
+                <Navigation className="mr-2 h-3.5 w-3.5" />
                 {locationLoading ? "Locating..." : "Use my location"}
               </Button>
             </div>
@@ -533,7 +503,7 @@ export default function Hero({
           {searchNotice ? <p className="mt-4 text-sm text-white/70">{searchNotice}</p> : null}
           {resp ? (
             <div className="mt-6 w-full max-w-2xl rounded-xl border border-white/10 bg-lethela-secondary p-4 text-left text-sm">
-              <div className="text-white/85 font-medium">Search results</div>
+              <div className="font-medium text-white/85">Search results</div>
               {resp.ok && Array.isArray(resp.results) && resp.results.length > 0 ? (
                 <div className="mt-3 grid gap-3">
                   {resp.results.slice(0, 4).map((result) => {
@@ -567,7 +537,7 @@ export default function Hero({
               )}
               {resp.ok ? (
                 <Link
-                  href={`/search?q=${encodeURIComponent(q)}`}
+                  href={`/search?q=${encodeURIComponent(q.trim())}`}
                   className="mt-3 inline-flex text-xs underline"
                 >
                   View full results
@@ -576,67 +546,6 @@ export default function Hero({
             </div>
           ) : null}
         </div>
-
-        {false ? (
-          <div className="hidden">
-            <div className="card-glass w-full max-w-md rounded-2xl p-6 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30">
-              <p className="text-sm text-white/80">
-                {activeArea
-                  ? `Nearby options in ${activeArea}.`
-                  : "Set your area to see nearby options."}
-              </p>
-              <div className="mt-3 min-h-28 rounded-xl bg-white/10 p-4">
-                {!activeArea ? (
-                  <div className="flex h-full min-h-20 items-center justify-center text-center text-sm text-white/55">
-                    Enter your address or use your location to load nearby vendors.
-                  </div>
-                ) : nearbyLoading ? (
-                  <div className="space-y-3">
-                    {Array.from({ length: 3 }).map((_, index) => (
-                      <div key={index} className="h-4 animate-pulse rounded-full bg-white/10" />
-                    ))}
-                  </div>
-                ) : nearbyVendors.length > 0 ? (
-                  <div className="space-y-3">
-                    {nearbyVendors.map((vendor) => (
-                      <Link
-                        key={vendor.id}
-                        href={`/vendors/${vendor.slug}`}
-                        className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 transition-colors hover:border-white/20 hover:bg-white/[0.05]"
-                      >
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium text-white">
-                            {vendor.name}
-                          </div>
-                          <div className="truncate text-[11px] text-white/65">
-                            {vendor.cuisines?.slice(0, 2).join(" • ") || "Open now"}
-                          </div>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <div className="text-xs font-medium text-white">
-                            {vendor.eta || "20-25 min"}
-                          </div>
-                          {vendor.badge ? (
-                            <div className="text-[10px] text-white/55">{vendor.badge}</div>
-                          ) : null}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex h-full min-h-20 items-center justify-center text-center text-sm text-white/55">
-                    No nearby vendors are available for this area yet.
-                  </div>
-                )}
-              </div>
-              <p className="mt-4 text-xs text-white/70">
-                {activeArea
-                  ? `${nearbyVendors.length || 0} nearby option${nearbyVendors.length === 1 ? "" : "s"} ready to browse.`
-                  : "Built for South Africa • Performance-first"}
-              </p>
-            </div>
-          </div>
-        ) : null}
       </div>
     </section>
   );

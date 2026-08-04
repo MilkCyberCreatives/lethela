@@ -1,12 +1,13 @@
-import { prisma } from "@/lib/db";
+import type { ProductLite } from "@/components/ProductCard";
 import { aiPredictETA, aiRecommend, aiRerankVendors } from "@/lib/ai";
-import { inferProductCategory } from "@/lib/categories";
 import { getFallbackProducts, getFallbackVendorCards } from "@/lib/catalog-fallback";
 import {
   shouldFallbackWhenCatalogEmpty,
   shouldPreferCatalogFallback,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
+import { inferProductCategory } from "@/lib/categories";
+import { prisma } from "@/lib/db";
 import {
   buildPublicVendorCard,
   isPublicCatalogProduct,
@@ -17,7 +18,6 @@ import {
   getSqliteCatalogProducts,
   getSqliteCatalogVendors,
 } from "@/lib/sqlite-catalog";
-import type { ProductLite } from "@/components/ProductCard";
 import type { Vendor } from "@/types";
 
 type VendorWithAlcohol = {
@@ -43,12 +43,6 @@ type VendorWithAlcohol = {
   sectionArea?: string | null;
   storeType?: string | null;
   deliveryFee?: number | null;
-  kycIdUrl?: string | null;
-  kycProofUrl?: string | null;
-  bankName?: string | null;
-  bankAccountName?: string | null;
-  bankAccountNumber?: string | null;
-  bankBranchCode?: string | null;
   _count?: { products?: number; items?: number; hours?: number };
 };
 
@@ -62,22 +56,23 @@ type RecommendationCard = {
 };
 
 const HOME_QUERY_TIMEOUT_MS = 2500;
-function timeoutFallback<T>(ms: number, fallback: T): Promise<T> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(fallback), ms);
-  });
-}
 
 async function withTimeout<T>(
   work: () => Promise<T>,
   fallback: T,
   ms = HOME_QUERY_TIMEOUT_MS,
 ): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
     const guarded = Promise.resolve(work()).catch(() => fallback);
-    return await Promise.race([guarded, timeoutFallback(ms, fallback)]);
+    const timeout = new Promise<T>((resolve) => {
+      timeoutId = setTimeout(() => resolve(fallback), ms);
+    });
+    return await Promise.race([guarded, timeout]);
   } catch {
     return fallback;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
@@ -85,6 +80,15 @@ function normalizeSuburb(suburb: string | null) {
   if (!suburb) return null;
   const [firstPart] = suburb.split(",");
   return firstPart?.trim() || suburb.trim();
+}
+
+function publicReadinessFlags<T extends object>(vendor: T) {
+  return {
+    ...vendor,
+    email: "verified@lethela.local",
+    hasBanking: true,
+    hasKycDocuments: true,
+  };
 }
 
 export async function getHomeRecommendations(suburb: string | null): Promise<RecommendationCard[]> {
@@ -118,6 +122,20 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
           vendor: {
             isActive: true,
             status: { in: ["ACTIVE", "APPROVED"] },
+            temporaryClosed: false,
+            phone: { not: null },
+            email: { not: null },
+            address: { not: null },
+            city: { not: null },
+            province: { not: null },
+            storeType: { not: null },
+            etaMins: { gte: 10 },
+            kycIdUrl: { not: null },
+            kycProofUrl: { not: null },
+            bankName: { not: null },
+            bankAccountName: { not: null },
+            bankAccountNumber: { not: null },
+            hours: { some: { closed: false } },
             ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
           },
         },
@@ -136,6 +154,7 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
               deliveryFee: true,
               status: true,
               isActive: true,
+              temporaryClosed: true,
               phone: true,
               address: true,
               suburb: true,
@@ -147,12 +166,6 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
               storeType: true,
               cuisine: true,
               etaMins: true,
-              kycIdUrl: true,
-              kycProofUrl: true,
-              bankName: true,
-              bankAccountName: true,
-              bankAccountNumber: true,
-              bankBranchCode: true,
               _count: { select: { products: true, items: true, hours: true } },
             },
           },
@@ -170,7 +183,11 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
   }
 
   return rows
-    .filter((item) => isPublicCatalogProduct(item) && isPublicMarketplaceVendor(item.vendor))
+    .filter(
+      (item) =>
+        isPublicCatalogProduct(item) &&
+        isPublicMarketplaceVendor(publicReadinessFlags(item.vendor)),
+    )
     .map((item) => ({
       id: item.id,
       name: item.name,
@@ -218,6 +235,19 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
           isActive: true,
           status: { in: ["ACTIVE", "APPROVED"] },
           temporaryClosed: false,
+          phone: { not: null },
+          email: { not: null },
+          address: { not: null },
+          city: { not: null },
+          province: { not: null },
+          storeType: { not: null },
+          etaMins: { gte: 10 },
+          kycIdUrl: { not: null },
+          kycProofUrl: { not: null },
+          bankName: { not: null },
+          bankAccountName: { not: null },
+          bankAccountNumber: { not: null },
+          hours: { some: { closed: false } },
           products: { some: { isAlcohol: false, inStock: true, status: "APPROVED" } },
           ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
         },
@@ -242,12 +272,6 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
           sectionArea: true,
           storeType: true,
           deliveryFee: true,
-          kycIdUrl: true,
-          kycProofUrl: true,
-          bankName: true,
-          bankAccountName: true,
-          bankAccountNumber: true,
-          bankBranchCode: true,
           products: {
             select: { isAlcohol: true },
             where: { isAlcohol: false, inStock: true, status: "APPROVED" },
@@ -272,9 +296,9 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
   }
 
   const mapped = dbVendors
-    .filter((vendor: VendorWithAlcohol) => isPublicMarketplaceVendor(vendor))
-    .map((vendor: VendorWithAlcohol) => {
-      return buildPublicVendorCard({
+    .filter((vendor: VendorWithAlcohol) => isPublicMarketplaceVendor(publicReadinessFlags(vendor)))
+    .map((vendor: VendorWithAlcohol) =>
+      buildPublicVendorCard({
         id: vendor.id,
         name: vendor.name,
         slug: vendor.slug,
@@ -286,8 +310,10 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
         products: vendor.products,
         reviews: vendor.reviews,
         baseEtaMin: vendor.etaMins ?? 15,
-      });
-    });
+      }),
+    );
+
+  if (mapped.length <= 1) return mapped;
 
   const reranked = await aiRerankVendors({
     vendors: mapped.map((vendor) => ({

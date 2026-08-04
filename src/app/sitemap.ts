@@ -6,122 +6,93 @@ import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { SITE_URL } from "@/lib/site";
 import { TOWNSHIP_CATEGORIES, categoryToSlug } from "@/lib/categories";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
+
+const STATIC_LAST_MODIFIED = new Date("2026-08-04T00:00:00.000Z");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${SITE_URL}/`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${SITE_URL}/about`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.6,
     },
     {
       url: `${SITE_URL}/faq`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.55,
     },
     {
       url: `${SITE_URL}/contact`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
       url: `${SITE_URL}/search`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: `${SITE_URL}/llms.txt`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.4,
-    },
-    {
-      url: `${SITE_URL}/ai.txt`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.4,
-    },
-    {
-      url: `${SITE_URL}/opensearch.xml`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.25,
-    },
-    {
-      url: `${SITE_URL}/feeds/google-merchant.xml`,
-      lastModified: now,
-      changeFrequency: "hourly",
       priority: 0.7,
     },
     {
       url: `${SITE_URL}/vendors/register`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${SITE_URL}/restaurants`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.65,
-    },
-    {
-      url: `${SITE_URL}/track`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.55,
+      lastModified: STATIC_LAST_MODIFIED,
+      changeFrequency: "daily",
+      priority: 0.75,
     },
     {
       url: `${SITE_URL}/rider`,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "monthly",
-      lastModified: now,
       priority: 0.5,
     },
     {
       url: `${SITE_URL}/terms`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.35,
     },
     {
       url: `${SITE_URL}/privacy-policy`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.35,
     },
     {
       url: `${SITE_URL}/refund-policy`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.35,
     },
     {
       url: `${SITE_URL}/cookie-policy`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${SITE_URL}/popia`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${SITE_URL}/paia-manual`,
-      lastModified: now,
+      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.3,
     },
@@ -129,9 +100,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const categoryRoutes: MetadataRoute.Sitemap = TOWNSHIP_CATEGORIES.map((category) => ({
     url: `${SITE_URL}/categories/${categoryToSlug(category)}`,
-    lastModified: now,
+    lastModified: STATIC_LAST_MODIFIED,
     changeFrequency: "daily",
-    priority: 0.65,
+    priority: 0.7,
   }));
 
   const vendorRows = shouldPreferCatalogFallback()
@@ -141,11 +112,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           where: {
             isActive: true,
             status: { in: ["ACTIVE", "APPROVED"] },
+            temporaryClosed: false,
             phone: { not: null },
+            email: { not: null },
             address: { not: null },
             city: { not: null },
             province: { not: null },
             storeType: { not: null },
+            etaMins: { gte: 10 },
             kycIdUrl: { not: null },
             kycProofUrl: { not: null },
             bankName: { not: null },
@@ -172,14 +146,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             sectionArea: true,
             cuisine: true,
             storeType: true,
-            kycIdUrl: true,
-            kycProofUrl: true,
-            bankName: true,
-            bankAccountName: true,
-            bankAccountNumber: true,
-            bankBranchCode: true,
             temporaryClosed: true,
-            liquorLicenceUrl: true,
             liquorLicenceExpiry: true,
             liquorVerificationStatus: true,
             deliveryFee: true,
@@ -191,7 +158,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }),
       ).catch(() => []);
 
-  const publicVendorRows = vendorRows.filter((vendor) => isPublicMarketplaceVendor(vendor));
+  const publicVendorRows = vendorRows.filter((vendor) =>
+    isPublicMarketplaceVendor({
+      ...vendor,
+      hasBanking: true,
+      hasKycDocuments: true,
+    }),
+  );
+
   const vendorRoutes: MetadataRoute.Sitemap =
     publicVendorRows.length > 0
       ? publicVendorRows.map((vendor) => ({
@@ -203,52 +177,74 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : shouldPreferCatalogFallback()
         ? getFallbackVendorCards().map((vendor) => ({
             url: `${SITE_URL}/vendors/${vendor.slug}`,
-            lastModified: now,
+            lastModified: STATIC_LAST_MODIFIED,
             changeFrequency: "daily",
             priority: 0.9,
           }))
         : [];
 
   const publicVendorIds = publicVendorRows.map((vendor) => vendor.id);
-  const productRows =
+  const [productRows, licensedVendorRows] =
     shouldPreferCatalogFallback() || publicVendorIds.length === 0
-      ? []
-      : await runBoundedDbQuery((db) =>
-          db.product.findMany({
-            where: {
-              vendorId: { in: publicVendorIds },
-              inStock: true,
-              status: "APPROVED",
-              vendor: {
-                isActive: true,
-                status: { in: ["ACTIVE", "APPROVED"] },
-                temporaryClosed: false,
+      ? [[], []]
+      : await Promise.all([
+          runBoundedDbQuery((db) =>
+            db.product.findMany({
+              where: {
+                vendorId: { in: publicVendorIds },
+                inStock: true,
+                status: "APPROVED",
+                vendor: {
+                  isActive: true,
+                  status: { in: ["ACTIVE", "APPROVED"] },
+                  temporaryClosed: false,
+                },
               },
-            },
-            select: {
-              id: true,
-              vendorId: true,
-              name: true,
-              status: true,
-              inStock: true,
-              isAlcohol: true,
-              updatedAt: true,
-            },
-            orderBy: { updatedAt: "desc" },
-            take: 5000,
-          }),
-        ).catch(() => []);
+              select: {
+                id: true,
+                vendorId: true,
+                name: true,
+                status: true,
+                inStock: true,
+                isAlcohol: true,
+                updatedAt: true,
+              },
+              orderBy: { updatedAt: "desc" },
+              take: 5000,
+            }),
+          ).catch(() => []),
+          runBoundedDbQuery((db) =>
+            db.vendor.findMany({
+              where: {
+                id: { in: publicVendorIds },
+                liquorVerificationStatus: "APPROVED",
+                liquorLicenceUrl: { not: null },
+                liquorLicenceExpiry: { gt: new Date() },
+              },
+              select: { id: true },
+              take: 5000,
+            }),
+          ).catch(() => []),
+        ]);
 
+  const licensedVendorIds = new Set(licensedVendorRows.map((vendor) => vendor.id));
   const publicVendorsById = new Map(publicVendorRows.map((vendor) => [vendor.id, vendor]));
   const productRoutes: MetadataRoute.Sitemap =
     productRows.length > 0
       ? productRows
-          .filter((product) =>
-            isPublicMarketplaceProduct({
+          .filter((product) => {
+            const vendor = publicVendorsById.get(product.vendorId);
+            if (!vendor) return false;
+            return isPublicMarketplaceProduct({
               ...product,
-              vendor: publicVendorsById.get(product.vendorId) || null,
-            }),
-          )
+              vendor: {
+                ...vendor,
+                hasBanking: true,
+                hasKycDocuments: true,
+                liquorLicenceUrl: licensedVendorIds.has(product.vendorId) ? "verified" : null,
+              },
+            });
+          })
           .map((product) => ({
             url: `${SITE_URL}/products/${encodeURIComponent(product.id)}`,
             lastModified: product.updatedAt,
@@ -258,7 +254,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : shouldPreferCatalogFallback()
         ? getFallbackProducts().map((product) => ({
             url: `${SITE_URL}/products/${encodeURIComponent(product.id)}`,
-            lastModified: now,
+            lastModified: STATIC_LAST_MODIFIED,
             changeFrequency: "daily" as const,
             priority: 0.75,
           }))

@@ -1,8 +1,8 @@
-import { cache } from "react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next";
+import { cache } from "react";
 import AgeGate from "@/components/AgeGate";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
@@ -28,10 +28,34 @@ const getProduct = cache(async (id: string) => {
         id,
         inStock: true,
         status: "APPROVED",
+        OR: [
+          { isAlcohol: false },
+          {
+            isAlcohol: true,
+            vendor: {
+              liquorVerificationStatus: "APPROVED",
+              liquorLicenceUrl: { not: null },
+              liquorLicenceExpiry: { gt: new Date() },
+            },
+          },
+        ],
         vendor: {
           isActive: true,
           status: { in: ["ACTIVE", "APPROVED"] },
           temporaryClosed: false,
+          phone: { not: null },
+          email: { not: null },
+          address: { not: null },
+          city: { not: null },
+          province: { not: null },
+          storeType: { not: null },
+          etaMins: { gte: 10 },
+          kycIdUrl: { not: null },
+          kycProofUrl: { not: null },
+          bankName: { not: null },
+          bankAccountName: { not: null },
+          bankAccountNumber: { not: null },
+          hours: { some: { closed: false } },
         },
       },
       select: {
@@ -47,12 +71,12 @@ const getProduct = cache(async (id: string) => {
             id: true,
             name: true,
             slug: true,
-            email: true,
             deliveryFee: true,
             etaMins: true,
             cuisine: true,
             status: true,
             isActive: true,
+            temporaryClosed: true,
             phone: true,
             address: true,
             suburb: true,
@@ -62,14 +86,6 @@ const getProduct = cache(async (id: string) => {
             township: true,
             sectionArea: true,
             storeType: true,
-            kycIdUrl: true,
-            kycProofUrl: true,
-            bankName: true,
-            bankAccountName: true,
-            bankAccountNumber: true,
-            bankBranchCode: true,
-            temporaryClosed: true,
-            liquorLicenceUrl: true,
             liquorLicenceExpiry: true,
             liquorVerificationStatus: true,
             _count: { select: { products: true, items: true, hours: true } },
@@ -85,6 +101,10 @@ const getProduct = cache(async (id: string) => {
     inStock: true,
     vendor: {
       ...product.vendor,
+      email: "verified@lethela.local",
+      hasBanking: true,
+      hasKycDocuments: true,
+      liquorLicenceUrl: product.isAlcohol ? "verified" : null,
       _count: { ...product.vendor._count, products: 1 },
     },
   };
