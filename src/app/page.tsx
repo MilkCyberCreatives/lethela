@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, MapPin, ShoppingBag, Store, Truck } from "lucide-react";
+import { BellRing, CheckCircle2, MapPin, ShoppingBag, Store, Truck } from "lucide-react";
 import MainHeader from "@/components/MainHeader";
 import Hero from "@/components/Hero";
 import CategoryCarousel from "@/components/CategoryCarousel";
@@ -12,12 +12,14 @@ import type { ProductLite } from "@/components/ProductCard";
 import { getDisplaySuburb } from "@/lib/location";
 import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
 import { getHomeProducts, getHomeVendors } from "@/lib/home-data";
+import { getMarketplaceLaunchStatus } from "@/lib/launch-readiness";
+import { buildLaunchNotificationLink } from "@/lib/support";
 import type { Vendor } from "@/types";
 
 export const metadata: Metadata = {
   title: "Lethela | Township Delivery South Africa",
   description:
-    "Lethela is a township delivery marketplace for South Africa, now live in Klipfontein View. Order food, groceries and daily essentials from approved local vendors near you.",
+    "Lethela is a township delivery marketplace for South Africa, launching from Klipfontein View with approved local vendors and community riders.",
   keywords: [
     "Township delivery South Africa",
     "Spaza shop delivery",
@@ -30,6 +32,17 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "/",
+  },
+  openGraph: {
+    title: "Lethela | Township Delivery South Africa",
+    description:
+      "Local stores, affordable township delivery and community riders — starting in Klipfontein View.",
+    url: "/",
+  },
+  twitter: {
+    title: "Lethela | Township Delivery South Africa",
+    description:
+      "Local stores, affordable township delivery and community riders — starting in Klipfontein View.",
   },
 };
 
@@ -61,7 +74,11 @@ export default async function HomePage() {
     .filter((product) => foodCategories.has(String(product.category)))
     .slice(0, 8);
   const recentProducts = products.slice(0, 8);
-  const hasMarketplaceItems = vendors.length > 0 || products.length > 0;
+  const hasMarketplaceItems = vendors.length > 0 && products.length > 0;
+  const launchStatus = getMarketplaceLaunchStatus({
+    approvedVendorCount: vendors.length,
+    publicProductCount: products.length,
+  });
 
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
@@ -70,6 +87,7 @@ export default async function HomePage() {
 
       <Hero
         initialArea={address}
+        launchStatus={launchStatus}
         initialNearbyVendors={vendors.slice(0, 3).map((vendor) => ({
           id: vendor.id,
           name: vendor.name,
@@ -95,7 +113,7 @@ export default async function HomePage() {
           <ProductRail title="Recently added products" products={recentProducts} />
         </>
       ) : (
-        <MarketplaceEmptyState />
+        <MarketplaceEmptyState area={address || "Klipfontein View"} />
       )}
 
       <HowItWorksStrip />
@@ -157,18 +175,40 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
   );
 }
 
-function MarketplaceEmptyState() {
+function MarketplaceEmptyState({ area }: { area: string }) {
   return (
     <section className="container py-10">
       <div className="rounded-xl border border-white/10 bg-white/[0.045] p-6 text-center">
-        <h2 className="text-xl font-semibold">No approved vendors are live in this area yet.</h2>
-        <p className="mt-2 text-sm text-white/64">Check again soon or browse another area.</p>
-        <Link
-          href="/vendors/register"
-          className="mt-5 inline-flex rounded-md bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-lethela-primary/90"
-        >
-          Own a shop or restaurant? Join Lethela.
-        </Link>
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-lethela-primary/15 text-lethela-primary">
+          <BellRing className="h-6 w-6" />
+        </div>
+        <h2 className="mt-4 text-xl font-semibold">Ordering is launching shortly in this area.</h2>
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-white/64">
+          We are approving the first stores, products and riders before accepting public orders.
+          This protects customers and makes sure the first deliveries run smoothly.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
+          <a
+            href={buildLaunchNotificationLink(area)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex rounded-md bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-lethela-primary/90"
+          >
+            Notify me when ordering opens
+          </a>
+          <Link
+            href="/vendors/register"
+            className="inline-flex rounded-md border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-lethela-primary hover:text-lethela-primary"
+          >
+            Join as a vendor
+          </Link>
+          <Link
+            href="/rider"
+            className="inline-flex rounded-md border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-lethela-primary hover:text-lethela-primary"
+          >
+            Join as a rider
+          </Link>
+        </div>
       </div>
     </section>
   );
