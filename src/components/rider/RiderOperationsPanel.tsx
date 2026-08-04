@@ -159,8 +159,8 @@ export default function RiderOperationsPanel() {
               </div>
               <p className="mt-2 text-xl font-bold">{money(period?.totalCents || 0)}</p>
               <p className="mt-1 text-[11px] text-white/50">
-                {period?.deliveries || 0} delivery{period?.deliveries === 1 ? "" : "ies"} · Tips{" "}
-                {money(period?.tipCents || 0)}
+                {period?.deliveries || 0} {period?.deliveries === 1 ? "delivery" : "deliveries"} ·
+                Tips {money(period?.tipCents || 0)}
               </p>
             </div>
           ))}
