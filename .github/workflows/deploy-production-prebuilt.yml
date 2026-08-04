@@ -1,0 +1,107 @@
+name: One-time prebuilt production deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lethela-production-prebuilt
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy production
+    if: github.repository == 'MilkCyberCreatives/lethela'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERCEL_ORG_ID: team_BLcgVmtxwgxliRt0sECEsRdI
+      VERCEL_PROJECT_ID: prj_fQ9srYuFRdvq4rldmokUAL0S7TzN
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Confirm one-time request
+        id: request
+        shell: bash
+        run: |
+          if [ -f .github/prebuilt-production-deploy.request ]; then
+            echo "requested=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "requested=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Confirm Vercel credential
+        if: steps.request.outputs.requested == 'true'
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN is not configured in GitHub Actions secrets."
+            exit 1
+          fi
+
+      - name: Use Node.js 24
+        if: steps.request.outputs.requested == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install project dependencies
+        if: steps.request.outputs.requested == 'true'
+        run: npm ci
+
+      - name: Install pinned Vercel CLI
+        if: steps.request.outputs.requested == 'true'
+        run: npm install --global vercel@50.15.1
+
+      - name: Pull production project settings
+        if: steps.request.outputs.requested == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build production output in GitHub Actions
+        if: steps.request.outputs.requested == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy prebuilt output to production
+        if: steps.request.outputs.requested == 'true'
+        id: deploy
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          deployment_url="$(vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN")"
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+          echo "Production deployment: $deployment_url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove one-time deployment workflow
+        if: steps.request.outputs.requested == 'true' && steps.deploy.outcome == 'success'
+        run: |
+          rm -f .github/prebuilt-production-deploy.request
+          rm -f .github/workflows/deploy-production-prebuilt.yml
+
+      - name: Record completed deployment cleanup
+        if: steps.request.outputs.requested == 'true' && steps.deploy.outcome == 'success'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Remove one-time production deploy workflow [skip ci]"
+          git push origin main
