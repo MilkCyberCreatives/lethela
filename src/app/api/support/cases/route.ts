@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
 
   const recipients = splitCsv(
     process.env.SUPPORT_EMAIL_TO ||
+      process.env.ADMIN_NOTIFICATION_EMAILS ||
       process.env.ADMIN_NOTIFICATION_EMAIL_TO ||
       process.env.ADMIN_NOTIFICATION_EMAIL,
   );
