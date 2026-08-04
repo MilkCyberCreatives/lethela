@@ -1,0 +1,77 @@
+name: Apply launch readiness patch
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    name: Apply generated files
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/launch-readiness-actions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out pull request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Check one-time request
+        id: request
+        shell: bash
+        run: |
+          if [ -f .github/admin-patch.request ]; then
+            echo "requested=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "requested=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Use Node.js 24
+        if: steps.request.outputs.requested == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Refresh secure package lock
+        if: steps.request.outputs.requested == 'true'
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Apply complete admin patch
+        if: steps.request.outputs.requested == 'true'
+        run: node scripts/apply-launch-readiness-admin-patch.mjs
+
+      - name: Format generated files
+        if: steps.request.outputs.requested == 'true'
+        run: npx prettier --write package-lock.json src/app/admin/page.tsx
+
+      - name: Verify dependency audit
+        if: steps.request.outputs.requested == 'true'
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Remove one-time generation tools
+        if: steps.request.outputs.requested == 'true'
+        run: |
+          rm -f .github/admin-patch.request
+          rm -f scripts/apply-launch-readiness-admin-patch.mjs
+          rm -f .github/workflows/apply-launch-readiness.yml
+          rm -f .github/workflows/refresh-lockfile.yml
+
+      - name: Commit generated launch readiness files
+        if: steps.request.outputs.requested == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+            exit 0
+          fi
+          git commit -m "Apply generated launch readiness files"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
