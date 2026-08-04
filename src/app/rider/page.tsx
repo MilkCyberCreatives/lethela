@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AuthShell from "@/components/auth/AuthShell";
+import OnboardingPreview from "@/components/auth/OnboardingPreview";
 import RiderSignupForm from "@/components/auth/RiderSignupForm";
 
 export const metadata: Metadata = {
@@ -7,6 +8,15 @@ export const metadata: Metadata = {
   description: "Create a Lethela rider account and complete your rider details after signing in.",
   alternates: { canonical: "/rider" },
   robots: { index: false, follow: false },
+  openGraph: {
+    title: "Create your rider account | Lethela",
+    description: "Join Lethela as a community rider and complete your private profile after signup.",
+    url: "/rider",
+  },
+  twitter: {
+    title: "Create your rider account | Lethela",
+    description: "Join Lethela as a community rider and complete your private profile after signup.",
+  },
 };
 
 export default function RiderPage() {
@@ -17,6 +27,7 @@ export default function RiderPage() {
       compact
     >
       <RiderSignupForm />
+      <OnboardingPreview accountType="rider" />
     </AuthShell>
   );
 }
