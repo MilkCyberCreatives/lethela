@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { getCatalogMode } from "@/lib/catalog-runtime";
-import { hasWhatsAppChannel } from "@/lib/notification-channels";
+import { isEmailVerificationRequired } from "@/lib/email-verification";
+import { hasEmailChannel, hasWhatsAppChannel } from "@/lib/notification-channels";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { hasWebPushConfig } from "@/lib/web-push";
 import { hasStorageConfig, storageProvider } from "@/server/supabase";
@@ -19,6 +20,11 @@ function isFalse(name: string) {
 function numberSetting(name: string, fallback: number) {
   const value = Number(process.env[name]);
   return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function launchMode() {
+  const mode = process.env.NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE?.trim().toLowerCase();
+  return mode === "public" || mode === "pilot" ? mode : "prelaunch";
 }
 
 function item(
@@ -134,6 +140,13 @@ export async function GET(req: NextRequest) {
     riders: numberSetting("MIN_PUBLIC_RIDERS", 2),
     paidOrders: numberSetting("MIN_PUBLIC_PAID_ORDERS", 5),
   };
+  const mode = launchMode();
+  const publicMode = mode === "public";
+  const publicSeverity = publicMode ? "required" : "recommended";
+  const privateStorageConfigured =
+    hasStorageConfig() &&
+    storageProvider() === "supabase" &&
+    configured("SUPABASE_PRIVATE_BUCKET");
 
   const checks = [
     item(
@@ -150,6 +163,11 @@ export async function GET(req: NextRequest) {
       "Authentication secrets",
       configured("NEXTAUTH_SECRET") && configured("VENDOR_SESSION_SECRET"),
       "NextAuth and vendor session secrets",
+    ),
+    item(
+      "Dedicated bank encryption key",
+      configured("BANK_DATA_ENCRYPTION_KEY"),
+      "BANK_DATA_ENCRYPTION_KEY is independent from the session secret",
     ),
     item("Admin owner access", configured("ADMIN_APPROVAL_KEY"), "ADMIN_APPROVAL_KEY configured"),
     item(
@@ -168,11 +186,28 @@ export async function GET(req: NextRequest) {
       "Both Ozow test flags set to false",
     ),
     item(
-      "Google Maps",
+      "Google road routing",
       configured("GOOGLE_MAPS_API_KEY") && configured("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"),
-      "Server and browser map keys",
+      "Server Routes/Geocoding key and browser Maps key",
     ),
     item("Durable uploads", hasStorageConfig(), `${storageProvider()} storage configured`),
+    item(
+      "Private KYC storage",
+      privateStorageConfigured,
+      "Supabase private bucket configured for identity, banking and licence files",
+    ),
+    item(
+      "Private storage policy verified",
+      configured("PRIVATE_STORAGE_VERIFIED_AT"),
+      "Record the date of the latest cross-account access and signed-link expiry test",
+      publicSeverity,
+    ),
+    item(
+      "Database restore drill",
+      configured("DATABASE_RESTORE_TESTED_AT"),
+      "Record the date of the latest successful restore into a separate database",
+      publicSeverity,
+    ),
     item(
       "Active catalog",
       getCatalogMode() === "live" && activeVendors > 0 && activeProducts > 0,
@@ -194,13 +229,37 @@ export async function GET(req: NextRequest) {
         approvedRiders >= publicMinimums.riders &&
         paidOrders >= publicMinimums.paidOrders,
       `${activeVendors}/${publicMinimums.vendors} vendor(s), ${activeProducts}/${publicMinimums.products} product(s), ${approvedRiders}/${publicMinimums.riders} rider(s), ${paidOrders}/${publicMinimums.paidOrders} paid proof order(s)`,
-      "recommended",
+      publicSeverity,
+    ),
+    item(
+      "Marketplace launch mode",
+      !publicMode ||
+        (activeVendors >= publicMinimums.vendors &&
+          activeProducts >= publicMinimums.products &&
+          approvedRiders >= publicMinimums.riders &&
+          paidOrders >= publicMinimums.paidOrders),
+      `NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE=${mode}`,
+    ),
+    item(
+      "Refund flow tested",
+      configured("REFUND_FLOW_TESTED_AT"),
+      "Record the latest controlled cancellation/refund verification date",
+      publicSeverity,
     ),
     item(
       "Applicant email notifications",
-      configured("RESEND_API_KEY") &&
-        (configured("ADMIN_NOTIFICATION_EMAIL_FROM") || configured("PASSWORD_RESET_EMAIL_FROM")),
+      hasEmailChannel(),
       "Resend API key and verified sender email",
+    ),
+    item(
+      "Email verification rollout",
+      !isEmailVerificationRequired() ||
+        (hasEmailChannel() &&
+          (configured("EMAIL_VERIFICATION_SECRET") || configured("NEXTAUTH_SECRET"))),
+      isEmailVerificationRequired()
+        ? "Mandatory verification enabled with a working email channel"
+        : "Verification links available; mandatory enforcement remains staged to protect existing users",
+      "recommended",
     ),
     item(
       "Applicant WhatsApp notifications",
@@ -216,6 +275,11 @@ export async function GET(req: NextRequest) {
       "Owner notification recipients",
       configured("ADMIN_NOTIFICATION_EMAILS") || configured("ADMIN_NOTIFICATION_WHATSAPP_TO"),
       "Owner email or WhatsApp recipients configured",
+    ),
+    item(
+      "Support case recipients",
+      configured("SUPPORT_EMAIL_TO") || configured("ADMIN_NOTIFICATION_EMAILS"),
+      "Support case notifications reach a monitored inbox",
     ),
     item(
       "Realtime updates",
@@ -235,6 +299,7 @@ export async function GET(req: NextRequest) {
     ok: required.every((check) => check.ok),
     checks,
     summary: {
+      mode,
       requiredReady: required.filter((check) => check.ok).length,
       requiredTotal: required.length,
       recommendedReady: recommended.filter((check) => check.ok).length,
