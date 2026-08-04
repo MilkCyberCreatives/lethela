@@ -110,6 +110,8 @@ const privateResponseHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  compress: true,
+  productionBrowserSourceMaps: false,
   async headers() {
     return [
       {
@@ -157,12 +159,15 @@ const nextConfig = {
     ];
   },
   experimental: {
+    optimizePackageImports: ["lucide-react"],
     serverActions: {
       allowedOrigins: allowedServerActionOrigins,
     },
   },
   images: {
     remotePatterns: configuredRemotePatterns,
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 86400,
   },
   webpack: (config) => {
     config.ignoreWarnings = [
