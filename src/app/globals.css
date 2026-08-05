@@ -14,10 +14,10 @@
   --popover: 226 57% 10%;
   --popover-foreground: 0 0% 100%;
 
-  --primary: 352 100% 36%; /* Lethela red */
+  --primary: 352 100% 36%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 230 71% 10%; /* #080B27 navy */
+  --secondary: 230 71% 10%;
   --secondary-foreground: 0 0% 100%;
 
   --muted: 226 20% 20%;
@@ -31,7 +31,6 @@
   --ring: 352 100% 36%;
 }
 
-/* === BASE ============================================================= */
 @layer base {
   * {
     @apply border-border;
@@ -40,6 +39,7 @@
   html,
   body {
     height: 100%;
+    max-width: 100%;
   }
 
   html {
@@ -48,10 +48,30 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    overflow-x: clip;
     background-color: #080b27;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  [id] {
+    scroll-margin-top: 5.5rem;
   }
 
   ::selection {
@@ -60,14 +80,11 @@
   }
 }
 
-/* === LAYOUT / SPACING FIX ============================================ */
-/* We are redefining .container to keep nice gutters on all breakpoints */
 @layer components {
   .container {
     @apply mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8;
   }
 
-  /* solid card surface (no translucency) used across dashboard + hero sidecard */
   .card-glass {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 1rem;
@@ -142,19 +159,16 @@
     background-color: rgba(255, 255, 255, 0.035);
   }
 
-  /* navbar surface (header bar) */
   .surface-header {
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     background-color: #fff;
     color: #000;
   }
 
-  /* dark section background (page body zones) */
   .surface-section {
     @apply bg-lethela-secondary text-white;
   }
 
-  /* WhatsApp floating button container etc. can sit above content */
   .floating-z {
     @apply z-[80];
   }
@@ -220,13 +234,21 @@
     opacity: 0;
   }
 
-  /* scrollbars off for horizontal carousels */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .mobile-site-nav a {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    border-radius: 0.6rem;
+    padding-inline: 0.5rem;
   }
 }
 
@@ -266,6 +288,59 @@
 .grid-backdrop {
   background-image: none;
   background-size: 48px 48px;
+}
+
+@media (max-width: 640px) {
+  section:has(form[aria-label="AI search with autocomplete"]) h1 {
+    font-size: 1.875rem;
+  }
+
+  section:has(form[aria-label="AI search with autocomplete"]) form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    align-items: center;
+  }
+
+  section:has(form[aria-label="AI search with autocomplete"]) form > div {
+    min-width: 0;
+  }
+
+  section:has(form[aria-label="AI search with autocomplete"]) form input,
+  section:has(form[aria-label="AI search with autocomplete"]) form > button {
+    min-height: 44px;
+  }
+
+  section:has(form[aria-label="AI search with autocomplete"]) form > button:nth-last-child(2) {
+    width: 44px;
+    padding-inline: 0;
+  }
+
+  section:has(form[aria-label="AI search with autocomplete"]) form > button:last-child {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  section:has(form[aria-label="AI search with autocomplete"]) form + div {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  section:has(form[aria-label="AI search with autocomplete"]) form + div button {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  footer li a {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+  }
+
+  footer p,
+  footer a {
+    overflow-wrap: anywhere;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
