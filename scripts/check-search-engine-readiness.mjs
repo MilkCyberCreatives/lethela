@@ -39,10 +39,7 @@ const requiredChecks = [
   ],
   [robots.includes("sitemap"), "robots.ts must publish sitemap URLs."],
   [robots.includes("/admin"), "robots.ts must block private admin routes."],
-  [
-    sitemap.includes("TOWNSHIP_CATEGORIES"),
-    "The dynamic marketplace sitemap is incomplete.",
-  ],
+  [sitemap.includes("TOWNSHIP_CATEGORIES"), "The dynamic marketplace sitemap is incomplete."],
   [
     discoverySitemap.includes("/areas/klipfontein-view"),
     "The first operating-area page is missing from discovery.",
