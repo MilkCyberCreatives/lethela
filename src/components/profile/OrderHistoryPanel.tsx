@@ -198,7 +198,9 @@ export default function OrderHistoryPanel() {
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                       Total
                     </p>
-                    <p className="mt-1 text-lg font-bold text-slate-950">{money(order.totalCents)}</p>
+                    <p className="mt-1 text-lg font-bold text-slate-950">
+                      {money(order.totalCents)}
+                    </p>
                   </div>
                 </div>
 

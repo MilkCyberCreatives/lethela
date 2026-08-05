@@ -187,7 +187,9 @@ export default function UserProfileForm() {
   if (!profile) {
     return (
       <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">Profile details could not be loaded</h2>
+        <h2 className="text-lg font-semibold text-slate-950">
+          Profile details could not be loaded
+        </h2>
         <p className="mt-2 text-sm text-red-700">{status?.message || "Please try again."}</p>
         <button
           type="button"
@@ -212,9 +214,12 @@ export default function UserProfileForm() {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
             Profile details
           </p>
-          <h2 className="mt-1 text-xl font-semibold text-slate-950">Personal and delivery information</h2>
+          <h2 className="mt-1 text-xl font-semibold text-slate-950">
+            Personal and delivery information
+          </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Keep these details current so vendors, riders and support can contact you about an order.
+            Keep these details current so vendors, riders and support can contact you about an
+            order.
           </p>
         </div>
         <div className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
@@ -227,7 +232,11 @@ export default function UserProfileForm() {
           <div className="mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-[0_0_0_1px_rgba(148,163,184,0.35)] lg:mx-0">
             {image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={image} alt={name || "User profile"} className="h-full w-full object-cover" />
+              <img
+                src={image}
+                alt={name || "User profile"}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <UserRound className="h-16 w-16 text-slate-300" aria-hidden="true" />
             )}
@@ -290,7 +299,8 @@ export default function UserProfileForm() {
 
           <div className="mt-5 space-y-2 text-xs text-slate-500">
             <div className="rounded-xl bg-slate-50 px-3 py-2.5">
-              <span className="font-semibold text-slate-700">Account:</span> {roleLabel(profile.role)}
+              <span className="font-semibold text-slate-700">Account:</span>{" "}
+              {roleLabel(profile.role)}
             </div>
             <div className="rounded-xl bg-slate-50 px-3 py-2.5">
               <span className="font-semibold text-slate-700">Joined:</span>{" "}
@@ -306,7 +316,10 @@ export default function UserProfileForm() {
         <div className="min-w-0">
           <form onSubmit={save} className="grid gap-5">
             <div className="grid gap-5 md:grid-cols-2">
-              <label className="grid gap-2 text-sm font-medium text-slate-800" htmlFor="profile-name">
+              <label
+                className="grid gap-2 text-sm font-medium text-slate-800"
+                htmlFor="profile-name"
+              >
                 <span className="flex items-center gap-2">
                   <UserRound className="h-4 w-4 text-slate-400" />
                   Full name
@@ -322,7 +335,10 @@ export default function UserProfileForm() {
                 />
               </label>
 
-              <label className="grid gap-2 text-sm font-medium text-slate-800" htmlFor="profile-phone">
+              <label
+                className="grid gap-2 text-sm font-medium text-slate-800"
+                htmlFor="profile-phone"
+              >
                 <span className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-slate-400" />
                   Mobile number
@@ -341,7 +357,10 @@ export default function UserProfileForm() {
               </label>
             </div>
 
-            <label className="grid gap-2 text-sm font-medium text-slate-800" htmlFor="profile-email">
+            <label
+              className="grid gap-2 text-sm font-medium text-slate-800"
+              htmlFor="profile-email"
+            >
               <span className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-slate-400" />
                 Account email
@@ -366,7 +385,11 @@ export default function UserProfileForm() {
                 disabled={saving || uploading}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-lethela-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {saving ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 {saving ? "Saving..." : "Save changes"}
               </button>
               <button
@@ -398,7 +421,10 @@ export default function UserProfileForm() {
         </div>
       </div>
 
-      <section id="privacy-requests" className="border-t border-slate-200 bg-slate-50/70 p-5 sm:p-6">
+      <section
+        id="privacy-requests"
+        className="border-t border-slate-200 bg-slate-50/70 p-5 sm:p-6"
+      >
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-lethela-primary shadow-sm ring-1 ring-slate-200">
             <ShieldCheck className="h-5 w-5" />
@@ -407,10 +433,14 @@ export default function UserProfileForm() {
             <h3 className="text-base font-semibold text-slate-950">Privacy and account requests</h3>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
               Request a copy of your information, ask for a correction review or request account
-              closure. Transaction and compliance records may still be retained where legally required.
+              closure. Transaction and compliance records may still be retained where legally
+              required.
             </p>
 
-            <label className="mt-4 grid gap-2 text-sm font-medium text-slate-800" htmlFor="privacy-details">
+            <label
+              className="mt-4 grid gap-2 text-sm font-medium text-slate-800"
+              htmlFor="privacy-details"
+            >
               Optional details
               <textarea
                 id="privacy-details"

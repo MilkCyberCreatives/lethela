@@ -5,10 +5,7 @@ import test from "node:test";
 const profilePage = readFileSync("src/app/profile/page.tsx", "utf8");
 const profileForm = readFileSync("src/components/profile/UserProfileForm.tsx", "utf8");
 const orderHistory = readFileSync("src/components/profile/OrderHistoryPanel.tsx", "utf8");
-const experiencePanel = readFileSync(
-  "src/components/profile/ProfileExperiencePanel.tsx",
-  "utf8",
-);
+const experiencePanel = readFileSync("src/components/profile/ProfileExperiencePanel.tsx", "utf8");
 
 test("customer profile uses the professional account shell", () => {
   assert.match(profilePage, /My Lethela account/);

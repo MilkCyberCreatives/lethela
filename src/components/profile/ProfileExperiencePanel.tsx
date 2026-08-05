@@ -168,7 +168,8 @@ export default function ProfileExperiencePanel() {
     }
     if (pushPermission === "denied") {
       setStatus({
-        message: "Notifications are blocked in this browser. Enable them in the site settings first.",
+        message:
+          "Notifications are blocked in this browser. Enable them in the site settings first.",
         tone: "error",
       });
       return;
@@ -246,7 +247,9 @@ export default function ProfileExperiencePanel() {
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
           Saved activity
         </p>
-        <h2 className="mt-1 text-xl font-semibold text-slate-950">Meals, reorders and notifications</h2>
+        <h2 className="mt-1 text-xl font-semibold text-slate-950">
+          Meals, reorders and notifications
+        </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
           Return to meals you liked, rebuild a previous cart and control the customer notifications
           sent to this device.
@@ -291,7 +294,9 @@ export default function ProfileExperiencePanel() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-lethela-primary shadow-sm ring-1 ring-slate-200">
                 <ShoppingBag className="h-4 w-4" />
               </span>
-              <p className="mt-4 text-2xl font-bold text-slate-950">{snapshot.recentOrders.length}</p>
+              <p className="mt-4 text-2xl font-bold text-slate-950">
+                {snapshot.recentOrders.length}
+              </p>
               <p className="mt-1 text-sm text-slate-600">Reorder shortcuts</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -382,10 +387,7 @@ export default function ProfileExperiencePanel() {
                 ) : (
                   <div className="mt-4 grid gap-3">
                     {snapshot.recentOrders.slice(0, 4).map((order) => (
-                      <article
-                        key={order.id}
-                        className="rounded-2xl border border-slate-200 p-4"
-                      >
+                      <article key={order.id} className="rounded-2xl border border-slate-200 p-4">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
                             <h4 className="truncate text-sm font-semibold text-slate-950">
@@ -431,9 +433,12 @@ export default function ProfileExperiencePanel() {
                     <Bell className="h-5 w-5" />
                   </span>
                   <div>
-                    <h3 className="text-base font-semibold text-slate-950">Notification preferences</h3>
+                    <h3 className="text-base font-semibold text-slate-950">
+                      Notification preferences
+                    </h3>
                     <p className="mt-1 text-sm leading-6 text-slate-600">
-                      Choose the customer updates you want. Internal admin alerts are never shown here.
+                      Choose the customer updates you want. Internal admin alerts are never shown
+                      here.
                     </p>
                   </div>
                 </div>
@@ -445,7 +450,9 @@ export default function ProfileExperiencePanel() {
                       <div key={item.key} className="flex items-center justify-between gap-4 p-4">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-                          <p className="mt-1 text-xs leading-5 text-slate-500">{item.description}</p>
+                          <p className="mt-1 text-xs leading-5 text-slate-500">
+                            {item.description}
+                          </p>
                         </div>
                         <button
                           type="button"
@@ -502,7 +509,9 @@ export default function ProfileExperiencePanel() {
                       ) : (
                         <Bell className="h-4 w-4" />
                       )}
-                      {pushPermission === "granted" ? "Notifications enabled" : "Enable on this device"}
+                      {pushPermission === "granted"
+                        ? "Notifications enabled"
+                        : "Enable on this device"}
                     </button>
                     <button
                       type="button"
