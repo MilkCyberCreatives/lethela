@@ -19,11 +19,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
       - name: Package source safely
-        run: tar --exclude=.git --exclude=node_modules --exclude=.next --exclude='*.env*' -czf lethela-source.tgz .
+        run: tar --exclude=.git --exclude=node_modules --exclude=.next --exclude='*.env*' -czf /tmp/lethela-source.tgz .
       - name: Upload source artifact
         uses: actions/upload-artifact@v4
         with:
           name: lethela-source-audit
-          path: lethela-source.tgz
+          path: /tmp/lethela-source.tgz
           retention-days: 1
           if-no-files-found: error
