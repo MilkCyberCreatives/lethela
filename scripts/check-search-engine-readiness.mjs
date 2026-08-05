@@ -25,13 +25,28 @@ const llms = file("src/app/llms.txt/route.ts");
 const areaPage = file("src/app/areas/klipfontein-view/page.tsx");
 
 const requiredChecks = [
-  [layout.includes("NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION"), "Google site verification hook is missing."],
-  [layout.includes("NEXT_PUBLIC_BING_SITE_VERIFICATION"), "Bing site verification hook is missing."],
-  [!layout.includes('alternates: {\n    canonical: "/"'), "Root canonical must not leak onto child routes."],
+  [
+    layout.includes("NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION"),
+    "Google site verification hook is missing.",
+  ],
+  [
+    layout.includes("NEXT_PUBLIC_BING_SITE_VERIFICATION"),
+    "Bing site verification hook is missing.",
+  ],
+  [
+    !layout.includes('alternates: {\n    canonical: "/"'),
+    "Root canonical must not leak onto child routes.",
+  ],
   [robots.includes("sitemap"), "robots.ts must publish sitemap URLs."],
   [robots.includes("/admin"), "robots.ts must block private admin routes."],
-  [sitemap.includes("TOWNSHIP_CATEGORIES"), "The dynamic marketplace sitemap is incomplete."],
-  [discoverySitemap.includes("/areas/klipfontein-view"), "The first operating-area page is missing from discovery."],
+  [
+    sitemap.includes("TOWNSHIP_CATEGORIES"),
+    "The dynamic marketplace sitemap is incomplete.",
+  ],
+  [
+    discoverySitemap.includes("/areas/klipfontein-view"),
+    "The first operating-area page is missing from discovery.",
+  ],
   [manifest.includes("standalone"), "The web app manifest is incomplete."],
   [openSearch.includes("OpenSearchDescription"), "OpenSearch discovery is missing."],
   [llms.includes("Public discovery"), "The public AI discovery summary is incomplete."],
@@ -54,7 +69,9 @@ if (!sourceOnly) {
     warnings.push("Bing Webmaster Tools verification token is not configured.");
   }
   if (!process.env.NEXT_PUBLIC_GA4_ID && !process.env.NEXT_PUBLIC_GTM_ID) {
-    warnings.push("GA4 or Google Tag Manager is not configured for search-performance measurement.");
+    warnings.push(
+      "GA4 or Google Tag Manager is not configured for search-performance measurement.",
+    );
   }
 }
 
