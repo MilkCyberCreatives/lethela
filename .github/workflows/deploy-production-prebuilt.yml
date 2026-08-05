@@ -2,6 +2,9 @@ name: Deploy production prebuilt
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - agent/deploy-dashboard-repair
 
 permissions:
   contents: read
