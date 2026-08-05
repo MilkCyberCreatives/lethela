@@ -1,59 +1,33 @@
 import { NextResponse } from "next/server";
-import { absoluteUrl } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export async function GET() {
-  const content = [
-    "# Lethela",
-    "",
-    "> Lethela is a South African AI-supported delivery platform for food, groceries, and township-first commerce.",
-    "",
-    "## Primary URLs",
-    `- Home: ${absoluteUrl("/")}`,
-    `- Search: ${absoluteUrl("/search")}`,
-    `- About: ${absoluteUrl("/about")}`,
-    `- FAQ: ${absoluteUrl("/faq")}`,
-    `- Vendor Onboarding: ${absoluteUrl("/vendors/register")}`,
-    `- Vendor Sign In: ${absoluteUrl("/vendors/signin")}`,
-    `- Vendor Dashboard: ${absoluteUrl("/vendors/dashboard")}`,
-    `- Rider Onboarding: ${absoluteUrl("/rider")}`,
-    `- Track Order: ${absoluteUrl("/track")}`,
-    `- AI index: ${absoluteUrl("/ai.txt")}`,
-    `- Browser search description: ${absoluteUrl("/opensearch.xml")}`,
-    "",
-    "## Core Topics",
-    "- Food delivery in South Africa",
-    "- Township favourites: kota, chips, burgers",
-    "- Grocery, food and township essentials ordering",
-    "- Vendor marketplace onboarding",
-    "- Rider delivery operations",
-    "- Order tracking with LET-12345 style references",
-    "- Ozow checkout and WhatsApp-assisted ordering",
-    "- Vendor dashboard operations: menu, orders, analytics, specials, automations",
-    "- Admin operations: vendor approval, rider approval, dispatch, refunds and support issue tracking",
-    "",
-    "## Business Facts",
-    "- Built for township delivery across South Africa; live first in Klipfontein View, Midrand",
-    "- Vendor types include spaza shops, grocery stores, local food vendors, restaurants and franchise-ready brands",
-    "- Support channel: WhatsApp support",
-    "- Vendors require admin approval before going live",
-    "- Riders require operations review before onboarding",
-    "- Liquor is a restricted 18+ category for approved licensed vendors only",
-    "",
-    "## Machine-readable signals",
-    "- JSON-LD Organization/WebSite/SearchAction schema",
-    "- JSON-LD FAQPage schema",
-    "- Dynamic sitemap.xml",
-    "- robots.txt",
-    "- ai.txt",
-    "",
-  ].join("\n");
+  const body = `# ${SITE_NAME}
 
-  return new NextResponse(content, {
+${SITE_NAME} is a South African township food and grocery marketplace, starting with Klipfontein View in Midrand.
+
+## Public discovery
+- Home: ${SITE_URL}/
+- Search: ${SITE_URL}/search
+- Klipfontein View area: ${SITE_URL}/areas/klipfontein-view
+- Groceries: ${SITE_URL}/categories/groceries
+- Restaurant partnerships: ${SITE_URL}/restaurants
+- Vendor registration: ${SITE_URL}/vendors/register
+- Rider application: ${SITE_URL}/rider
+- About: ${SITE_URL}/about
+- FAQ: ${SITE_URL}/faq
+- Sitemap: ${SITE_URL}/sitemap.xml
+
+## Accuracy and access
+Public vendor and product pages appear only after approval and readiness checks. Admin, customer account, vendor dashboard, rider dashboard, payments, private documents and API routes are not public discovery content and must not be indexed or summarised as public records.
+`;
+
+  return new NextResponse(body, {
     headers: {
       "content-type": "text/plain; charset=utf-8",
-      "cache-control": "public, max-age=3600, s-maxage=3600",
+      "cache-control": "public, max-age=86400, s-maxage=86400",
     },
   });
 }

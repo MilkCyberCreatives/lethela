@@ -68,9 +68,6 @@ export const metadata: Metadata = {
   ],
   applicationName: SITE_NAME,
   metadataBase: new URL(SITE_URL),
-  alternates: {
-    canonical: "/",
-  },
   robots: {
     index: true,
     follow: true,
@@ -123,6 +120,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
   themeColor: "#080B27",
 };
 
@@ -133,9 +133,12 @@ const globalSchema = {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
       name: SITE_NAME,
+      legalName: process.env.NEXT_PUBLIC_LEGAL_ENTITY_NAME?.trim() || SITE_NAME,
       url: SITE_URL,
       logo: absoluteUrl("/lethelalogo.svg"),
       email: LEGAL_SUPPORT_EMAIL || undefined,
+      areaServed: { "@type": "Country", name: "South Africa" },
+      knowsLanguage: ["en-ZA", "zu-ZA", "xh-ZA"],
       sameAs: getFooterSocialLinks().map((item) => item.href),
       contactPoint: [
         {
@@ -166,8 +169,30 @@ const globalSchema = {
       "@id": `${SITE_URL}/#service`,
       name: SITE_NAME,
       url: SITE_URL,
-      areaServed: "South Africa",
+      areaServed: [
+        { "@type": "Country", name: "South Africa" },
+        { "@type": "Place", name: "Klipfontein View, Midrand" },
+      ],
       serviceType: "Food and grocery delivery",
+      availableChannel: {
+        "@type": "ServiceChannel",
+        serviceUrl: SITE_URL,
+        availableLanguage: ["English", "isiZulu", "isiXhosa"],
+      },
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: "Lethela marketplace categories",
+        itemListElement: [
+          "Groceries",
+          "Kota",
+          "Chicken",
+          "Burgers",
+          "Braai",
+          "Breakfast",
+          "Drinks",
+          "Snacks",
+        ].map((name) => ({ "@type": "OfferCatalog", name })),
+      },
     },
   ],
 };

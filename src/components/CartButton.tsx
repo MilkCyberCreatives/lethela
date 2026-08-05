@@ -26,16 +26,13 @@ export default function CartButton() {
     <Button
       onClick={openCart}
       aria-label="Open cart"
-      className="relative bg-lethela-secondary text-white border-transparent
-                 hover:bg-lethela-secondary focus-visible:ring-2 focus-visible:ring-lethela-primary"
+      className="relative h-11 w-11 border-transparent bg-lethela-secondary px-0 text-white hover:bg-lethela-secondary focus-visible:ring-2 focus-visible:ring-lethela-primary sm:h-10 sm:w-auto sm:px-4"
     >
-      {/* Icon stays white; no hover color changes */}
       <ShoppingCart className="h-5 w-5 text-white" />
 
       {mounted && count > 0 && (
         <span
-          className="absolute -top-2 -right-2 rounded-full bg-lethela-primary text-white
-                     text-[10px] leading-none px-1.5 py-1"
+          className="absolute -right-2 -top-2 rounded-full bg-lethela-primary px-1.5 py-1 text-[10px] leading-none text-white"
           aria-label={`${count} items in cart`}
         >
           {count}

@@ -1,104 +1,46 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 
+const privateRoutes = [
+  "/api/",
+  "/admin",
+  "/owner-access",
+  "/vendors/dashboard",
+  "/vendors/signin",
+  "/rider/dashboard",
+  "/checkout",
+  "/orders/",
+  "/account",
+  "/profile",
+  "/signin",
+  "/signup/",
+  "/forgot-password",
+  "/reset-password",
+];
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow: [
-          "/api/",
-          "/admin",
-          "/vendors/dashboard",
-          "/rider/dashboard",
-          "/checkout",
-          "/orders/",
-          "/account",
-          "/profile",
-          "/signin",
-          "/signup/",
-        ],
+        disallow: privateRoutes,
       },
-      {
-        userAgent: "GPTBot",
+      ...[
+        "GPTBot",
+        "OAI-SearchBot",
+        "ChatGPT-User",
+        "ClaudeBot",
+        "Claude-SearchBot",
+        "Claude-User",
+        "PerplexityBot",
+      ].map((userAgent) => ({
+        userAgent,
         allow: "/",
-        disallow: ["/api/"],
-      },
-      {
-        userAgent: "OAI-SearchBot",
-        allow: "/",
-        disallow: [
-          "/api/",
-          "/admin",
-          "/vendors/dashboard",
-          "/checkout",
-          "/orders/",
-          "/rider/dashboard",
-        ],
-      },
-      {
-        userAgent: "ChatGPT-User",
-        allow: "/",
-        disallow: [
-          "/api/",
-          "/admin",
-          "/vendors/dashboard",
-          "/checkout",
-          "/orders/",
-          "/rider/dashboard",
-        ],
-      },
-      {
-        userAgent: "ClaudeBot",
-        allow: "/",
-        disallow: [
-          "/api/",
-          "/admin",
-          "/vendors/dashboard",
-          "/checkout",
-          "/orders/",
-          "/rider/dashboard",
-        ],
-      },
-      {
-        userAgent: "Claude-SearchBot",
-        allow: "/",
-        disallow: [
-          "/api/",
-          "/admin",
-          "/vendors/dashboard",
-          "/checkout",
-          "/orders/",
-          "/rider/dashboard",
-        ],
-      },
-      {
-        userAgent: "Claude-User",
-        allow: "/",
-        disallow: [
-          "/api/",
-          "/admin",
-          "/vendors/dashboard",
-          "/checkout",
-          "/orders/",
-          "/rider/dashboard",
-        ],
-      },
-      {
-        userAgent: "PerplexityBot",
-        allow: "/",
-        disallow: [
-          "/api/",
-          "/admin",
-          "/vendors/dashboard",
-          "/checkout",
-          "/orders/",
-          "/rider/dashboard",
-        ],
-      },
+        disallow: privateRoutes,
+      })),
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: [`${SITE_URL}/sitemap.xml`, `${SITE_URL}/discovery-sitemap.xml`],
     host: SITE_URL,
   };
 }

@@ -35,7 +35,7 @@ export default function CookieConsentBanner() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="cookie-consent-title"
-      className="fixed inset-x-0 bottom-0 z-[70] border-t border-white/15 bg-[#151515]/95 px-4 py-4 text-white shadow-2xl backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-[120] max-h-[85dvh] overflow-y-auto border-t border-white/15 bg-[#151515]/95 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-2xl backdrop-blur"
     >
       <div className="container flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="max-w-3xl">
@@ -52,14 +52,14 @@ export default function CookieConsentBanner() {
           <button
             type="button"
             onClick={() => save("declined")}
-            className="rounded-md border border-white/20 px-4 py-2 text-sm font-semibold text-white"
+            className="min-h-11 flex-1 rounded-md border border-white/20 px-4 py-2 text-sm font-semibold text-white sm:flex-none"
           >
             Decline
           </button>
           <button
             type="button"
             onClick={() => save("accepted")}
-            className="rounded-md bg-lethela-primary px-4 py-2 text-sm font-semibold text-white"
+            className="min-h-11 flex-1 rounded-md bg-lethela-primary px-4 py-2 text-sm font-semibold text-white sm:flex-none"
           >
             Accept
           </button>

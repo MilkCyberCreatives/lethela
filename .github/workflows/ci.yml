@@ -64,6 +64,9 @@ jobs:
           SUPPORT_EMAIL_TO: support@example.test
         run: npm run check:security-env
 
+      - name: Check search-engine readiness
+        run: npm run check:search-engine -- --source-only
+
       - name: Check TypeScript
         run: npm run typecheck
 
