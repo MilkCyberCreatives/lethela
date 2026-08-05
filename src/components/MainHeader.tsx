@@ -9,7 +9,6 @@ import CartButton from "@/components/CartButton";
 import CartDrawer from "@/components/CartDrawer";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { usePathname } from "next/navigation";
-import MobileCartBar from "@/components/MobileCartBar";
 import CartVendorNotice from "@/components/CartVendorNotice";
 
 export default function MainHeader() {
@@ -66,27 +65,33 @@ export default function MainHeader() {
   if (portal) {
     return (
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#05071D]/95 text-white backdrop-blur">
-        <div className="container flex h-16 items-center justify-between gap-4">
+        <div className="container flex min-h-16 flex-wrap items-center justify-between gap-2 py-2 sm:h-16 sm:flex-nowrap sm:gap-4 sm:py-0">
           <Link
             href={pathname.startsWith("/vendors") ? "/vendors/dashboard" : "/rider/dashboard"}
-            className="flex items-center gap-3"
+            className="flex min-w-0 items-center gap-2 sm:gap-3"
           >
             <Image
               src="/lethelalogo.svg"
               alt="Lethela"
               width={130}
               height={32}
-              className="h-8 w-auto rounded bg-white px-2"
+              className="h-7 w-auto shrink-0 rounded bg-white px-2 sm:h-8"
             />
-            <span className="text-sm font-semibold">{portal}</span>
+            <span className="max-w-[8.5rem] truncate text-xs font-semibold sm:max-w-none sm:text-sm">
+              {portal}
+            </span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link href="/" className="rounded-lg border border-white/20 px-3 py-2 text-sm">
-              View marketplace
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center rounded-lg border border-white/20 px-3 py-2 text-xs sm:text-sm"
+            >
+              <span className="hidden sm:inline">View marketplace</span>
+              <span className="sm:hidden">Marketplace</span>
             </Link>
             <Button
               variant="outline"
-              className="border-white/20 bg-transparent text-white"
+              className="min-h-11 border-white/20 bg-transparent px-3 text-xs text-white sm:text-sm"
               onClick={() => void handleSignOut()}
             >
               Sign out
@@ -99,14 +104,14 @@ export default function MainHeader() {
 
   return (
     <header className="sticky top-0 z-50 surface-header">
-      <div className="container flex h-20 items-center justify-between text-sm text-black">
-        <Link href="/" className="flex items-center gap-3">
+      <div className="container flex h-16 items-center justify-between text-sm text-black sm:h-20">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           <Image
             src="/lethelalogo.svg"
             alt="Lethela - Siyashesha"
             width={170}
             height={40}
-            className="h-10 w-auto"
+            className="h-8 w-auto sm:h-10"
           />
         </Link>
 
@@ -180,7 +185,7 @@ export default function MainHeader() {
           )}
         </nav>
 
-        <div className="md:hidden flex items-center gap-3">
+        <div className="flex items-center gap-2 md:hidden">
           {!hideCart ? <CartButton /> : null}
           <Sheet>
             <SheetTrigger asChild>
@@ -188,14 +193,17 @@ export default function MainHeader() {
                 variant="outline"
                 aria-label="Open navigation menu"
                 title="Open navigation menu"
-                className="border-black/20 text-black hover:bg-black/5"
+                className="h-11 w-11 border-black/20 px-0 text-black hover:bg-black/5"
               >
                 <Menu className="h-5 w-5" aria-hidden="true" />
               </Button>
             </SheetTrigger>
 
-            <SheetContent side="right" className="bg-lethela-secondary text-white w-[260px] pt-12">
-              <nav className="flex flex-col gap-4 text-lg">
+            <SheetContent
+              side="right"
+              className="w-[min(88vw,320px)] bg-lethela-secondary pt-12 text-white"
+            >
+              <nav className="mobile-site-nav flex flex-col gap-2 text-base sm:text-lg">
                 <Link href="/" className="hover:underline">
                   Home
                 </Link>
@@ -223,7 +231,7 @@ export default function MainHeader() {
                       Profile
                     </Link>
                     <Button
-                      className="mt-4 w-full bg-lethela-primary hover:opacity-90"
+                      className="mt-4 min-h-11 w-full bg-lethela-primary hover:opacity-90"
                       onClick={() => void handleSignOut()}
                     >
                       Sign Out
@@ -231,7 +239,7 @@ export default function MainHeader() {
                   </>
                 ) : (
                   <Link href="/signin">
-                    <Button className="mt-4 w-full bg-lethela-primary hover:opacity-90">
+                    <Button className="mt-4 min-h-11 w-full bg-lethela-primary hover:opacity-90">
                       Sign In
                     </Button>
                   </Link>
@@ -243,7 +251,6 @@ export default function MainHeader() {
       </div>
 
       {!hideCart ? <CartDrawer /> : null}
-      {!hideCart ? <MobileCartBar /> : null}
       {!hideCart ? <CartVendorNotice /> : null}
     </header>
   );
