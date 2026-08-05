@@ -40,7 +40,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: privateRoutes,
       })),
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: [`${SITE_URL}/sitemap.xml`, `${SITE_URL}/discovery-sitemap.xml`],
     host: SITE_URL,
   };
 }
