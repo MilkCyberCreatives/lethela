@@ -176,7 +176,7 @@ export default function RiderDashboardClient() {
             variant="outline"
             className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
           >
-            <Link href="/signup">Create rider account</Link>
+            <Link href="/rider">Create rider account</Link>
           </Button>
         </div>
       </section>
@@ -229,15 +229,15 @@ export default function RiderDashboardClient() {
             icon={MapPin}
           />
           <Metric
-            label="Open orders"
+            label="Assigned deliveries"
             value={orders.length}
-            note="Paid orders available for dispatch"
+            note="Active paid orders assigned to you"
             icon={PackageCheck}
           />
           <Metric
-            label="Est. delivery fees"
-            value={money(orders.reduce((sum, order) => sum + order.deliveryFeeCents, 0))}
-            note="100% goes to the assigned rider"
+            label="Assigned earnings"
+            value={money(orders.reduce((sum, order) => sum + order.riderPayoutCents, 0))}
+            note="Delivery fees and tips on active assignments"
             icon={WalletCards}
           />
         </div>

@@ -23,6 +23,16 @@ function paidOrderWhere(from: Date) {
   };
 }
 
+function averageDeliveryMinutes(orders: Array<{ createdAt: Date; updatedAt: Date }>): number {
+  const durations = orders
+    .map((order) => order.updatedAt.getTime() - order.createdAt.getTime())
+    .filter((duration) => duration > 0 && duration <= 24 * 60 * 60 * 1000);
+  if (durations.length === 0) return 0;
+  return Math.round(
+    durations.reduce((sum, duration) => sum + duration, 0) / durations.length / 60000,
+  );
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminRequest(req);
   if (!guard.ok) {
@@ -33,10 +43,13 @@ export async function GET(req: NextRequest) {
   const month = startOfMonth();
   const [
     ordersToday,
+    completedOrdersToday,
+    deliveredOrders,
     revenueToday,
     revenueMonth,
     activeVendors,
-    activeRiders,
+    approvedRiders,
+    availableRiders,
     pendingDeliveries,
     delayedOrders,
     failedDeliveries,
@@ -47,6 +60,19 @@ export async function GET(req: NextRequest) {
     topVendors,
   ] = await Promise.all([
     withQueryTimeout(prisma.order.count({ where: { createdAt: { gte: today } } }), 0),
+    withQueryTimeout(
+      prisma.order.count({ where: { status: "DELIVERED", updatedAt: { gte: today } } }),
+      0,
+    ),
+    withQueryTimeout(
+      prisma.order.findMany({
+        where: { status: "DELIVERED", paymentStatus: { in: ["PAID", "SUCCESS"] } },
+        orderBy: { updatedAt: "desc" },
+        take: 100,
+        select: { createdAt: true, updatedAt: true },
+      }),
+      [],
+    ),
     withQueryTimeout(
       prisma.order.aggregate({ where: paidOrderWhere(today), _sum: { totalCents: true } }),
       { _sum: { totalCents: 0 } },
@@ -60,6 +86,10 @@ export async function GET(req: NextRequest) {
       0,
     ),
     withQueryTimeout(prisma.riderApplication.count({ where: { status: "APPROVED" } }), 0),
+    withQueryTimeout(
+      prisma.riderApplication.count({ where: { status: "APPROVED", availableNow: true } }),
+      0,
+    ),
     withQueryTimeout(
       prisma.order.count({
         where: {
@@ -97,6 +127,12 @@ export async function GET(req: NextRequest) {
     withQueryTimeout(
       prisma.orderItem.groupBy({
         by: ["productId"],
+        where: {
+          order: {
+            paymentStatus: { in: ["PAID", "SUCCESS"] },
+            createdAt: { gte: month },
+          },
+        },
         _sum: { qty: true },
         orderBy: { _sum: { qty: "desc" } },
         take: 5,
@@ -106,6 +142,7 @@ export async function GET(req: NextRequest) {
     withQueryTimeout(
       prisma.order.groupBy({
         by: ["vendorId"],
+        where: paidOrderWhere(month),
         _sum: { totalCents: true },
         orderBy: { _sum: { totalCents: "desc" } },
         take: 5,
@@ -140,12 +177,14 @@ export async function GET(req: NextRequest) {
     ok: true,
     stats: {
       ordersToday,
+      completedOrdersToday,
       revenueTodayCents: revenueToday._sum.totalCents || 0,
       revenueMonthCents: revenueMonth._sum.totalCents || 0,
       activeVendors,
-      activeRiders,
+      activeRiders: approvedRiders,
+      availableRiders,
       pendingDeliveries,
-      averageDeliveryTimeMins: 0,
+      averageDeliveryTimeMins: averageDeliveryMinutes(deliveredOrders),
       customerSatisfactionScore: Number((reviewStats._avg.rating || 0).toFixed(1)),
       delayedOrders,
       failedDeliveries,

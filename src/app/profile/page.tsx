@@ -36,9 +36,9 @@ export default async function ProfilePage({
       ) : null}
       <div className="mb-6 max-w-2xl">
         <p className="text-xs uppercase tracking-[0.14em] text-white/60">Account</p>
-        <h1 className="mt-2 text-3xl font-semibold">User profile</h1>
+        <h1 className="mt-2 text-3xl font-semibold">My account</h1>
         <p className="mt-3 text-sm text-white/75">
-          Update your name and upload your personal profile picture.
+          Manage your contact details, profile picture, orders and privacy requests in one place.
         </p>
       </div>
 

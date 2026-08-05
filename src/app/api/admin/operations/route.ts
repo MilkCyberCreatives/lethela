@@ -6,6 +6,8 @@ import { listAdminAuditLogs, logAdminAudit } from "@/lib/admin-audit";
 import {
   createDispatchAssignment,
   createRefundCase,
+  hasDispatchAssignment,
+  hasOpenRefundCase,
   listOperationRows,
   recordOrderEvent,
 } from "@/lib/order-operations";
@@ -33,7 +35,7 @@ const BodySchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("refund"),
     orderRef: z.string().min(3),
-    amountCents: z.number().int().nonnegative(),
+    amountCents: z.number().int().positive(),
     reason: z.string().min(3),
     evidenceUrl: z.string().optional(),
     note: z.string().optional(),
@@ -258,6 +260,12 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
+    if (await hasOpenRefundCase(order.id)) {
+      return NextResponse.json(
+        { ok: false, error: "An open refund case already exists for this order." },
+        { status: 409 },
+      );
+    }
     await createRefundCase({
       orderId: order.id,
       publicId: order.publicId,
@@ -294,7 +302,7 @@ export async function POST(req: NextRequest) {
 
   if (parsed.data.action === "dispatch") {
     if (
-      order.paymentStatus !== "PAID" ||
+      !["PAID", "SUCCESS"].includes(order.paymentStatus) ||
       !["READY_FOR_PICKUP", "RIDER_ASSIGNED"].includes(order.status)
     ) {
       return NextResponse.json(
@@ -308,6 +316,12 @@ export async function POST(req: NextRequest) {
     });
     if (!rider || rider.status !== "APPROVED") {
       return NextResponse.json({ ok: false, error: "Choose an approved rider." }, { status: 400 });
+    }
+    if (await hasDispatchAssignment(order.id, rider.id)) {
+      return NextResponse.json(
+        { ok: false, error: "This rider is already assigned to the order." },
+        { status: 409 },
+      );
     }
     await createDispatchAssignment({
       orderId: order.id,
