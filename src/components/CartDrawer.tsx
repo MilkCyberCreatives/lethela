@@ -149,14 +149,14 @@ export default function CartDrawer() {
   return (
     <>
       {mounted && hasItems && !open ? (
-        <div className="fixed inset-x-3 bottom-3 z-[70] rounded-2xl border border-white/10 bg-slate-950/95 p-3 text-white shadow-2xl backdrop-blur md:hidden">
+        <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[70] rounded-2xl border border-white/10 bg-slate-950/95 p-3 text-white shadow-2xl backdrop-blur md:hidden">
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={openCart}
-              className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left"
             >
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-lethela-primary text-white">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-lethela-primary text-white">
                 <ShoppingBag className="h-5 w-5" />
               </span>
               <span className="min-w-0">
@@ -169,7 +169,7 @@ export default function CartDrawer() {
             </button>
             <Link
               href="/checkout"
-              className="rounded-full bg-lethela-primary px-4 py-2 text-sm font-semibold text-white"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-lethela-primary px-4 py-2 text-sm font-semibold text-white"
             >
               Checkout
             </Link>
@@ -182,26 +182,26 @@ export default function CartDrawer() {
       ) : null}
 
       <aside
-        className={`fixed right-0 top-0 z-[99] h-full w-full max-w-md transform border-l border-white/10 bg-lethela-secondary text-white transition-transform ${
+        className={`fixed right-0 top-0 z-[99] flex h-dvh w-full max-w-md transform flex-col overflow-hidden border-l border-white/10 bg-lethela-secondary text-white transition-transform ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
         aria-label="Shopping cart"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between border-b border-white/10 p-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-white/10 p-4">
           <h2 className="text-lg font-semibold">Your cart</h2>
           <button
             type="button"
             aria-label="Close cart"
-            className="rounded-md p-2 hover:bg-white/10"
+            className="grid h-11 w-11 place-items-center rounded-md p-0 hover:bg-white/10"
             onClick={closeCart}
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="h-[calc(100%-208px)] space-y-3 overflow-y-auto p-4">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
           {!hasItems ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/75">
               No items in cart yet. Add an item from an approved vendor to start an order.
@@ -213,7 +213,7 @@ export default function CartDrawer() {
                 className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3"
               >
                 {item.image ? (
-                  <div className="relative h-16 w-16 overflow-hidden rounded">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded">
                     <Image
                       src={item.image}
                       alt={item.name}
@@ -223,20 +223,20 @@ export default function CartDrawer() {
                     />
                   </div>
                 ) : (
-                  <div className="h-16 w-16 rounded bg-white/10" />
+                  <div className="h-16 w-16 shrink-0 rounded bg-white/10" />
                 )}
 
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="font-medium">{item.name}</div>
+                    <div className="min-w-0">
+                      <div className="break-words font-medium">{item.name}</div>
                       <div className="text-xs text-white/70">
                         R {(item.priceCents / 100).toFixed(2)}
                       </div>
                     </div>
                     <button
                       type="button"
-                      className="text-xs underline"
+                      className="min-h-10 shrink-0 px-1 text-xs underline"
                       onClick={() => remove(item.itemId)}
                     >
                       Remove
@@ -246,16 +246,16 @@ export default function CartDrawer() {
                   <div className="mt-2 inline-flex items-center gap-2">
                     <button
                       type="button"
-                      className="h-7 w-7 rounded border border-white/20"
+                      className="h-10 w-10 rounded border border-white/20"
                       onClick={() => dec(item.itemId)}
                       aria-label="Decrease quantity"
                     >
                       -
                     </button>
-                    <span className="text-sm">{item.qty}</span>
+                    <span className="min-w-5 text-center text-sm">{item.qty}</span>
                     <button
                       type="button"
-                      className="h-7 w-7 rounded border border-white/20"
+                      className="h-10 w-10 rounded border border-white/20"
                       onClick={() => inc(item.itemId)}
                       aria-label="Increase quantity"
                     >
@@ -268,7 +268,7 @@ export default function CartDrawer() {
           )}
         </div>
 
-        <div className="border-t border-white/10 bg-lethela-secondary p-4">
+        <div className="max-h-[48dvh] shrink-0 overflow-y-auto border-t border-white/10 bg-lethela-secondary p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="space-y-1 text-sm">
             <div className="flex items-center justify-between text-white/80">
               <span>Subtotal</span>
@@ -304,39 +304,40 @@ export default function CartDrawer() {
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
             {hasItems ? (
-              <Button asChild className="flex-1 bg-lethela-primary">
+              <Button asChild className="min-h-11 bg-lethela-primary">
                 <Link href="/checkout" onClick={closeCart}>
                   Checkout
                 </Link>
               </Button>
             ) : (
-              <Button className="flex-1 bg-white/15 text-white" disabled>
+              <Button className="min-h-11 bg-white/15 text-white" disabled>
                 Checkout
               </Button>
             )}
-            <Button
-              asChild
-              variant="outline"
-              className="border-white/20 text-white"
-              disabled={visibleItems.length === 0}
-            >
-              <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => {
-                  trackWhatsAppClick("cart_drawer", { item_count: visibleItems.length });
-                  closeCart();
-                }}
-              >
+            {hasItems ? (
+              <Button asChild variant="outline" className="min-h-11 border-white/20 text-white">
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => {
+                    trackWhatsAppClick("cart_drawer", { item_count: visibleItems.length });
+                    closeCart();
+                  }}
+                >
+                  WhatsApp order
+                </a>
+              </Button>
+            ) : (
+              <Button variant="outline" className="min-h-11 border-white/20 text-white" disabled>
                 WhatsApp order
-              </a>
-            </Button>
+              </Button>
+            )}
             <Button
               variant="outline"
-              className="border-white/20 text-white"
+              className="min-h-11 border-white/20 text-white"
               onClick={clear}
               disabled={visibleItems.length === 0}
             >
