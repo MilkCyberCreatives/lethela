@@ -1,0 +1,51 @@
+name: Trigger isolated mobile and search-engine repair
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out isolated repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mobile-search-engine-readiness
+          fetch-depth: 0
+
+      - name: Run the isolated repair script
+        shell: bash
+        run: |
+          awk '
+            /python <<'"'"'PY'"'"'/ { capture=1; next }
+            capture && /^          PY$/ { capture=0; exit }
+            capture { sub(/^          /, ""); print }
+          ' .github/workflows/apply-mobile-search-engine-readiness.yml > /tmp/apply-mobile-seo.py
+          python /tmp/apply-mobile-seo.py
+
+      - name: Format changed application files
+        run: npx prettier --write src/app/layout.tsx src/app/globals.css src/app/dashboard.css src/app/page.tsx src/app/robots.ts src/app/sitemap.ts src/app/areas/klipfontein-view/page.tsx src/app/llms.txt/route.ts src/app/categories/[category]/page.tsx src/app/vendors/[slug]/page.tsx src/components/MainHeader.tsx src/components/CartButton.tsx src/components/Hero.tsx src/components/CartDrawer.tsx src/components/CookieConsentBanner.tsx src/components/AgeGate.tsx src/components/auth/AuthShell.tsx src/components/Footer.tsx scripts/check-search-engine-readiness.mjs package.json .github/workflows/ci.yml
+
+      - name: Commit repairs to isolated branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Improve mobile readiness and search discovery"
+          git push origin HEAD:agent/mobile-search-engine-readiness
+
+      - name: Remove one-time trigger from main
+        shell: bash
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+          git rm .github/workflows/trigger-mobile-search-engine-repair.yml
+          git commit -m "Remove one-time mobile SEO repair trigger [skip ci]"
+          git push origin main
