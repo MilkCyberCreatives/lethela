@@ -58,7 +58,9 @@ export default async function ProfilePage({
                 <ShieldCheck className="h-4 w-4 text-lethela-primary" />
                 Private account area
               </div>
-              <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">My Lethela account</h1>
+              <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">
+                My Lethela account
+              </h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
                 Keep your delivery details current, view orders, manage saved meals and choose the
                 notifications you want to receive.
