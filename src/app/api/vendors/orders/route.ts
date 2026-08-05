@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
+import { vendorApiErrorMessage, vendorApiErrorStatus } from "@/lib/vendor-api-error";
 import { normalizeOrderStatus } from "@/lib/order-state";
 
 export async function GET(req: Request) {
@@ -68,10 +69,10 @@ export async function GET(req: Request) {
         };
       }),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { ok: false, error: error.message || "Not signed in as vendor" },
-      { status: 401 },
+      { ok: false, error: vendorApiErrorMessage(error, "Failed to load vendor orders.") },
+      { status: vendorApiErrorStatus(error) },
     );
   }
 }

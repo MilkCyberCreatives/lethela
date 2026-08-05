@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
+import { vendorApiErrorMessage, vendorApiErrorStatus } from "@/lib/vendor-api-error";
 import { pusherServer } from "@/lib/pusher-server";
 import { notifyOrderStatusPush } from "@/lib/order-notifications";
 import { settleWithin } from "@/lib/notification-channels";
@@ -106,7 +107,9 @@ export async function PATCH(req: Request, { params }: Params) {
 
     return NextResponse.json({ ok: true, order: updated });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Update failed";
-    return NextResponse.json({ ok: false, error: message }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: vendorApiErrorMessage(error, "Failed to update the vendor order.") },
+      { status: vendorApiErrorStatus(error) },
+    );
   }
 }

@@ -88,20 +88,20 @@ type DashboardTab =
   | "support";
 
 const tabs: Array<{ tab: DashboardTab; label: string; hint: string }> = [
-  { tab: "overview", label: "Overview", hint: "Clean home view" },
+  { tab: "overview", label: "Overview", hint: "Store status and priorities" },
   { tab: "analytics", label: "Analytics", hint: "Sales and trends" },
   { tab: "orders", label: "Orders", hint: "Live operations" },
   { tab: "menu", label: "Menu", hint: "Public menu, products and imports" },
   { tab: "payouts", label: "Payouts", hint: "Settlements and cash flow" },
-  { tab: "operations", label: "Operations", hint: "Notifications and issues" },
+  { tab: "operations", label: "Notifications", hint: "Alerts and operational notices" },
   { tab: "messages", label: "Messages", hint: "Lethela owner inbox" },
   { tab: "experience", label: "Feedback", hint: "Ratings and service signals" },
   { tab: "team", label: "Team", hint: "Staff and permissions" },
   { tab: "profile", label: "Profile", hint: "Store settings" },
   { tab: "hours", label: "Hours", hint: "Trading schedule" },
   { tab: "specials", label: "Specials", hint: "Promotions" },
-  { tab: "automations", label: "Automations", hint: "AI actions" },
-  { tab: "support", label: "Support", hint: "Help and operations" },
+  { tab: "automations", label: "Automations", hint: "Assisted store actions" },
+  { tab: "support", label: "Support", hint: "Contact Lethela operations" },
 ];
 
 function resolveTab(value: string | undefined): DashboardTab {
@@ -118,7 +118,18 @@ function money(cents: number) {
 function countsTowardRevenue(paymentStatus: string, orderStatus: string) {
   const payment = String(paymentStatus || "").toUpperCase();
   const status = String(orderStatus || "").toUpperCase();
-  return payment !== "FAILED" && payment !== "CANCELLED" && status !== "CANCELED";
+  return (
+    ["PAID", "SUCCESS"].includes(payment) &&
+    !["CANCELED", "CANCELLED", "REFUNDED", "FAILED"].includes(status)
+  );
+}
+
+function formatWhatsAppPhone(value: string) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("27") && digits.length === 11) {
+    return `+27 ${digits.slice(2, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`;
+  }
+  return digits ? `+${digits}` : "WhatsApp support";
 }
 
 function DashboardPanelSkeleton({ lines = 4 }: { lines?: number }) {
@@ -135,14 +146,15 @@ function DashboardPanelSkeleton({ lines = 4 }: { lines?: number }) {
 }
 
 function SupportCard() {
-  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
+  const whatsappPhone = getOrderWhatsAppPhone();
+  const whatsappHref = `https://wa.me/${whatsappPhone}`;
   return (
     <div className="rounded-2xl border border-lethela-primary/20 bg-[#141b43] p-5">
       <div className="mb-2 text-sm font-semibold text-white">Support</div>
       <p className="text-sm text-white/80">
         Need help? Message Lethela on WhatsApp:{" "}
         <a className="underline" href={whatsappHref} target="_blank" rel="noreferrer">
-          +27 72 390 8919
+          {formatWhatsAppPhone(whatsappPhone)}
         </a>
       </p>
       <p className="mt-3 text-xs text-white/60">
@@ -184,8 +196,9 @@ export default async function VendorDashboardPage({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const needsOverviewData = activeTab === "overview";
   const sqliteDashboard =
-    prismaRuntimeInfo.provider === "sqlite"
+    prismaRuntimeInfo.provider === "sqlite" && needsOverviewData
       ? await getSqliteVendorDashboardData(vendorId, since)
       : null;
   const [vendor, orders, products, hours, specials, lateFlags] = sqliteDashboard
@@ -241,36 +254,46 @@ export default async function VendorDashboardPage({
             },
           },
         }),
-        prisma.order.findMany({
-          where: { vendorId, createdAt: { gte: since } },
-          orderBy: { createdAt: "desc" },
-          select: {
-            createdAt: true,
-            status: true,
-            paymentStatus: true,
-            totalCents: true,
-            items: { select: { qty: true, product: { select: { name: true } } } },
-          },
-        }),
-        prisma.product.findMany({
-          where: { vendorId },
-          select: { name: true, inStock: true },
-        }),
-        prisma.operatingHour.findMany({
-          where: { vendorId, closed: false },
-          select: { day: true },
-        }),
-        prisma.special.findMany({
-          where: { vendorId },
-          orderBy: { startsAt: "asc" },
-          select: { title: true, startsAt: true, endsAt: true, draft: true },
-        }),
-        prisma.lateOrderFlag.findMany({
-          where: { vendorId, resolved: false },
-          take: 3,
-          orderBy: { createdAt: "desc" },
-          select: { orderPublic: true, etaMinutes: true, aiMessage: true },
-        }),
+        needsOverviewData
+          ? prisma.order.findMany({
+              where: { vendorId, createdAt: { gte: since } },
+              orderBy: { createdAt: "desc" },
+              select: {
+                createdAt: true,
+                status: true,
+                paymentStatus: true,
+                totalCents: true,
+                items: { select: { qty: true, product: { select: { name: true } } } },
+              },
+            })
+          : Promise.resolve([]),
+        needsOverviewData
+          ? prisma.product.findMany({
+              where: { vendorId },
+              select: { name: true, inStock: true },
+            })
+          : Promise.resolve([]),
+        needsOverviewData
+          ? prisma.operatingHour.findMany({
+              where: { vendorId, closed: false },
+              select: { day: true },
+            })
+          : Promise.resolve([]),
+        needsOverviewData
+          ? prisma.special.findMany({
+              where: { vendorId },
+              orderBy: { startsAt: "asc" },
+              select: { title: true, startsAt: true, endsAt: true, draft: true },
+            })
+          : Promise.resolve([]),
+        needsOverviewData
+          ? prisma.lateOrderFlag.findMany({
+              where: { vendorId, resolved: false },
+              take: 3,
+              orderBy: { createdAt: "desc" },
+              select: { orderPublic: true, etaMinutes: true, aiMessage: true },
+            })
+          : Promise.resolve([]),
       ]);
 
   const progressChecks = [
@@ -321,6 +344,7 @@ export default async function VendorDashboardPage({
   const unresolvedLateCount = lateFlags.length;
   const topProducts = Object.entries(
     orders
+      .filter((order) => countsTowardRevenue(order.paymentStatus, order.status))
       .flatMap((order) => order.items)
       .reduce<Record<string, number>>((acc, item) => {
         const key = item.product?.name || "Unknown item";
@@ -598,7 +622,7 @@ export default async function VendorDashboardPage({
       content = <PayoutsPanel />;
       break;
     case "operations":
-      title = "Operations";
+      title = "Notifications";
       content = <NotificationsPanel />;
       break;
     case "messages":
@@ -665,7 +689,7 @@ export default async function VendorDashboardPage({
       <MainHeader />
       <section className="relative w-full px-4 py-6 sm:px-6 lg:h-[calc(100vh-88px)] lg:px-8 xl:px-10">
         <div className="grid h-full gap-6 lg:grid-cols-[270px,minmax(0,1fr)]">
-          <aside className="rounded-2xl border border-white/10 bg-[#0f1637] p-4 lg:h-full">
+          <aside className="rounded-2xl border border-white/10 bg-[#0f1637] p-4 lg:h-full lg:overflow-y-auto lg:pr-3">
             <div className="border-b border-white/10 pb-4">
               <p className="text-xs uppercase tracking-[0.14em] text-white/55">Dashboard</p>
               <h2 className="mt-2 text-lg font-semibold">{vendor?.name || "Vendor"}</h2>
@@ -711,15 +735,7 @@ export default async function VendorDashboardPage({
                 </Link>
               ) : null}
             </div>
-            <div
-              className={
-                activeTab === "overview"
-                  ? "lg:h-[calc(100%-73px)] lg:overflow-hidden"
-                  : "lg:h-[calc(100%-73px)] lg:overflow-y-auto lg:pr-1"
-              }
-            >
-              {content}
-            </div>
+            <div className="lg:h-[calc(100%-73px)] lg:overflow-y-auto lg:pr-1">{content}</div>
           </div>
         </div>
       </section>

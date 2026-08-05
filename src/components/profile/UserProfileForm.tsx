@@ -78,7 +78,7 @@ export default function UserProfileForm() {
       setName(json.user.name || "");
       setImage(json.user.image || "");
       setPhone(json.user.phone || "");
-      setStatus("User profile updated.");
+      setStatus("Account details updated.");
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "Failed to save profile.");
     } finally {

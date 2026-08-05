@@ -152,10 +152,13 @@ type RiderApplication = {
 };
 
 type RiderCounts = {
+  submitted?: number;
+  changesRequested?: number;
   pending: number;
   underReview: number;
   approved: number;
   rejected: number;
+  suspended?: number;
   total: number;
 };
 
@@ -184,10 +187,12 @@ type MessageRecipientType = "VENDOR" | "RIDER" | "ALL_VENDORS" | "ALL_RIDERS" | 
 
 type AdminStats = {
   ordersToday: number;
+  completedOrdersToday: number;
   revenueTodayCents: number;
   revenueMonthCents: number;
   activeVendors: number;
   activeRiders: number;
+  availableRiders: number;
   pendingDeliveries: number;
   averageDeliveryTimeMins: number;
   customerSatisfactionScore: number;
@@ -275,6 +280,15 @@ type AdminAuditLog = {
   createdAt: string;
 };
 
+type AdminOperationsPayload = {
+  orders?: OperationsOrder[];
+  riders?: OperationsRider[];
+  events?: OperationsEvent[];
+  refunds?: OperationsRefund[];
+  dispatches?: OperationsDispatch[];
+  auditLogs?: AdminAuditLog[];
+};
+
 const VENDOR_STATUS_OPTIONS: VendorStatusOption[] = [
   "SUBMITTED",
   "UNDER_REVIEW",
@@ -291,6 +305,8 @@ const RIDER_STATUS_OPTIONS: RiderStatusFilter[] = [
   "UNDER_REVIEW",
   "APPROVED",
   "REJECTED",
+  "SUSPENDED",
+  "DRAFT",
   "ALL",
 ];
 const PRODUCT_STATUS_OPTIONS: ProductStatusFilter[] = [
@@ -310,37 +326,28 @@ const ADMIN_NAV_GROUPS: Array<{
     items: [
       { id: "overview", label: "Overview", icon: LayoutDashboard },
       { id: "operations", label: "Live operations", icon: Activity },
-      { id: "users", label: "Analytics", icon: LineChart },
     ],
   },
   {
     title: "Marketplace",
     items: [
-      { id: "vendors", label: "Vendors", icon: Store },
+      { id: "vendors", label: "Vendor approvals", icon: Store },
       { id: "products", label: "Product reviews", icon: PackageCheck },
     ],
   },
   {
-    title: "Orders",
+    title: "Fulfilment",
     items: [
-      { id: "orders", label: "Order summary", icon: ShoppingBag },
-      { id: "operations", label: "Dispatch and refunds", icon: WalletCards },
+      { id: "orders", label: "Order monitoring", icon: ShoppingBag },
+      { id: "riders", label: "Rider applications", icon: Bike },
     ],
   },
   {
-    title: "Riders",
-    items: [{ id: "riders", label: "Rider applications", icon: Bike }],
-  },
-  {
-    title: "Customers",
+    title: "Engagement",
     items: [
-      { id: "users", label: "Customer analytics", icon: Users },
+      { id: "users", label: "Customer insights", icon: Users },
       { id: "messages", label: "Messages", icon: MessageSquare },
     ],
-  },
-  {
-    title: "Governance",
-    items: [{ id: "operations", label: "Operations and audit", icon: CheckCircle2 }],
   },
 ];
 
@@ -463,7 +470,21 @@ function EmptyState({ title, text }: { title: string; text: string }) {
   );
 }
 
-function AdminTopBar({ onRefresh, loading }: { onRefresh: () => void; loading: boolean }) {
+function AdminTopBar({
+  onRefresh,
+  loading,
+  searchValue,
+  onSearchChange,
+  onSearch,
+  onNotifications,
+}: {
+  onRefresh: () => void;
+  loading: boolean;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  onSearch: () => void;
+  onNotifications: () => void;
+}) {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#05071D]/95 backdrop-blur">
       <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center gap-4 px-4 py-3 md:px-6 lg:px-8">
@@ -479,37 +500,49 @@ function AdminTopBar({ onRefresh, loading }: { onRefresh: () => void; loading: b
           </span>
         </Link>
 
-        <div className="hidden min-w-0 flex-1 items-center rounded-lg border border-white/10 bg-white/[0.05] px-3 md:flex">
+        <form
+          className="hidden min-w-0 flex-1 items-center rounded-lg border border-white/10 bg-white/[0.05] px-3 md:flex"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSearch();
+          }}
+        >
           <Search className="h-4 w-4 text-white/40" />
           <input
             className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/35"
-            placeholder="Search orders, vendors, riders, customers..."
+            placeholder="Search loaded orders, vendors, products or riders..."
+            value={searchValue}
+            onChange={(event) => onSearchChange(event.target.value)}
+            aria-label="Search dashboard records"
           />
-        </div>
+          <button
+            type="submit"
+            className="rounded-md px-2 py-1 text-xs font-semibold text-white/65 hover:text-white"
+          >
+            Search
+          </button>
+        </form>
 
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
-            aria-label="Notifications"
+            aria-label="Open operational notifications"
+            onClick={onNotifications}
           >
             <Bell className="h-4 w-4" />
           </button>
-          <button
-            type="button"
+          <Link
+            href="/contact"
             className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
-            aria-label="Support"
+            aria-label="Open Lethela support"
           >
             <LifeBuoy className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            className="hidden h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white/70 transition hover:border-lethela-primary hover:text-white sm:inline-flex"
-            aria-label="Profile menu"
-          >
+          </Link>
+          <span className="hidden h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white/70 sm:inline-flex">
             <UserCircle className="h-4 w-4" />
             Owner
-          </button>
+          </span>
           <Button
             variant="outline"
             className="hidden border-white/20 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary md:inline-flex"
@@ -675,6 +708,7 @@ export default function AdminPage() {
   const [vendorSearch, setVendorSearch] = useState("");
   const [riderSearch, setRiderSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
+  const [globalSearch, setGlobalSearch] = useState("");
   const [vendors, setVendors] = useState<VendorApplication[]>([]);
   const [products, setProducts] = useState<ProductReview[]>([]);
   const [vendorCounts, setVendorCounts] = useState<VendorCounts>({
@@ -731,7 +765,12 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pushPermission, setPushPermission] = useState<string>("unsupported");
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const adminKeyRef = useRef("");
+  const vendorStatusRef = useRef<VendorStatusOption>("SUBMITTED");
+  const riderStatusRef = useRef<RiderStatusFilter>("SUBMITTED");
+  const productStatusRef = useRef<ProductStatusFilter>("SUBMITTED");
+  const initialLoadCompleteRef = useRef(false);
 
   useEffect(() => {
     setPushPermission(
@@ -765,6 +804,18 @@ export default function AdminPage() {
     adminKeyRef.current = adminKey.trim();
   }, [adminKey]);
 
+  useEffect(() => {
+    vendorStatusRef.current = vendorStatus;
+  }, [vendorStatus]);
+
+  useEffect(() => {
+    riderStatusRef.current = riderStatus;
+  }, [riderStatus]);
+
+  useEffect(() => {
+    productStatusRef.current = productStatus;
+  }, [productStatus]);
+
   const syncAdminAccess = useCallback(async () => {
     const normalizedKey = adminKeyRef.current;
     if (!normalizedKey) return;
@@ -780,118 +831,156 @@ export default function AdminPage() {
     if (json.promoted && json.message) setNotice(json.message);
   }, []);
 
+  const fetchAdminJson = useCallback(async (url: string, fallback: string) => {
+    const response = await fetch(url, { method: "GET", cache: "no-store" });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || !json.ok) throw new Error(json.error || fallback);
+    return json;
+  }, []);
+
+  const loadVendorApprovals = useCallback(
+    async (status: VendorStatusOption = vendorStatusRef.current) => {
+      const json = await fetchAdminJson(
+        `/api/admin/vendors?status=${status}`,
+        "Failed to load vendor approvals.",
+      );
+      setVendors(json.items ?? []);
+      setVendorCounts(
+        json.counts ?? {
+          pending: Number(json.pendingCount ?? 0),
+          active: 0,
+          rejected: 0,
+          total: Number((json.items ?? []).length),
+        },
+      );
+      if (json.authMode) setAuthMode(json.authMode);
+    },
+    [fetchAdminJson],
+  );
+
+  const loadProductReviews = useCallback(
+    async (status: ProductStatusFilter = productStatusRef.current) => {
+      const json = await fetchAdminJson(
+        `/api/admin/products?status=${status}`,
+        "Failed to load product reviews.",
+      );
+      setProducts(json.products ?? []);
+    },
+    [fetchAdminJson],
+  );
+
+  const loadRiderApplications = useCallback(
+    async (status: RiderStatusFilter = riderStatusRef.current) => {
+      const json = await fetchAdminJson(
+        `/api/admin/riders?status=${status}`,
+        "Failed to load rider applications.",
+      );
+      setRiders(json.items ?? []);
+      setRiderCounts(
+        json.counts ?? {
+          pending: 0,
+          underReview: 0,
+          approved: 0,
+          rejected: 0,
+          total: Number((json.items ?? []).length),
+        },
+      );
+      if (json.authMode) setAuthMode(json.authMode);
+    },
+    [fetchAdminJson],
+  );
+
+  const applyOperationsJson = useCallback((json: AdminOperationsPayload) => {
+    setOperationsOrders(json.orders ?? []);
+    setOperationsRiders(json.riders ?? []);
+    setOperationsEvents(json.events ?? []);
+    setOperationsRefunds(json.refunds ?? []);
+    setOperationsDispatches(json.dispatches ?? []);
+    setAuditLogs(json.auditLogs ?? []);
+  }, []);
+
+  const loadLiveData = useCallback(async () => {
+    const [statsJson, operationsJson] = await Promise.all([
+      fetchAdminJson("/api/admin/stats", "Failed to load owner statistics."),
+      fetchAdminJson("/api/admin/operations", "Failed to load operations centre."),
+    ]);
+    setStats(statsJson.stats ?? null);
+    applyOperationsJson(operationsJson);
+    setLastRefreshedAt(new Date());
+  }, [applyOperationsJson, fetchAdminJson]);
+
+  const loadCommunicationData = useCallback(async () => {
+    const [notificationsJson, messagesJson] = await Promise.all([
+      fetchAdminJson("/api/admin/notifications", "Failed to load notification settings."),
+      fetchAdminJson("/api/admin/messages", "Failed to load messages."),
+    ]);
+    setChannels(notificationsJson.channels ?? null);
+    setApplicantChannels(notificationsJson.applicantChannels ?? null);
+    setMessages(messagesJson.items ?? []);
+  }, [fetchAdminJson]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       await syncAdminAccess();
-
-      const [
-        vendorsResponse,
-        productsResponse,
-        ridersResponse,
-        notificationsResponse,
-        messagesResponse,
-        statsResponse,
-        operationsResponse,
-      ] = await Promise.all([
-        fetch(`/api/admin/vendors?status=${vendorStatus}`, { method: "GET", cache: "no-store" }),
-        fetch(`/api/admin/products?status=${productStatus}`, { method: "GET", cache: "no-store" }),
-        fetch(`/api/admin/riders?status=${riderStatus}`, { method: "GET", cache: "no-store" }),
-        fetch("/api/admin/notifications", { method: "GET", cache: "no-store" }),
-        fetch("/api/admin/messages", { method: "GET", cache: "no-store" }),
-        fetch("/api/admin/stats", { method: "GET", cache: "no-store" }),
-        fetch("/api/admin/operations", { method: "GET", cache: "no-store" }),
+      await Promise.all([
+        loadVendorApprovals(),
+        loadProductReviews(),
+        loadRiderApplications(),
+        loadCommunicationData(),
+        loadLiveData(),
       ]);
-
-      const [
-        vendorsJson,
-        productsJson,
-        ridersJson,
-        notificationsJson,
-        messagesJson,
-        statsJson,
-        operationsJson,
-      ] = await Promise.all([
-        vendorsResponse.json(),
-        productsResponse.json(),
-        ridersResponse.json(),
-        notificationsResponse.json(),
-        messagesResponse.json(),
-        statsResponse.json(),
-        operationsResponse.json(),
-      ]);
-
-      if (!vendorsResponse.ok || !vendorsJson.ok)
-        throw new Error(vendorsJson.error || "Failed to load vendor approvals.");
-      if (!productsResponse.ok || !productsJson.ok)
-        throw new Error(productsJson.error || "Failed to load product reviews.");
-      if (!ridersResponse.ok || !ridersJson.ok)
-        throw new Error(ridersJson.error || "Failed to load rider approvals.");
-      if (!notificationsResponse.ok || !notificationsJson.ok) {
-        throw new Error(notificationsJson.error || "Failed to load notification settings.");
-      }
-      if (!messagesResponse.ok || !messagesJson.ok) {
-        throw new Error(messagesJson.error || "Failed to load messages.");
-      }
-      if (!statsResponse.ok || !statsJson.ok) {
-        throw new Error(statsJson.error || "Failed to load owner statistics.");
-      }
-      if (!operationsResponse.ok || !operationsJson.ok) {
-        throw new Error(operationsJson.error || "Failed to load operations center.");
-      }
-
-      setVendors(vendorsJson.items ?? []);
-      setProducts(productsJson.products ?? []);
-      setVendorCounts(
-        vendorsJson.counts ?? {
-          pending: Number(vendorsJson.pendingCount ?? 0),
-          active: 0,
-          rejected: 0,
-          total: Number((vendorsJson.items ?? []).length),
-        },
-      );
-      setRiders(ridersJson.items ?? []);
-      setRiderCounts(
-        ridersJson.counts ?? {
-          pending: 0,
-          underReview: 0,
-          approved: 0,
-          rejected: 0,
-          total: Number((ridersJson.items ?? []).length),
-        },
-      );
-      setChannels(notificationsJson.channels ?? null);
-      setApplicantChannels(notificationsJson.applicantChannels ?? null);
-      setMessages(messagesJson.items ?? []);
-      setStats(statsJson.stats ?? null);
-      setOperationsOrders(operationsJson.orders ?? []);
-      setOperationsRiders(operationsJson.riders ?? []);
-      setOperationsEvents(operationsJson.events ?? []);
-      setOperationsRefunds(operationsJson.refunds ?? []);
-      setOperationsDispatches(operationsJson.dispatches ?? []);
-      setAuditLogs(operationsJson.auditLogs ?? []);
-      setAuthMode(vendorsJson.authMode ?? ridersJson.authMode ?? null);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Failed to load approvals."));
-      setVendors([]);
-      setProducts([]);
-      setRiders([]);
+      setError(getErrorMessage(err, "Failed to refresh the admin dashboard."));
     } finally {
       setLoading(false);
     }
-  }, [productStatus, riderStatus, syncAdminAccess, vendorStatus]);
+  }, [
+    loadCommunicationData,
+    loadLiveData,
+    loadProductReviews,
+    loadRiderApplications,
+    loadVendorApprovals,
+    syncAdminAccess,
+  ]);
 
   useEffect(() => {
-    void load();
+    void load().finally(() => {
+      initialLoadCompleteRef.current = true;
+    });
   }, [load]);
+
+  useEffect(() => {
+    if (!initialLoadCompleteRef.current) return;
+    void loadVendorApprovals(vendorStatus).catch((err: unknown) => {
+      setError(getErrorMessage(err, "Failed to load vendor approvals."));
+    });
+  }, [loadVendorApprovals, vendorStatus]);
+
+  useEffect(() => {
+    if (!initialLoadCompleteRef.current) return;
+    void loadProductReviews(productStatus).catch((err: unknown) => {
+      setError(getErrorMessage(err, "Failed to load product reviews."));
+    });
+  }, [loadProductReviews, productStatus]);
+
+  useEffect(() => {
+    if (!initialLoadCompleteRef.current) return;
+    void loadRiderApplications(riderStatus).catch((err: unknown) => {
+      setError(getErrorMessage(err, "Failed to load rider applications."));
+    });
+  }, [loadRiderApplications, riderStatus]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      void load();
-    }, 15000);
+      if (document.visibilityState !== "visible") return;
+      void loadLiveData().catch(() => {
+        // Manual refresh exposes a detailed error without interrupting the operator every 30 seconds.
+      });
+    }, 30000);
     return () => window.clearInterval(timer);
-  }, [load]);
+  }, [loadLiveData]);
 
   async function enableBrowserAlerts() {
     if (typeof window === "undefined" || !("Notification" in window)) {
@@ -1186,6 +1275,64 @@ export default function AdminPage() {
     [productSearch, products],
   );
 
+  const handleGlobalSearch = useCallback(() => {
+    const query = globalSearch.trim();
+    if (!query) {
+      setNotice("Enter an order reference, vendor, product or rider name.");
+      return;
+    }
+
+    const order = operationsOrders.find((item) =>
+      matchesSearch(query, [
+        item.publicId,
+        item.ozowReference,
+        item.vendorName,
+        item.customerEmail,
+      ]),
+    );
+    if (order) {
+      setOperationsForm((current) => ({
+        ...current,
+        orderRef: order.ozowReference || order.publicId,
+      }));
+      navigateView("operations");
+      setNotice(`Opened order ${order.ozowReference || order.publicId}.`);
+      return;
+    }
+
+    const vendor = vendors.find((item) =>
+      matchesSearch(query, [item.name, item.email, item.phone, item.suburb, item.city]),
+    );
+    if (vendor) {
+      setVendorSearch(query);
+      navigateView("vendors");
+      return;
+    }
+
+    const product = products.find((item) =>
+      matchesSearch(query, [item.name, item.slug, item.vendor.name]),
+    );
+    if (product) {
+      setProductSearch(query);
+      navigateView("products");
+      return;
+    }
+
+    const rider = riders.find((item) =>
+      matchesSearch(query, [item.fullName, item.email, item.phone, item.vehicleRegistration]),
+    );
+    if (rider) {
+      setRiderSearch(query);
+      navigateView("riders");
+      return;
+    }
+
+    setVendorStatus("ALL");
+    setVendorSearch(query);
+    navigateView("vendors");
+    setNotice("No loaded match was found. Searching all vendor records instead.");
+  }, [globalSearch, navigateView, operationsOrders, products, riders, vendors]);
+
   const attentionRows = useMemo<AttentionRow[]>(() => {
     const rows: AttentionRow[] = [];
 
@@ -1193,11 +1340,12 @@ export default function AdminPage() {
       .filter((order) =>
         [
           "NEW",
-          "ACCEPTED",
+          "VENDOR_ACCEPTED",
           "PREPARING",
-          "READY",
+          "READY_FOR_PICKUP",
+          "RIDER_ASSIGNED",
           "PICKED_UP",
-          "OUT_FOR_DELIVERY",
+          "ON_THE_WAY",
           "FAILED",
         ].includes(order.status),
       )
@@ -1332,7 +1480,14 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-[#05071D] text-white">
-      <AdminTopBar onRefresh={load} loading={loading} />
+      <AdminTopBar
+        onRefresh={load}
+        loading={loading}
+        searchValue={globalSearch}
+        onSearchChange={setGlobalSearch}
+        onSearch={handleGlobalSearch}
+        onNotifications={() => navigateView("operations")}
+      />
 
       <section className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[280px,minmax(0,1fr)]">
@@ -1405,6 +1560,11 @@ export default function AdminPage() {
                     Monitor live orders, vendors, riders, approvals and township growth from one
                     place.
                   </p>
+                  <p className="mt-2 text-xs text-white/45" aria-live="polite">
+                    {lastRefreshedAt
+                      ? `Last synced ${lastRefreshedAt.toLocaleTimeString()}`
+                      : "Connecting to live operations..."}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -1464,9 +1624,9 @@ export default function AdminPage() {
                     onClick={() => navigateView("vendors")}
                   />
                   <PriorityCard
-                    label="Riders available now"
-                    value={riderCounts.approved}
-                    note="Approved riders ready for dispatch planning."
+                    label="Riders online now"
+                    value={stats?.availableRiders ?? 0}
+                    note={`${stats?.activeRiders ?? riderCounts.approved} approved rider(s) in total.`}
                     icon={Bike}
                     onClick={() => navigateView("riders")}
                   />
@@ -1486,9 +1646,9 @@ export default function AdminPage() {
                     icon={LineChart}
                   />
                   <MetricCard
-                    label="Completed orders"
+                    label="Orders today"
                     value={stats?.ordersToday ?? 0}
-                    note="Orders created today."
+                    note={`${stats?.completedOrdersToday ?? 0} delivered today.`}
                     icon={PackageCheck}
                   />
                   <MetricCard
@@ -1914,59 +2074,148 @@ export default function AdminPage() {
                     />
                   ))}
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                  <h3 className="text-lg font-semibold">Customer growth</h3>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
-                      <p className="text-sm font-semibold">Order history</p>
-                      <p className="mt-1 text-sm text-white/62">
-                        Customer history, reorder buttons, favourites, and saved delivery addresses
-                        will populate from real customer activity.
-                      </p>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                    <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                      Customer service
+                    </p>
+                    <h3 className="mt-1 text-lg font-semibold">Account and order support</h3>
+                    <p className="mt-2 text-sm leading-6 text-white/62">
+                      Use order monitoring for delivery or payment issues, and messages for direct
+                      customer communication. Customer personal details remain restricted to
+                      authorised support workflows.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button
+                        className="bg-lethela-primary text-white hover:opacity-90"
+                        onClick={() => navigateView("orders")}
+                      >
+                        Open order monitoring
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                        onClick={() => navigateView("messages")}
+                      >
+                        Open messages
+                      </Button>
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
-                      <p className="text-sm font-semibold">Rewards programme</p>
-                      <p className="mt-1 text-sm text-white/62">
-                        Points and discount redemption stay at zero until paid orders create real
-                        reward balances.
-                      </p>
-                    </div>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                    <p className="text-xs uppercase tracking-[0.14em] text-white/45">Privacy</p>
+                    <h3 className="mt-1 text-lg font-semibold">Protected customer records</h3>
+                    <p className="mt-2 text-sm leading-6 text-white/62">
+                      Account, order and privacy-request data stays behind authenticated, no-store
+                      admin APIs. Use the audit log for sensitive operational changes.
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="mt-4 border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                      onClick={() => navigateView("operations")}
+                    >
+                      Review audit activity
+                    </Button>
                   </div>
                 </div>
               </section>
             ) : null}
 
             {view === "orders" ? (
-              <section className="grid gap-4 lg:grid-cols-[1fr,0.8fr]">
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                  <h3 className="text-lg font-semibold">Order control room</h3>
-                  <div className="mt-4 grid gap-3">
-                    {orderMonitoring.map((item) => (
-                      <div
-                        key={item.label}
-                        className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-3"
-                      >
-                        <span className="text-sm text-white/75">{item.label}</span>
-                        <span className="text-lg font-semibold">{item.value}</span>
+              <section className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {orderMonitoring.map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-4"
+                    >
+                      <div>
+                        <p className="text-sm text-white/65">{item.label}</p>
+                        <p className="mt-1 text-2xl font-bold">{item.value}</p>
                       </div>
-                    ))}
-                  </div>
+                      <span className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
+                    </div>
+                  ))}
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                  <h3 className="text-lg font-semibold">Realtime delivery readiness</h3>
-                  <div className="mt-4 grid gap-3 text-sm text-white/70">
-                    <p className="rounded-lg border border-white/10 p-3">
-                      Live delivery maps and rider locations activate once paid orders enter
-                      dispatch.
-                    </p>
-                    <p className="rounded-lg border border-white/10 p-3">
-                      Delayed, failed, and cancelled order counters are real database counts.
-                    </p>
-                    <p className="rounded-lg border border-white/10 p-3">
-                      AI delivery optimisation will assign riders from actual distance, workload,
-                      and availability data.
-                    </p>
+
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                        Recent orders
+                      </p>
+                      <h3 className="mt-1 text-lg font-semibold">Order monitoring</h3>
+                    </div>
+                    <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/55">
+                      {operationsOrders.length} loaded
+                    </span>
                   </div>
+                  {operationsOrders.length === 0 ? (
+                    <div className="mt-4">
+                      <EmptyState
+                        title="No orders loaded"
+                        text="Paid and pending orders will appear here as customers begin ordering."
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="min-w-[900px] text-sm">
+                        <thead>
+                          <tr>
+                            <th className="px-3 py-3 text-left">Reference</th>
+                            <th className="px-3 py-3 text-left">Vendor</th>
+                            <th className="px-3 py-3 text-left">Order status</th>
+                            <th className="px-3 py-3 text-left">Payment</th>
+                            <th className="px-3 py-3 text-right">Total</th>
+                            <th className="px-3 py-3 text-left">Created</th>
+                            <th className="px-3 py-3 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {operationsOrders.map((order) => (
+                            <tr key={order.id}>
+                              <td className="border-t border-white/10 px-3 py-3 font-semibold">
+                                {order.ozowReference || order.publicId}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3">
+                                {order.vendorName}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3">
+                                <span
+                                  className={`rounded-full border px-2.5 py-1 text-xs ${statusClass(order.status)}`}
+                                >
+                                  {order.status.replaceAll("_", " ")}
+                                </span>
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3">
+                                {order.paymentStatus}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3 text-right font-semibold">
+                                {money(order.totalCents)}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3 text-white/60">
+                                {formatDate(order.createdAt)}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                                <button
+                                  type="button"
+                                  className="rounded-md bg-lethela-primary px-3 py-2 text-xs font-semibold text-white"
+                                  onClick={() => {
+                                    setOperationsForm((current) => ({
+                                      ...current,
+                                      orderRef: order.ozowReference || order.publicId,
+                                    }));
+                                    navigateView("operations");
+                                  }}
+                                >
+                                  Manage
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </section>
             ) : null}

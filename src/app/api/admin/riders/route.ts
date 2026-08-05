@@ -31,24 +31,37 @@ export async function GET(req: NextRequest) {
   }
 
   const take = Math.min(200, Math.max(1, Number(req.nextUrl.searchParams.get("take") || 100)));
-  const [items, pendingCount, underReviewCount, approvedCount, rejectedCount, totalCount] =
-    await Promise.all([
-      listRiderApplications(rawStatus, take),
-      countRiderApplications("SUBMITTED"),
-      countRiderApplications("UNDER_REVIEW"),
-      countRiderApplications("APPROVED"),
-      countRiderApplications("REJECTED"),
-      countRiderApplications(),
-    ]);
+  const [
+    items,
+    submittedCount,
+    changesRequestedCount,
+    underReviewCount,
+    approvedCount,
+    rejectedCount,
+    suspendedCount,
+    totalCount,
+  ] = await Promise.all([
+    listRiderApplications(rawStatus, take),
+    countRiderApplications("SUBMITTED"),
+    countRiderApplications("CHANGES_REQUESTED"),
+    countRiderApplications("UNDER_REVIEW"),
+    countRiderApplications("APPROVED"),
+    countRiderApplications("REJECTED"),
+    countRiderApplications("SUSPENDED"),
+    countRiderApplications(),
+  ]);
 
   return NextResponse.json({
     ok: true,
     authMode: guard.mode,
     counts: {
-      pending: pendingCount,
+      submitted: submittedCount,
+      changesRequested: changesRequestedCount,
+      pending: submittedCount + changesRequestedCount,
       underReview: underReviewCount,
       approved: approvedCount,
       rejected: rejectedCount,
+      suspended: suspendedCount,
       total: totalCount,
     },
     items,

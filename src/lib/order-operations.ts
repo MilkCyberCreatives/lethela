@@ -2,11 +2,18 @@ import crypto from "node:crypto";
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 
 export type OperationOrderStatus =
-  | "PLACED"
+  | "NEW"
+  | "VENDOR_ACCEPTED"
   | "PREPARING"
-  | "OUT_FOR_DELIVERY"
+  | "READY_FOR_PICKUP"
+  | "RIDER_ASSIGNED"
+  | "PICKED_UP"
+  | "ON_THE_WAY"
   | "DELIVERED"
-  | "CANCELED";
+  | "CANCELLED"
+  | "REFUND_REQUESTED"
+  | "REFUNDED"
+  | "FAILED";
 
 type EventInput = {
   orderId: string;
@@ -126,6 +133,33 @@ export async function recordOrderEvent(input: EventInput) {
   );
 }
 
+export async function hasOpenRefundCase(orderId: string) {
+  await ensureOrderOperationsTables();
+  const marker = prismaRuntimeInfo.provider === "postgresql" ? "$1" : "?";
+  const rows = await prisma.$queryRawUnsafe<Array<{ count: number | bigint }>>(
+    `SELECT COUNT(*) AS count FROM app_refund_cases
+     WHERE order_id = ${marker}
+       AND status NOT IN ('COMPLETED', 'PAID', 'REJECTED', 'CANCELLED', 'CLOSED')`,
+    orderId,
+  );
+  return Number(rows[0]?.count || 0) > 0;
+}
+
+export async function hasDispatchAssignment(orderId: string, riderApplicationId: string) {
+  await ensureOrderOperationsTables();
+  const first = prismaRuntimeInfo.provider === "postgresql" ? "$1" : "?";
+  const second = prismaRuntimeInfo.provider === "postgresql" ? "$2" : "?";
+  const rows = await prisma.$queryRawUnsafe<Array<{ count: number | bigint }>>(
+    `SELECT COUNT(*) AS count FROM app_order_dispatches
+     WHERE order_id = ${first}
+       AND rider_application_id = ${second}
+       AND status NOT IN ('CANCELLED', 'CLOSED', 'REASSIGNED')`,
+    orderId,
+    riderApplicationId,
+  );
+  return Number(rows[0]?.count || 0) > 0;
+}
+
 export async function createRefundCase(input: RefundInput) {
   await ensureOrderOperationsTables();
   const now = new Date().toISOString();
@@ -133,7 +167,7 @@ export async function createRefundCase(input: RefundInput) {
     crypto.randomUUID(),
     input.orderId,
     input.publicId,
-    Math.max(0, Math.round(Number(input.amountCents || 0))),
+    Math.max(1, Math.round(Number(input.amountCents || 0))),
     input.reason.trim(),
     input.status || "REQUESTED",
     input.evidenceUrl || null,
