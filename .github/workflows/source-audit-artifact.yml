@@ -11,33 +11,27 @@ permissions:
 jobs:
   apply-repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Check out repair branch
         uses: actions/checkout@v4
         with:
           ref: agent/backend-dashboard-audit
-      - name: Apply repair package when present
+      - name: Apply, format and commit dashboard repair
         run: |
-          if [ ! -f docs/dashboard-repair.b64 ]; then
-            echo "Repair package is not present yet."
+          if [ ! -f docs/dashboard-repair.ready ]; then
+            echo "Repair package is not complete yet."
             exit 0
           fi
-          base64 --decode docs/dashboard-repair.b64 > /tmp/dashboard-repair.tar.gz
+
+          cat docs/dashboard-repair.part* > /tmp/dashboard-repair.b64
+          base64 --decode /tmp/dashboard-repair.b64 > /tmp/dashboard-repair.tar.gz
           tar -xzf /tmp/dashboard-repair.tar.gz -C .
-          rm docs/dashboard-repair.b64
-      - name: Install dependencies
-        if: hashFiles('docs/dashboard-repair.b64') == ''
-        run: npm ci
-      - name: Format repaired source
-        if: hashFiles('docs/dashboard-repair.b64') == ''
-        run: npm run format
-      - name: Commit repaired dashboards
-        run: |
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "No dashboard repair changes to commit."
-            exit 0
-          fi
+          rm docs/dashboard-repair.part* docs/dashboard-repair.ready
+
+          npm ci
+          npm run format
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
