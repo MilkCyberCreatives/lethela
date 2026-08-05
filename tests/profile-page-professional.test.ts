@@ -11,6 +11,7 @@ test("customer profile uses the professional account shell", () => {
   assert.match(profilePage, /My Lethela account/);
   assert.match(profilePage, /Account menu/);
   assert.match(profilePage, /bg-\[#f5f7fb\]/);
+  assert.match(profilePage, /signin\?callbackUrl=\/profile/);
   assert.match(profilePage, /id="profile-details"/);
   assert.match(profilePage, /id="order-history"/);
   assert.match(profilePage, /id="saved-activity"/);
