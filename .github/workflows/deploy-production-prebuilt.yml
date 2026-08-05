@@ -21,7 +21,7 @@ jobs:
       VERCEL_PROJECT_ID: prj_fQ9srYuFRdvq4rldmokUAL0S7TzN
     steps:
       - name: Check out main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: main
 
