@@ -47,7 +47,7 @@ jobs:
           cache: npm
 
       - name: Refresh vulnerable nanoid lock entry
-        run: npm update nanoid@3.3.18 --package-lock-only --ignore-scripts
+        run: npm update nanoid --package-lock-only --ignore-scripts
 
       - name: Guard application dependency declarations
         run: git diff --exit-code -- package.json
