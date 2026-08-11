@@ -12,6 +12,30 @@ type UploadInput = {
 
 const SAFE_PATH = /^[a-zA-Z0-9][a-zA-Z0-9/_\-.]{1,220}$/;
 
+function readEnv(...names: string[]) {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+function supabaseUrl() {
+  return readEnv("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL");
+}
+
+function supabaseServiceRole() {
+  return readEnv("SUPABASE_SERVICE_ROLE", "SUPABASE_SERVICE_ROLE_KEY");
+}
+
+function supabasePublicBucket() {
+  return readEnv("SUPABASE_BUCKET", "SUPABASE_STORAGE_BUCKET");
+}
+
+function supabasePrivateBucket() {
+  return readEnv("SUPABASE_PRIVATE_BUCKET", "SUPABASE_PRIVATE_STORAGE_BUCKET");
+}
+
 function normalizedStorageMode() {
   return (process.env.UPLOAD_STORAGE || "").trim().toLowerCase();
 }
@@ -22,11 +46,7 @@ function isProductionRuntime() {
 
 export function hasSupabaseStorageConfig() {
   if (normalizedStorageMode() === "local") return false;
-  return Boolean(
-    process.env.SUPABASE_URL?.trim() &&
-      process.env.SUPABASE_SERVICE_ROLE?.trim() &&
-      process.env.SUPABASE_BUCKET?.trim(),
-  );
+  return Boolean(supabaseUrl() && supabaseServiceRole() && supabasePublicBucket());
 }
 
 export function hasLocalStorageConfig() {
@@ -54,6 +74,18 @@ export function storageProvider() {
   return "none";
 }
 
+export function storageConfigSummary() {
+  return {
+    mode: normalizedStorageMode() || "auto",
+    provider: storageProvider(),
+    hasSupabaseUrl: Boolean(supabaseUrl()),
+    hasSupabaseServiceRole: Boolean(supabaseServiceRole()),
+    hasPublicBucket: Boolean(supabasePublicBucket()),
+    hasPrivateBucket: Boolean(supabasePrivateBucket()),
+    hasLocalStorage: hasLocalStorageConfig(),
+  };
+}
+
 function publicPathPrefix() {
   return (process.env.STORAGE_PUBLIC_PATH || "/uploads").trim().replace(/\/+$/, "") || "/uploads";
 }
@@ -79,8 +111,8 @@ function assertSafeStoragePath(filename: string) {
 }
 
 export function createAdminClient() {
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE!;
+  const url = supabaseUrl();
+  const key = supabaseServiceRole();
   if (!url || !key) throw new Error("Supabase server env not set");
   return createClient(url, key, { auth: { persistSession: false } });
 }
@@ -100,10 +132,7 @@ export async function uploadStoredFile(input: UploadInput) {
 
   if (storageProvider() === "supabase") {
     const supa = createAdminClient();
-    const bucket =
-      visibility === "private"
-        ? process.env.SUPABASE_PRIVATE_BUCKET?.trim()
-        : process.env.SUPABASE_BUCKET?.trim();
+    const bucket = visibility === "private" ? supabasePrivateBucket() : supabasePublicBucket();
     if (!bucket) {
       throw new Error(
         visibility === "private"
@@ -154,7 +183,7 @@ export async function readPrivateStoredFile(filename: string) {
   if (!safeFilename.startsWith("private/")) throw new Error("Private file path required.");
 
   if (storageProvider() === "supabase") {
-    const bucket = process.env.SUPABASE_PRIVATE_BUCKET?.trim();
+    const bucket = supabasePrivateBucket();
     if (!bucket) throw new Error("Private document storage is not configured.");
     const supa = createAdminClient();
     const { data, error } = await supa.storage.from(bucket).download(safeFilename);
