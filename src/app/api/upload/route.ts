@@ -3,11 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { logError } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
-import {
-  storageConfigSummary,
-  storageProvider,
-  uploadStoredFile,
-} from "@/server/supabase";
+import { storageConfigSummary, storageProvider, uploadStoredFile } from "@/server/supabase";
 
 export const runtime = "nodejs";
 
@@ -88,7 +84,10 @@ export async function POST(req: Request) {
     }
 
     if (file.size <= 0) {
-      return NextResponse.json({ ok: false, error: "The selected file is empty." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "The selected file is empty." },
+        { status: 400 },
+      );
     }
 
     if (file.size > MAX_BYTES) {
