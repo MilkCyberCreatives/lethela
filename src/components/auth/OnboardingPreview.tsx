@@ -34,7 +34,7 @@ export default function OnboardingPreview({ accountType }: OnboardingPreviewProp
         {details.summary}
       </summary>
       <ol className="mt-2 grid gap-1 pl-4 text-xs leading-5 text-slate-600">
-        {details.steps.map((step, index) => (
+        {details.steps.map((step) => (
           <li key={step} className="list-decimal">
             {step}
           </li>
