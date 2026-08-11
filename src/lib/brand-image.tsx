@@ -62,7 +62,6 @@ export function createBrandSocialImage({
             justifyContent: "space-between",
             width: "100%",
             padding: "62px 72px 54px",
-            zIndex: 2,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
