@@ -71,6 +71,14 @@ function read(key, values) {
   return (values[key] || "").trim();
 }
 
+function readAny(values, ...keys) {
+  for (const key of keys) {
+    const value = read(key, values);
+    if (value) return value;
+  }
+  return "";
+}
+
 function isTruthy(value) {
   const normalized = String(value || "")
     .trim()
@@ -97,6 +105,14 @@ function requireNonPlaceholder(key, message) {
   const value = read(key, values);
   if (looksLikePlaceholder(value)) {
     errors.push(`${key}: ${message}`);
+  }
+  return value;
+}
+
+function requireAnyNonPlaceholder(keys, message) {
+  const value = readAny(values, ...keys);
+  if (looksLikePlaceholder(value)) {
+    errors.push(`${keys.join("/")}: ${message}`);
   }
   return value;
 }
@@ -186,11 +202,20 @@ if (uploadStorage === "local" && isVercelDeployment(values)) {
 }
 
 if (uploadStorage === "supabase") {
-  requireNonPlaceholder("SUPABASE_URL", "must be set for Supabase uploads.");
-  requireNonPlaceholder("SUPABASE_SERVICE_ROLE", "must be set for Supabase uploads.");
-  requireNonPlaceholder("SUPABASE_BUCKET", "must be set for Supabase uploads.");
-  requireNonPlaceholder(
-    "SUPABASE_PRIVATE_BUCKET",
+  requireAnyNonPlaceholder(
+    ["SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"],
+    "must be set for Supabase uploads.",
+  );
+  requireAnyNonPlaceholder(
+    ["SUPABASE_SERVICE_ROLE", "SUPABASE_SERVICE_ROLE_KEY"],
+    "must be set as a server-only secret for Supabase uploads.",
+  );
+  requireAnyNonPlaceholder(
+    ["SUPABASE_BUCKET", "SUPABASE_STORAGE_BUCKET"],
+    "must be set for public Supabase uploads.",
+  );
+  requireAnyNonPlaceholder(
+    ["SUPABASE_PRIVATE_BUCKET", "SUPABASE_PRIVATE_STORAGE_BUCKET"],
     "must be set to a non-public bucket for KYC, banking, and licence documents.",
   );
   const storageBucketUrl = requireNonPlaceholder(
