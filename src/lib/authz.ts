@@ -44,7 +44,10 @@ export async function getVendorSession(): Promise<VendorSessionState> {
   if (!membership) {
     const ownedVendor = await prisma.vendor.findFirst({
       where: {
-        OR: [{ ownerId: session.user.id }, { email: session.user.email.toLowerCase() }],
+        OR: [
+          { ownerId: session.user.id },
+          { ownerId: null, email: session.user.email.toLowerCase() },
+        ],
       },
       orderBy: { updatedAt: "desc" },
       select: { id: true, slug: true, name: true, status: true, isActive: true },
