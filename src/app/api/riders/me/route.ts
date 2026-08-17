@@ -46,7 +46,7 @@ export async function GET() {
   const sessionEmail = session.user.email?.trim().toLowerCase() || null;
   const riderIdentityFilters = [
     { userId: session.user.id },
-    ...(sessionEmail ? [{ email: sessionEmail }] : []),
+    ...(sessionEmail ? [{ userId: null, email: sessionEmail }] : []),
   ];
 
   const [user, application] = await Promise.all([
