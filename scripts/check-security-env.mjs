@@ -45,6 +45,14 @@ function read(values, key) {
   return String(values[key] || "").trim();
 }
 
+function readAny(values, ...keys) {
+  for (const key of keys) {
+    const value = read(values, key);
+    if (value) return value;
+  }
+  return "";
+}
+
 const { values, source } = loadValues(process.argv[2]);
 const errors = [];
 const warnings = [];
@@ -85,12 +93,21 @@ const uploadStorage = read(values, "UPLOAD_STORAGE").toLowerCase();
 if (uploadStorage !== "supabase") {
   errors.push("UPLOAD_STORAGE: production must use durable private-capable Supabase storage.");
 }
-if (!read(values, "SUPABASE_URL")) errors.push("SUPABASE_URL: must be configured.");
-if (!read(values, "SUPABASE_SERVICE_ROLE")) {
-  errors.push("SUPABASE_SERVICE_ROLE: must be configured as a server-only secret.");
+if (!readAny(values, "SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL")) {
+  errors.push("SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL: must be configured.");
 }
-if (!read(values, "SUPABASE_PRIVATE_BUCKET")) {
-  errors.push("SUPABASE_PRIVATE_BUCKET: a non-public KYC, banking and licence bucket is required.");
+if (!readAny(values, "SUPABASE_SERVICE_ROLE", "SUPABASE_SERVICE_ROLE_KEY")) {
+  errors.push(
+    "SUPABASE_SERVICE_ROLE/SUPABASE_SERVICE_ROLE_KEY: must be configured as a server-only secret.",
+  );
+}
+if (!readAny(values, "SUPABASE_BUCKET", "SUPABASE_STORAGE_BUCKET")) {
+  errors.push("SUPABASE_BUCKET/SUPABASE_STORAGE_BUCKET: a public upload bucket is required.");
+}
+if (!readAny(values, "SUPABASE_PRIVATE_BUCKET", "SUPABASE_PRIVATE_STORAGE_BUCKET")) {
+  errors.push(
+    "SUPABASE_PRIVATE_BUCKET/SUPABASE_PRIVATE_STORAGE_BUCKET: a non-public KYC, banking and licence bucket is required.",
+  );
 }
 
 const verificationRequired = read(values, "EMAIL_VERIFICATION_REQUIRED").toLowerCase();
