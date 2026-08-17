@@ -66,8 +66,22 @@ const requiredChecks = [
   [robots.includes("/admin"), "robots.ts must block private admin routes."],
   [sitemap.includes("TOWNSHIP_CATEGORIES"), "The dynamic marketplace sitemap is incomplete."],
   [
+    !sitemap.includes("STATIC_LAST_MODIFIED"),
+    "Sitemap must not publish one hard-coded modification date for unrelated routes.",
+  ],
+  [
+    sitemap.includes("lastModified: vendor.updatedAt") &&
+      sitemap.includes("lastModified: product.updatedAt"),
+    "Sitemap must preserve trustworthy database modification dates for live vendor and product URLs.",
+  ],
+  [
     discoverySitemap.includes("/areas/klipfontein-view"),
     "The first operating-area page is missing from discovery.",
+  ],
+  [
+    !discoverySitemap.includes("const lastModified =") &&
+      !discoverySitemap.includes("<lastmod>${lastModified}</lastmod>"),
+    "Discovery sitemap must not publish an unverifiable shared modification date.",
   ],
   [manifest.includes("standalone"), "The web app manifest is incomplete."],
   [openSearch.includes("OpenSearchDescription"), "OpenSearch discovery is missing."],
