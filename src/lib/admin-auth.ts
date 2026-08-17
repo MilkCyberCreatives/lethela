@@ -39,6 +39,10 @@ export async function requireAdminRequest(
     return { ok: true, mode: "dev-bypass", role: "OWNER", actor: "local-dev-bypass" };
   }
 
+  if (!adminKey) {
+    return { ok: false, status: 401, error: "Admin access is not configured." };
+  }
+
   try {
     const session = await auth();
     const role = normalizeAppRole(session?.user?.role);
@@ -57,8 +61,6 @@ export async function requireAdminRequest(
   return {
     ok: false,
     status: 401,
-    error: adminKey
-      ? "Admin sign-in and security verification are required."
-      : "Admin access is not configured.",
+    error: "Admin sign-in and security verification are required.",
   };
 }
