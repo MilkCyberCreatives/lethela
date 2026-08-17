@@ -36,19 +36,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     },
     {
-      url: `${SITE_URL}/vendors/register`,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
       url: `${SITE_URL}/restaurants`,
       changeFrequency: "daily",
       priority: 0.75,
-    },
-    {
-      url: `${SITE_URL}/rider`,
-      changeFrequency: "monthly",
-      priority: 0.5,
     },
     {
       url: `${SITE_URL}/terms`,
