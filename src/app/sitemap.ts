@@ -8,91 +8,75 @@ import { TOWNSHIP_CATEGORIES, categoryToSlug } from "@/lib/categories";
 
 export const revalidate = 3600;
 
-const STATIC_LAST_MODIFIED = new Date("2026-08-04T00:00:00.000Z");
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${SITE_URL}/`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${SITE_URL}/about`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.6,
     },
     {
       url: `${SITE_URL}/faq`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.55,
     },
     {
       url: `${SITE_URL}/contact`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
       url: `${SITE_URL}/search`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "weekly",
       priority: 0.7,
     },
     {
       url: `${SITE_URL}/vendors/register`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${SITE_URL}/restaurants`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 0.75,
     },
     {
       url: `${SITE_URL}/rider`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
       url: `${SITE_URL}/terms`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.35,
     },
     {
       url: `${SITE_URL}/privacy-policy`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.35,
     },
     {
       url: `${SITE_URL}/refund-policy`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.35,
     },
     {
       url: `${SITE_URL}/cookie-policy`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${SITE_URL}/popia`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${SITE_URL}/paia-manual`,
-      lastModified: STATIC_LAST_MODIFIED,
       changeFrequency: "yearly",
       priority: 0.3,
     },
@@ -100,7 +84,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const categoryRoutes: MetadataRoute.Sitemap = TOWNSHIP_CATEGORIES.map((category) => ({
     url: `${SITE_URL}/categories/${categoryToSlug(category)}`,
-    lastModified: STATIC_LAST_MODIFIED,
     changeFrequency: "daily",
     priority: 0.7,
   }));
@@ -177,7 +160,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : shouldPreferCatalogFallback()
         ? getFallbackVendorCards().map((vendor) => ({
             url: `${SITE_URL}/vendors/${vendor.slug}`,
-            lastModified: STATIC_LAST_MODIFIED,
             changeFrequency: "daily",
             priority: 0.9,
           }))
@@ -254,7 +236,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : shouldPreferCatalogFallback()
         ? getFallbackProducts().map((product) => ({
             url: `${SITE_URL}/products/${encodeURIComponent(product.id)}`,
-            lastModified: STATIC_LAST_MODIFIED,
             changeFrequency: "daily" as const,
             priority: 0.75,
           }))
