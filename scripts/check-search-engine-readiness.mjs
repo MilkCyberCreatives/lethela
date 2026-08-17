@@ -38,6 +38,10 @@ const requiredChecks = [
     "Root canonical must not leak onto child routes.",
   ],
   [
+    !layout.includes("  robots: {"),
+    "Root metadata must not force index/follow because 404 responses inject their own noindex directive.",
+  ],
+  [
     !layout.includes('"@type": "FoodDeliveryService"'),
     "Global structured data must not use the unsupported FoodDeliveryService schema type.",
   ],
