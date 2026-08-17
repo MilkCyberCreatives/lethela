@@ -58,8 +58,14 @@ async function requireRider() {
   if (session.user.role !== "RIDER" && !["OWNER", "ADMIN"].includes(session.user.role)) {
     return { error: "Rider access required.", status: 403 } as const;
   }
+
+  const sessionEmail = session.user.email?.trim().toLowerCase() || null;
+  const riderIdentityFilters = [
+    { userId: session.user.id },
+    ...(sessionEmail ? [{ userId: null, email: sessionEmail }] : []),
+  ];
   const profile = await prisma.riderApplication.findFirst({
-    where: { OR: [{ userId: session.user.id }, { email: session.user.email.toLowerCase() }] },
+    where: { OR: riderIdentityFilters },
     orderBy: { updatedAt: "desc" },
   });
   if (!profile) return { error: "Rider profile not found.", status: 404 } as const;
