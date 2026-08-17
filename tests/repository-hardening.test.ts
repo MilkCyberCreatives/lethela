@@ -35,6 +35,14 @@ test("rider email recovery only claims unlinked legacy applications", () => {
   }
 });
 
+test("unconfigured admin access returns before invoking NextAuth", () => {
+  const adminAuth = source("src/lib/admin-auth.ts");
+  const missingKeyGuard = adminAuth.indexOf("if (!adminKey)");
+  const authCall = adminAuth.indexOf("await auth()");
+  assert.ok(missingKeyGuard >= 0);
+  assert.ok(authCall > missingKeyGuard);
+});
+
 test("launch readiness uses the same private storage capability as upload runtime", () => {
   const route = source("src/app/api/ops/launch-readiness/route.ts");
   assert.match(route, /hasPrivateStorageConfig/);
