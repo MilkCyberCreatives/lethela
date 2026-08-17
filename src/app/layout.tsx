@@ -68,18 +68,6 @@ export const metadata: Metadata = {
   ],
   applicationName: SITE_NAME,
   metadataBase: new URL(SITE_URL),
-  robots: {
-    index: true,
-    follow: true,
-    nocache: false,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
-    },
-  },
   verification: {
     google: googleVerification || undefined,
     other: Object.keys(otherVerification).length > 0 ? otherVerification : undefined,
