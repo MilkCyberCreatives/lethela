@@ -41,6 +41,11 @@ test("launch readiness uses the same private storage capability as upload runtim
   assert.match(route, /const privateStorageConfigured = hasPrivateStorageConfig\(\)/);
 });
 
+test("private file reads reject unavailable local storage", () => {
+  const storage = source("src/server/supabase.ts");
+  assert.match(storage, /if \(!hasLocalStorageConfig\(\)\) \{\s*throw new Error\("Durable private storage is not configured\."\)/);
+});
+
 test("production and security checks accept the same Supabase aliases as runtime", () => {
   const productionCheck = source("scripts/check-production-env.mjs");
   const securityCheck = source("scripts/check-security-env.mjs");
@@ -51,4 +56,12 @@ test("production and security checks accept the same Supabase aliases as runtime
     assert.match(check, /SUPABASE_STORAGE_BUCKET/);
     assert.match(check, /SUPABASE_PRIVATE_STORAGE_BUCKET/);
   }
+});
+
+test("Next image configuration accepts either Supabase URL name", () => {
+  const config = source("next.config.mjs");
+  assert.match(
+    config,
+    /process\.env\.SUPABASE_URL \|\| process\.env\.NEXT_PUBLIC_SUPABASE_URL/,
+  );
 });
