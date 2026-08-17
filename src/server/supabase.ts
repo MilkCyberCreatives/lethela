@@ -204,6 +204,10 @@ export async function readPrivateStoredFile(filename: string) {
     return Buffer.from(await data.arrayBuffer());
   }
 
+  if (!hasLocalStorageConfig()) {
+    throw new Error("Durable private storage is not configured.");
+  }
+
   const root = localPrivateStorageRoot();
   const target = path.resolve(root, safeFilename);
   if (!target.startsWith(root + path.sep)) throw new Error("Unsafe private file path.");
