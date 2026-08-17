@@ -24,6 +24,17 @@ test("vendor email recovery never overrides an assigned owner", () => {
   );
 });
 
+test("rider email recovery only claims unlinked legacy applications", () => {
+  for (const relativePath of [
+    "src/app/api/riders/me/route.ts",
+    "src/app/api/riders/profile/route.ts",
+  ]) {
+    const route = source(relativePath);
+    assert.match(route, /userId:\s*null,\s*email:\s*sessionEmail/);
+    assert.match(route, /session\.user\.email\?\.trim\(\)\.toLowerCase\(\)/);
+  }
+});
+
 test("launch readiness uses the same private storage capability as upload runtime", () => {
   const route = source("src/app/api/ops/launch-readiness/route.ts");
   assert.match(route, /hasPrivateStorageConfig/);
