@@ -66,6 +66,14 @@ const requiredChecks = [
   [robots.includes("/admin"), "robots.ts must block private admin routes."],
   [sitemap.includes("TOWNSHIP_CATEGORIES"), "The dynamic marketplace sitemap is incomplete."],
   [
+    !sitemap.includes("url: `${SITE_URL}/vendors/register`"),
+    "Noindex vendor signup route must not be included in the sitemap.",
+  ],
+  [
+    !sitemap.includes("url: `${SITE_URL}/rider`"),
+    "Noindex rider signup route must not be included in the sitemap.",
+  ],
+  [
     !sitemap.includes("STATIC_LAST_MODIFIED"),
     "Sitemap must not publish one hard-coded modification date for unrelated routes.",
   ],
