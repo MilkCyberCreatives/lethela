@@ -165,10 +165,11 @@ const globalSchema = {
       },
     },
     {
-      "@type": "FoodDeliveryService",
+      "@type": "Service",
       "@id": `${SITE_URL}/#service`,
       name: SITE_NAME,
       url: SITE_URL,
+      provider: { "@id": `${SITE_URL}/#organization` },
       areaServed: [
         { "@type": "Country", name: "South Africa" },
         { "@type": "Place", name: "Klipfontein View, Midrand" },
