@@ -12,12 +12,10 @@ export async function GET() {
     { path: "/areas/klipfontein-view", changeFrequency: "weekly", priority: "0.82" },
     { path: "/pricing", changeFrequency: "monthly", priority: "0.65" },
   ];
-  const lastModified = "2026-08-05";
   const urls = routes
     .map(
       (route) => `  <url>
     <loc>${xmlEscape(`${SITE_URL}${route.path}`)}</loc>
-    <lastmod>${lastModified}</lastmod>
     <changefreq>${route.changeFrequency}</changefreq>
     <priority>${route.priority}</priority>
   </url>`,
