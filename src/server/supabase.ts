@@ -46,9 +46,7 @@ function isProductionRuntime() {
 
 function isVercelRuntime() {
   return Boolean(
-    process.env.VERCEL === "1" ||
-      process.env.VERCEL_ENV?.trim() ||
-      process.env.VERCEL_URL?.trim(),
+    process.env.VERCEL === "1" || process.env.VERCEL_ENV?.trim() || process.env.VERCEL_URL?.trim(),
   );
 }
 
