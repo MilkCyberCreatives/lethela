@@ -68,18 +68,6 @@ export const metadata: Metadata = {
   ],
   applicationName: SITE_NAME,
   metadataBase: new URL(SITE_URL),
-  robots: {
-    index: true,
-    follow: true,
-    nocache: false,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
-    },
-  },
   verification: {
     google: googleVerification || undefined,
     other: Object.keys(otherVerification).length > 0 ? otherVerification : undefined,
@@ -165,10 +153,11 @@ const globalSchema = {
       },
     },
     {
-      "@type": "FoodDeliveryService",
+      "@type": "Service",
       "@id": `${SITE_URL}/#service`,
       name: SITE_NAME,
       url: SITE_URL,
+      provider: { "@id": `${SITE_URL}/#organization` },
       areaServed: [
         { "@type": "Country", name: "South Africa" },
         { "@type": "Place", name: "Klipfontein View, Midrand" },

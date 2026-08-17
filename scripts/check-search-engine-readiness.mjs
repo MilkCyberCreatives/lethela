@@ -37,6 +37,19 @@ const requiredChecks = [
     !layout.includes('alternates: {\n    canonical: "/"'),
     "Root canonical must not leak onto child routes.",
   ],
+  [
+    !layout.includes("  robots: {"),
+    "Root metadata must not force index/follow because 404 responses inject their own noindex directive.",
+  ],
+  [
+    !layout.includes('"@type": "FoodDeliveryService"'),
+    "Global structured data must not use the unsupported FoodDeliveryService schema type.",
+  ],
+  [
+    layout.includes('"@type": "Service"') &&
+      layout.includes('provider: { "@id": `${SITE_URL}/#organization` }'),
+    "Global delivery service schema must use Service and link back to the Organization provider.",
+  ],
   [robots.includes("sitemap"), "robots.ts must publish sitemap URLs."],
   [robots.includes("/admin"), "robots.ts must block private admin routes."],
   [sitemap.includes("TOWNSHIP_CATEGORIES"), "The dynamic marketplace sitemap is incomplete."],
