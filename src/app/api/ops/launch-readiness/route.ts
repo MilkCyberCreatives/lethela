@@ -5,11 +5,7 @@ import { isEmailVerificationRequired } from "@/lib/email-verification";
 import { hasEmailChannel, hasWhatsAppChannel } from "@/lib/notification-channels";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { hasWebPushConfig } from "@/lib/web-push";
-import {
-  hasPrivateStorageConfig,
-  hasStorageConfig,
-  storageProvider,
-} from "@/server/supabase";
+import { hasPrivateStorageConfig, hasStorageConfig, storageProvider } from "@/server/supabase";
 import { getSqliteReadinessCounts } from "@/lib/sqlite-readiness";
 import { prisma, prismaRuntimeInfo } from "@/server/db";
 
