@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
-import StructuredData from "@/components/StructuredData";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export const metadata: Metadata = {
@@ -13,42 +12,10 @@ export const metadata: Metadata = {
   },
 };
 
-const aboutFaqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "Where does Lethela operate?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Lethela is built for South African communities, with active focus on Midrand and township-first delivery use cases.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How does Lethela support vendors?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Vendors get onboarding, product upload tools, AI-generated descriptions, pricing support, order management and analytics.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How does Lethela support riders?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Riders can apply online, complete onboarding and use realtime order updates for smoother delivery operations.",
-      },
-    },
-  ],
-};
-
 export default function AboutPage() {
   const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
-      <StructuredData data={aboutFaqSchema} />
       <MainHeader />
 
       <section className="bg-gradient-to-b from-black/80 via-[#0E1236]/60 to-lethela-secondary text-white">

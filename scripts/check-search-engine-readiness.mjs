@@ -23,6 +23,8 @@ const manifest = file("src/app/manifest.ts");
 const openSearch = file("src/app/opensearch.xml/route.ts");
 const llms = file("src/app/llms.txt/route.ts");
 const areaPage = file("src/app/areas/klipfontein-view/page.tsx");
+const aboutPage = file("src/app/about/page.tsx");
+const faqPage = file("src/app/faq/page.tsx");
 
 const requiredChecks = [
   [
@@ -49,6 +51,16 @@ const requiredChecks = [
     layout.includes('"@type": "Service"') &&
       layout.includes('provider: { "@id": `${SITE_URL}/#organization` }'),
     "Global delivery service schema must use Service and link back to the Organization provider.",
+  ],
+  [
+    !aboutPage.includes('"@type": "FAQPage"'),
+    "About page must not publish FAQ structured data for questions that are not visible on the page.",
+  ],
+  [
+    faqPage.includes('"@type": "FAQPage"') &&
+      faqPage.includes("mainEntity: faq.map") &&
+      faqPage.includes("faq.map((item)"),
+    "FAQ structured data must remain tied to the same questions and answers rendered on the visible FAQ page.",
   ],
   [robots.includes("sitemap"), "robots.ts must publish sitemap URLs."],
   [robots.includes("/admin"), "robots.ts must block private admin routes."],
