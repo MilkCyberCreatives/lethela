@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  hasPrivateStorageConfig,
   hasSupabaseStorageConfig,
   storageConfigSummary,
   storageProvider,
@@ -8,6 +9,9 @@ import {
 
 const KEYS = [
   "NODE_ENV",
+  "VERCEL",
+  "VERCEL_ENV",
+  "VERCEL_URL",
   "UPLOAD_STORAGE",
   "SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
@@ -19,6 +23,7 @@ const KEYS = [
   "SUPABASE_PRIVATE_STORAGE_BUCKET",
   "STORAGE_LOCAL_DIR",
   "STORAGE_PUBLIC_PATH",
+  "STORAGE_PRIVATE_DIR",
 ] as const;
 
 function withCleanStorageEnv(run: () => void) {
@@ -49,6 +54,7 @@ test("Supabase storage accepts the legacy Lethela environment names", () => {
     process.env.SUPABASE_PRIVATE_BUCKET = "private-uploads";
 
     assert.equal(hasSupabaseStorageConfig(), true);
+    assert.equal(hasPrivateStorageConfig(), true);
     assert.equal(storageProvider(), "supabase");
     assert.deepEqual(storageConfigSummary(), {
       mode: "supabase",
@@ -71,6 +77,7 @@ test("Supabase storage also accepts standard Supabase environment aliases", () =
     process.env.SUPABASE_PRIVATE_STORAGE_BUCKET = "private-uploads";
 
     assert.equal(hasSupabaseStorageConfig(), true);
+    assert.equal(hasPrivateStorageConfig(), true);
     assert.equal(storageProvider(), "supabase");
     const summary = storageConfigSummary();
     assert.equal(summary.hasSupabaseUrl, true);
@@ -86,11 +93,39 @@ test("Production reports no upload provider when durable storage is incomplete",
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
 
     assert.equal(hasSupabaseStorageConfig(), false);
+    assert.equal(hasPrivateStorageConfig(), false);
     assert.equal(storageProvider(), "none");
     const summary = storageConfigSummary();
     assert.equal(summary.provider, "none");
     assert.equal(summary.hasSupabaseUrl, true);
     assert.equal(summary.hasSupabaseServiceRole, false);
     assert.equal(summary.hasPublicBucket, false);
+  });
+});
+
+test("Vercel production never treats local disk as durable upload storage", () => {
+  withCleanStorageEnv(() => {
+    process.env.VERCEL = "1";
+    process.env.UPLOAD_STORAGE = "local";
+    process.env.STORAGE_LOCAL_DIR = "/tmp/lethela-public";
+    process.env.STORAGE_PRIVATE_DIR = "/tmp/lethela-private";
+    process.env.STORAGE_PUBLIC_PATH = "/uploads";
+
+    assert.equal(storageProvider(), "none");
+    assert.equal(storageConfigSummary().hasLocalStorage, false);
+  });
+});
+
+test("Supabase remains the durable provider on Vercel", () => {
+  withCleanStorageEnv(() => {
+    process.env.VERCEL = "1";
+    process.env.UPLOAD_STORAGE = "supabase";
+    process.env.SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role";
+    process.env.SUPABASE_STORAGE_BUCKET = "public-uploads";
+    process.env.SUPABASE_PRIVATE_STORAGE_BUCKET = "private-uploads";
+
+    assert.equal(storageProvider(), "supabase");
+    assert.equal(hasPrivateStorageConfig(), true);
   });
 });
