@@ -22,7 +22,10 @@ function toRemotePattern(value, defaultPathname = "/**") {
 const configuredRemotePatterns = [
   toRemotePattern(process.env.NEXT_PUBLIC_SITE_URL),
   toRemotePattern(process.env.STORAGE_BUCKET_URL),
-  toRemotePattern(process.env.SUPABASE_URL, "/storage/v1/object/public/**"),
+  toRemotePattern(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+    "/storage/v1/object/public/**",
+  ),
 ].filter(Boolean);
 
 function originHost(value) {

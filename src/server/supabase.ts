@@ -44,14 +44,25 @@ function isProductionRuntime() {
   return process.env.NODE_ENV === "production";
 }
 
+function isVercelRuntime() {
+  return Boolean(
+    process.env.VERCEL === "1" || process.env.VERCEL_ENV?.trim() || process.env.VERCEL_URL?.trim(),
+  );
+}
+
 export function hasSupabaseStorageConfig() {
   if (normalizedStorageMode() === "local") return false;
   return Boolean(supabaseUrl() && supabaseServiceRole() && supabasePublicBucket());
 }
 
+export function hasPrivateStorageConfig() {
+  return hasSupabaseStorageConfig() && Boolean(supabasePrivateBucket());
+}
+
 export function hasLocalStorageConfig() {
   const mode = normalizedStorageMode();
   if (mode && mode !== "local") return false;
+  if (isProductionRuntime() && isVercelRuntime()) return false;
   if (isProductionRuntime()) {
     return Boolean(
       process.env.STORAGE_LOCAL_DIR?.trim() && process.env.STORAGE_PUBLIC_PATH?.trim(),
@@ -189,6 +200,10 @@ export async function readPrivateStoredFile(filename: string) {
     const { data, error } = await supa.storage.from(bucket).download(safeFilename);
     if (error || !data) throw new Error(error?.message || "Document not found.");
     return Buffer.from(await data.arrayBuffer());
+  }
+
+  if (!hasLocalStorageConfig()) {
+    throw new Error("Durable private storage is not configured.");
   }
 
   const root = localPrivateStorageRoot();

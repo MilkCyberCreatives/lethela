@@ -60,6 +60,7 @@ jobs:
           UPLOAD_STORAGE: supabase
           SUPABASE_URL: https://ci-example.supabase.co
           SUPABASE_SERVICE_ROLE: ci-only-service-role
+          SUPABASE_BUCKET: public-ci-uploads
           SUPABASE_PRIVATE_BUCKET: private-ci-documents
           SUPPORT_EMAIL_TO: support@example.test
         run: npm run check:security-env

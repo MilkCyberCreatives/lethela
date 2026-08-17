@@ -5,7 +5,7 @@ import { isEmailVerificationRequired } from "@/lib/email-verification";
 import { hasEmailChannel, hasWhatsAppChannel } from "@/lib/notification-channels";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { hasWebPushConfig } from "@/lib/web-push";
-import { hasStorageConfig, storageProvider } from "@/server/supabase";
+import { hasPrivateStorageConfig, hasStorageConfig, storageProvider } from "@/server/supabase";
 import { getSqliteReadinessCounts } from "@/lib/sqlite-readiness";
 import { prisma, prismaRuntimeInfo } from "@/server/db";
 
@@ -143,8 +143,7 @@ export async function GET(req: NextRequest) {
   const mode = launchMode();
   const publicMode = mode === "public";
   const publicSeverity = publicMode ? "required" : "recommended";
-  const privateStorageConfigured =
-    hasStorageConfig() && storageProvider() === "supabase" && configured("SUPABASE_PRIVATE_BUCKET");
+  const privateStorageConfigured = hasPrivateStorageConfig();
 
   const checks = [
     item(
