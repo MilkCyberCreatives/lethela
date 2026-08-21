@@ -7,19 +7,23 @@ async function source(path: string) {
 }
 
 test("generated app icons and branded social images are configured", async () => {
-  const [icon, appleIcon, openGraph, twitter, layout] = await Promise.all([
+  const [icon, appleIcon, openGraph, twitter, layout, brandImage] = await Promise.all([
     source("src/app/icon.tsx"),
     source("src/app/apple-icon.tsx"),
     source("src/app/opengraph-image.tsx"),
     source("src/app/twitter-image.tsx"),
     source("src/app/layout.tsx"),
+    source("src/lib/brand-image.tsx"),
   ]);
 
   assert.match(icon, /ImageResponse/);
+  assert.match(icon, /BrandMark/);
   assert.match(appleIcon, /180/);
+  assert.match(appleIcon, /BrandMark/);
   assert.match(openGraph, /createBrandSocialImage/);
   assert.match(twitter, /createBrandSocialImage/);
-  assert.match(layout, /defaultSocialImage/);
+  assert.match(brandImage, /BrandMark/);
+  assert.doesNotMatch(layout, /defaultSocialImage/);
   assert.match(layout, /\/apple-icon/);
 });
 

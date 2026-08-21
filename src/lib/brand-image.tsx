@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import BrandMark from "@/lib/brand-mark";
 import { SITE_DESCRIPTION } from "@/lib/site";
 
 export const BRAND_SOCIAL_IMAGE_SIZE = {
@@ -73,14 +74,10 @@ export function createBrandSocialImage({
                 alignItems: "center",
                 justifyContent: "center",
                 borderRadius: 24,
-                background: "#B5001B",
-                color: "#ffffff",
-                fontSize: 64,
-                fontWeight: 900,
-                lineHeight: 1,
+                background: "#ffffff",
               }}
             >
-              L
+              <BrandMark width={48} height={72} />
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 62, fontWeight: 900, letterSpacing: -2 }}>Lethela</div>
