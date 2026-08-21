@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import BrandMark from "@/lib/brand-mark";
 
 export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
@@ -13,15 +14,10 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: 14,
-          background: "#B5001B",
-          color: "#ffffff",
-          fontFamily: "Arial, Helvetica, sans-serif",
-          fontSize: 44,
-          fontWeight: 900,
+          background: "#ffffff",
         }}
       >
-        L
+        <BrandMark width={34} height={50} />
       </div>
     ),
     size,
