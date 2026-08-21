@@ -8,7 +8,6 @@ import RouteThemeMarker from "@/components/RouteThemeMarker";
 import StructuredData from "@/components/StructuredData";
 import VisitorTelemetry from "@/components/VisitorTelemetry";
 import { getFooterSocialLinks, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
-import { buildSocialCardUrl } from "@/lib/social-card";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 import "./globals.css";
 import "./dashboard.css";
@@ -16,7 +15,6 @@ import "./dashboard.css";
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION?.trim();
 const facebookDomainVerification = process.env.NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION?.trim();
-const defaultSocialImage = buildSocialCardUrl(`${SITE_NAME} | Siyashesha`, SITE_DESCRIPTION);
 
 const otherVerification: Record<string, string> = {};
 if (bingVerification) otherVerification["msvalidate.01"] = bingVerification;
@@ -88,21 +86,11 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: `${SITE_NAME} | Siyashesha`,
     description: SITE_DESCRIPTION,
-    images: [
-      {
-        url: defaultSocialImage,
-        width: 1200,
-        height: 630,
-        alt: `${SITE_NAME} township delivery platform`,
-        type: "image/png",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${SITE_NAME} | Siyashesha`,
     description: SITE_DESCRIPTION,
-    images: [defaultSocialImage],
   },
   category: "Food delivery",
 };
