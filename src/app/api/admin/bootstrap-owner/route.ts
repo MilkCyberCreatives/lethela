@@ -16,6 +16,13 @@ const BootstrapOwnerSchema = z.object({
   name: z.string().trim().min(2).max(120).default("Lethela Owner"),
 });
 
+function configuredBootstrapEmails() {
+  return (process.env.ADMIN_BOOTSTRAP_EMAILS || process.env.ADMIN_NOTIFICATION_EMAILS || "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function keysMatch(provided: string, expected: string) {
   const providedBuffer = Buffer.from(provided, "utf8");
   const expectedBuffer = Buffer.from(expected, "utf8");
@@ -57,6 +64,20 @@ export async function POST(req: NextRequest) {
         fieldErrors: parsed.error.flatten().fieldErrors,
       },
       { status: 400 },
+    );
+  }
+
+  const allowedEmails = configuredBootstrapEmails();
+  if (process.env.NODE_ENV === "production" && allowedEmails.length === 0) {
+    return NextResponse.json(
+      { ok: false, error: "Owner bootstrap email allowlist is not configured." },
+      { status: 503 },
+    );
+  }
+  if (allowedEmails.length > 0 && !allowedEmails.includes(parsed.data.email)) {
+    return NextResponse.json(
+      { ok: false, error: "This email is not authorised to initialise owner access." },
+      { status: 403 },
     );
   }
 

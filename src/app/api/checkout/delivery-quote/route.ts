@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { quoteDelivery } from "@/lib/pricing";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const QuerySchema = z
   .object({
@@ -21,6 +22,19 @@ const QuerySchema = z
   );
 
 export async function GET(req: NextRequest) {
+  const limited = await checkRateLimit({
+    key: "checkout-delivery-quote",
+    limit: 40,
+    windowMs: 60_000,
+    headers: req.headers,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many delivery quote requests. Please try again shortly." },
+      { status: 429, headers: { "retry-after": String(limited.retryAfterSec) } },
+    );
+  }
+
   const parsed = QuerySchema.safeParse({
     vendorId: req.nextUrl.searchParams.get("vendorId"),
     destinationSuburb: req.nextUrl.searchParams.get("destinationSuburb") || undefined,

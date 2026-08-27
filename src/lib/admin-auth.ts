@@ -31,7 +31,11 @@ export async function requireAdminRequest(
   const allowDevBypass =
     process.env.NODE_ENV !== "production" && process.env.ALLOW_DEV_ADMIN_BYPASS === "true";
 
-  if (secretsEqual(providedKey, adminKey)) {
+  const allowProductionApiKeyAuth =
+    process.env.NODE_ENV !== "production" ||
+    process.env.ALLOW_PRODUCTION_ADMIN_API_KEY_AUTH === "true";
+
+  if (allowProductionApiKeyAuth && secretsEqual(providedKey, adminKey)) {
     return { ok: true, mode: "key", role: "OWNER", actor: "owner-api-key" };
   }
 
