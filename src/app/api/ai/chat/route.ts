@@ -8,6 +8,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { searchCatalog } from "@/lib/search";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
+import { auth } from "@/auth";
 
 type IncomingBody = {
   messages?: AIMessage[];
@@ -120,7 +121,7 @@ function buildFollowUps(mode: AssistantMode, latestUserMessage: string, hasResul
   return ["Popular tonight", "Track order LET-12345", "Order via WhatsApp"];
 }
 
-async function getTrackedOrderSummary(id: string) {
+async function getTrackedOrderSummary(id: string, userId: string | null) {
   if (isDemoOrderRef(id)) {
     const demo = getDemoOrderSummary();
     return {
@@ -133,9 +134,12 @@ async function getTrackedOrderSummary(id: string) {
     };
   }
 
+  if (!userId) return null;
+
   const order = await runBoundedDbQuery((db) =>
     db.order.findFirst({
       where: {
+        userId,
         OR: [{ publicId: id }, { ozowReference: id }],
       },
       include: {
@@ -256,17 +260,20 @@ export async function POST(req: Request) {
       });
     }
 
-    const order = await getTrackedOrderSummary(orderId);
+    const session = await auth().catch(() => null);
+    const order = await getTrackedOrderSummary(orderId, session?.user?.id || null);
     if (!order) {
       return NextResponse.json({
         ok: true,
         mode: "tracking" as AssistantMode,
-        reply: `I could not find ${orderId}. Double-check the reference and try again, or use WhatsApp support if you need urgent help.`,
+        reply:
+          "For privacy, live order details are available only after verification. Open Track Order and verify with your order reference and phone number, or sign in to the account that placed the order.",
         followUps: [
-          "Try another order reference",
           "Open Track Order page",
+          "Sign in to my account",
           "Contact support on WhatsApp",
         ],
+        cta: { label: "Open Track Order", href: "/track" },
       });
     }
 
