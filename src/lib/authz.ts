@@ -42,16 +42,41 @@ export async function getVendorSession(): Promise<VendorSessionState> {
   });
 
   if (!membership) {
-    const ownedVendor = await prisma.vendor.findFirst({
-      where: {
-        OR: [
-          { ownerId: session.user.id },
-          { ownerId: null, email: session.user.email.toLowerCase() },
-        ],
-      },
+    let ownedVendor = await prisma.vendor.findFirst({
+      where: { ownerId: session.user.id },
       orderBy: { updatedAt: "desc" },
       select: { id: true, slug: true, name: true, status: true, isActive: true },
     });
+
+    if (!ownedVendor) {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { emailVerifiedAt: true },
+      });
+
+      if (currentUser?.emailVerifiedAt) {
+        const legacyVendor = await prisma.vendor.findFirst({
+          where: {
+            ownerId: null,
+            email: session.user.email.toLowerCase(),
+          },
+          orderBy: { updatedAt: "desc" },
+          select: { id: true },
+        });
+
+        if (legacyVendor) {
+          await prisma.vendor.updateMany({
+            where: { id: legacyVendor.id, ownerId: null },
+            data: { ownerId: session.user.id },
+          });
+          ownedVendor = await prisma.vendor.findFirst({
+            where: { id: legacyVendor.id, ownerId: session.user.id },
+            select: { id: true, slug: true, name: true, status: true, isActive: true },
+          });
+        }
+      }
+    }
+
     if (ownedVendor) {
       await prisma.vendorMember.upsert({
         where: { vendorId_userId: { vendorId: ownedVendor.id, userId: session.user.id } },
