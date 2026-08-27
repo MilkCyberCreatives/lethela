@@ -21,6 +21,12 @@ test("owner bootstrap requires the configured email allowlist", async () => {
   assert.match(file, /allowedEmails\.includes\(parsed\.data\.email\)/);
 });
 
+test("raw admin API keys are disabled by default in production", async () => {
+  const file = await source("src/lib/admin-auth.ts");
+  assert.match(file, /ALLOW_PRODUCTION_ADMIN_API_KEY_AUTH/);
+  assert.match(file, /allowProductionApiKeyAuth && secretsEqual/);
+});
+
 test("delivery quotes are rate limited before map-backed calculation", async () => {
   const file = await source("src/app/api/checkout/delivery-quote/route.ts");
   assert.match(file, /checkRateLimit/);
