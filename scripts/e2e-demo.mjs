@@ -18,8 +18,9 @@ const results = [];
 // page never reaches Playwright's "networkidle" state. Navigate on
 // "domcontentloaded" and then wait for the load event plus the main landmark.
 async function gotoStable(page, url) {
-  await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.waitForLoadState("load");
+  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+  // A cold dev compile can push the load event past the default 30s budget.
+  await page.waitForLoadState("load", { timeout: 60000 }).catch(() => {});
   await page
     .locator("body")
     .waitFor({ state: "visible", timeout: 15000 })
@@ -90,10 +91,14 @@ async function signIn(page, [email, password]) {
     const session = await response.json();
     return Boolean(session?.user?.id);
   });
-  // Wait for the client-side redirect away from /signin to settle before the
-  // caller inspects the destination page.
-  await page.waitForURL((url) => !url.pathname.startsWith("/signin"));
-  await page.waitForLoadState("load");
+  // Wait for the client-side redirect away from /signin to commit. Only wait for
+  // the URL change here (not the full load) because the role dashboards can take
+  // a while to compile on a cold dev server; the caller navigates explicitly and
+  // waits on real elements afterwards.
+  await page.waitForURL((url) => !url.pathname.startsWith("/signin"), {
+    timeout: 60000,
+    waitUntil: "commit",
+  });
 }
 
 async function dismissCookieBanner(page) {
@@ -199,6 +204,43 @@ await scenario("admin remains behind owner-access verification", async (page) =>
   }
   if (bodyText.includes("Operations queue")) {
     throw new Error("Unverified admin rendered the admin dashboard.");
+  }
+});
+
+await scenario("every township category page shows approved listings", async (page) => {
+  const categorySlugs = [
+    "kota",
+    "chips",
+    "burger",
+    "mogodu",
+    "groceries",
+    "liquor",
+    "drinks",
+    "snacks",
+    "wings",
+    "braai",
+    "pizza",
+    "chicken",
+    "breakfast",
+  ];
+  const emptyCategories = [];
+  for (const slug of categorySlugs) {
+    await gotoStable(page, `${baseUrl}/categories/${slug}`);
+    if (slug === "liquor") {
+      // Clear the 18+ age gate so the listing grid is not hidden behind it.
+      await page
+        .getByRole("button", { name: /I am 18/i })
+        .click({ timeout: 4000 })
+        .catch(() => {});
+      await page.waitForLoadState("load");
+    }
+    const body = await page.locator("body").innerText();
+    if (/No approved (live listings|licensed liquor vendors)/i.test(body)) {
+      emptyCategories.push(slug);
+    }
+  }
+  if (emptyCategories.length) {
+    throw new Error(`Categories with no approved listings: ${emptyCategories.join(", ")}`);
   }
 });
 
