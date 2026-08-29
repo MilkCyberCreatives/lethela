@@ -7,6 +7,11 @@ import HomeProductCard from "@/components/HomeProductCard";
 import StructuredData from "@/components/StructuredData";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { canReadSqliteCatalog, getSqliteCatalogProducts } from "@/lib/sqlite-catalog";
+import { getFallbackCategoryProducts } from "@/lib/catalog-fallback";
+import {
+  shouldFallbackWhenCatalogEmpty,
+  shouldUseCatalogFallbackBeforeQuery,
+} from "@/lib/catalog-runtime";
 import {
   CATEGORY_CONTENT,
   categoryToSlug,
@@ -64,76 +69,86 @@ export default async function CategoryPage({ params }: PageProps) {
       ? await getSqliteCatalogProducts({ category: resolvedCategory, take: 120, alcohol: "false" })
       : null;
 
-  const dbItems = sqliteItems
-    ? []
-    : await runBoundedDbQuery((db) =>
-        db.product.findMany({
-          where: {
-            inStock: true,
-            status: "APPROVED",
-            isAlcohol: isLiquorCategory,
-            vendor: {
-              isActive: true,
-              status: { in: ["ACTIVE", "APPROVED"] },
-              temporaryClosed: false,
-              email: { not: null },
-              phone: { not: null },
-              address: { not: null },
-              city: { not: null },
-              province: { not: null },
-              storeType: { not: null },
-              etaMins: { gte: 10 },
-              kycIdUrl: { not: null },
-              kycProofUrl: { not: null },
-              bankName: { not: null },
-              bankAccountName: { not: null },
-              bankAccountNumber: { not: null },
-              hours: { some: { closed: false } },
-              ...(isLiquorCategory
-                ? {
-                    liquorVerificationStatus: "APPROVED",
-                    liquorLicenceUrl: { not: null },
-                    liquorLicenceExpiry: { gt: new Date() },
-                  }
-                : {}),
-            },
-          },
-          orderBy: { updatedAt: "desc" },
-          take: 120,
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            priceCents: true,
-            image: true,
-            isAlcohol: true,
-            vendor: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                status: true,
+  // In demo-catalogue mode (DEMO_CATALOG_MODE) or on a local SQLite runtime,
+  // serve the curated fallback catalogue so category pages are populated without
+  // a live database. Liquor is excluded: the fallback carries no alcohol, so
+  // liquor always goes through the licensed-vendor database query below.
+  const fallbackItems =
+    !isLiquorCategory && !sqliteItems && shouldUseCatalogFallbackBeforeQuery()
+      ? getFallbackCategoryProducts(resolvedCategory)
+      : null;
+
+  const dbItems =
+    sqliteItems || fallbackItems
+      ? []
+      : await runBoundedDbQuery((db) =>
+          db.product.findMany({
+            where: {
+              inStock: true,
+              status: "APPROVED",
+              isAlcohol: isLiquorCategory,
+              vendor: {
                 isActive: true,
-                phone: true,
-                address: true,
-                suburb: true,
-                city: true,
-                province: true,
-                municipality: true,
-                township: true,
-                sectionArea: true,
-                storeType: true,
-                cuisine: true,
-                etaMins: true,
-                deliveryFee: true,
-                liquorLicenceExpiry: true,
-                liquorVerificationStatus: true,
-                _count: { select: { products: true, items: true, hours: true } },
+                status: { in: ["ACTIVE", "APPROVED"] },
+                temporaryClosed: false,
+                email: { not: null },
+                phone: { not: null },
+                address: { not: null },
+                city: { not: null },
+                province: { not: null },
+                storeType: { not: null },
+                etaMins: { gte: 10 },
+                kycIdUrl: { not: null },
+                kycProofUrl: { not: null },
+                bankName: { not: null },
+                bankAccountName: { not: null },
+                bankAccountNumber: { not: null },
+                hours: { some: { closed: false } },
+                ...(isLiquorCategory
+                  ? {
+                      liquorVerificationStatus: "APPROVED",
+                      liquorLicenceUrl: { not: null },
+                      liquorLicenceExpiry: { gt: new Date() },
+                    }
+                  : {}),
               },
             },
-          },
-        }),
-      ).catch(() => []);
+            orderBy: { updatedAt: "desc" },
+            take: 120,
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              priceCents: true,
+              image: true,
+              isAlcohol: true,
+              vendor: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  status: true,
+                  isActive: true,
+                  phone: true,
+                  address: true,
+                  suburb: true,
+                  city: true,
+                  province: true,
+                  municipality: true,
+                  township: true,
+                  sectionArea: true,
+                  storeType: true,
+                  cuisine: true,
+                  etaMins: true,
+                  deliveryFee: true,
+                  liquorLicenceExpiry: true,
+                  liquorVerificationStatus: true,
+                  _count: { select: { products: true, items: true, hours: true } },
+                },
+              },
+            },
+          }),
+        ).catch(() => []);
 
   const verifiedPublicVendor = <T extends (typeof dbItems)[number]["vendor"]>(vendor: T) => ({
     ...vendor,
@@ -145,29 +160,33 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const liveItems = sqliteItems
     ? sqliteItems
-    : isLiquorCategory
-      ? dbItems.filter(
-          (item) =>
-            item.isAlcohol &&
-            item.vendor.liquorVerificationStatus === "APPROVED" &&
-            Boolean(
-              item.vendor.liquorLicenceExpiry &&
-                new Date(item.vendor.liquorLicenceExpiry).getTime() > Date.now(),
-            ) &&
-            isPublicMarketplaceVendor(verifiedPublicVendor(item.vendor)),
-        )
-      : dbItems.length > 0
+    : fallbackItems
+      ? fallbackItems
+      : isLiquorCategory
         ? dbItems.filter(
             (item) =>
-              isPublicCatalogProduct(item) &&
-              isPublicMarketplaceVendor(verifiedPublicVendor(item.vendor)) &&
-              inferProductCategory({
-                name: item.name,
-                description: item.description,
-                isAlcohol: item.isAlcohol,
-              }) === resolvedCategory,
+              item.isAlcohol &&
+              item.vendor.liquorVerificationStatus === "APPROVED" &&
+              Boolean(
+                item.vendor.liquorLicenceExpiry &&
+                  new Date(item.vendor.liquorLicenceExpiry).getTime() > Date.now(),
+              ) &&
+              isPublicMarketplaceVendor(verifiedPublicVendor(item.vendor)),
           )
-        : [];
+        : dbItems.length > 0
+          ? dbItems.filter(
+              (item) =>
+                isPublicCatalogProduct(item) &&
+                isPublicMarketplaceVendor(verifiedPublicVendor(item.vendor)) &&
+                inferProductCategory({
+                  name: item.name,
+                  description: item.description,
+                  isAlcohol: item.isAlcohol,
+                }) === resolvedCategory,
+            )
+          : shouldFallbackWhenCatalogEmpty()
+            ? getFallbackCategoryProducts(resolvedCategory)
+            : [];
   const items = liveItems;
   const content = CATEGORY_CONTENT[resolvedCategory];
 
