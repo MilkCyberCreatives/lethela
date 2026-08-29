@@ -1,6 +1,9 @@
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { getFallbackSearchSources } from "@/lib/catalog-fallback";
-import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
+import {
+  shouldPreferCatalogFallback,
+  shouldUseCatalogFallbackBeforeQuery,
+} from "@/lib/catalog-runtime";
 import {
   getPublicVendorImage,
   isPublicCatalogProduct,
@@ -666,9 +669,11 @@ export async function searchCatalog(q: string, opts: SearchOptions = {}) {
 
   const catalogHits = isLiquorSearch
     ? await searchLiquorCatalog(tokens, limit)
-    : prismaRuntimeInfo.provider === "postgresql"
-      ? await searchPostgres(query, tokens, limit)
-      : await searchFallback(query, tokens, limit);
+    : shouldPreferCatalogFallback()
+      ? await searchFallback(query, tokens, limit)
+      : prismaRuntimeInfo.provider === "postgresql"
+        ? await searchPostgres(query, tokens, limit)
+        : await searchFallback(query, tokens, limit);
   const categoryNames = Array.from(
     new Set([...TOWNSHIP_CATEGORIES, "Groceries", "Liquor", "Restaurants"]),
   );

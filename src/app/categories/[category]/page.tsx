@@ -10,6 +10,7 @@ import { canReadSqliteCatalog, getSqliteCatalogProducts } from "@/lib/sqlite-cat
 import { getFallbackCategoryProducts } from "@/lib/catalog-fallback";
 import {
   shouldFallbackWhenCatalogEmpty,
+  shouldPreferCatalogFallback,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
 import {
@@ -65,7 +66,7 @@ export default async function CategoryPage({ params }: PageProps) {
   const isLiquorCategory = resolvedCategory === "Liquor";
 
   const sqliteItems =
-    !isLiquorCategory && canReadSqliteCatalog()
+    !isLiquorCategory && !shouldPreferCatalogFallback() && canReadSqliteCatalog()
       ? await getSqliteCatalogProducts({ category: resolvedCategory, take: 120, alcohol: "false" })
       : null;
 
