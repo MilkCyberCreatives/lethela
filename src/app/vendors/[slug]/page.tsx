@@ -339,7 +339,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
             </div>
           </div>
 
-          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5">
             <Image
               src={imageUrl}
               alt={`${vendor.name} cover`}
