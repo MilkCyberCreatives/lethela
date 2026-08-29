@@ -5,7 +5,7 @@ export default function SignUpPage() {
   return (
     <AuthShell
       title="Create your account"
-      supportingText="Start in seconds. Add your name, mobile number and delivery details after sign-in."
+      supportingText="Start in seconds. Add delivery details only when you check out."
       compact
     >
       <MinimalSignupForm accountType="customer" />

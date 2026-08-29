@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       ok: true,
       user,
       verificationRequired,
-      redirectTo: verificationRequired ? "/signin?verification=sent" : "/profile?welcome=1",
+      redirectTo: verificationRequired ? "/signin?verification=sent" : "/",
     });
   } catch (error) {
     if (isUniqueConstraintError(error)) {

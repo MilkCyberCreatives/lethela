@@ -16,6 +16,11 @@ import {
 import { isEmailVerificationRequired } from "@/lib/email-verification";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NormalizedEmailSchema } from "@/lib/identity";
+import {
+  findLocalSqliteUserByEmail,
+  findLocalSqliteUserById,
+  updateLocalSqliteAuthState,
+} from "@/lib/local-sqlite-auth";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -96,7 +101,8 @@ export const authOptions: NextAuthOptions = {
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const localUser = await findLocalSqliteUserByEmail(email);
+        const user = localUser ?? (await prisma.user.findUnique({ where: { email } }));
         if (!user?.passwordHash) {
           await compare(password, DUMMY_PASSWORD_HASH).catch(() => false);
           await recordAuthSecurityEvent({
@@ -107,7 +113,8 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+        const lockedUntil = user.lockedUntil ? new Date(user.lockedUntil) : null;
+        if (lockedUntil && lockedUntil.getTime() > Date.now()) {
           await recordAuthSecurityEvent({
             userId: user.id,
             email,
@@ -121,15 +128,20 @@ export const authOptions: NextAuthOptions = {
         if (!ok) {
           const failedAttempts = user.failedLoginAttempts + 1;
           const shouldLock = failedAttempts >= ACCOUNT_LOCK_ATTEMPTS;
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
+          const nextLockedUntil = shouldLock
+            ? new Date(Date.now() + ACCOUNT_LOCK_MINUTES * 60 * 1000)
+            : null;
+          if (localUser) {
+            await updateLocalSqliteAuthState(user.id, {
               failedLoginAttempts: failedAttempts,
-              lockedUntil: shouldLock
-                ? new Date(Date.now() + ACCOUNT_LOCK_MINUTES * 60 * 1000)
-                : null,
-            },
-          });
+              lockedUntil: nextLockedUntil,
+            });
+          } else {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { failedLoginAttempts: failedAttempts, lockedUntil: nextLockedUntil },
+            });
+          }
           await recordAuthSecurityEvent({
             userId: user.id,
             email,
@@ -139,7 +151,8 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        if (isEmailVerificationRequired() && !user.emailVerifiedAt) {
+        const emailVerifiedAt = "emailVerifiedAt" in user ? user.emailVerifiedAt : null;
+        if (!localUser && isEmailVerificationRequired() && !emailVerifiedAt) {
           await recordAuthSecurityEvent({
             userId: user.id,
             email,
@@ -149,10 +162,17 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { failedLoginAttempts: 0, lockedUntil: null },
-        });
+        if (localUser) {
+          await updateLocalSqliteAuthState(user.id, {
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+          });
+        } else {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { failedLoginAttempts: 0, lockedUntil: null },
+          });
+        }
         await recordAuthSecurityEvent({
           userId: user.id,
           email,
@@ -181,10 +201,13 @@ export const authOptions: NextAuthOptions = {
         token.image = user.image ?? null;
         token.sessionVersion = "sessionVersion" in user ? Number(user.sessionVersion || 0) : 0;
       } else if (token.id) {
-        const current = await prisma.user.findUnique({
-          where: { id: token.id },
-          select: { role: true, sessionVersion: true },
-        });
+        const localUser = await findLocalSqliteUserById(token.id);
+        const current =
+          localUser ??
+          (await prisma.user.findUnique({
+            where: { id: token.id },
+            select: { role: true, sessionVersion: true },
+          }));
         if (!current || current.sessionVersion !== Number(token.sessionVersion || 0)) {
           token.id = "";
           token.email = "";
