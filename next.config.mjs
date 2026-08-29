@@ -170,6 +170,7 @@ const nextConfig = {
   images: {
     remotePatterns: configuredRemotePatterns,
     formats: ["image/avif", "image/webp"],
+    qualities: [72, 75],
     minimumCacheTTL: 86400,
   },
   webpack: (config) => {

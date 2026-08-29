@@ -100,7 +100,9 @@ export async function getHomeRecommendations(suburb: string | null): Promise<Rec
 }
 
 export async function getHomeProducts(suburb: string | null, take = 24): Promise<ProductLite[]> {
-  if (canReadSqliteCatalog()) {
+  // Explicit demo-catalogue mode is authoritative: serve the curated fallback
+  // and never touch a database, whatever DATABASE_URL points at.
+  if (!shouldPreferCatalogFallback() && canReadSqliteCatalog()) {
     const sqliteItems = await getSqliteCatalogProducts({ suburb, take, alcohol: "false" });
     if (sqliteItems) return sqliteItems;
   }
@@ -213,7 +215,7 @@ function fallbackVendors(hour: number): Vendor[] {
 
 export async function getHomeVendors(suburb: string | null, take = 18): Promise<Vendor[]> {
   const hour = new Date().getHours();
-  if (canReadSqliteCatalog()) {
+  if (!shouldPreferCatalogFallback() && canReadSqliteCatalog()) {
     const sqliteVendors = await getSqliteCatalogVendors({ suburb, take });
     if (sqliteVendors) {
       return sqliteVendors.map((vendor) => {
