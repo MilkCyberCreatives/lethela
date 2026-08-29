@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ ok: true, user, redirectTo: "/profile?welcome=1" });
+    return NextResponse.json({ ok: true, user, redirectTo: "/" });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
       return NextResponse.json(

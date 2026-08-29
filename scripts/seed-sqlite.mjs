@@ -46,7 +46,7 @@ function upsertUser(db, user) {
   const existing = db.prepare("SELECT id FROM User WHERE email = ?").get(user.email);
   if (existing) {
     db.prepare(
-      "UPDATE User SET name = ?, role = ?, passwordHash = ?, updatedAt = ? WHERE email = ?",
+      "UPDATE User SET name = ?, role = ?, passwordHash = ?, failedLoginAttempts = 0, lockedUntil = NULL, sessionVersion = sessionVersion + 1, updatedAt = ? WHERE email = ?",
     ).run(user.name, user.role, user.passwordHash, nowIso(), user.email);
     return existing.id;
   }
@@ -128,7 +128,7 @@ function upsertProduct(db, product) {
     db.prepare(
       `UPDATE Product
        SET name = ?, description = ?, priceCents = ?, image = ?, isAlcohol = ?,
-           abv = ?, inStock = ?, updatedAt = ?
+           abv = ?, inStock = ?, status = 'APPROVED', updatedAt = ?
        WHERE vendorId = ? AND slug = ?`,
     ).run(
       product.name,
@@ -147,8 +147,8 @@ function upsertProduct(db, product) {
 
   db.prepare(
     `INSERT INTO Product
-     (id, vendorId, slug, name, description, priceCents, image, isAlcohol, abv, inStock, createdAt, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (id, vendorId, slug, name, description, priceCents, image, isAlcohol, abv, inStock, status, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'APPROVED', ?, ?)`,
   ).run(
     product.id,
     product.vendorId,
@@ -188,7 +188,7 @@ function upsertOperatingHours(db, vendorId) {
   }
 }
 
-function upsertRider(db) {
+function upsertRider(db, userId) {
   const existing = db
     .prepare("SELECT id FROM RiderApplication WHERE id = ?")
     .get("rider-demo-approved");
@@ -215,34 +215,44 @@ function upsertRider(db) {
   if (existing) {
     db.prepare(
       `UPDATE RiderApplication
-       SET fullName = ?, email = ?, phone = ?, idNumberLast4 = ?, licenseCode = ?,
+       SET userId = ?, fullName = ?, email = ?, phone = ?, idNumberLast4 = ?, licenseCode = ?,
            suburb = ?, city = ?, vehicleType = ?, vehicleRegistration = ?,
            availableHours = ?, emergencyContactName = ?, emergencyContactPhone = ?,
            hasSmartphone = ?, hasBankAccount = ?, experience = ?, aiSummary = ?,
            status = ?, updatedAt = ?
        WHERE id = 'rider-demo-approved'`,
-    ).run(...values, nowIso());
+    ).run(userId, ...values, nowIso());
     return;
   }
 
   db.prepare(
     `INSERT INTO RiderApplication
-     (id, fullName, email, phone, idNumberLast4, licenseCode, suburb, city, vehicleType,
+     (id, userId, fullName, email, phone, idNumberLast4, licenseCode, suburb, city, vehicleType,
       vehicleRegistration, availableHours, emergencyContactName, emergencyContactPhone,
       hasSmartphone, hasBankAccount, experience, aiSummary, status, createdAt, updatedAt)
-     VALUES ('rider-demo-approved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(...values, nowIso(), nowIso());
+     VALUES ('rider-demo-approved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(userId, ...values, nowIso(), nowIso());
 }
 
 loadEnv();
 
 const databasePath = sqlitePathFromUrl(process.env.DATABASE_URL);
+const workspacePath = path.resolve(process.cwd());
+const relativeDatabasePath = path.relative(workspacePath, databasePath);
+if (process.env.NODE_ENV === "production") {
+  throw new Error("Refusing to seed demo accounts while NODE_ENV=production.");
+}
+if (relativeDatabasePath.startsWith("..") || path.isAbsolute(relativeDatabasePath)) {
+  throw new Error("Refusing to seed a SQLite database outside the current workspace.");
+}
 fs.mkdirSync(path.dirname(databasePath), { recursive: true });
 
 const db = new DatabaseSync(databasePath);
 db.exec("PRAGMA busy_timeout = 5000");
 
 const vendorPasswordHash = await hash("DemoVendor123!", 10);
+const customerPasswordHash = await hash("DemoBuyer2026", 10);
+const riderPasswordHash = await hash("DemoRider2026", 10);
 const adminPasswordHash = await hash("AdminDemo123!", 10);
 
 db.exec("BEGIN");
@@ -253,6 +263,22 @@ try {
     name: "Demo Vendor",
     role: "VENDOR",
     passwordHash: vendorPasswordHash,
+  });
+
+  upsertUser(db, {
+    id: "seed-customer-demo",
+    email: "demo.customer@lethela.test",
+    name: "DEMO - Customer",
+    role: "CUSTOMER",
+    passwordHash: customerPasswordHash,
+  });
+
+  const riderUserId = upsertUser(db, {
+    id: "seed-rider-demo",
+    email: "demo.rider@lethela.test",
+    name: "DEMO - Rider",
+    role: "RIDER",
+    passwordHash: riderPasswordHash,
   });
 
   upsertUser(db, {
@@ -543,7 +569,7 @@ try {
     });
   }
 
-  upsertRider(db);
+  upsertRider(db, riderUserId);
 
   db.exec("COMMIT");
 } catch (error) {

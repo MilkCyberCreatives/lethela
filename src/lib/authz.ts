@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/db";
+import { prisma, prismaRuntimeInfo } from "@/lib/db";
+import { findSqliteVendorLogin } from "@/lib/sqlite-vendor-auth";
 
 export type VendorRoleType = "OWNER" | "MANAGER" | "STAFF";
 
@@ -28,6 +29,24 @@ export async function getVendorSession(): Promise<VendorSessionState> {
   const session = await auth().catch(() => null);
   if (!session?.user?.id || !session.user.email) {
     throw new Error("Vendor session expired. Please sign in again.");
+  }
+
+  if (prismaRuntimeInfo.provider === "sqlite") {
+    const local = await findSqliteVendorLogin(session.user.email);
+    if (!local?.vendor || local.user.id !== session.user.id) {
+      throw new Error("No vendor profile is linked to this account.");
+    }
+    const status = String(local.vendor.status || "").toUpperCase();
+    return {
+      userId: session.user.id,
+      vendorId: local.vendor.id,
+      role: normalizeRole(local.vendor.role),
+      vendorSlug: local.vendor.slug,
+      email: session.user.email.toLowerCase(),
+      vendorName: local.vendor.name,
+      isApproved: local.vendor.isActive && ["ACTIVE", "APPROVED"].includes(status),
+      status,
+    };
   }
 
   let membership = await prisma.vendorMember.findFirst({

@@ -8,6 +8,9 @@ type LocalSqliteUser = {
   image: string | null;
   passwordHash: string | null;
   role: string;
+  failedLoginAttempts: number;
+  lockedUntil: string | null;
+  sessionVersion: number;
 };
 
 function isLocalSqliteAuthEnabled() {
@@ -45,10 +48,54 @@ export async function findLocalSqliteUserByEmail(email: string): Promise<LocalSq
   try {
     const row = db
       .prepare(
-        'SELECT id, email, name, image, passwordHash, role FROM "User" WHERE lower(email) = lower(?) LIMIT 1',
+        'SELECT id, email, name, image, passwordHash, role, failedLoginAttempts, lockedUntil, sessionVersion FROM "User" WHERE lower(email) = lower(?) LIMIT 1',
       )
       .get(email) as LocalSqliteUser | undefined;
     return row ?? null;
+  } finally {
+    db.close();
+  }
+}
+
+export async function findLocalSqliteUserById(id: string): Promise<LocalSqliteUser | null> {
+  if (!isLocalSqliteAuthEnabled()) return null;
+  const sqlitePath = resolveSqliteFilePath();
+  if (!sqlitePath || !fs.existsSync(sqlitePath)) return null;
+
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(sqlitePath);
+  try {
+    const row = db
+      .prepare(
+        'SELECT id, email, name, image, passwordHash, role, failedLoginAttempts, lockedUntil, sessionVersion FROM "User" WHERE id = ? LIMIT 1',
+      )
+      .get(id) as LocalSqliteUser | undefined;
+    return row ?? null;
+  } finally {
+    db.close();
+  }
+}
+
+export async function updateLocalSqliteAuthState(
+  id: string,
+  data: { failedLoginAttempts: number; lockedUntil: Date | null },
+) {
+  if (!isLocalSqliteAuthEnabled()) return false;
+  const sqlitePath = resolveSqliteFilePath();
+  if (!sqlitePath || !fs.existsSync(sqlitePath)) return false;
+
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(sqlitePath);
+  try {
+    db.prepare(
+      'UPDATE "User" SET failedLoginAttempts = ?, lockedUntil = ?, updatedAt = ? WHERE id = ?',
+    ).run(
+      data.failedLoginAttempts,
+      data.lockedUntil?.toISOString() ?? null,
+      new Date().toISOString(),
+      id,
+    );
+    return true;
   } finally {
     db.close();
   }

@@ -312,10 +312,14 @@ export default function CheckoutPage() {
             <div className="mt-4 space-y-3 text-sm">
               <div className="grid gap-3 rounded-lg border border-white/15 p-3 md:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                  <label
+                    htmlFor="checkout-customer-name"
+                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
+                  >
                     Customer name
                   </label>
                   <input
+                    id="checkout-customer-name"
                     className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                     value={customerName}
                     onChange={(event) => setCustomerName(event.target.value)}
@@ -324,10 +328,14 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                  <label
+                    htmlFor="checkout-phone"
+                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
+                  >
                     Phone number
                   </label>
                   <input
+                    id="checkout-phone"
                     className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                     value={customerPhone}
                     onChange={(event) => setCustomerPhone(event.target.value)}
@@ -336,10 +344,14 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                  <label
+                    htmlFor="checkout-whatsapp"
+                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
+                  >
                     WhatsApp number
                   </label>
                   <input
+                    id="checkout-whatsapp"
                     className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                     value={whatsappNumber}
                     onChange={(event) => setWhatsappNumber(event.target.value)}
@@ -348,10 +360,14 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                  <label
+                    htmlFor="checkout-stand-number"
+                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
+                  >
                     Stand / house number
                   </label>
                   <input
+                    id="checkout-stand-number"
                     className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                     value={standNumber}
                     onChange={(event) => setStandNumber(event.target.value)}
@@ -360,10 +376,14 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                  <label
+                    htmlFor="checkout-street-section"
+                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
+                  >
                     Street / extension / section
                   </label>
                   <input
+                    id="checkout-street-section"
                     className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                     value={streetSection}
                     onChange={(event) => setStreetSection(event.target.value)}
@@ -372,10 +392,14 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                  <label
+                    htmlFor="checkout-landmark"
+                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
+                  >
                     Landmark
                   </label>
                   <input
+                    id="checkout-landmark"
                     className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                     value={landmark}
                     onChange={(event) => setLandmark(event.target.value)}
@@ -385,10 +409,14 @@ export default function CheckoutPage() {
               </div>
 
               <div className="rounded-lg border border-white/15 p-3">
-                <label className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70">
+                <label
+                  htmlFor="checkout-area"
+                  className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
+                >
                   Delivery suburb / area
                 </label>
                 <input
+                  id="checkout-area"
                   className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                   value={destinationSuburb}
                   onChange={(event) => {
@@ -398,10 +426,14 @@ export default function CheckoutPage() {
                   placeholder="Klipfontein View, Midrand"
                   autoComplete="address-level2"
                 />
-                <label className="mb-1 mt-3 block text-xs uppercase tracking-[0.1em] text-white/70">
+                <label
+                  htmlFor="checkout-delivery-notes"
+                  className="mb-1 mt-3 block text-xs uppercase tracking-[0.1em] text-white/70"
+                >
                   Delivery notes
                 </label>
                 <textarea
+                  id="checkout-delivery-notes"
                   className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                   value={deliveryNotes}
                   onChange={(event) => setDeliveryNotes(event.target.value)}

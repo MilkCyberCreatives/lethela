@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
+import { withTimeoutOrThrow } from "@/lib/query-timeout";
 export { isAdminRole, normalizeAppRole, safePostLoginPath, type AppRole } from "@/lib/auth-roles";
 
 export const ACCOUNT_LOCK_ATTEMPTS = 5;
@@ -34,7 +35,7 @@ export async function recordAuthSecurityEvent(input: {
   outcome: "SUCCESS" | "FAILED" | "BLOCKED";
 }) {
   try {
-    await ensureSecurityEventTable();
+    await withTimeoutOrThrow(ensureSecurityEventTable(), 1500, "Auth audit setup timed out");
     const values = [
       crypto.randomUUID(),
       input.userId || null,
@@ -47,11 +48,15 @@ export async function recordAuthSecurityEvent(input: {
       prismaRuntimeInfo.provider === "postgresql"
         ? values.map((_, index) => `$${index + 1}`).join(", ")
         : values.map(() => "?").join(", ");
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO app_auth_security_events
-       (id, user_id, email_hash, event_type, outcome, created_at)
-       VALUES (${placeholders})`,
-      ...values,
+    await withTimeoutOrThrow(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO app_auth_security_events
+         (id, user_id, email_hash, event_type, outcome, created_at)
+         VALUES (${placeholders})`,
+        ...values,
+      ),
+      1500,
+      "Auth audit write timed out",
     );
   } catch {
     // Authentication remains available if the audit store is temporarily unavailable.

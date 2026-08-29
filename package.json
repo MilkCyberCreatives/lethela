@@ -12,6 +12,7 @@
     "start": "next start",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "smoke": "node scripts/smoke-site.mjs",
+    "e2e:demo": "node scripts/e2e-demo.mjs",
     "check:production-env": "node scripts/check-production-env.mjs",
     "check:security-env": "node scripts/check-security-env.mjs",
     "check:operating-readiness": "node scripts/check-operating-readiness.mjs",
@@ -69,6 +70,7 @@
     "eslint-config-next": "^16.2.12",
     "husky": "9.1.6",
     "lint-staged": "^15.5.2",
+    "playwright": "^1.62.1",
     "postcss": "^8.5.18",
     "prettier": "3.3.3",
     "prisma": "^5.22.0",
@@ -92,7 +94,7 @@
     },
     "eslint": {
       "minimatch": {
-        "brace-expansion": "1.1.14"
+        "brace-expansion": "1.1.18"
       }
     }
   }

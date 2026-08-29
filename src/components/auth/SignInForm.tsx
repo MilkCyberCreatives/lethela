@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,9 +32,8 @@ export default function SignInForm() {
       if (!result?.ok) {
         throw new Error("We could not sign you in. Check your details or try again later.");
       }
-      const profileResponse = await fetch("/api/me", { cache: "no-store" });
-      const profile = await profileResponse.json().catch(() => ({}));
-      const role = (profile?.user?.role || "CUSTOMER") as AppRole;
+      const session = await getSession();
+      const role = (session?.user?.role || "CUSTOMER") as AppRole;
       router.replace(safePostLoginPath(role, requestedPath));
       router.refresh();
     } catch (signInError) {

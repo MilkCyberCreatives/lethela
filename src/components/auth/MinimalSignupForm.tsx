@@ -15,6 +15,7 @@ import {
   registrationPasswordLength,
 } from "@/lib/registration-policy";
 import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
+import { safePostLoginPath } from "@/lib/auth-roles";
 
 type AccountType = "customer" | "vendor" | "rider";
 
@@ -30,7 +31,7 @@ const ACCOUNT_CONFIG: Record<
 > = {
   customer: {
     endpoint: "/api/auth/register",
-    dashboard: "/profile?welcome=1",
+    dashboard: "/",
     label: "Create account",
     loadingLabel: "Creating account...",
     signInHref: "/signin",
@@ -119,7 +120,13 @@ export default function MinimalSignupForm({ accountType }: { accountType: Accoun
         throw new Error("Your account was created. Sign in to continue your setup.");
       }
 
-      router.replace(data.redirectTo || config.dashboard);
+      const params = new URLSearchParams(window.location.search);
+      const requestedPath = params.get("callbackUrl") || params.get("next");
+      const destination =
+        accountType === "customer"
+          ? safePostLoginPath("CUSTOMER", requestedPath || data.redirectTo || config.dashboard)
+          : data.redirectTo || config.dashboard;
+      router.replace(destination);
       router.refresh();
     } catch (submitError) {
       setError(
@@ -183,7 +190,7 @@ export default function MinimalSignupForm({ accountType }: { accountType: Accoun
               maxLength={REGISTRATION_PASSWORD_MAX_LENGTH}
               aria-describedby="signup-password-guidance"
               className="!pr-12"
-              placeholder="Use a long, unique password"
+              placeholder={`At least ${REGISTRATION_PASSWORD_MIN_LENGTH} characters`}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
