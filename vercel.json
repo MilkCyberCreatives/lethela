@@ -4,19 +4,5 @@
       "path": "/api/cron/onboarding-reminders",
       "schedule": "0 6 * * *"
     }
-  ],
-  "build": {
-    "env": {
-      "DEMO_CATALOG_MODE": "true",
-      "ALLOW_PRODUCTION_DEMO_CATALOG": "true",
-      "ALLOW_PUBLIC_DEMO_ORDER": "true",
-      "NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE": "public"
-    }
-  },
-  "env": {
-    "DEMO_CATALOG_MODE": "true",
-    "ALLOW_PRODUCTION_DEMO_CATALOG": "true",
-    "ALLOW_PUBLIC_DEMO_ORDER": "true",
-    "NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE": "public"
-  }
+  ]
 }
