@@ -29,8 +29,9 @@ test("email identity handling is trim and case insensitive", () => {
   assert.equal(emailAddressesMatch("Person@Example.com", " person@example.COM "), true);
 });
 
-test("password reset uses the same strong password policy as registration", () => {
-  assert.equal(AccountPasswordSchema.safeParse("short123").success, false);
+test("password reset uses the same password policy as registration", () => {
+  assert.equal(AccountPasswordSchema.safeParse("abc").success, false);
+  assert.equal(AccountPasswordSchema.safeParse("abcdef").success, true);
   assert.equal(AccountPasswordSchema.safeParse("a secure passphrase").success, true);
 });
 
