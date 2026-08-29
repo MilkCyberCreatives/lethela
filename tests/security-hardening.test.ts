@@ -30,8 +30,8 @@ test("email identity handling is trim and case insensitive", () => {
 });
 
 test("password reset uses the same password policy as registration", () => {
-  assert.equal(AccountPasswordSchema.safeParse("abcd").success, false);
-  assert.equal(AccountPasswordSchema.safeParse("abcde").success, true);
+  assert.equal(AccountPasswordSchema.safeParse("abcde").success, false);
+  assert.equal(AccountPasswordSchema.safeParse("abcdef").success, true);
   assert.equal(AccountPasswordSchema.safeParse("a secure passphrase").success, true);
 });
 
