@@ -1,4 +1,4 @@
-export const REGISTRATION_PASSWORD_MIN_LENGTH = 6;
+export const REGISTRATION_PASSWORD_MIN_LENGTH = 8;
 export const REGISTRATION_PASSWORD_MAX_LENGTH = 72;
 
 export function registrationPasswordLength(password: string) {

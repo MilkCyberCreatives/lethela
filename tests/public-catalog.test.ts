@@ -59,9 +59,14 @@ test("isPublicCatalogProduct hides legacy demo product records", () => {
   );
 });
 
-test("liquor is separate from groceries and hides fallback samples", () => {
+test("liquor is separate from groceries and includes age-restricted demo listings", () => {
   assert.equal(TOWNSHIP_CATEGORIES.includes("Alcohol" as never), false);
   assert.equal(TOWNSHIP_CATEGORIES.includes("Liquor" as never), true);
   assert.deepEqual(getFallbackCategoryProducts("Alcohol"), []);
-  assert.deepEqual(getFallbackCategoryProducts("Liquor" as never), []);
+  const liquorProducts = getFallbackCategoryProducts("Liquor" as never);
+  assert.ok(liquorProducts.length > 0);
+  assert.equal(
+    liquorProducts.every((product) => product.isAlcohol),
+    true,
+  );
 });

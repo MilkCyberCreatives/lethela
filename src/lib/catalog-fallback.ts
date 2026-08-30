@@ -1106,8 +1106,6 @@ export function getFallbackVendorCards() {
 }
 
 export function getFallbackCategoryProducts(category: TownshipCategory) {
-  if (category === "Liquor") return [];
-
   return catalogProducts
     .filter((product) => {
       return (
