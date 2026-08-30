@@ -1,4 +1,24 @@
-import { inferProductCategory, type TownshipCategory } from "@/lib/categories";
+import { categoryToSlug, inferProductCategory, type TownshipCategory } from "@/lib/categories";
+
+// Demo product and vendor artwork is a generated per-category tile so every
+// listing image matches its township category (see scripts/generate-catalog-images.mjs).
+function categoryImageFor(product: {
+  name: string;
+  description?: string | null;
+  isAlcohol?: boolean | null;
+}) {
+  const category = inferProductCategory({
+    name: product.name,
+    description: product.description ?? "",
+    isAlcohol: Boolean(product.isAlcohol),
+  });
+  return `/catalog/${categoryToSlug(category)}.png`;
+}
+
+function vendorImageForSlug(slug: string, fallback = "/catalog/groceries.png") {
+  const first = catalogProducts.find((product) => product.vendorSlug === slug);
+  return first ? categoryImageFor(first) : fallback;
+}
 
 type VendorBase = {
   id: string;
@@ -1090,7 +1110,7 @@ export function getFallbackSearchSources() {
       id: product.id,
       name: product.name,
       description: product.description,
-      image: product.image,
+      image: categoryImageFor(product),
       priceCents: product.priceCents,
       isAlcohol: product.isAlcohol,
       vendor: {
@@ -1102,7 +1122,10 @@ export function getFallbackSearchSources() {
 }
 
 export function getFallbackVendorCards() {
-  return fallbackVendorCards;
+  return fallbackVendorCards.map((card) => ({
+    ...card,
+    cover: vendorImageForSlug(card.slug, card.cover),
+  }));
 }
 
 export function getFallbackCategoryProducts(category: TownshipCategory) {
@@ -1122,7 +1145,7 @@ export function getFallbackCategoryProducts(category: TownshipCategory) {
       name: product.name,
       description: product.description,
       priceCents: product.priceCents,
-      image: product.image,
+      image: categoryImageFor(product),
       isAlcohol: product.isAlcohol,
       vendor: {
         id: product.vendorId,
@@ -1138,7 +1161,7 @@ export function getFallbackProducts() {
     name: product.name,
     description: product.description,
     priceCents: product.priceCents,
-    image: product.image,
+    image: categoryImageFor(product),
     isAlcohol: product.isAlcohol,
     vendor: {
       id: product.vendorId,
@@ -1165,15 +1188,20 @@ export function getFallbackVendorProfile(slug: string): CatalogVendorRecord | nu
       name: product.name,
       description: product.description,
       priceCents: product.priceCents,
-      image: product.image,
+      image: categoryImageFor(product),
       isAlcohol: product.isAlcohol,
       inStock: product.inStock,
     }));
 
-  const sections = sectionsBySlug[slug] ?? [];
+  const vendorImage = vendorImageForSlug(slug, vendor.image);
+  const sections = (sectionsBySlug[slug] ?? []).map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({ ...item, image: vendorImage })),
+  }));
 
   return {
     ...vendor,
+    image: vendorImage,
     isActive: true,
     status: "ACTIVE",
     products,
