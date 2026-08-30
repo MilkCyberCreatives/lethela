@@ -1183,3 +1183,20 @@ export function getFallbackVendorProfile(slug: string): CatalogVendorRecord | nu
     items: sections.flatMap((section) => section.items),
   };
 }
+
+// Minimal vendor shape the checkout delivery-quote route needs. Used in
+// demo-catalogue mode where the storefront serves fallback vendors that have no
+// database row. Coordinates are the Klipfontein View pilot-zone centre.
+export function getFallbackDeliveryVendor(vendorId: string) {
+  const vendor = vendorIndex.find((entry) => entry.id === vendorId || entry.slug === vendorId);
+  if (!vendor) return null;
+  return {
+    id: vendor.id,
+    deliveryFee: vendor.deliveryFee,
+    latitude: -25.9581,
+    longitude: 28.1452,
+    address: vendor.address,
+    suburb: vendor.suburb,
+    city: vendor.city,
+  };
+}
