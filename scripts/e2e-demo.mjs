@@ -235,7 +235,8 @@ await scenario("every township category page shows approved listings", async (pa
       await page.waitForLoadState("load");
     }
     const body = await page.locator("body").innerText();
-    if (/No approved (live listings|licensed liquor vendors)/i.test(body)) {
+    const addButtons = await page.getByRole("button", { name: "Add" }).count();
+    if (/No approved (live listings|licensed liquor vendors)/i.test(body) || addButtons === 0) {
       emptyCategories.push(slug);
     }
   }

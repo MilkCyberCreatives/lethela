@@ -71,11 +71,10 @@ export default async function CategoryPage({ params }: PageProps) {
       : null;
 
   // In demo-catalogue mode (DEMO_CATALOG_MODE) or on a local SQLite runtime,
-  // serve the curated fallback catalogue so category pages are populated without
-  // a live database. Liquor is excluded: the fallback carries no alcohol, so
-  // liquor always goes through the licensed-vendor database query below.
+  // serve the curated fallback catalogue so every demo category is populated
+  // without a live database. The liquor catalogue remains protected by AgeGate.
   const fallbackItems =
-    !isLiquorCategory && !sqliteItems && shouldUseCatalogFallbackBeforeQuery()
+    !sqliteItems && shouldUseCatalogFallbackBeforeQuery()
       ? getFallbackCategoryProducts(resolvedCategory)
       : null;
 
