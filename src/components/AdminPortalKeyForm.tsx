@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ export default function AdminPortalKeyForm() {
   const [adminKey, setAdminKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function submit() {
     const normalized = adminKey.trim();
@@ -18,6 +20,7 @@ export default function AdminPortalKeyForm() {
 
     setSubmitting(true);
     setError(null);
+    setNotice(null);
     const response = await fetch("/api/admin/access", {
       method: "POST",
       headers: {
@@ -33,7 +36,21 @@ export default function AdminPortalKeyForm() {
       return;
     }
 
+    // First-time bootstrap promotes this account to owner and rotates its
+    // session, which signs the current token out. Sending the user straight to
+    // /admin would just bounce them back here, so ask them to re-authenticate
+    // once; the admin-access cookie that was just set stays valid afterwards.
+    if (json.promoted) {
+      setAdminKey("");
+      setNotice(
+        json.message ||
+          "Owner access enabled. Sign out and sign back in once to refresh your owner session, then open the admin dashboard.",
+      );
+      return;
+    }
+
     router.push("/admin");
+    router.refresh();
   }
 
   return (
@@ -64,6 +81,19 @@ export default function AdminPortalKeyForm() {
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
+          </div>
+        ) : null}
+        {notice ? (
+          <div className="grid gap-2 rounded-lg border border-emerald-300/30 bg-emerald-300/10 px-3 py-2 text-sm text-emerald-50">
+            <span>{notice}</span>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+              onClick={() => signOut({ callbackUrl: "/signin?callbackUrl=/admin" })}
+            >
+              Sign out and sign back in
+            </Button>
           </div>
         ) : null}
       </div>

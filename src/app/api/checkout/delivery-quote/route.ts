@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { quoteDelivery } from "@/lib/pricing";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
+import { getFallbackDeliveryVendor } from "@/lib/catalog-fallback";
 
 const QuerySchema = z
   .object({
@@ -49,22 +51,32 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const vendor = await prisma.vendor.findFirst({
-    where: {
-      id: parsed.data.vendorId,
-      isActive: true,
-      status: { in: ["APPROVED", "ACTIVE"] },
-    },
-    select: {
-      id: true,
-      deliveryFee: true,
-      latitude: true,
-      longitude: true,
-      address: true,
-      suburb: true,
-      city: true,
-    },
-  });
+  // In demo-catalogue mode the storefront serves fallback vendors that have no
+  // database row, so quote from the curated fallback vendor instead of 404ing.
+  let vendor = shouldPreferCatalogFallback()
+    ? null
+    : await prisma.vendor
+        .findFirst({
+          where: {
+            id: parsed.data.vendorId,
+            isActive: true,
+            status: { in: ["APPROVED", "ACTIVE"] },
+          },
+          select: {
+            id: true,
+            deliveryFee: true,
+            latitude: true,
+            longitude: true,
+            address: true,
+            suburb: true,
+            city: true,
+          },
+        })
+        .catch(() => null);
+
+  if (!vendor && shouldPreferCatalogFallback()) {
+    vendor = getFallbackDeliveryVendor(parsed.data.vendorId);
+  }
 
   if (!vendor) {
     return NextResponse.json({ ok: false, error: "Vendor is unavailable." }, { status: 404 });

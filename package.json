@@ -13,6 +13,7 @@
     "test": "node --import tsx --test tests/**/*.test.ts",
     "smoke": "node scripts/smoke-site.mjs",
     "e2e:demo": "node scripts/e2e-demo.mjs",
+    "assets:catalog": "node scripts/generate-catalog-images.mjs",
     "check:production-env": "node scripts/check-production-env.mjs",
     "check:security-env": "node scripts/check-security-env.mjs",
     "check:operating-readiness": "node scripts/check-operating-readiness.mjs",
@@ -86,7 +87,8 @@
     ]
   },
   "overrides": {
-    "fast-uri": "4.1.2",
+    "browserslist": "4.28.7",
+    "fast-uri": "4.1.4",
     "next": {
       "postcss": "8.5.23",
       "sharp": "0.35.3"

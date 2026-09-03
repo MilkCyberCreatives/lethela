@@ -1,4 +1,57 @@
-import { inferProductCategory, type TownshipCategory } from "@/lib/categories";
+import { categoryToSlug, inferProductCategory, type TownshipCategory } from "@/lib/categories";
+
+// Demo product and vendor artwork is a generated per-category tile so every
+// listing image matches its township category (see scripts/generate-catalog-images.mjs).
+function categoryImageFor(product: {
+  name: string;
+  description?: string | null;
+  isAlcohol?: boolean | null;
+}) {
+  const category = inferProductCategory({
+    name: product.name,
+    description: product.description ?? "",
+    isAlcohol: Boolean(product.isAlcohol),
+  });
+  return `/catalog/${categoryToSlug(category)}.png`;
+}
+
+function vendorImageForSlug(slug: string, fallback = "/catalog/groceries.png") {
+  const vendor = vendorIndex.find((entry) => entry.slug === slug);
+  const cuisine = vendor?.cuisine.join(" ").toLowerCase() || "";
+  const categorySlug =
+    cuisine.includes("liquor") ||
+    cuisine.includes("alcohol") ||
+    cuisine.includes("beer") ||
+    cuisine.includes("cider")
+      ? "liquor"
+      : cuisine.includes("grocer") || cuisine.includes("essential") || cuisine.includes("spaza")
+        ? "groceries"
+        : cuisine.includes("breakfast") || cuisine.includes("vetkoek")
+          ? "breakfast"
+          : cuisine.includes("wings")
+            ? "wings"
+            : cuisine.includes("braai") || cuisine.includes("chisa") || cuisine.includes("wors")
+              ? "braai"
+              : cuisine.includes("pizza")
+                ? "pizza"
+                : cuisine.includes("chicken")
+                  ? "chicken"
+                  : cuisine.includes("kota")
+                    ? "kota"
+                    : cuisine.includes("chips")
+                      ? "chips"
+                      : cuisine.includes("snack")
+                        ? "snacks"
+                        : cuisine.includes("drink")
+                          ? "drinks"
+                          : cuisine.includes("burger")
+                            ? "burger"
+                            : cuisine.includes("mogodu")
+                              ? "mogodu"
+                              : null;
+
+  return categorySlug ? `/catalog/${categorySlug}.png` : fallback;
+}
 
 type VendorBase = {
   id: string;
@@ -1090,7 +1143,7 @@ export function getFallbackSearchSources() {
       id: product.id,
       name: product.name,
       description: product.description,
-      image: product.image,
+      image: categoryImageFor(product),
       priceCents: product.priceCents,
       isAlcohol: product.isAlcohol,
       vendor: {
@@ -1102,7 +1155,10 @@ export function getFallbackSearchSources() {
 }
 
 export function getFallbackVendorCards() {
-  return fallbackVendorCards;
+  return fallbackVendorCards.map((card) => ({
+    ...card,
+    cover: vendorImageForSlug(card.slug, card.cover),
+  }));
 }
 
 export function getFallbackCategoryProducts(category: TownshipCategory) {
@@ -1122,7 +1178,7 @@ export function getFallbackCategoryProducts(category: TownshipCategory) {
       name: product.name,
       description: product.description,
       priceCents: product.priceCents,
-      image: product.image,
+      image: categoryImageFor(product),
       isAlcohol: product.isAlcohol,
       vendor: {
         id: product.vendorId,
@@ -1138,7 +1194,7 @@ export function getFallbackProducts() {
     name: product.name,
     description: product.description,
     priceCents: product.priceCents,
-    image: product.image,
+    image: categoryImageFor(product),
     isAlcohol: product.isAlcohol,
     vendor: {
       id: product.vendorId,
@@ -1165,15 +1221,20 @@ export function getFallbackVendorProfile(slug: string): CatalogVendorRecord | nu
       name: product.name,
       description: product.description,
       priceCents: product.priceCents,
-      image: product.image,
+      image: categoryImageFor(product),
       isAlcohol: product.isAlcohol,
       inStock: product.inStock,
     }));
 
-  const sections = sectionsBySlug[slug] ?? [];
+  const vendorImage = vendorImageForSlug(slug, vendor.image);
+  const sections = (sectionsBySlug[slug] ?? []).map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({ ...item, image: vendorImage })),
+  }));
 
   return {
     ...vendor,
+    image: vendorImage,
     isActive: true,
     status: "ACTIVE",
     products,
@@ -1181,5 +1242,22 @@ export function getFallbackVendorProfile(slug: string): CatalogVendorRecord | nu
     hours: fallbackHours,
     sections,
     items: sections.flatMap((section) => section.items),
+  };
+}
+
+// Minimal vendor shape the checkout delivery-quote route needs. Used in
+// demo-catalogue mode where the storefront serves fallback vendors that have no
+// database row. Coordinates are the Klipfontein View pilot-zone centre.
+export function getFallbackDeliveryVendor(vendorId: string) {
+  const vendor = vendorIndex.find((entry) => entry.id === vendorId || entry.slug === vendorId);
+  if (!vendor) return null;
+  return {
+    id: vendor.id,
+    deliveryFee: vendor.deliveryFee,
+    latitude: -25.9581,
+    longitude: 28.1452,
+    address: vendor.address,
+    suburb: vendor.suburb,
+    city: vendor.city,
   };
 }
