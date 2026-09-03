@@ -17,7 +17,7 @@ const verificationMessages: Record<Exclude<VerificationState, "">, string> = {
     "That verification link is invalid or expired. Enter your email below and request a new one.",
 };
 
-export default function SignInForm() {
+export default function SignInForm({ googleEnabled = false }: { googleEnabled?: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,6 +91,28 @@ export default function SignInForm() {
 
   return (
     <div>
+      {googleEnabled ? (
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 w-full border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+            onClick={() =>
+              void signIn("google", {
+                callbackUrl: safePostLoginPath("CUSTOMER", requestedPath),
+              })
+            }
+          >
+            <GoogleMark />
+            Continue with Google
+          </Button>
+          <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.16em] text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" />
+            or use email
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+        </>
+      ) : null}
       {verification ? (
         <div
           role="status"
@@ -172,5 +194,28 @@ export default function SignInForm() {
         </Link>
       </div>
     </div>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="mr-2 h-5 w-5">
+      <path
+        fill="#4285F4"
+        d="M21.6 12.23c0-.72-.06-1.25-.2-1.8H12v3.48h5.52a4.75 4.75 0 0 1-2.05 3.03l-.02.12 2.98 2.31.2.02c1.83-1.7 2.97-4.18 2.97-7.16Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.69 0 4.94-.88 6.59-2.61l-3.12-2.45c-.84.57-1.97.97-3.47.97a6.03 6.03 0 0 1-5.7-4.17l-.11.01-3.1 2.4-.04.1A9.95 9.95 0 0 0 12 22Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M6.3 13.74A6.2 6.2 0 0 1 5.97 12c0-.61.11-1.2.32-1.74v-.12L3.15 7.7l-.1.05A10 10 0 0 0 2 12c0 1.53.35 2.98 1.05 4.25l3.25-2.51Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 6.09c1.87 0 3.13.81 3.85 1.48l2.8-2.74A9.42 9.42 0 0 0 12 2a9.95 9.95 0 0 0-8.95 5.75l3.24 2.51A6.05 6.05 0 0 1 12 6.09Z"
+      />
+    </svg>
   );
 }

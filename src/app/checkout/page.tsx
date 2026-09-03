@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { persistPreferredLocation, readPreferredLocation } from "@/lib/location-preference";
 import { pushEcommerceEvent, trackWhatsAppClick } from "@/lib/visitor";
+import { Navigation } from "lucide-react";
 
 const isOzowSandbox = process.env.NEXT_PUBLIC_OZOW_IS_TEST === "true";
 
@@ -59,6 +60,7 @@ export default function CheckoutPage() {
     extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   });
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   useEffect(() => {
     const vendorId = items[0]?.vendorId;
@@ -297,6 +299,45 @@ export default function CheckoutPage() {
     setRiderTipCents(Number.isFinite(number) ? Math.max(0, Math.round(number * 100)) : 0);
   }
 
+  async function handleUseCurrentLocation() {
+    if (!("geolocation" in navigator)) {
+      setError("Location is unavailable on this device. Enter your delivery area instead.");
+      return;
+    }
+    setLocationLoading(true);
+    setError(null);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000,
+        }),
+      );
+      const point = { lat: position.coords.latitude, lng: position.coords.longitude };
+      const response = await fetch(`/api/maps/reverse-geocode?lat=${point.lat}&lng=${point.lng}`, {
+        cache: "no-store",
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json?.suburb) throw new Error("Area not found");
+      const label = [json.suburb, json.city].filter(Boolean).join(", ");
+      setDestinationPoint(point);
+      setDestinationSuburb(label);
+      persistPreferredLocation({
+        label,
+        suburb: String(json.suburb),
+        city: String(json.city || ""),
+        ...point,
+        source: "device",
+        accuracyMeters: position.coords.accuracy,
+      });
+    } catch {
+      setError("We could not use your current location. Allow location access or enter your area.");
+    } finally {
+      setLocationLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-lethela-secondary text-white">
       <MainHeader />
@@ -376,69 +417,6 @@ export default function CheckoutPage() {
                     autoComplete="tel"
                   />
                 </div>
-                <div>
-                  <label
-                    htmlFor="checkout-whatsapp"
-                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
-                  >
-                    WhatsApp number
-                  </label>
-                  <input
-                    id="checkout-whatsapp"
-                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-                    value={whatsappNumber}
-                    onChange={(event) => setWhatsappNumber(event.target.value)}
-                    placeholder="Same as phone if applicable"
-                    autoComplete="tel"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="checkout-stand-number"
-                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
-                  >
-                    Stand / house number
-                  </label>
-                  <input
-                    id="checkout-stand-number"
-                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-                    value={standNumber}
-                    onChange={(event) => setStandNumber(event.target.value)}
-                    placeholder="Stand 1234"
-                    autoComplete="address-line1"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="checkout-street-section"
-                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
-                  >
-                    Street / extension / section
-                  </label>
-                  <input
-                    id="checkout-street-section"
-                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-                    value={streetSection}
-                    onChange={(event) => setStreetSection(event.target.value)}
-                    placeholder="Extension 3"
-                    autoComplete="address-line2"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="checkout-landmark"
-                    className="mb-1 block text-xs uppercase tracking-[0.1em] text-white/70"
-                  >
-                    Landmark
-                  </label>
-                  <input
-                    id="checkout-landmark"
-                    className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-                    value={landmark}
-                    onChange={(event) => setLandmark(event.target.value)}
-                    placeholder="Opposite Park X3"
-                  />
-                </div>
               </div>
 
               <div className="rounded-lg border border-white/15 p-3">
@@ -448,32 +426,77 @@ export default function CheckoutPage() {
                 >
                   Delivery suburb / area
                 </label>
-                <input
-                  id="checkout-area"
-                  className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-                  value={destinationSuburb}
-                  onChange={(event) => {
-                    setDestinationSuburb(event.target.value);
-                    setDestinationPoint(null);
-                  }}
-                  placeholder="Klipfontein View, Midrand"
-                  autoComplete="address-level2"
-                />
-                <label
-                  htmlFor="checkout-delivery-notes"
-                  className="mb-1 mt-3 block text-xs uppercase tracking-[0.1em] text-white/70"
-                >
-                  Delivery notes
-                </label>
-                <textarea
-                  id="checkout-delivery-notes"
-                  className="w-full rounded bg-white px-3 py-2 text-sm text-black"
-                  value={deliveryNotes}
-                  onChange={(event) => setDeliveryNotes(event.target.value)}
-                  placeholder="Blue gate, opposite Park X3, call on arrival."
-                  rows={3}
-                />
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <input
+                    id="checkout-area"
+                    className="min-h-11 w-full rounded bg-white px-3 py-2 text-sm text-black"
+                    value={destinationSuburb}
+                    onChange={(event) => {
+                      setDestinationSuburb(event.target.value);
+                      setDestinationPoint(null);
+                    }}
+                    placeholder="Klipfontein View, Midrand"
+                    autoComplete="address-level2"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 border-white/25 text-white"
+                    onClick={() => void handleUseCurrentLocation()}
+                    disabled={locationLoading}
+                  >
+                    <Navigation className="mr-2 h-4 w-4" />
+                    {locationLoading ? "Locating..." : "Use my location"}
+                  </Button>
+                </div>
               </div>
+
+              <details className="rounded-lg border border-white/15 p-3">
+                <summary className="cursor-pointer font-semibold text-white/80">
+                  Add delivery details (optional)
+                </summary>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <input
+                    aria-label="WhatsApp number"
+                    className="min-h-11 rounded bg-white px-3 py-2 text-sm text-black"
+                    value={whatsappNumber}
+                    onChange={(event) => setWhatsappNumber(event.target.value)}
+                    placeholder="WhatsApp number (if different)"
+                    autoComplete="tel"
+                  />
+                  <input
+                    aria-label="Stand or house number"
+                    className="min-h-11 rounded bg-white px-3 py-2 text-sm text-black"
+                    value={standNumber}
+                    onChange={(event) => setStandNumber(event.target.value)}
+                    placeholder="Stand / house number"
+                    autoComplete="address-line1"
+                  />
+                  <input
+                    aria-label="Street, extension or section"
+                    className="min-h-11 rounded bg-white px-3 py-2 text-sm text-black"
+                    value={streetSection}
+                    onChange={(event) => setStreetSection(event.target.value)}
+                    placeholder="Street / extension / section"
+                    autoComplete="address-line2"
+                  />
+                  <input
+                    aria-label="Nearby landmark"
+                    className="min-h-11 rounded bg-white px-3 py-2 text-sm text-black"
+                    value={landmark}
+                    onChange={(event) => setLandmark(event.target.value)}
+                    placeholder="Nearby landmark"
+                  />
+                  <textarea
+                    aria-label="Delivery notes"
+                    className="min-h-20 rounded bg-white px-3 py-2 text-sm text-black md:col-span-2"
+                    value={deliveryNotes}
+                    onChange={(event) => setDeliveryNotes(event.target.value)}
+                    placeholder="Gate colour, directions or arrival instructions"
+                    rows={2}
+                  />
+                </div>
+              </details>
 
               <div className="flex justify-between">
                 <span>Subtotal</span>

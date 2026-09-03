@@ -33,7 +33,7 @@ const rawSiteUrl =
 export const SITE_URL = normalizeSiteUrl(rawSiteUrl);
 export const SITE_NAME = "Lethela";
 export const SITE_DESCRIPTION =
-  "Lethela is an AI-supported South African food and grocery delivery platform for township and urban communities.";
+  "Order KoTa, chicken, groceries and township essentials from trusted local businesses with fast community delivery on Lethela.";
 
 export function absoluteUrl(path = "/") {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;

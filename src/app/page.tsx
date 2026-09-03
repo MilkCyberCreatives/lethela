@@ -1,4 +1,4 @@
-import { BellRing, CheckCircle2, MapPin, ShoppingBag, Store, Truck } from "lucide-react";
+import { BellRing, CheckCircle2, Megaphone, MapPin, ShoppingBag, Store, Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import CategoryCarousel from "@/components/CategoryCarousel";
@@ -49,7 +49,29 @@ const homeWebPageSchema = {
   about: ["Township delivery", "Food delivery", "Grocery delivery", "Spaza shop delivery"],
 };
 
-const foodCategories = new Set(["Kota", "Chicken", "Burger", "Braai", "Breakfast", "Wings"]);
+const homeFaqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    [
+      "What can I order on Lethela?",
+      "KoTa, chicken, groceries and other products from approved local businesses.",
+    ],
+    [
+      "How does delivery work?",
+      "Share your location, choose a nearby vendor, checkout and track a community rider.",
+    ],
+    [
+      "Can my business sell on Lethela?",
+      "Yes. Apply as a vendor, add your products and submit your profile for approval.",
+    ],
+  ].map(([name, text]) => ({
+    "@type": "Question",
+    name,
+    acceptedAnswer: { "@type": "Answer", text },
+  })),
+};
+
 const groceryCategories = new Set(["Groceries", "Drinks", "Snacks"]);
 
 export default async function HomePage() {
@@ -62,10 +84,11 @@ export default async function HomePage() {
   const groceryProducts = products
     .filter((product) => groceryCategories.has(String(product.category)))
     .slice(0, 8);
-  const popularFood = products
-    .filter((product) => foodCategories.has(String(product.category)))
-    .slice(0, 8);
   const recentProducts = products.slice(0, 8);
+  const kotaProducts = products.filter((product) => product.category === "Kota").slice(0, 8);
+  const chickenProducts = products
+    .filter((product) => product.category === "Chicken" || product.category === "Wings")
+    .slice(0, 8);
   const hasMarketplaceItems = vendors.length > 0 && products.length > 0;
   const launchStatus = getMarketplaceLaunchStatus({
     approvedVendorCount: vendors.length,
@@ -75,6 +98,7 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
       <StructuredData data={homeWebPageSchema} />
+      <StructuredData data={homeFaqSchema} />
       <MainHeader />
 
       <Hero initialArea={address} launchStatus={launchStatus} />
@@ -86,19 +110,31 @@ export default async function HomePage() {
       {hasMarketplaceItems ? (
         <>
           <ProductRail
+            title="KoTa favourites"
+            subtitle="Loaded, local and made the way the kasi loves it."
+            products={kotaProducts}
+            href="/categories/kota"
+          />
+          <ProductRail
+            title="Chicken that brings everyone together"
+            subtitle="Grilled, crispy, saucy and ready for sharing."
+            products={chickenProducts}
+            href="/categories/chicken"
+          />
+          <ProductRail
             title="Groceries near you"
             subtitle="Bread, milk, eggs, snacks and daily basics."
             products={groceryProducts}
           />
-          <ProductRail title="Popular food" products={popularFood} />
           <VendorRail title="Vendors near you" vendors={vendors} />
-          <ProductRail title="Recently added products" products={recentProducts} />
+          <ProductRail title="More local favourites" products={recentProducts} />
         </>
       ) : (
         <MarketplaceEmptyState area={address || "Klipfontein View"} />
       )}
 
       <HowItWorksStrip />
+      <PromoteYourBusiness />
       <Footer />
     </main>
   );
@@ -108,16 +144,18 @@ function ProductRail({
   title,
   subtitle,
   products,
+  href = "/search",
 }: {
   title: string;
   subtitle?: string;
   products: ProductLite[];
+  href?: string;
 }) {
   if (products.length === 0) return null;
 
   return (
     <section className="container py-8">
-      <SectionHeader title={title} href="/search" />
+      <SectionHeader title={title} href={href} />
       {subtitle ? <p className="-mt-3 mb-5 text-sm text-white/62">{subtitle}</p> : null}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((product) => (
@@ -206,6 +244,12 @@ function HowItWorksStrip() {
 
   return (
     <section className="container pb-12 pt-8">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <h2 className="text-2xl font-semibold">How Lethela works</h2>
+        <Link href="/how-it-works" className="text-sm font-semibold text-white/70 hover:text-white">
+          See every step
+        </Link>
+      </div>
       <div className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-4 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map(([label, Icon]) => (
           <div key={label} className="flex items-center gap-3">
@@ -219,6 +263,41 @@ function HowItWorksStrip() {
             <span className="text-sm font-medium text-white/78">{label}</span>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function PromoteYourBusiness() {
+  return (
+    <section className="container pb-14">
+      <div className="relative overflow-hidden rounded-3xl border border-lethela-primary/35 bg-gradient-to-br from-lethela-primary/20 via-white/[0.05] to-white/[0.02] p-6 md:p-9">
+        <div className="relative z-10 max-w-2xl">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
+            <Megaphone className="h-3.5 w-3.5" /> Sponsored space
+          </span>
+          <h2 className="mt-4 text-2xl font-bold md:text-4xl">
+            Put your business in front of local buyers.
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-white/68 md:text-base">
+            Rent this homepage space for a launch, special, event or neighbourhood campaign. Local
+            businesses and national brands are welcome.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/contact?subject=promote"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-slate-950"
+            >
+              Book this space
+            </Link>
+            <Link
+              href="/vendors/register"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-5 py-3 text-sm font-semibold text-white"
+            >
+              List your business
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -115,43 +115,27 @@ export default function MainHeader() {
           />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
-          <Link href="/" className="hover:underline hover:text-lethela-primary font-medium">
-            Home
+        <nav className="hidden items-center gap-5 md:flex">
+          <Link href="/categories" className="nav-link-soft">
+            Browse
           </Link>
-          <Link
-            href="/vendors/register"
-            className="hover:underline hover:text-lethela-primary font-medium"
-          >
-            Become a Vendor
+          <Link href="/how-it-works" className="nav-link-soft">
+            How it works
           </Link>
-          <Link href="/rider" className="hover:underline hover:text-lethela-primary font-medium">
-            Rider
+          <Link href="/vendors/register" className="nav-link-soft">
+            Sell on Lethela
           </Link>
-          <Link
-            href="/categories/groceries"
-            className="hover:underline hover:text-lethela-primary font-medium"
-          >
-            Groceries
-          </Link>
-          <Link
-            href="/categories/liquor"
-            className="hover:underline hover:text-lethela-primary font-medium"
-          >
-            Liquor <span className="text-[10px]">18+</span>
-          </Link>
-          <Link
-            href="/restaurants"
-            className="hover:underline hover:text-lethela-primary font-medium"
-          >
-            Restaurants
-          </Link>
-          <Link href="/about" className="hover:underline hover:text-lethela-primary font-medium">
-            About
+          <Link href="/rider" className="nav-link-soft">
+            Deliver
           </Link>
           {!hideCart ? <CartButton /> : null}
           {status === "authenticated" && user ? (
             <div className="flex items-center gap-3">
+              {["OWNER", "ADMIN"].includes(user.role) ? (
+                <Link href="/admin" className="font-semibold text-lethela-primary">
+                  Admin
+                </Link>
+              ) : null}
               <Link
                 href="/profile"
                 className="flex items-center gap-2 rounded-full border border-black/10 px-3 py-2 hover:border-lethela-primary"
@@ -207,26 +191,25 @@ export default function MainHeader() {
                 <Link href="/" className="hover:underline">
                   Home
                 </Link>
+                <Link href="/categories" className="hover:underline">
+                  Browse everything
+                </Link>
+                <Link href="/how-it-works" className="hover:underline">
+                  How it works
+                </Link>
                 <Link href="/vendors/register" className="hover:underline">
-                  Become a Vendor
+                  Sell on Lethela
                 </Link>
                 <Link href="/rider" className="hover:underline">
-                  Rider
-                </Link>
-                <Link href="/categories/groceries" className="hover:underline">
-                  Groceries
-                </Link>
-                <Link href="/categories/liquor" className="hover:underline">
-                  Liquor 18+
-                </Link>
-                <Link href="/restaurants" className="hover:underline">
-                  Restaurants
-                </Link>
-                <Link href="/about" className="hover:underline">
-                  About
+                  Deliver with us
                 </Link>
                 {status === "authenticated" && user ? (
                   <>
+                    {["OWNER", "ADMIN"].includes(user.role) ? (
+                      <Link href="/admin" className="hover:underline">
+                        Admin dashboard
+                      </Link>
+                    ) : null}
                     <Link href="/profile" className="hover:underline">
                       Profile
                     </Link>

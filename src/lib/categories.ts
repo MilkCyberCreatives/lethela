@@ -12,6 +12,19 @@ export const TOWNSHIP_CATEGORIES = [
   "Pizza",
   "Chicken",
   "Breakfast",
+  "Fresh Produce",
+  "Bakery",
+  "Fashion",
+  "Beauty & Hair",
+  "Phones & Electronics",
+  "Home & Cleaning",
+  "Hardware",
+  "Baby",
+  "Health & Wellness",
+  "School & Stationery",
+  "Auto & Car Care",
+  "Local Services",
+  "Pets",
 ] as const;
 
 export type TownshipCategory = (typeof TOWNSHIP_CATEGORIES)[number];
@@ -104,6 +117,76 @@ export const CATEGORY_CONTENT: Record<
       "Start the day with vetkoek, breakfast plates, coffee and quick morning meals from local vendors.",
     guidance: "Morning availability depends on each vendor's opening hours and delivery coverage.",
   },
+  "Fresh Produce": {
+    headline: "Fresh fruit and vegetables nearby",
+    intro: "Shop affordable fruit, vegetables, herbs and market-fresh produce from local sellers.",
+    guidance: "Seasonal stock and pricing can change daily.",
+  },
+  Bakery: {
+    headline: "Fresh bread, cakes and baked favourites",
+    intro: "Find bread, scones, biscuits, cakes, amagwinya and baked treats from local kitchens.",
+    guidance: "Pre-order larger cakes and event quantities where available.",
+  },
+  Fashion: {
+    headline: "Local fashion and everyday clothing",
+    intro: "Browse clothing, footwear, accessories and locally made township fashion.",
+    guidance: "Check size, colour and collection details with the seller before checkout.",
+  },
+  "Beauty & Hair": {
+    headline: "Beauty, hair and personal care",
+    intro:
+      "Shop hair products, wigs, cosmetics, skincare and grooming essentials from nearby sellers.",
+    guidance: "Product colours and sizes should be confirmed in the listing details.",
+  },
+  "Phones & Electronics": {
+    headline: "Phones, accessories and electronics",
+    intro:
+      "Find chargers, earphones, cables, airtime devices, small electronics and phone accessories.",
+    guidance: "Confirm compatibility and warranty information before ordering.",
+  },
+  "Home & Cleaning": {
+    headline: "Home, laundry and cleaning supplies",
+    intro:
+      "Order detergents, refuse bags, kitchen basics, storage items and everyday home supplies.",
+    guidance: "Choose approved substitutions if a specific size is unavailable.",
+  },
+  Hardware: {
+    headline: "Hardware and building essentials",
+    intro:
+      "Browse tools, paint, plumbing, electrical and small building supplies from local hardware sellers.",
+    guidance: "Heavy or oversized goods may need a manual delivery quote.",
+  },
+  Baby: {
+    headline: "Baby care and family essentials",
+    intro: "Shop nappies, wipes, formula, toiletries and everyday baby supplies.",
+    guidance: "Always confirm age, size and product variant before checkout.",
+  },
+  "Health & Wellness": {
+    headline: "Health and wellness essentials",
+    intro: "Browse non-prescription wellness, hygiene, fitness and personal-care products.",
+    guidance: "Lethela does not replace professional medical advice or prescription services.",
+  },
+  "School & Stationery": {
+    headline: "School and stationery supplies",
+    intro: "Find exercise books, pens, printing supplies, school basics and office stationery.",
+    guidance: "Bulk school packs may require advance confirmation.",
+  },
+  "Auto & Car Care": {
+    headline: "Car care and vehicle essentials",
+    intro: "Browse cleaning products, oils, accessories and small automotive essentials.",
+    guidance: "Confirm product compatibility with your vehicle before purchase.",
+  },
+  "Local Services": {
+    headline: "Trusted services in your community",
+    intro:
+      "Discover local cleaning, repairs, events, catering and other bookable community services.",
+    guidance: "Service timing, scope and final quotes are confirmed directly with the provider.",
+  },
+  Pets: {
+    headline: "Pet food and care",
+    intro: "Shop pet food, treats, hygiene products and everyday pet supplies nearby.",
+    guidance: "Check animal type, size and dietary needs before ordering.",
+  },
 };
 
 export function categoryToSlug(category: TownshipCategory | string) {
@@ -141,10 +224,21 @@ export function inferProductCategory(input: {
   if (/kota|spatlho|magwinya/.test(haystack)) return "Kota";
   if (/wing|drumstick/.test(haystack)) return "Wings";
   if (/breakfast|vetkoek|oats|cereal/.test(haystack)) return "Breakfast";
+  if (/fruit|vegetable|produce|spinach|tomato|potato|onion/.test(haystack)) return "Fresh Produce";
+  if (/cake|scone|biscuit|bakery|baked|magwinya/.test(haystack)) return "Bakery";
+  if (/wig|braid|beauty|makeup|cosmetic|skincare|hair/.test(haystack)) return "Beauty & Hair";
+  if (/phone|charger|earphone|cable|electronic|power bank/.test(haystack))
+    return "Phones & Electronics";
+  if (/clothing|fashion|shirt|dress|shoe|sneaker|jeans/.test(haystack)) return "Fashion";
+  if (/hardware|paint|plumbing|tool|cement|electrical/.test(haystack)) return "Hardware";
+  if (/nappy|diaper|formula|baby/.test(haystack)) return "Baby";
+  if (/stationery|exercise book|pen|pencil|school/.test(haystack)) return "School & Stationery";
+  if (/car care|motor oil|vehicle|automotive/.test(haystack)) return "Auto & Car Care";
+  if (/pet|dog food|cat food/.test(haystack)) return "Pets";
   if (/braai|nyama|wors|chops/.test(haystack)) return "Braai";
   if (/cold drink|cooldrink|juice|water|soda|drink/.test(haystack)) return "Drinks";
-  if (/snack|chips|crisps|biscuit|sweet|chocolate/.test(haystack)) return "Snacks";
   if (/chip|fries|atchar chips/.test(haystack)) return "Chips";
+  if (/snack|crisps|biscuit|sweet|chocolate/.test(haystack)) return "Snacks";
   if (/burger|beef burger|chicken burger/.test(haystack)) return "Burger";
   if (/mogodu|tripe/.test(haystack)) return "Mogodu";
   if (

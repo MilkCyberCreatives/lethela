@@ -25,9 +25,9 @@ export function getMarketplaceLaunchStatus({
     return {
       phase: "PRE_LAUNCH",
       eyebrow: "Launching shortly in Klipfontein View. Vendors and riders are joining now.",
-      headline: "Lethela — Siyashesha",
+      headline: "Township favourites, delivered fast.",
       description:
-        "Local stores, affordable township delivery and community riders — all in one place.",
+        "Order KoTa, chicken and everyday essentials from local stores, delivered by community riders.",
     };
   }
 
@@ -35,7 +35,7 @@ export function getMarketplaceLaunchStatus({
     return {
       phase: "PILOT",
       eyebrow: "Pilot now open in Klipfontein View.",
-      headline: "Lethela — Siyashesha",
+      headline: "Township favourites, delivered fast.",
       description:
         "Order from approved local vendors while we carefully grow the first delivery zone.",
     };
@@ -44,7 +44,7 @@ export function getMarketplaceLaunchStatus({
   return {
     phase: "PUBLIC",
     eyebrow: "Now delivering in Klipfontein View.",
-    headline: "Lethela — Siyashesha",
-    description: "Fast deliveries from approved local vendors near you.",
+    headline: "Township favourites, delivered fast.",
+    description: "KoTa, chicken and everyday essentials from approved local vendors near you.",
   };
 }

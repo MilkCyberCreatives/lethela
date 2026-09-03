@@ -8,7 +8,7 @@ import { normalizeAppRole, type AppRole } from "@/lib/auth-security";
 type AdminGuardResult =
   | {
       ok: true;
-      mode: "key" | "key-cookie" | "dev-bypass";
+      mode: "session" | "key" | "key-cookie" | "dev-bypass";
       role: AppRole;
       actor: string;
     }
@@ -44,7 +44,17 @@ export async function requireAdminRequest(
   }
 
   if (!adminKey) {
-    return { ok: false, status: 401, error: "Admin access is not configured." };
+    return { ok: false, status: 401, error: "Sign in with an authorised owner account." };
+  }
+
+  try {
+    const session = await auth();
+    const role = normalizeAppRole(session?.user?.role);
+    if (session?.user?.id && hasAdminPermission(role, permission)) {
+      return { ok: true, mode: "session", role, actor: `user:${session.user.id}` };
+    }
+  } catch {
+    // Continue to the legacy approval-key fallback below.
   }
 
   try {

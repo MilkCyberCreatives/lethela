@@ -71,7 +71,13 @@ function responseError(data: RegistrationResponse) {
   );
 }
 
-export default function MinimalSignupForm({ accountType }: { accountType: AccountType }) {
+export default function MinimalSignupForm({
+  accountType,
+  googleEnabled = false,
+}: {
+  accountType: AccountType;
+  googleEnabled?: boolean;
+}) {
   const router = useRouter();
   const config = ACCOUNT_CONFIG[accountType];
   const [email, setEmail] = useState("");
@@ -204,6 +210,26 @@ export default function MinimalSignupForm({ accountType }: { accountType: Accoun
 
   return (
     <div>
+      {accountType === "customer" && googleEnabled ? (
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            className="mb-4 h-12 w-full border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+            onClick={() => void signIn("google", { callbackUrl: "/" })}
+          >
+            <span aria-hidden className="mr-2 text-base font-bold text-[#4285F4]">
+              G
+            </span>
+            Sign up with Google
+          </Button>
+          <div className="mb-4 flex items-center gap-3 text-xs uppercase tracking-[0.16em] text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" />
+            or use email
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+        </>
+      ) : null}
       <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">
         <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
         Only 2 fields. Complete your profile inside the dashboard.

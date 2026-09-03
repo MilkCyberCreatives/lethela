@@ -9,9 +9,15 @@ export const metadata: Metadata = {
 };
 
 export default function SignInPage() {
+  const googleEnabled = Boolean(
+    process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim(),
+  );
   return (
-    <AuthShell title="Sign in to Lethela" supportingText="Use your account email and password.">
-      <SignInForm />
+    <AuthShell
+      title="Welcome back"
+      supportingText="One sign-in for shopping, selling, deliveries and owner access."
+    >
+      <SignInForm googleEnabled={googleEnabled} />
     </AuthShell>
   );
 }

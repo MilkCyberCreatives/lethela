@@ -14,15 +14,15 @@ import {
 import { categoryToSlug } from "@/lib/categories";
 
 const CATEGORIES = [
-  { label: "Groceries", category: "Groceries", icon: ShoppingBasket },
-  { label: "Liquor", category: "Liquor", icon: Martini, badge: "18+" },
   { label: "Kota", category: "Kota", icon: Utensils },
   { label: "Chicken", category: "Chicken", icon: Drumstick },
+  { label: "Groceries", category: "Groceries", icon: ShoppingBasket },
   { label: "Burgers", category: "Burger", icon: Sandwich },
   { label: "Braai", category: "Braai", icon: Flame },
   { label: "Breakfast", category: "Breakfast", icon: Coffee },
   { label: "Drinks", category: "Drinks", icon: Coffee },
   { label: "Snacks", category: "Snacks", icon: ShoppingBasket },
+  { label: "Liquor", category: "Liquor", icon: Martini, badge: "18+" },
 ];
 
 export default function CategoryCarousel() {
@@ -33,7 +33,7 @@ export default function CategoryCarousel() {
           <h2 className="text-2xl font-semibold">Featured categories</h2>
         </div>
         <Link
-          href="/search"
+          href="/categories"
           className="inline-flex items-center text-sm font-semibold text-white/75 transition hover:text-lethela-primary"
         >
           View all categories

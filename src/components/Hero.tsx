@@ -82,9 +82,9 @@ type HeroProps = {
 const fallbackLaunchStatus: MarketplaceLaunchStatus = {
   phase: "PRE_LAUNCH",
   eyebrow: "Launching shortly in Klipfontein View. Vendors and riders are joining now.",
-  headline: "Lethela — Siyashesha",
+  headline: "Township favourites, delivered fast.",
   description:
-    "Local stores, affordable township delivery and community riders — all in one place.",
+    "Order KoTa, chicken and everyday essentials from local stores, delivered by community riders.",
 };
 
 export default function Hero({
@@ -327,22 +327,22 @@ export default function Hero({
     <section className="relative overflow-hidden">
       <Image
         aria-hidden
-        src="/hero.jpg"
+        src="/hero-lethela-branded.jpg"
         alt=""
         fill
         priority
         fetchPriority="high"
         sizes="100vw"
         quality={72}
-        className="pointer-events-none object-cover object-center opacity-25"
+        className="pointer-events-none object-cover object-center opacity-70"
       />
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80"
+        className="absolute inset-0 bg-gradient-to-r from-[#080B27]/95 via-[#080B27]/70 to-black/25"
       />
 
       <div className="relative container py-12 md:py-20">
-        <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
+        <div className="flex max-w-3xl flex-col items-start text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary">
             {launchStatus.eyebrow}
           </p>
@@ -465,7 +465,7 @@ export default function Hero({
               </Button>
             </form>
 
-            <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-white/70">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
               <Button
                 variant="outline"
                 className="h-8 border-white/30 px-3 text-white hover:bg-white/10"

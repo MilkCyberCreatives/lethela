@@ -1,7 +1,6 @@
-import { categoryToSlug, inferProductCategory, type TownshipCategory } from "@/lib/categories";
+import { inferProductCategory, type TownshipCategory } from "@/lib/categories";
 
-// Demo product and vendor artwork is a generated per-category tile so every
-// listing image matches its township category (see scripts/generate-catalog-images.mjs).
+// Demo listings use real photographic assets so the catalogue feels like a live marketplace.
 function categoryImageFor(product: {
   name: string;
   description?: string | null;
@@ -12,7 +11,22 @@ function categoryImageFor(product: {
     description: product.description ?? "",
     isAlcohol: Boolean(product.isAlcohol),
   });
-  return `/catalog/${categoryToSlug(category)}.png`;
+  const images: Partial<Record<TownshipCategory, string>> = {
+    Kota: "/catalog/kota.png",
+    Chicken: "/catalog/chicken.png",
+    Wings: "/catalog/chicken.png",
+    Braai: "/catalog/chicken.png",
+    Burger: "/vendors/burgers.jpg",
+    Chips: "/vendors/burgers.jpg",
+    Breakfast: "/vendors/burgers.jpg",
+    Groceries: "/vendors/kasie-market.webp",
+    Drinks: "/vendors/kasie-market.webp",
+    Snacks: "/vendors/kasie-market.webp",
+    Liquor: "/vendors/kasie-market.webp",
+    Mogodu: "/vendors/curry.jpg",
+    Pizza: "/vendors/grill.jpg",
+  };
+  return images[category] || "/vendors/kasie-market.webp";
 }
 
 function vendorImageForSlug(slug: string, fallback = "/catalog/groceries.png") {
@@ -50,7 +64,22 @@ function vendorImageForSlug(slug: string, fallback = "/catalog/groceries.png") {
                               ? "mogodu"
                               : null;
 
-  return categorySlug ? `/catalog/${categorySlug}.png` : fallback;
+  const imageByCategory: Record<string, string> = {
+    kota: "/catalog/kota.png",
+    chicken: "/catalog/chicken.png",
+    wings: "/catalog/chicken.png",
+    braai: "/catalog/chicken.png",
+    burger: "/vendors/burgers.jpg",
+    chips: "/vendors/burgers.jpg",
+    breakfast: "/vendors/burgers.jpg",
+    groceries: "/vendors/kasie-market.webp",
+    drinks: "/vendors/kasie-market.webp",
+    snacks: "/vendors/kasie-market.webp",
+    liquor: "/vendors/kasie-market.webp",
+    mogodu: "/vendors/curry.jpg",
+    pizza: "/vendors/grill.jpg",
+  };
+  return categorySlug ? imageByCategory[categorySlug] || fallback : fallback;
 }
 
 type VendorBase = {
@@ -205,7 +234,7 @@ const vendorIndex: VendorBase[] = [
     deliveryFee: 1200,
     etaMins: 18,
     halaal: true,
-    image: "/vendors/vegan.jpg",
+    image: "/vendors/kasie-market.webp",
     phone: "+27 72 390 8919",
     address: "Klipfontein View, Midrand",
   },

@@ -19,6 +19,8 @@ const POPULAR_SOCIALS = [
 
 const EXPLORE_LINKS = [
   { href: "/search", label: "Search" },
+  { href: "/categories", label: "All categories" },
+  { href: "/how-it-works", label: "How it works" },
   { href: "/areas/klipfontein-view", label: "Klipfontein View" },
   { href: "/categories/groceries", label: "Groceries" },
   { href: "/categories/liquor", label: "Liquor 18+" },
@@ -34,6 +36,7 @@ const BUSINESS_LINKS = [
   { href: "/pricing", label: "Vendor & Rider Pricing" },
   { href: "/vendors/dashboard", label: "Vendor Dashboard" },
   { href: "/rider/dashboard", label: "Rider Dashboard" },
+  { href: "/contact?subject=promote", label: "Advertise on Lethela" },
 ] as const;
 
 const LEGAL_LINKS = [
@@ -75,6 +78,34 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
   return (
     <footer className="mt-auto border-t border-white/10 bg-lethela-secondary">
       <div className="container py-8 md:py-10">
+        <div className="mb-9 grid gap-5 rounded-3xl border border-white/10 bg-white/[0.045] p-6 md:grid-cols-[1fr_auto] md:items-center md:p-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary">
+              Built for local business
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">
+              Sell more. Deliver nearby. Grow with your community.
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65">
+              Join Lethela as a vendor, rider or advertising partner and reach customers where big
+              delivery platforms often do not.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row md:flex-col">
+            <Link
+              href="/vendors/register"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-lethela-primary px-5 py-3 text-sm font-semibold text-white"
+            >
+              Start selling
+            </Link>
+            <Link
+              href="/contact?subject=promote"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-5 py-3 text-sm font-semibold text-white"
+            >
+              Promote a business
+            </Link>
+          </div>
+        </div>
         <div className="grid gap-7 lg:grid-cols-[1.25fr_repeat(3,minmax(0,0.7fr))]">
           <section>
             <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">
@@ -82,8 +113,8 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
             </div>
             <h3 className="mt-3 text-2xl font-bold text-white">Lethela</h3>
             <p className="mt-3 max-w-sm text-sm leading-6 text-white/68">
-              A clean South African marketplace for food, groceries, vendor operations and rider
-              dispatch.
+              Township-first delivery for the food people love, the essentials they need and the
+              local businesses building South Africa.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link

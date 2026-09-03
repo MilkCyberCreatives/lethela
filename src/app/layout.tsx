@@ -6,9 +6,11 @@ import MarketingScripts from "@/components/MarketingScripts";
 import Providers from "@/components/Providers";
 import RouteThemeMarker from "@/components/RouteThemeMarker";
 import StructuredData from "@/components/StructuredData";
+import ScrollToTop from "@/components/ScrollToTop";
 import VisitorTelemetry from "@/components/VisitorTelemetry";
 import { getFooterSocialLinks, LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
+import { TOWNSHIP_CATEGORIES } from "@/lib/categories";
 import "./globals.css";
 import "./dashboard.css";
 
@@ -159,16 +161,10 @@ const globalSchema = {
       hasOfferCatalog: {
         "@type": "OfferCatalog",
         name: "Lethela marketplace categories",
-        itemListElement: [
-          "Groceries",
-          "Kota",
-          "Chicken",
-          "Burgers",
-          "Braai",
-          "Breakfast",
-          "Drinks",
-          "Snacks",
-        ].map((name) => ({ "@type": "OfferCatalog", name })),
+        itemListElement: TOWNSHIP_CATEGORIES.map((name) => ({
+          "@type": "OfferCatalog",
+          name,
+        })),
       },
     },
   ],
@@ -195,6 +191,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Suspense>
           <CookieConsentBanner />
           {children}
+          <ScrollToTop />
         </Providers>
         <ConsentAnalytics />
       </body>

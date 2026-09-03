@@ -2,6 +2,7 @@
 import NextAuth, { DefaultSession, getServerSession, type NextAuthOptions } from "next-auth";
 import type { Adapter } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/server/db";
 import { compare } from "bcryptjs";
@@ -61,6 +62,19 @@ const credentialsSchema = z.object({
 const DUMMY_PASSWORD_HASH = "$2b$12$C6UzMDM.H6dfI/f/IKcEe.5LmfLCk55ZovXxS6R7v1N4XKpQ6pQeW";
 const isProduction = process.env.NODE_ENV === "production";
 
+const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+const ownerEmails = new Set(
+  (process.env.ADMIN_BOOTSTRAP_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+function isConfiguredOwner(email?: string | null) {
+  return Boolean(email && ownerEmails.has(email.trim().toLowerCase()));
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
@@ -77,6 +91,15 @@ export const authOptions: NextAuthOptions = {
     },
   },
   providers: [
+    ...(googleClientId && googleClientSecret
+      ? [
+          Google({
+            clientId: googleClientId,
+            clientSecret: googleClientSecret,
+            authorization: { params: { prompt: "select_account" } },
+          }),
+        ]
+      : []),
     Credentials({
       name: "Email & Password",
       credentials: {
@@ -192,10 +215,24 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google" && user.id) {
+        const nextRole = isConfiguredOwner(user.email) ? "OWNER" : undefined;
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            emailVerifiedAt: new Date(),
+            ...(nextRole ? { role: nextRole } : {}),
+          },
+        });
+        if (nextRole) user.role = nextRole;
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = normalizeAppRole(user.role);
+        token.role = isConfiguredOwner(user.email) ? "OWNER" : normalizeAppRole(user.role);
         token.email = user.email ?? token.email ?? "";
         token.name = user.name ?? null;
         token.image = user.image ?? null;

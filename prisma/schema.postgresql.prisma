@@ -16,6 +16,7 @@ model User {
   passwordHash        String?
   role                String    @default("CUSTOMER")
   emailVerifiedAt     DateTime?
+  emailVerified       DateTime?
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
   sessionVersion      Int       @default(0)
@@ -32,6 +33,27 @@ model User {
   pushCampaigns    PushCampaign[]        @relation("PushCampaignCreator")
   riderApplication RiderApplication?
   privacyRequests  PrivacyRequest[]
+  accounts         Account[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model PrivacyRequest {

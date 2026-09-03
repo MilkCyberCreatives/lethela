@@ -67,6 +67,17 @@ const SEARCH_SYNONYMS: Record<string, string[]> = {
   kasi: ["township", "kota", "spaza", "local"],
   restaurant: ["takeaway", "food", "franchise"],
   franchise: ["restaurant", "takeaway", "brand"],
+  food: ["kota", "chicken", "burger", "braai", "mogodu", "takeaway"],
+  fastfood: ["kota", "chicken", "burger", "chips", "takeaway"],
+  braids: ["hair", "beauty", "wig"],
+  hair: ["beauty", "braids", "wig", "salon"],
+  cellphone: ["phone", "charger", "electronics", "accessories"],
+  phone: ["cellphone", "charger", "electronics", "accessories"],
+  building: ["hardware", "paint", "tools", "plumbing"],
+  stationery: ["school", "books", "pens", "printing"],
+  veggies: ["vegetables", "produce", "fruit"],
+  amagwinya: ["magwinya", "vetkoek", "bakery", "breakfast"],
+  sphatlho: ["kota", "sphatlo", "quarter"],
 };
 
 function tokenize(value: string) {

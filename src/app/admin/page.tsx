@@ -322,30 +322,15 @@ const ADMIN_NAV_GROUPS: Array<{
   items: Array<{ id: DashboardView; label: string; icon: typeof LayoutDashboard }>;
 }> = [
   {
-    title: "Dashboard",
+    title: "Manage",
     items: [
       { id: "overview", label: "Overview", icon: LayoutDashboard },
-      { id: "operations", label: "Live operations", icon: Activity },
-    ],
-  },
-  {
-    title: "Marketplace",
-    items: [
+      { id: "operations", label: "Operations & support", icon: Activity },
       { id: "vendors", label: "Vendor approvals", icon: Store },
       { id: "products", label: "Product reviews", icon: PackageCheck },
-    ],
-  },
-  {
-    title: "Fulfilment",
-    items: [
       { id: "orders", label: "Order monitoring", icon: ShoppingBag },
       { id: "riders", label: "Rider applications", icon: Bike },
-    ],
-  },
-  {
-    title: "Engagement",
-    items: [
-      { id: "users", label: "Customer insights", icon: Users },
+      { id: "users", label: "Customers", icon: Users },
       { id: "messages", label: "Messages", icon: MessageSquare },
     ],
   },
@@ -701,7 +686,7 @@ function NeedsAttentionTable({
 
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState("");
-  const [view, setView] = useState<DashboardView>("overview");
+  const [view, setView] = useState<DashboardView>("vendors");
   const [vendorStatus, setVendorStatus] = useState<VendorStatusOption>("SUBMITTED");
   const [riderStatus, setRiderStatus] = useState<RiderStatusFilter>("SUBMITTED");
   const [productStatus, setProductStatus] = useState<ProductStatusFilter>("SUBMITTED");
@@ -783,7 +768,7 @@ export default function AdminPage() {
   useEffect(() => {
     const syncViewFromUrl = () => {
       const candidate = new URL(window.location.href).searchParams.get("view");
-      setView(isDashboardView(candidate) ? candidate : "overview");
+      setView(isDashboardView(candidate) ? candidate : "vendors");
     };
 
     syncViewFromUrl();
@@ -794,7 +779,7 @@ export default function AdminPage() {
   const navigateView = useCallback((nextView: DashboardView) => {
     setView(nextView);
     const url = new URL(window.location.href);
-    if (nextView === "overview") url.searchParams.delete("view");
+    if (nextView === "vendors") url.searchParams.delete("view");
     else url.searchParams.set("view", nextView);
     window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1496,9 +1481,9 @@ export default function AdminPage() {
               <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
                 Lethela Admin
               </p>
-              <h1 className="mt-2 text-xl font-bold">Operations</h1>
+              <h1 className="mt-2 text-xl font-bold">Manage</h1>
               <p className="mt-2 text-xs leading-relaxed text-white/60">
-                Live marketplace control for orders, vendors, riders, support and growth.
+                Approvals and daily work in one place.
               </p>
             </div>
 
@@ -1553,12 +1538,11 @@ export default function AdminPage() {
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
-                    Operations command
+                    Owner workspace
                   </p>
-                  <h2 className="mt-2 text-2xl font-bold md:text-3xl">Owner Command Centre</h2>
+                  <h2 className="mt-2 text-2xl font-bold md:text-3xl">Lethela dashboard</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/68">
-                    Monitor live orders, vendors, riders, approvals and township growth from one
-                    place.
+                    Approve vendors, review orders and keep the marketplace moving.
                   </p>
                   <p className="mt-2 text-xs text-white/45" aria-live="polite">
                     {lastRefreshedAt
