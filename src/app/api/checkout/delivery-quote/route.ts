@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
         })
         .catch(() => null);
 
-  if (!vendor) {
+  if (!vendor && shouldPreferCatalogFallback()) {
     vendor = getFallbackDeliveryVendor(parsed.data.vendorId);
   }
 
