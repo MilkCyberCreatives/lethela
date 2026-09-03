@@ -16,8 +16,41 @@ function categoryImageFor(product: {
 }
 
 function vendorImageForSlug(slug: string, fallback = "/catalog/groceries.png") {
-  const first = catalogProducts.find((product) => product.vendorSlug === slug);
-  return first ? categoryImageFor(first) : fallback;
+  const vendor = vendorIndex.find((entry) => entry.slug === slug);
+  const cuisine = vendor?.cuisine.join(" ").toLowerCase() || "";
+  const categorySlug =
+    cuisine.includes("liquor") ||
+    cuisine.includes("alcohol") ||
+    cuisine.includes("beer") ||
+    cuisine.includes("cider")
+      ? "liquor"
+      : cuisine.includes("grocer") || cuisine.includes("essential") || cuisine.includes("spaza")
+        ? "groceries"
+        : cuisine.includes("breakfast") || cuisine.includes("vetkoek")
+          ? "breakfast"
+          : cuisine.includes("wings")
+            ? "wings"
+            : cuisine.includes("braai") || cuisine.includes("chisa") || cuisine.includes("wors")
+              ? "braai"
+              : cuisine.includes("pizza")
+                ? "pizza"
+                : cuisine.includes("chicken")
+                  ? "chicken"
+                  : cuisine.includes("kota")
+                    ? "kota"
+                    : cuisine.includes("chips")
+                      ? "chips"
+                      : cuisine.includes("snack")
+                        ? "snacks"
+                        : cuisine.includes("drink")
+                          ? "drinks"
+                          : cuisine.includes("burger")
+                            ? "burger"
+                            : cuisine.includes("mogodu")
+                              ? "mogodu"
+                              : null;
+
+  return categorySlug ? `/catalog/${categorySlug}.png` : fallback;
 }
 
 type VendorBase = {
