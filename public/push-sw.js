@@ -3,8 +3,8 @@ self.addEventListener("push", (event) => {
   const title = payload.title || "Lethela";
   const options = {
     body: payload.body || "There is a new update waiting for you.",
-    icon: "/favicon.svg?v=20260904",
-    badge: "/favicon.svg?v=20260904",
+    icon: "/lethelaicon.svg?v=official-20260904",
+    badge: "/lethelaicon.svg?v=official-20260904",
     data: {
       url: payload.url || "/",
     },

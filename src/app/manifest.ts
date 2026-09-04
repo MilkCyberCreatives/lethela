@@ -23,7 +23,7 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "maskable",
       },
       {
-        src: "/favicon.svg?v=20260904",
+        src: "/lethelaicon.svg?v=official-20260904",
         sizes: "any",
         type: "image/svg+xml",
         purpose: "any",

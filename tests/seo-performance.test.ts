@@ -8,7 +8,7 @@ async function source(path: string) {
 
 test("generated app icons and branded social images are configured", async () => {
   const [favicon, appleIcon, openGraph, twitter, layout, manifest, brandImage] = await Promise.all([
-    source("public/favicon.svg"),
+    source("public/lethelaicon.svg"),
     source("src/app/apple-icon.tsx"),
     source("src/app/opengraph-image.tsx"),
     source("src/app/twitter-image.tsx"),
@@ -25,9 +25,9 @@ test("generated app icons and branded social images are configured", async () =>
   assert.match(brandImage, /BrandMark/);
   assert.doesNotMatch(layout, /defaultSocialImage/);
   assert.doesNotMatch(layout, /url: "\/icon"/);
-  assert.match(layout, /\/favicon\.svg\?v=20260904/);
+  assert.match(layout, /\/lethelaicon\.svg\?v=official-20260904/);
   assert.match(layout, /\/apple-icon/);
-  assert.match(manifest, /\/favicon\.svg\?v=20260904/);
+  assert.match(manifest, /\/lethelaicon\.svg\?v=official-20260904/);
 });
 
 test("the hero does not fetch hidden nearby-vendor content", async () => {
