@@ -73,12 +73,9 @@ export const metadata: Metadata = {
     other: Object.keys(otherVerification).length > 0 ? otherVerification : undefined,
   },
   icons: {
-    icon: [
-      { url: "/icon", type: "image/png", sizes: "64x64" },
-      { url: "/favicon.svg", type: "image/svg+xml", sizes: "any" },
-    ],
+    icon: [{ url: "/favicon.svg?v=20260904", type: "image/svg+xml", sizes: "any" }],
     apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
-    shortcut: "/icon",
+    shortcut: "/favicon.svg?v=20260904",
   },
   referrer: "origin-when-cross-origin",
   openGraph: {

@@ -6,7 +6,6 @@ import MealPreferenceControls from "@/components/MealPreferenceControls";
 import { Button } from "@/components/ui/button";
 import { pushEcommerceEvent, trackVisitorEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
-import { useUIStore } from "@/store/ui";
 
 export type ProductLite = {
   id: string;
@@ -32,7 +31,6 @@ export default function ProductCard({
   showMealPreference?: boolean;
 }) {
   const add = useCart((state) => state.add);
-  const openCart = useUIStore((state) => state.openCart);
 
   const vendorId = p.vendor?.id || "unknown-vendor";
   const vendorSlug = p.vendor?.slug || "unknown-vendor";
@@ -126,7 +124,6 @@ export default function ProductCard({
                   },
                 ],
               });
-              openCart();
             }}
           >
             Add to cart

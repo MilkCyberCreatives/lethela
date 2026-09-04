@@ -580,14 +580,16 @@ function AdminTopBar({
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#05071D]">
       <div className="mx-auto flex min-h-[72px] w-full max-w-[1440px] flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap md:px-6 lg:px-8">
         <Link href="/admin" className="flex shrink-0 items-center gap-3">
-          <Image
-            src="/lethelalogo.svg"
-            alt="Lethela"
-            width={130}
-            height={32}
-            className="h-8 w-auto rounded bg-white px-2"
-            priority
-          />
+          <span className="rounded bg-white px-2">
+            <Image
+              src="/lethelalogo.svg"
+              alt="Lethela"
+              width={914}
+              height={266}
+              className="h-8 w-auto"
+              priority
+            />
+          </span>
           <span className="hidden sm:block">
             <span className="block text-sm font-semibold">Admin</span>
             <span className="block text-[11px] uppercase tracking-[0.14em] text-white/45">

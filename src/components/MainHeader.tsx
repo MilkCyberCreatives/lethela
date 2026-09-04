@@ -70,13 +70,15 @@ export default function MainHeader() {
             href={pathname.startsWith("/vendors") ? "/vendors/dashboard" : "/rider/dashboard"}
             className="flex min-w-0 items-center gap-2 sm:gap-3"
           >
-            <Image
-              src="/lethelalogo.svg"
-              alt="Lethela"
-              width={130}
-              height={32}
-              className="h-7 w-auto shrink-0 rounded bg-white px-2 sm:h-8"
-            />
+            <span className="shrink-0 rounded bg-white px-2">
+              <Image
+                src="/lethelalogo.svg"
+                alt="Lethela"
+                width={914}
+                height={266}
+                className="h-7 w-auto sm:h-8"
+              />
+            </span>
             <span className="max-w-[8.5rem] truncate text-xs font-semibold sm:max-w-none sm:text-sm">
               {portal}
             </span>
@@ -109,8 +111,8 @@ export default function MainHeader() {
           <Image
             src="/lethelalogo.svg"
             alt="Lethela - Siyashesha"
-            width={170}
-            height={40}
+            width={914}
+            height={266}
             className="h-8 w-auto sm:h-10"
           />
         </Link>

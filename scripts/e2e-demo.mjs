@@ -97,13 +97,13 @@ async function signIn(page, [email, password]) {
     const session = await response.json();
     return Boolean(session?.user?.id);
   });
-  // Wait for the client-side redirect away from /signin to commit. Only wait for
-  // the URL change here (not the full load) because the role dashboards can take
-  // a while to compile on a cold dev server; the caller navigates explicitly and
-  // waits on real elements afterwards.
+  // Let the post-login redirect finish before the scenario starts its next
+  // navigation. Starting another navigation at the earlier "commit" stage can
+  // race the redirect on a cold dev server and make an authenticated profile
+  // request arrive without the settled session cookie.
   await page.waitForURL((url) => !url.pathname.startsWith("/signin"), {
     timeout: 60000,
-    waitUntil: "commit",
+    waitUntil: "domcontentloaded",
   });
 }
 
@@ -137,9 +137,22 @@ await scenario("mobile browse, search, cart and guest checkout", async (page) =>
   await addButton.waitFor({ state: "visible", timeout: 15000 });
   await addButton.click();
   const cartDialog = page.getByRole("dialog", { name: "Shopping cart" });
-  if (!(await cartDialog.isVisible())) {
-    await page.getByRole("button", { name: "Open cart" }).click();
+  if (!(await cartDialog.getAttribute("class"))?.includes("translate-x-full")) {
+    throw new Error("Adding an item opened the cart and blocked continued browsing.");
   }
+  const addButtons = page.getByRole("button", { name: /^Add$/ });
+  if ((await addButtons.count()) > 1) {
+    await addButtons.nth(1).scrollIntoViewIfNeeded();
+    await addButtons.nth(1).click();
+    if (!(await cartDialog.getAttribute("class"))?.includes("translate-x-full")) {
+      throw new Error("Adding another item opened the cart and blocked continued browsing.");
+    }
+  }
+  await page.getByRole("button", { name: "Open cart" }).click();
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('[role="dialog"][aria-label="Shopping cart"]');
+    return dialog instanceof HTMLElement && dialog.classList.contains("translate-x-0");
+  });
   await page.getByRole("link", { name: "Checkout", exact: true }).last().click();
   await page.waitForURL((url) => url.pathname.startsWith("/checkout"));
   await page.waitForLoadState("load");

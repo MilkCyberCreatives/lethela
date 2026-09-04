@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import type { ProductLite } from "@/components/ProductCard";
 import { pushEcommerceEvent, trackVisitorEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
-import { useUIStore } from "@/store/ui";
 
 type ProductVendor = ProductLite["vendor"] & {
   suburb?: string | null;
@@ -16,7 +15,6 @@ type ProductVendor = ProductLite["vendor"] & {
 
 export default function HomeProductCard({ product }: { product: ProductLite }) {
   const add = useCart((state) => state.add);
-  const openCart = useUIStore((state) => state.openCart);
   const vendor = product.vendor as ProductVendor;
   const vendorId = vendor?.id || "unknown-vendor";
   const vendorSlug = vendor?.slug || "unknown-vendor";
@@ -97,7 +95,6 @@ export default function HomeProductCard({ product }: { product: ProductLite }) {
                 },
               ],
             });
-            openCart();
           }}
         >
           Add

@@ -7,24 +7,27 @@ async function source(path: string) {
 }
 
 test("generated app icons and branded social images are configured", async () => {
-  const [icon, appleIcon, openGraph, twitter, layout, brandImage] = await Promise.all([
-    source("src/app/icon.tsx"),
+  const [favicon, appleIcon, openGraph, twitter, layout, manifest, brandImage] = await Promise.all([
+    source("public/favicon.svg"),
     source("src/app/apple-icon.tsx"),
     source("src/app/opengraph-image.tsx"),
     source("src/app/twitter-image.tsx"),
     source("src/app/layout.tsx"),
+    source("src/app/manifest.ts"),
     source("src/lib/brand-image.tsx"),
   ]);
 
-  assert.match(icon, /ImageResponse/);
-  assert.match(icon, /BrandMark/);
+  assert.match(favicon, /#B5001B/);
   assert.match(appleIcon, /180/);
   assert.match(appleIcon, /BrandMark/);
   assert.match(openGraph, /createBrandSocialImage/);
   assert.match(twitter, /createBrandSocialImage/);
   assert.match(brandImage, /BrandMark/);
   assert.doesNotMatch(layout, /defaultSocialImage/);
+  assert.doesNotMatch(layout, /url: "\/icon"/);
+  assert.match(layout, /\/favicon\.svg\?v=20260904/);
   assert.match(layout, /\/apple-icon/);
+  assert.match(manifest, /\/favicon\.svg\?v=20260904/);
 });
 
 test("the hero does not fetch hidden nearby-vendor content", async () => {

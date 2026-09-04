@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
 import { pushEcommerceEvent, trackVisitorEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
-import { useUIStore } from "@/store/ui";
 
 type Item = {
   id: string;
@@ -37,7 +36,6 @@ export default function MenuSectionList({
   sections: Section[];
 }) {
   const add = useCart((s) => s.add);
-  const openCart = useUIStore((s) => s.openCart);
 
   return (
     <div className="space-y-8">
@@ -129,7 +127,6 @@ export default function MenuSectionList({
                           },
                         ],
                       });
-                      openCart();
                     }}
                   >
                     Add

@@ -17,19 +17,13 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["food", "shopping", "business", "delivery"],
     icons: [
       {
-        src: "/icon",
-        sizes: "64x64",
-        type: "image/png",
-        purpose: "any",
-      },
-      {
         src: "/apple-icon",
         sizes: "180x180",
         type: "image/png",
         purpose: "maskable",
       },
       {
-        src: "/favicon.svg",
+        src: "/favicon.svg?v=20260904",
         sizes: "any",
         type: "image/svg+xml",
         purpose: "any",
