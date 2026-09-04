@@ -80,7 +80,8 @@ test("image optimisation and session polling safeguards remain enabled", async (
     source("src/components/Providers.tsx"),
   ]);
   assert.match(nextConfig, /image\/avif/);
-  assert.match(nextConfig, /minimumCacheTTL:\s*86400/);
+  // A substantial optimizer cache TTL (>= 1 day) must stay configured.
+  assert.match(nextConfig, /minimumCacheTTL:\s*(?:86400|\d{6,})/);
   assert.match(providers, /refetchOnWindowFocus=\{false\}/);
   assert.match(providers, /refetchInterval=\{0\}/);
 });

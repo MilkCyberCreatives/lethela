@@ -20,7 +20,10 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export const dynamic = "force-dynamic";
+// Storefront pages are cache-first with a short revalidation window instead of
+// re-rendering on every request. Menu, pricing and open/closed status can lag by
+// up to two minutes, which is imperceptible for buyers and far faster to serve.
+export const revalidate = 120;
 
 const getVendorBySlug = cache(async (slug: string) => getVendorProfile(slug));
 const DAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

@@ -1,10 +1,9 @@
 import AuthShell from "@/components/auth/AuthShell";
 import MinimalSignupForm from "@/components/auth/MinimalSignupForm";
+import { isGoogleAuthEnabled } from "@/lib/google-auth";
 
 export default function SignUpPage() {
-  const googleEnabled = Boolean(
-    process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim(),
-  );
+  const googleEnabled = isGoogleAuthEnabled();
   return (
     <AuthShell
       title="Create your account"

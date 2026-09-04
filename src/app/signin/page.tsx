@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AuthShell from "@/components/auth/AuthShell";
 import SignInForm from "@/components/auth/SignInForm";
+import { isGoogleAuthEnabled } from "@/lib/google-auth";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -9,9 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function SignInPage() {
-  const googleEnabled = Boolean(
-    process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim(),
-  );
+  const googleEnabled = isGoogleAuthEnabled();
   return (
     <AuthShell
       title="Welcome back"

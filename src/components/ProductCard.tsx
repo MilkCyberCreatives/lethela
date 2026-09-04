@@ -24,7 +24,13 @@ export type ProductLite = {
   category?: string | null;
 };
 
-export default function ProductCard({ p }: { p: ProductLite }) {
+export default function ProductCard({
+  p,
+  showMealPreference = true,
+}: {
+  p: ProductLite;
+  showMealPreference?: boolean;
+}) {
   const add = useCart((state) => state.add);
   const openCart = useUIStore((state) => state.openCart);
 
@@ -70,10 +76,12 @@ export default function ProductCard({ p }: { p: ProductLite }) {
           <p className="mt-2 line-clamp-2 text-xs text-white/70">{p.description}</p>
         ) : null}
 
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="text-[11px] text-white/55">Save or rate this meal</span>
-          <MealPreferenceControls itemId={p.id} compact />
-        </div>
+        {showMealPreference ? (
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <span className="text-[11px] text-white/55">Save or rate this meal</span>
+            <MealPreferenceControls itemId={p.id} compact />
+          </div>
+        ) : null}
 
         <div className="mt-3">
           <Button

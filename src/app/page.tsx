@@ -1,5 +1,6 @@
 import { BellRing, CheckCircle2, Megaphone, MapPin, ShoppingBag, Store, Truck } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import Footer from "@/components/Footer";
@@ -84,10 +85,15 @@ export default async function HomePage() {
   const groceryProducts = products
     .filter((product) => groceryCategories.has(String(product.category)))
     .slice(0, 8);
-  const recentProducts = products.slice(0, 8);
   const kotaProducts = products.filter((product) => product.category === "Kota").slice(0, 8);
   const chickenProducts = products
     .filter((product) => product.category === "Chicken" || product.category === "Wings")
+    .slice(0, 8);
+  const featuredProductIds = new Set(
+    [...kotaProducts, ...chickenProducts, ...groceryProducts].map((product) => product.id),
+  );
+  const recentProducts = products
+    .filter((product) => !featuredProductIds.has(product.id))
     .slice(0, 8);
   const hasMarketplaceItems = vendors.length > 0 && products.length > 0;
   const launchStatus = getMarketplaceLaunchStatus({
@@ -271,32 +277,43 @@ function HowItWorksStrip() {
 function PromoteYourBusiness() {
   return (
     <section className="container pb-14">
-      <div className="relative overflow-hidden rounded-3xl border border-lethela-primary/35 bg-gradient-to-br from-lethela-primary/20 via-white/[0.05] to-white/[0.02] p-6 md:p-9">
-        <div className="relative z-10 max-w-2xl">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
-            <Megaphone className="h-3.5 w-3.5" /> Sponsored space
+      <div className="relative min-h-[390px] overflow-hidden rounded-3xl border border-lethela-primary/45 bg-slate-950 shadow-2xl shadow-black/25 md:min-h-[430px]">
+        <Image
+          src="/ads/lethela-house-campaign.webp"
+          alt="A Lethela rider delivering a KoTa and chicken order in the community"
+          fill
+          sizes="(max-width: 768px) 100vw, 1200px"
+          className="object-cover object-[68%_center] md:object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050a18] via-[#050a18]/90 to-[#050a18]/10" />
+        <div className="relative z-10 flex min-h-[390px] max-w-2xl flex-col justify-center p-6 sm:p-9 md:min-h-[430px] md:p-12">
+          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm">
+            <Megaphone className="h-3.5 w-3.5" /> Lethela spotlight
           </span>
-          <h2 className="mt-4 text-2xl font-bold md:text-4xl">
-            Put your business in front of local buyers.
+          <h2 className="mt-4 max-w-xl text-3xl font-black leading-tight md:text-5xl">
+            The kasi is cooking. We bring it to you.
           </h2>
-          <p className="mt-3 text-sm leading-7 text-white/68 md:text-base">
-            Rent this homepage space for a launch, special, event or neighbourhood campaign. Local
-            businesses and national brands are welcome.
+          <p className="mt-4 max-w-lg text-sm leading-7 text-white/75 md:text-base">
+            From a loaded KoTa to crispy chicken, discover local favourites and back the businesses
+            that make your neighbourhood move.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/contact?subject=promote"
-              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-slate-950"
+              href="/categories/kota"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-lethela-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-lethela-primary/25"
             >
-              Book this space
+              Find a KoTa near you
             </Link>
             <Link
-              href="/vendors/register"
-              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-5 py-3 text-sm font-semibold text-white"
+              href="/contact?subject=promote"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/30 bg-black/15 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm"
             >
-              List your business
+              Advertise here
             </Link>
           </div>
+          <p className="mt-4 text-xs text-white/50">
+            This premium space is available to local brands.
+          </p>
         </div>
       </div>
     </section>

@@ -6,7 +6,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthShell
       title="Choose a new password"
-      supportingText="Use at least 8 characters and choose a password you do not use anywhere else."
+      supportingText="Use at least 5 characters and choose a password you do not use anywhere else."
     >
       <Suspense
         fallback={

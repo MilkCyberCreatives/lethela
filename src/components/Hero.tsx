@@ -324,7 +324,10 @@ export default function Hero({
   }
 
   return (
-    <section className="relative overflow-hidden">
+    // No `overflow-hidden` here: the `fill` image and gradient are already
+    // bounded to the section box, and clipping the section would cut off the
+    // search autocomplete where it floats past the hero edge.
+    <section className="relative">
       <Image
         aria-hidden
         src="/hero-lethela-branded.jpg"
@@ -353,7 +356,7 @@ export default function Hero({
             {launchStatus.description}
           </p>
 
-          <div className="mt-8 flex w-full max-w-2xl flex-col gap-3" ref={acRef}>
+          <div className="relative z-40 mt-8 flex w-full max-w-2xl flex-col gap-3" ref={acRef}>
             <form
               className="relative flex w-full items-center gap-2"
               onSubmit={(event) => {
@@ -382,7 +385,7 @@ export default function Hero({
                 {open && suggests.length > 0 ? (
                   <div
                     role="listbox"
-                    className="absolute z-10 mt-1 w-full rounded-lg border border-white/10 bg-lethela-secondary shadow-2xl"
+                    className="absolute z-40 mt-1 w-full rounded-lg border border-white/10 bg-lethela-secondary shadow-2xl"
                     onMouseDown={(event) => event.preventDefault()}
                   >
                     {suggests.map((suggestion) => {

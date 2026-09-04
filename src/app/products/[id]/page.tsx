@@ -18,6 +18,9 @@ import { absoluteUrl } from "@/lib/site";
 
 type PageProps = { params: Promise<{ id: string }> };
 
+// Serve product pages from the ISR cache and refresh them in the background.
+export const revalidate = 300;
+
 const getProduct = cache(async (id: string) => {
   const fallback = getFallbackProducts().find((item) => item.id === id) ?? null;
   if (fallback && shouldUseCatalogFallbackBeforeQuery()) return fallback;
@@ -189,7 +192,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </p>
           ) : null}
           <div className="mt-6 max-w-md">
-            <ProductCard p={product} />
+            <ProductCard p={product} showMealPreference={false} />
           </div>
         </div>
       </section>

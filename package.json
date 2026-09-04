@@ -13,6 +13,7 @@
     "test": "node --import tsx --test tests/**/*.test.ts",
     "smoke": "node scripts/smoke-site.mjs",
     "e2e:demo": "node scripts/e2e-demo.mjs",
+    "check:all-routes": "node scripts/check-all-routes.mjs",
     "assets:catalog": "node scripts/generate-catalog-images.mjs",
     "check:production-env": "node scripts/check-production-env.mjs",
     "check:security-env": "node scripts/check-security-env.mjs",

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import AuthShell from "@/components/auth/AuthShell";
 import OnboardingPreview from "@/components/auth/OnboardingPreview";
 import VendorSignupForm from "@/components/VendorSignupForm";
+import { isGoogleAuthEnabled } from "@/lib/google-auth";
 
 export const metadata: Metadata = {
   title: "Create your vendor account",
@@ -28,7 +29,7 @@ export default function VendorRegisterPage() {
       supportingText="Use your email and a secure password now. Build your store profile in the dashboard."
       compact
     >
-      <VendorSignupForm />
+      <VendorSignupForm googleEnabled={isGoogleAuthEnabled()} />
       <OnboardingPreview accountType="vendor" />
     </AuthShell>
   );

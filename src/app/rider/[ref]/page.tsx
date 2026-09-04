@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 
 const STAGES = ["READY_FOR_PICKUP", "PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED"] as const;
 
-export default function RiderOrderPage({ params }: { params: { ref: string } }) {
-  const ref = params.ref;
+export default function RiderOrderPage({ params }: { params: Promise<{ ref: string }> }) {
+  const ref = use(params).ref;
   const searchParams = useSearchParams();
   const [sending, setSending] = useState(false);
   const [sharingLocation, setSharingLocation] = useState(false);

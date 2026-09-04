@@ -172,7 +172,7 @@ const globalSchema = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-ZA">
+    <html lang="en-ZA" data-scroll-behavior="smooth">
       <head>
         <link
           rel="search"
@@ -181,7 +181,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="/opensearch.xml"
         />
       </head>
-      <body className="min-h-dvh bg-lethela-secondary text-white">
+      <body className="min-h-dvh bg-lethela-secondary text-white" suppressHydrationWarning>
         <RouteThemeMarker />
         <StructuredData data={globalSchema} />
         <MarketingScripts />

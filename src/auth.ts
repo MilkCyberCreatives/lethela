@@ -1,12 +1,16 @@
 // /src/auth.ts
+import { randomUUID } from "node:crypto";
+import { cookies } from "next/headers";
 import NextAuth, { DefaultSession, getServerSession, type NextAuthOptions } from "next-auth";
-import type { Adapter } from "next-auth/adapters";
+import type { Adapter, AdapterUser } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/server/db";
 import { compare } from "bcryptjs";
 import { z } from "zod";
+import { normalizeOAuthIntent, OAUTH_INTENT_COOKIE, roleForOAuthIntent } from "@/lib/google-auth";
+import { VENDOR_STATUS } from "@/lib/vendor-readiness";
 import {
   ACCOUNT_LOCK_ATTEMPTS,
   ACCOUNT_LOCK_MINUTES,
@@ -56,7 +60,7 @@ declare module "next-auth/jwt" {
 
 const credentialsSchema = z.object({
   email: NormalizedEmailSchema,
-  password: z.string().min(8).max(200),
+  password: z.string().min(5).max(200),
 });
 
 const DUMMY_PASSWORD_HASH = "$2b$12$C6UzMDM.H6dfI/f/IKcEe.5LmfLCk55ZovXxS6R7v1N4XKpQ6pQeW";
@@ -75,8 +79,73 @@ function isConfiguredOwner(email?: string | null) {
   return Boolean(email && ownerEmails.has(email.trim().toLowerCase()));
 }
 
+async function readOAuthSignupIntent() {
+  try {
+    const store = await cookies();
+    return normalizeOAuthIntent(store.get(OAUTH_INTENT_COOKIE)?.value);
+  } catch {
+    return "customer" as const;
+  }
+}
+
+// Wrap the Prisma adapter so a first-time Google sign-up provisions the same
+// records the email/password registration routes create. The intent cookie is
+// only read here, when a brand-new user row is created, so it cannot change the
+// role of an account that already exists.
+const baseAdapter = PrismaAdapter(prisma);
+const adapter: Adapter = {
+  ...baseAdapter,
+  async createUser(data: Omit<AdapterUser, "id">) {
+    const intent = await readOAuthSignupIntent();
+    const role = roleForOAuthIntent(intent);
+    const email = data.email;
+    const user = (await prisma.user.create({
+      data: {
+        email,
+        name: data.name ?? null,
+        image: data.image ?? null,
+        emailVerified: data.emailVerified ?? null,
+        emailVerifiedAt: data.emailVerified ?? new Date(),
+        role,
+      },
+    })) as AdapterUser;
+
+    if (role === "VENDOR") {
+      const slug = `vendor-${randomUUID().replaceAll("-", "").slice(0, 16)}`;
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: "New vendor",
+          slug,
+          email,
+          ownerId: user.id,
+          status: VENDOR_STATUS.DRAFT,
+          isActive: false,
+          cuisine: "[]",
+        },
+        select: { id: true },
+      });
+      await prisma.vendorMember.create({
+        data: { vendorId: vendor.id, userId: user.id, role: "OWNER" },
+      });
+    } else if (role === "RIDER") {
+      await prisma.riderApplication.create({
+        data: {
+          id: randomUUID(),
+          userId: user.id,
+          fullName: "",
+          email,
+          phone: "",
+          status: "DRAFT",
+        },
+      });
+    }
+
+    return user;
+  },
+};
+
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
+  adapter,
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
   jwt: { maxAge: 8 * 60 * 60 },
   cookies: {

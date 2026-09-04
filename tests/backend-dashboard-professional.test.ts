@@ -18,12 +18,13 @@ test("admin navigation has one professional destination per dashboard view", asy
   assert.deepEqual(ids, [
     "overview",
     "operations",
+    "orders",
     "vendors",
     "products",
-    "orders",
     "riders",
     "users",
     "messages",
+    "finance",
   ]);
   assert.equal(new Set(ids).size, ids.length);
 });
@@ -47,7 +48,8 @@ test("admin attention queue and metrics use canonical live data", async () => {
   assert.match(admin, /"READY_FOR_PICKUP"/);
   assert.match(admin, /"RIDER_ASSIGNED"/);
   assert.match(admin, /"ON_THE_WAY"/);
-  assert.match(admin, /stats\?\.availableRiders/);
+  // Live values come from the canonical stats payload (guarded form is fine).
+  assert.match(admin, /stats(\?\.|\s*\?\s*stats\.)availableRiders/);
   assert.match(admin, /stats\?\.completedOrdersToday/);
   assert.doesNotMatch(admin, /label="Riders available now"/);
   assert.doesNotMatch(admin, /label="Completed orders"[\s\S]{0,120}ordersToday/);
@@ -111,5 +113,19 @@ test("admin statistics use real availability, completion and paid-only rankings"
   assert.match(stats, /completedOrdersToday/);
   assert.match(stats, /averageDeliveryMinutes/);
   assert.match(stats, /where: paidOrderWhere\(month\)/);
+  assert.match(stats, /revenueMonthCents: financialsMonth\._sum\.platformFeeCents/);
+  assert.match(stats, /deliveryFeesMonthCents: financialsMonth\._sum\.deliveryFeeCents/);
+  assert.match(stats, /riderTipsMonthCents: financialsMonth\._sum\.riderTipCents/);
   assert.match(stats, /order:\s*\{[\s\S]*paymentStatus: \{ in: \["PAID", "SUCCESS"\] \}/);
+});
+
+test("admin global search is server-authorised and bounded", async () => {
+  const search = await source("src/app/api/admin/search/route.ts");
+  assert.match(search, /requireAdminRequest\(req\)/);
+  assert.match(search, /const TAKE = 5/);
+  assert.match(search, /prisma\.order\.findMany/);
+  assert.match(search, /prisma\.user\.findMany/);
+  assert.match(search, /prisma\.vendor\.findMany/);
+  assert.match(search, /prisma\.product\.findMany/);
+  assert.match(search, /prisma\.riderApplication\.findMany/);
 });

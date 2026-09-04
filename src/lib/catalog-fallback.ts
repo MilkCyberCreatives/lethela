@@ -6,6 +6,8 @@ function categoryImageFor(product: {
   description?: string | null;
   isAlcohol?: boolean | null;
 }) {
+  const productImage = PRODUCT_IMAGE_BY_NAME[product.name];
+  if (productImage) return productImage;
   const category = inferProductCategory({
     name: product.name,
     description: product.description ?? "",
@@ -29,7 +31,59 @@ function categoryImageFor(product: {
   return images[category] || "/vendors/kasie-market.webp";
 }
 
+const PRODUCT_IMAGE_BY_NAME: Record<string, string> = {
+  "Hello Tomato Burger": "/products/hello-tomato-burger.webp",
+  "Township Kota Special": "/products/township-kota-special.webp",
+  "Large Kasie Chips": "/products/large-kasie-chips.webp",
+  "Golden Slap Fries Portion": "/products/golden-slap-fries.webp",
+  "Coca-Cola 2L Cold Drink": "/products/cola-2l.webp",
+  "Chicken Kota Special": "/products/chicken-kota-special.webp",
+  "Masala Slap Fries Box": "/products/masala-slap-fries.webp",
+  "Mogodu and Pap Combo": "/products/mogodu-pap-combo.webp",
+  "Twelve Hot Wings Bucket": "/products/twelve-hot-wings.webp",
+  "Grilled Half Chicken Meal": "/products/grilled-half-chicken.webp",
+  "Full English Breakfast Plate": "/products/full-english-breakfast.webp",
+  "Cape Dry Cider 6-pack": "/products/cape-dry-cider.webp",
+  "Grocery Starter Pack": "/products/grocery-starter-pack.webp",
+  "Bento Rainbow Sushi": "/products/rainbow-sushi.webp",
+  "Spice Route Curry": "/products/butter-chicken-curry.webp",
+  "Mogodu Sunday Plate": "/products/mogodu-sunday-plate.webp",
+  "Six Piece Sticky Wings": "/products/sticky-wings.webp",
+  "Family Chicken Bucket": "/products/family-chicken-bucket.webp",
+  "Chisa Nyama Braai Plate": "/products/chisa-nyama-braai-plate.webp",
+  "Boerewors Relish Roll": "/products/boerewors-relish-roll.webp",
+  "Breakfast Vetkoek Plate": "/products/breakfast-vetkoek-plate.webp",
+  "Bread Milk Airtime Pack": "/products/bread-milk-airtime-pack.webp",
+  "Castle Lite 6-pack": "/products/light-lager-six-pack.webp",
+  "Heineken 0.0 6-pack": "/products/alcohol-free-lager-six-pack.webp",
+  "Savanna Cider 6-pack": "/products/clear-dry-cider-six-pack.webp",
+  "Hunters Dry Cider 6-pack": "/products/apple-dry-cider-six-pack.webp",
+  "Jameson Irish Whiskey 750ml": "/products/irish-whiskey-750ml.webp",
+  "Bells Whisky 750ml": "/products/blended-whisky-750ml.webp",
+  "Smirnoff Vodka 750ml": "/products/red-accent-vodka-750ml.webp",
+  "Absolut Vodka 750ml": "/products/blue-accent-vodka-750ml.webp",
+  "Gordons London Dry Gin 750ml": "/products/london-dry-gin-750ml.webp",
+  "Inverroche Classic Gin 750ml": "/products/botanical-gin-750ml.webp",
+  "Klipdrift Premium Brandy 750ml": "/products/premium-brandy-750ml.webp",
+  "Hennessy VS Cognac 750ml": "/products/cognac-750ml.webp",
+  "Peri-Peri Chicken Strips": "/products/peri-peri-chicken-strips.webp",
+  "Kasie Chicken Pizza": "/products/kasie-chicken-pizza.webp",
+  "Kasi Snack Mix": "/products/kasi-snack-mix.webp",
+};
+
 function vendorImageForSlug(slug: string, fallback = "/catalog/groceries.png") {
+  const featuredVendorImages: Record<string, string> = {
+    "hello-tomato": "/vendors/burgers.jpg",
+    bento: "/vendors/sushi.jpg",
+    "spice-route": "/vendors/curry.jpg",
+    "kasie-market": "/vendors/kasie-market.webp",
+    "mamsies-wings-yard": "/products/family-chicken-bucket.webp",
+    "ubuntu-braai-spot": "/products/chisa-nyama-braai-plate.webp",
+    "sunrise-breakfast-corner": "/products/full-english-breakfast.webp",
+    "klipfontein-bottle-store": "/products/clear-dry-cider-six-pack.webp",
+  };
+  if (featuredVendorImages[slug]) return featuredVendorImages[slug];
+
   const vendor = vendorIndex.find((entry) => entry.slug === slug);
   const cuisine = vendor?.cuisine.join(" ").toLowerCase() || "";
   const categorySlug =
@@ -864,6 +918,19 @@ const catalogProducts: CatalogProductRecord[] = [
     isAlcohol: false,
     inStock: true,
   },
+  {
+    id: "launch-product-kasi-snack-mix",
+    slug: "kasi-snack-mix",
+    vendorId: "vendor-kasie-market",
+    vendorSlug: "kasie-market",
+    vendorName: "Kasie Market",
+    name: "Kasi Snack Mix",
+    description: "Maize puffs, biscuits, fruit sweets and salted crisps for sharing.",
+    priceCents: 4999,
+    image: "/products/kasi-snack-mix.webp",
+    isAlcohol: false,
+    inStock: true,
+  },
 ];
 
 const specialsBySlug: Record<string, CatalogVendorRecord["specials"]> = {
@@ -1258,7 +1325,10 @@ export function getFallbackVendorProfile(slug: string): CatalogVendorRecord | nu
   const vendorImage = vendorImageForSlug(slug, vendor.image);
   const sections = (sectionsBySlug[slug] ?? []).map((section) => ({
     ...section,
-    items: section.items.map((item) => ({ ...item, image: vendorImage })),
+    items: section.items.map((item) => ({
+      ...item,
+      image: categoryImageFor({ name: item.name, description: item.description }),
+    })),
   }));
 
   return {

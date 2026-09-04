@@ -73,6 +73,18 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
+      - name: Gate on production readiness checks
+        shell: bash
+        run: |
+          ENV_FILE=.vercel/.env.production.local
+          if [ ! -f "$ENV_FILE" ]; then
+            echo "::error::$ENV_FILE not found — 'vercel pull' did not produce the production env."
+            exit 1
+          fi
+          echo "Validating the pulled production environment against the launch rules."
+          npm run check:production-env -- "$ENV_FILE"
+          npm run check:security-env -- "$ENV_FILE"
+
       - name: Build production output in GitHub Actions
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -85,3 +97,20 @@ jobs:
         run: |
           deployment_url="$(vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN")"
           echo "Production deployment: $deployment_url" >> "$GITHUB_STEP_SUMMARY"
+
+      # Non-blocking: the code deploy has already succeeded. This reports whether
+      # the live site is ready to accept pilot orders (real vendors, a paid proof
+      # order, notification channels). A NOT READY result means: do not switch
+      # NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE to "public" yet.
+      - name: Report pilot operating readiness (non-blocking)
+        continue-on-error: true
+        shell: bash
+        run: |
+          ENV_FILE=.vercel/.env.production.local
+          {
+            echo "### Pilot operating readiness"
+            echo '```'
+            npm run --silent check:operating-readiness -- "$ENV_FILE" || \
+              echo "NOT READY — safe to run the code, but keep public ordering disabled."
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

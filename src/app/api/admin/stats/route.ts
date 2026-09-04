@@ -23,6 +23,28 @@ function paidOrderWhere(from: Date) {
   };
 }
 
+const financialSums = {
+  subtotalCents: true,
+  totalCents: true,
+  deliveryFeeCents: true,
+  riderTipCents: true,
+  riderPayoutCents: true,
+  vendorPayoutCents: true,
+  platformFeeCents: true,
+} as const;
+
+const emptyFinancialAggregate = {
+  _sum: {
+    subtotalCents: 0,
+    totalCents: 0,
+    deliveryFeeCents: 0,
+    riderTipCents: 0,
+    riderPayoutCents: 0,
+    vendorPayoutCents: 0,
+    platformFeeCents: 0,
+  },
+};
+
 function averageDeliveryMinutes(orders: Array<{ createdAt: Date; updatedAt: Date }>): number {
   const durations = orders
     .map((order) => order.updatedAt.getTime() - order.createdAt.getTime())
@@ -45,8 +67,8 @@ export async function GET(req: NextRequest) {
     ordersToday,
     completedOrdersToday,
     deliveredOrders,
-    revenueToday,
-    revenueMonth,
+    financialsToday,
+    financialsMonth,
     activeVendors,
     approvedRiders,
     availableRiders,
@@ -74,12 +96,12 @@ export async function GET(req: NextRequest) {
       [],
     ),
     withQueryTimeout(
-      prisma.order.aggregate({ where: paidOrderWhere(today), _sum: { totalCents: true } }),
-      { _sum: { totalCents: 0 } },
+      prisma.order.aggregate({ where: paidOrderWhere(today), _sum: financialSums }),
+      emptyFinancialAggregate,
     ),
     withQueryTimeout(
-      prisma.order.aggregate({ where: paidOrderWhere(month), _sum: { totalCents: true } }),
-      { _sum: { totalCents: 0 } },
+      prisma.order.aggregate({ where: paidOrderWhere(month), _sum: financialSums }),
+      emptyFinancialAggregate,
     ),
     withQueryTimeout(
       prisma.vendor.count({ where: { status: { in: ["APPROVED", "ACTIVE"] }, isActive: true } }),
@@ -178,8 +200,24 @@ export async function GET(req: NextRequest) {
     stats: {
       ordersToday,
       completedOrdersToday,
-      revenueTodayCents: revenueToday._sum.totalCents || 0,
-      revenueMonthCents: revenueMonth._sum.totalCents || 0,
+      // Backwards-compatible names now intentionally mean platform revenue, not
+      // the full customer charge. Delivery fees and tips belong to riders.
+      revenueTodayCents: financialsToday._sum.platformFeeCents || 0,
+      revenueMonthCents: financialsMonth._sum.platformFeeCents || 0,
+      grossMerchandiseValueTodayCents: financialsToday._sum.subtotalCents || 0,
+      grossMerchandiseValueMonthCents: financialsMonth._sum.subtotalCents || 0,
+      customerPaymentsTodayCents: financialsToday._sum.totalCents || 0,
+      customerPaymentsMonthCents: financialsMonth._sum.totalCents || 0,
+      vendorSalesTodayCents: financialsToday._sum.vendorPayoutCents || 0,
+      vendorSalesMonthCents: financialsMonth._sum.vendorPayoutCents || 0,
+      deliveryFeesTodayCents: financialsToday._sum.deliveryFeeCents || 0,
+      deliveryFeesMonthCents: financialsMonth._sum.deliveryFeeCents || 0,
+      riderTipsTodayCents: financialsToday._sum.riderTipCents || 0,
+      riderTipsMonthCents: financialsMonth._sum.riderTipCents || 0,
+      riderEarningsTodayCents: financialsToday._sum.riderPayoutCents || 0,
+      riderEarningsMonthCents: financialsMonth._sum.riderPayoutCents || 0,
+      averageOrderValueTodayCents:
+        ordersToday > 0 ? Math.round((financialsToday._sum.subtotalCents || 0) / ordersToday) : 0,
       activeVendors,
       activeRiders: approvedRiders,
       availableRiders,

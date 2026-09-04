@@ -162,7 +162,14 @@ const nextConfig = {
     ];
   },
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: [
+      "lucide-react",
+      "recharts",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-scroll-area",
+      "@radix-ui/react-slot",
+      "@radix-ui/react-icons",
+    ],
     serverActions: {
       allowedOrigins: allowedServerActionOrigins,
     },
@@ -171,7 +178,7 @@ const nextConfig = {
     remotePatterns: configuredRemotePatterns,
     formats: ["image/avif", "image/webp"],
     qualities: [72, 75],
-    minimumCacheTTL: 86400,
+    minimumCacheTTL: 2592000,
   },
   webpack: (config) => {
     config.ignoreWarnings = [

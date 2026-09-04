@@ -18,7 +18,13 @@ const results = [];
 // page never reaches Playwright's "networkidle" state. Navigate on
 // "domcontentloaded" and then wait for the load event plus the main landmark.
 async function gotoStable(page, url) {
-  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+  try {
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("ERR_ABORTED")) throw error;
+    await page.waitForTimeout(250);
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+  }
   // A cold dev compile can push the load event past the default 30s budget.
   await page.waitForLoadState("load", { timeout: 60000 }).catch(() => {});
   await page
@@ -118,7 +124,12 @@ await scenario("mobile browse, search, cart and guest checkout", async (page) =>
     throw new Error("Homepage did not render Lethela content.");
   }
   await page.getByPlaceholder(/Search kota, groceries/i).fill("burger");
+  const searchPromise = page.waitForResponse((response) =>
+    response.url().includes("/api/ai/search"),
+  );
   await page.getByRole("button", { name: "Search", exact: true }).click();
+  const searchResponse = await searchPromise;
+  if (!searchResponse.ok()) throw new Error(`Search API returned ${searchResponse.status()}.`);
   await page.getByText("Search results", { exact: true }).waitFor();
   await gotoStable(page, `${baseUrl}/vendors/hello-tomato`);
   await dismissCookieBanner(page);
@@ -186,25 +197,37 @@ await scenario("rider sign-in and dashboard access", async (page) => {
     });
 });
 
-await scenario("admin remains behind owner-access verification", async (page) => {
+await scenario("admin signs in directly and reaches vendor approvals", async (page) => {
   await signIn(page, accounts.admin);
-  if (!page.url().includes("/owner-access")) {
-    throw new Error(`Admin bypassed owner verification: ${page.url()}`);
-  }
-  // The app gates /admin with a redirect to /owner-access (authz is enforced in
-  // the server component, never via a bare 403), so an unverified admin must be
-  // bounced there and must not see the admin dashboard shell.
   await gotoStable(page, `${baseUrl}/admin`);
-  if (!page.url().includes("/owner-access")) {
-    throw new Error(`Unverified admin was not redirected to owner-access: ${page.url()}`);
+  if (!page.url().includes("/admin")) {
+    throw new Error(`Admin reached unexpected path: ${page.url()}`);
   }
   const bodyText = await page.locator("body").innerText();
-  if (!bodyText.includes("Private admin entry")) {
-    throw new Error("Owner-access verification page did not render for unverified admin.");
+  if (!bodyText.includes("Vendor approvals")) {
+    throw new Error("Admin vendor approvals did not render after sign-in.");
   }
-  if (bodyText.includes("Operations queue")) {
-    throw new Error("Unverified admin rendered the admin dashboard.");
+});
+
+await scenario("customer registers with a five-character password", async (page) => {
+  await gotoStable(page, `${baseUrl}/signup`);
+  await dismissCookieBanner(page);
+  const email = `e2e.${Date.now()}@lethela.test`;
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Create password").fill("abcde");
+  const registrationPromise = page.waitForResponse((response) =>
+    response.url().includes("/api/auth/register"),
+  );
+  await page.getByRole("button", { name: "Create account" }).click();
+  const registrationResponse = await registrationPromise;
+  if (!registrationResponse.ok()) {
+    throw new Error(`Five-character registration returned ${registrationResponse.status()}.`);
   }
+  await page.waitForFunction(async () => {
+    const response = await fetch("/api/auth/session", { cache: "no-store" });
+    const session = await response.json();
+    return Boolean(session?.user?.id);
+  });
 });
 
 await scenario("every township category page shows approved listings", async (page) => {
@@ -242,6 +265,46 @@ await scenario("every township category page shows approved listings", async (pa
   }
   if (emptyCategories.length) {
     throw new Error(`Categories with no approved listings: ${emptyCategories.join(", ")}`);
+  }
+});
+
+await scenario("Google sign-in is offered and hands off directly to Google", async (page) => {
+  await gotoStable(page, `${baseUrl}/signin`);
+  await dismissCookieBanner(page);
+
+  const googleButton = page.getByRole("button", { name: /continue with google/i });
+  if (!(await googleButton.isVisible().catch(() => false))) {
+    console.log(
+      "  (skipped) GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not configured — Google button hidden.",
+    );
+    return;
+  }
+
+  await Promise.all([
+    page.waitForURL(/accounts\.google\.com/, { timeout: 30000, waitUntil: "commit" }),
+    googleButton.click(),
+  ]);
+
+  const handoff = new URL(page.url());
+  if (handoff.hostname !== "accounts.google.com") {
+    throw new Error(`Google sign-in did not reach Google: ${page.url()}`);
+  }
+  const params = handoff.searchParams;
+  if (!params.get("client_id")) {
+    throw new Error("Google authorization URL is missing client_id.");
+  }
+  if (params.get("redirect_uri") !== `${baseUrl}/api/auth/callback/google`) {
+    throw new Error(`Unexpected Google redirect_uri: ${params.get("redirect_uri")}`);
+  }
+
+  // The sign-up surfaces should offer the same option without extra steps.
+  for (const path of ["/signup", "/vendors/register", "/rider"]) {
+    await gotoStable(page, `${baseUrl}${path}`);
+    await dismissCookieBanner(page);
+    const signupGoogle = page.getByRole("button", { name: /sign up with google/i });
+    if (!(await signupGoogle.isVisible().catch(() => false))) {
+      throw new Error(`"Sign up with Google" is missing on ${path}.`);
+    }
   }
 });
 

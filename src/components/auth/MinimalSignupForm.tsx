@@ -16,6 +16,7 @@ import {
 } from "@/lib/registration-policy";
 import { pushDataLayerEvent, trackVisitorEvent } from "@/lib/visitor";
 import { safePostLoginPath } from "@/lib/auth-roles";
+import { rememberOAuthIntent } from "@/lib/google-auth";
 
 type AccountType = "customer" | "vendor" | "rider";
 
@@ -41,7 +42,7 @@ const ACCOUNT_CONFIG: Record<
     dashboard: "/vendors/dashboard?tab=profile&welcome=1",
     label: "Create vendor account",
     loadingLabel: "Creating vendor account...",
-    signInHref: "/vendors/signin",
+    signInHref: "/signin?callbackUrl=/vendors/dashboard",
   },
   rider: {
     endpoint: "/api/riders/register",
@@ -210,13 +211,16 @@ export default function MinimalSignupForm({
 
   return (
     <div>
-      {accountType === "customer" && googleEnabled ? (
+      {googleEnabled ? (
         <>
           <Button
             type="button"
             variant="outline"
             className="mb-4 h-12 w-full border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
-            onClick={() => void signIn("google", { callbackUrl: "/" })}
+            onClick={() => {
+              rememberOAuthIntent(accountType);
+              void signIn("google", { callbackUrl: config.dashboard });
+            }}
           >
             <span aria-hidden className="mr-2 text-base font-bold text-[#4285F4]">
               G

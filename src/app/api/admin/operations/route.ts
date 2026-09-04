@@ -133,6 +133,8 @@ export async function GET(req: NextRequest) {
         createdAt: true,
         vendor: { select: { name: true, phone: true } },
         user: { select: { email: true, name: true } },
+        assignedRider: { select: { fullName: true } },
+        _count: { select: { items: true } },
       },
     }),
     prisma.riderApplication.findMany({
@@ -178,6 +180,8 @@ export async function GET(req: NextRequest) {
         vendorPhone: order.vendor?.phone || null,
         customerName: order.user?.name || null,
         customerEmail: order.user?.email || null,
+        riderName: order.assignedRider?.fullName || null,
+        itemCount: order._count.items,
       };
     }),
     riders,

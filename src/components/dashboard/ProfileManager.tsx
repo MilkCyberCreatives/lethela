@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import DashCard from "./DashCard";
 import { STORE_TYPES } from "@/lib/vendor-readiness";
 
@@ -183,6 +184,7 @@ function profileHealth(vendor: VendorProfile | null) {
 }
 
 export default function ProfileManager() {
+  const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [vendor, setVendor] = useState<VendorProfile | null>(null);
   const [form, setForm] = useState<ProfileFormState | null>(null);
@@ -864,7 +866,8 @@ export default function ProfileManager() {
               type="button"
               onClick={async () => {
                 await fetch("/api/vendor/logout", { method: "POST" });
-                window.location.href = "/vendors/signin";
+                router.push("/signin");
+                router.refresh();
               }}
               className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
             >

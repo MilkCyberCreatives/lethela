@@ -4,7 +4,10 @@ import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
 
 export async function GET() {
-  const session = await requireVendor("STAFF");
+  const session = await requireVendor("STAFF").catch(() => null);
+  if (!session) {
+    return NextResponse.json({ ok: false, error: "Vendor access required." }, { status: 401 });
+  }
 
   const vendor = await prisma.vendor.findUnique({
     where: { id: session.vendorId },

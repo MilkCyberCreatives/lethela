@@ -222,8 +222,16 @@ export function inferProductCategory(input: {
 
   if (input.isAlcohol) return "Liquor";
   if (/kota|spatlho|magwinya/.test(haystack)) return "Kota";
+  if (/pizza/.test(haystack)) return "Pizza";
   if (/wing|drumstick/.test(haystack)) return "Wings";
+  if (/chicken|bucket/.test(haystack)) return "Chicken";
+  if (/burger|beef burger|chicken burger/.test(haystack)) return "Burger";
+  if (/mogodu|tripe/.test(haystack)) return "Mogodu";
+  if (/braai|nyama|wors|chops/.test(haystack)) return "Braai";
   if (/breakfast|vetkoek|oats|cereal/.test(haystack)) return "Breakfast";
+  if (/chip|fries|atchar chips/.test(haystack)) return "Chips";
+  if (/snack|crisps|biscuit|sweet|chocolate/.test(haystack)) return "Snacks";
+  if (/cold drink|cooldrink|juice|water|soda|drink/.test(haystack)) return "Drinks";
   if (/fruit|vegetable|produce|spinach|tomato|potato|onion/.test(haystack)) return "Fresh Produce";
   if (/cake|scone|biscuit|bakery|baked|magwinya/.test(haystack)) return "Bakery";
   if (/wig|braid|beauty|makeup|cosmetic|skincare|hair/.test(haystack)) return "Beauty & Hair";
@@ -235,19 +243,11 @@ export function inferProductCategory(input: {
   if (/stationery|exercise book|pen|pencil|school/.test(haystack)) return "School & Stationery";
   if (/car care|motor oil|vehicle|automotive/.test(haystack)) return "Auto & Car Care";
   if (/pet|dog food|cat food/.test(haystack)) return "Pets";
-  if (/braai|nyama|wors|chops/.test(haystack)) return "Braai";
-  if (/cold drink|cooldrink|juice|water|soda|drink/.test(haystack)) return "Drinks";
-  if (/chip|fries|atchar chips/.test(haystack)) return "Chips";
-  if (/snack|crisps|biscuit|sweet|chocolate/.test(haystack)) return "Snacks";
-  if (/burger|beef burger|chicken burger/.test(haystack)) return "Burger";
-  if (/mogodu|tripe/.test(haystack)) return "Mogodu";
   if (
     /egg|milk|bread|maize|rice|pasta|oil|beans|sugar|tea|snack|cold drink|cleaning|toiletr|baby|household|spaza|grocer/.test(
       haystack,
     )
   )
     return "Groceries";
-  if (/pizza/.test(haystack)) return "Pizza";
-  if (/chicken|bucket/.test(haystack)) return "Chicken";
   return "Burger";
 }

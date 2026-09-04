@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import AuthShell from "@/components/auth/AuthShell";
 import OnboardingPreview from "@/components/auth/OnboardingPreview";
 import RiderSignupForm from "@/components/auth/RiderSignupForm";
+import { isGoogleAuthEnabled } from "@/lib/google-auth";
 
 export const metadata: Metadata = {
   title: "Create your rider account",
@@ -28,7 +29,7 @@ export default function RiderPage() {
       supportingText="Use your email and a secure password now. Complete rider setup in your dashboard."
       compact
     >
-      <RiderSignupForm />
+      <RiderSignupForm googleEnabled={isGoogleAuthEnabled()} />
       <OnboardingPreview accountType="rider" />
     </AuthShell>
   );

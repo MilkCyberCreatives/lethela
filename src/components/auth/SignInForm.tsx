@@ -7,6 +7,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { safePostLoginPath, type AppRole } from "@/lib/auth-roles";
+import { REGISTRATION_PASSWORD_MIN_LENGTH } from "@/lib/registration-policy";
+import { rememberOAuthIntent } from "@/lib/google-auth";
 
 type VerificationState = "sent" | "success" | "invalid" | "";
 
@@ -97,11 +99,12 @@ export default function SignInForm({ googleEnabled = false }: { googleEnabled?: 
             type="button"
             variant="outline"
             className="h-12 w-full border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
-            onClick={() =>
+            onClick={() => {
+              rememberOAuthIntent("customer");
               void signIn("google", {
                 callbackUrl: safePostLoginPath("CUSTOMER", requestedPath),
-              })
-            }
+              });
+            }}
           >
             <GoogleMark />
             Continue with Google
@@ -164,7 +167,7 @@ export default function SignInForm({ googleEnabled = false }: { googleEnabled?: 
           <Input
             type="password"
             autoComplete="current-password"
-            minLength={8}
+            minLength={REGISTRATION_PASSWORD_MIN_LENGTH}
             required
             value={password}
             onChange={(event) => setPassword(event.target.value)}

@@ -6,6 +6,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { ArrowRight, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { REGISTRATION_PASSWORD_MIN_LENGTH } from "@/lib/registration-policy";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -61,12 +62,12 @@ export default function ResetPasswordForm() {
           <Input
             id="new-password"
             type="password"
-            placeholder="At least 8 characters"
+            placeholder={`At least ${REGISTRATION_PASSWORD_MIN_LENGTH} characters`}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="border-slate-300 bg-white text-black"
             autoComplete="new-password"
-            minLength={8}
+            minLength={REGISTRATION_PASSWORD_MIN_LENGTH}
             required
           />
         </label>
@@ -83,7 +84,7 @@ export default function ResetPasswordForm() {
             onChange={(event) => setConfirmPassword(event.target.value)}
             className="border-slate-300 bg-white text-black"
             autoComplete="new-password"
-            minLength={8}
+            minLength={REGISTRATION_PASSWORD_MIN_LENGTH}
             required
           />
         </label>

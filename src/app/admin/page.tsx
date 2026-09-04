@@ -1,18 +1,22 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Bike,
   Bell,
   CheckCircle2,
+  ChevronRight,
   Clock,
   LayoutDashboard,
   LineChart,
   LifeBuoy,
   LogOut,
   Mail,
+  Menu,
   MessageSquare,
   PackageCheck,
   RefreshCw,
@@ -24,6 +28,7 @@ import {
   UserCircle,
   Users,
   WalletCards,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -35,6 +40,7 @@ type DashboardView =
   | "users"
   | "orders"
   | "messages"
+  | "finance"
   | "operations";
 
 const DASHBOARD_VIEWS: DashboardView[] = [
@@ -45,6 +51,7 @@ const DASHBOARD_VIEWS: DashboardView[] = [
   "users",
   "orders",
   "messages",
+  "finance",
   "operations",
 ];
 
@@ -190,6 +197,19 @@ type AdminStats = {
   completedOrdersToday: number;
   revenueTodayCents: number;
   revenueMonthCents: number;
+  grossMerchandiseValueTodayCents: number;
+  grossMerchandiseValueMonthCents: number;
+  customerPaymentsTodayCents: number;
+  customerPaymentsMonthCents: number;
+  vendorSalesTodayCents: number;
+  vendorSalesMonthCents: number;
+  deliveryFeesTodayCents: number;
+  deliveryFeesMonthCents: number;
+  riderTipsTodayCents: number;
+  riderTipsMonthCents: number;
+  riderEarningsTodayCents: number;
+  riderEarningsMonthCents: number;
+  averageOrderValueTodayCents: number;
   activeVendors: number;
   activeRiders: number;
   availableRiders: number;
@@ -225,6 +245,8 @@ type OperationsOrder = {
   vendorPhone: string | null;
   customerName: string | null;
   customerEmail: string | null;
+  riderName: string | null;
+  itemCount: number;
 };
 
 type OperationsRider = {
@@ -280,6 +302,18 @@ type AdminAuditLog = {
   createdAt: string;
 };
 
+type AdminCustomer = {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  joinedAt: string;
+  status: "VERIFIED" | "UNVERIFIED" | "LOCKED";
+  orderCount: number;
+  totalSpentCents: number;
+  lastOrderAt: string | null;
+};
+
 type AdminOperationsPayload = {
   orders?: OperationsOrder[];
   riders?: OperationsRider[];
@@ -288,6 +322,19 @@ type AdminOperationsPayload = {
   dispatches?: OperationsDispatch[];
   auditLogs?: AdminAuditLog[];
 };
+
+type GlobalSearchResult = {
+  id: string;
+  title: string;
+  subtitle: string;
+  view: DashboardView;
+  query?: string;
+  orderRef?: string;
+};
+
+type GlobalSearchGroups = Partial<
+  Record<"orders" | "vendors" | "products" | "riders" | "customers", GlobalSearchResult[]>
+>;
 
 const VENDOR_STATUS_OPTIONS: VendorStatusOption[] = [
   "SUBMITTED",
@@ -322,16 +369,35 @@ const ADMIN_NAV_GROUPS: Array<{
   items: Array<{ id: DashboardView; label: string; icon: typeof LayoutDashboard }>;
 }> = [
   {
-    title: "Manage",
+    title: "Overview",
+    items: [{ id: "overview", label: "Overview", icon: LayoutDashboard }],
+  },
+  {
+    title: "Operations",
     items: [
-      { id: "overview", label: "Overview", icon: LayoutDashboard },
       { id: "operations", label: "Operations & support", icon: Activity },
+      { id: "orders", label: "Order monitoring", icon: ShoppingBag },
+    ],
+  },
+  {
+    title: "Marketplace",
+    items: [
       { id: "vendors", label: "Vendor approvals", icon: Store },
       { id: "products", label: "Product reviews", icon: PackageCheck },
-      { id: "orders", label: "Order monitoring", icon: ShoppingBag },
+    ],
+  },
+  {
+    title: "People",
+    items: [
       { id: "riders", label: "Rider applications", icon: Bike },
       { id: "users", label: "Customers", icon: Users },
+    ],
+  },
+  {
+    title: "Support & finance",
+    items: [
       { id: "messages", label: "Messages", icon: MessageSquare },
+      { id: "finance", label: "Finance", icon: WalletCards },
     ],
   },
 ];
@@ -425,16 +491,22 @@ function MetricCard({
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p className="mt-2 text-xs leading-5 text-white/60">{note}</p>
+      <p className="mt-2 flex items-center justify-between gap-2 text-xs leading-5 text-white/60">
+        <span>{note}</span>
+        {onClick ? (
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/35" aria-hidden="true" />
+        ) : null}
+      </p>
     </>
   );
 
   if (onClick) {
     return (
       <button
-        className="rounded-lg border border-white/10 bg-white/[0.045] p-3 text-left transition hover:border-lethela-primary/50 hover:bg-white/[0.07]"
+        className="admin-metric-card rounded-lg border border-white/10 bg-white/[0.045] p-4 text-left transition-colors hover:border-lethela-primary/60 hover:bg-lethela-primary/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
         type="button"
         onClick={onClick}
+        aria-label={`${label}: ${value}. ${note}`}
       >
         {content}
       </button>
@@ -442,7 +514,31 @@ function MetricCard({
   }
 
   return (
-    <article className="rounded-lg border border-white/10 bg-white/[0.045] p-3">{content}</article>
+    <article className="admin-metric-card rounded-lg border border-white/10 bg-white/[0.045] p-4">
+      {content}
+    </article>
+  );
+}
+
+function AdminSectionHeader({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-lethela-primary">
+          {eyebrow}
+        </p>
+        <h3 className="mt-1 text-lg font-semibold text-white">{title}</h3>
+      </div>
+      <p className="max-w-xl text-sm leading-6 text-white/55 sm:text-right">{description}</p>
+    </div>
   );
 }
 
@@ -456,29 +552,44 @@ function EmptyState({ title, text }: { title: string; text: string }) {
 }
 
 function AdminTopBar({
-  onRefresh,
-  loading,
   searchValue,
   onSearchChange,
   onSearch,
   onNotifications,
+  searchGroups,
+  searchLoading,
+  onSelectResult,
+  notificationCount,
 }: {
-  onRefresh: () => void;
-  loading: boolean;
   searchValue: string;
   onSearchChange: (value: string) => void;
   onSearch: () => void;
   onNotifications: () => void;
+  searchGroups: GlobalSearchGroups | null;
+  searchLoading: boolean;
+  onSelectResult: (result: GlobalSearchResult) => void;
+  notificationCount: number;
 }) {
+  const router = useRouter();
+  const resultCount = Object.values(searchGroups ?? {}).reduce(
+    (total, items) => total + (items?.length ?? 0),
+    0,
+  );
+
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#05071D]/95 backdrop-blur">
-      <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center gap-4 px-4 py-3 md:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#05071D]">
+      <div className="mx-auto flex min-h-[72px] w-full max-w-[1440px] flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap md:px-6 lg:px-8">
         <Link href="/admin" className="flex shrink-0 items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary font-bold">
-            L
-          </span>
-          <span>
-            <span className="block text-sm font-semibold">Lethela Admin</span>
+          <Image
+            src="/lethelalogo.svg"
+            alt="Lethela"
+            width={130}
+            height={32}
+            className="h-8 w-auto rounded bg-white px-2"
+            priority
+          />
+          <span className="hidden sm:block">
+            <span className="block text-sm font-semibold">Admin</span>
             <span className="block text-[11px] uppercase tracking-[0.14em] text-white/45">
               Command centre
             </span>
@@ -486,7 +597,7 @@ function AdminTopBar({
         </Link>
 
         <form
-          className="hidden min-w-0 flex-1 items-center rounded-lg border border-white/10 bg-white/[0.05] px-3 md:flex"
+          className="relative order-last flex min-w-0 basis-full items-center rounded-lg border border-white/10 bg-white/[0.05] px-2 sm:order-none sm:basis-auto sm:flex-1 sm:px-3"
           onSubmit={(event) => {
             event.preventDefault();
             onSearch();
@@ -495,7 +606,7 @@ function AdminTopBar({
           <Search className="h-4 w-4 text-white/40" />
           <input
             className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/35"
-            placeholder="Search loaded orders, vendors, products or riders..."
+            placeholder="Search orders, people or products..."
             value={searchValue}
             onChange={(event) => onSearchChange(event.target.value)}
             aria-label="Search dashboard records"
@@ -504,22 +615,62 @@ function AdminTopBar({
             type="submit"
             className="rounded-md px-2 py-1 text-xs font-semibold text-white/65 hover:text-white"
           >
-            Search
+            {searchLoading ? "Searching" : "Search"}
           </button>
+          {searchGroups ? (
+            <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-white/15 bg-[#090D2C] p-2">
+              {resultCount === 0 ? (
+                <p className="px-3 py-4 text-sm text-white/60">No matching records found.</p>
+              ) : (
+                Object.entries(searchGroups).map(([group, items]) =>
+                  items && items.length > 0 ? (
+                    <div key={group} className="py-1">
+                      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">
+                        {group}
+                      </p>
+                      {items.map((item) => (
+                        <button
+                          key={`${group}-${item.id}`}
+                          type="button"
+                          onClick={() => onSelectResult(item)}
+                          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-lethela-primary"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-white">
+                              {item.title}
+                            </span>
+                            <span className="block truncate text-xs text-white/55">
+                              {item.subtitle}
+                            </span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null,
+                )
+              )}
+            </div>
+          ) : null}
         </form>
 
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
-            aria-label="Open operational notifications"
+            className="relative grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
+            aria-label={`Open operational notifications${notificationCount ? `, ${notificationCount} active` : ""}`}
             onClick={onNotifications}
           >
             <Bell className="h-4 w-4" />
+            {notificationCount > 0 ? (
+              <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border border-[#05071D] bg-lethela-primary px-1 text-[10px] font-bold text-white">
+                {notificationCount > 99 ? "99+" : notificationCount}
+              </span>
+            ) : null}
           </button>
           <Link
             href="/contact"
-            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
+            className="hidden h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white sm:grid"
             aria-label="Open Lethela support"
           >
             <LifeBuoy className="h-4 w-4" />
@@ -528,15 +679,6 @@ function AdminTopBar({
             <UserCircle className="h-4 w-4" />
             Owner
           </span>
-          <Button
-            variant="outline"
-            className="hidden border-white/20 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary md:inline-flex"
-            onClick={onRefresh}
-            disabled={loading}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            {loading ? "Refreshing" : "Refresh"}
-          </Button>
           <Link
             href="/"
             className="hidden rounded-lg border border-white/20 px-3 py-2 text-sm text-white/72 transition hover:border-lethela-primary hover:text-lethela-primary lg:inline-flex"
@@ -549,7 +691,8 @@ function AdminTopBar({
             aria-label="Sign out"
             onClick={() => {
               void fetch("/api/admin/access", { method: "DELETE" }).finally(() => {
-                window.location.href = "/owner-access";
+                router.push("/owner-access");
+                router.refresh();
               });
             }}
           >
@@ -578,7 +721,8 @@ function PriorityCard({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-xl border border-white/10 bg-white/[0.055] p-5 text-left shadow-xl shadow-black/10 transition hover:border-lethela-primary/60 hover:bg-white/[0.08]"
+      aria-label={`${label}: ${value}. ${note}`}
+      className="admin-priority-card rounded-xl border border-white/10 bg-white/[0.055] p-5 text-left transition-colors hover:border-lethela-primary/60 hover:bg-lethela-primary/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -589,7 +733,10 @@ function PriorityCard({
           <Icon className="h-5 w-5" />
         </span>
       </div>
-      <p className="mt-4 text-sm leading-6 text-white/62">{note}</p>
+      <p className="mt-4 flex items-center justify-between gap-2 text-sm leading-6 text-white/62">
+        <span>{note}</span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-white/40" aria-hidden="true" />
+      </p>
     </button>
   );
 }
@@ -605,17 +752,25 @@ type AttentionRow = {
   target: DashboardView;
 };
 
-function NeedsAttentionTable({
+function priorityPillClass(priority: AttentionRow["priority"]) {
+  if (priority === "High") return "border-red-300/35 bg-red-300/10 text-red-100";
+  if (priority === "Medium") return "border-amber-300/35 bg-amber-300/10 text-amber-100";
+  return "border-white/15 bg-white/5 text-white/65";
+}
+
+function NeedsAttentionQueue({
   rows,
   onNavigate,
+  limit = 6,
 }: {
   rows: AttentionRow[];
   onNavigate: (view: DashboardView) => void;
+  limit?: number;
 }) {
   const activeRows = rows.filter(
     (row) => !["Clear", "0 pending", "0 in queue"].includes(row.status),
   );
-  const displayRows = activeRows.length > 0 ? activeRows : [];
+  const visibleRows = activeRows.slice(0, limit);
 
   return (
     <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
@@ -624,61 +779,66 @@ function NeedsAttentionTable({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
             Operations queue
           </p>
-          <h3 className="mt-1 text-xl font-semibold">Needs Attention</h3>
+          <h3 className="mt-1 text-xl font-semibold">Needs attention</h3>
         </div>
         <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/55">
-          {displayRows.length} active issue{displayRows.length === 1 ? "" : "s"}
+          {activeRows.length} active issue{activeRows.length === 1 ? "" : "s"}
         </span>
       </div>
 
-      {displayRows.length === 0 ? (
-        <EmptyState
-          title="No urgent issues right now."
-          text="New operational alerts will appear here automatically."
-        />
-      ) : (
-        <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[860px] border-separate border-spacing-y-2 text-left text-sm">
-            <thead className="text-xs uppercase tracking-[0.12em] text-white/38">
-              <tr>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Issue</th>
-                <th className="px-3 py-2">Township/Area</th>
-                <th className="px-3 py-2">Assigned to</th>
-                <th className="px-3 py-2">Priority</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayRows.map((row) => (
-                <tr key={`${row.type}-${row.issue}`} className="bg-[#080B27]/75">
-                  <td className="rounded-l-lg px-3 py-3 font-semibold">{row.type}</td>
-                  <td className="px-3 py-3 text-white/78">{row.issue}</td>
-                  <td className="px-3 py-3 text-white/68">{row.area}</td>
-                  <td className="px-3 py-3 text-white/68">{row.assignedTo}</td>
-                  <td className="px-3 py-3">
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-xs ${row.priority === "High" ? "border-red-300/35 bg-red-300/10 text-red-100" : row.priority === "Medium" ? "border-amber-300/35 bg-amber-300/10 text-amber-100" : "border-white/15 bg-white/5 text-white/65"}`}
-                    >
-                      {row.priority}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-white/68">{row.status}</td>
-                  <td className="rounded-r-lg px-3 py-3">
-                    <button
-                      type="button"
-                      className="rounded-md bg-lethela-primary px-3 py-2 text-xs font-semibold text-white"
-                      onClick={() => onNavigate(row.target)}
-                    >
-                      {row.action}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {activeRows.length === 0 ? (
+        <div className="mt-4">
+          <EmptyState
+            title="Nothing needs attention right now."
+            text="New operational alerts appear here automatically."
+          />
         </div>
+      ) : (
+        <>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {visibleRows.map((row) => (
+              <div
+                key={`${row.type}-${row.issue}`}
+                className="flex flex-col rounded-lg border border-white/10 bg-[#080B27]/70 p-4"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white/70">
+                    {row.type}
+                  </span>
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${priorityPillClass(row.priority)}`}
+                  >
+                    {row.priority}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm font-medium leading-snug text-white">{row.issue}</p>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-white/55">
+                  <span>{row.area}</span>
+                  <span>Owner: {row.assignedTo}</span>
+                  <span>{row.status}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigate(row.target)}
+                  className="mt-3 inline-flex w-fit items-center gap-1 rounded-md border border-lethela-primary bg-lethela-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
+                >
+                  {row.action}
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+          </div>
+          {activeRows.length > visibleRows.length ? (
+            <button
+              type="button"
+              onClick={() => onNavigate("operations")}
+              className="mt-4 inline-flex items-center gap-1 rounded-md border border-white/20 px-3 py-2 text-xs font-semibold text-white/80 transition-colors hover:border-lethela-primary hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
+            >
+              View all {activeRows.length} in Operations
+              <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          ) : null}
+        </>
       )}
     </section>
   );
@@ -694,6 +854,15 @@ export default function AdminPage() {
   const [riderSearch, setRiderSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [globalSearch, setGlobalSearch] = useState("");
+  const [globalSearchGroups, setGlobalSearchGroups] = useState<GlobalSearchGroups | null>(null);
+  const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
+  const [orderPaymentFilter, setOrderPaymentFilter] = useState("ALL");
+  const [orderPeriodFilter, setOrderPeriodFilter] = useState("ALL");
+  const [orderSort, setOrderSort] = useState<"newest" | "oldest">("newest");
+  const [orderPage, setOrderPage] = useState(1);
   const [vendors, setVendors] = useState<VendorApplication[]>([]);
   const [products, setProducts] = useState<ProductReview[]>([]);
   const [vendorCounts, setVendorCounts] = useState<VendorCounts>({
@@ -710,6 +879,15 @@ export default function AdminPage() {
     rejected: 0,
     total: 0,
   });
+  const [customers, setCustomers] = useState<AdminCustomer[]>([]);
+  const [customerState, setCustomerState] = useState<"idle" | "loading" | "ready" | "error">(
+    "idle",
+  );
+  const [customerError, setCustomerError] = useState<string | null>(null);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerSearchInput, setCustomerSearchInput] = useState("");
+  const [customerPage, setCustomerPage] = useState(1);
+  const [customerMeta, setCustomerMeta] = useState({ total: 0, pageCount: 1 });
   const [channels, setChannels] = useState<NotificationChannels | null>(null);
   const [applicantChannels, setApplicantChannels] = useState<ApplicantNotificationChannels | null>(
     null,
@@ -767,8 +945,39 @@ export default function AdminPage() {
 
   useEffect(() => {
     const syncViewFromUrl = () => {
-      const candidate = new URL(window.location.href).searchParams.get("view");
-      setView(isDashboardView(candidate) ? candidate : "vendors");
+      const params = new URL(window.location.href).searchParams;
+      const candidate = params.get("view");
+      const nextView = isDashboardView(candidate) ? candidate : "overview";
+      setView(nextView);
+
+      // Restore the deep-link filter (e.g. /admin?view=vendors&status=SUBMITTED)
+      // so a card click lands on the right list with the right filter applied.
+      const status = params.get("status")?.toUpperCase();
+      if (status) {
+        if (
+          nextView === "vendors" &&
+          VENDOR_STATUS_OPTIONS.includes(status as VendorStatusOption)
+        ) {
+          setVendorStatus(status as VendorStatusOption);
+        } else if (
+          nextView === "riders" &&
+          RIDER_STATUS_OPTIONS.includes(status as RiderStatusFilter)
+        ) {
+          setRiderStatus(status as RiderStatusFilter);
+        } else if (
+          nextView === "products" &&
+          PRODUCT_STATUS_OPTIONS.includes(status as ProductStatusFilter)
+        ) {
+          setProductStatus(status as ProductStatusFilter);
+        } else if (nextView === "orders") {
+          setOrderStatusFilter(status);
+        }
+      }
+      if (nextView === "orders") {
+        setOrderPeriodFilter(params.get("period")?.toUpperCase() || "ALL");
+        setOrderPaymentFilter(params.get("payment")?.toUpperCase() || "ALL");
+        setOrderSearch(params.get("q") || "");
+      }
     };
 
     syncViewFromUrl();
@@ -776,11 +985,44 @@ export default function AdminPage() {
     return () => window.removeEventListener("popstate", syncViewFromUrl);
   }, []);
 
-  const navigateView = useCallback((nextView: DashboardView) => {
+  const navigateView = useCallback((nextView: DashboardView, params?: Record<string, string>) => {
     setView(nextView);
     const url = new URL(window.location.href);
-    if (nextView === "vendors") url.searchParams.delete("view");
-    else url.searchParams.set("view", nextView);
+    // Keep only the navigation params we own so stale filters do not leak between sections.
+    for (const key of ["view", "status", "filter", "period", "payment", "q"])
+      url.searchParams.delete(key);
+    if (nextView !== "overview") url.searchParams.set("view", nextView);
+    for (const [key, value] of Object.entries(params ?? {})) {
+      if (value) url.searchParams.set(key, value);
+    }
+
+    // Apply a deep-linked status filter to the destination list immediately
+    // (the URL sync effect only runs on load / browser navigation).
+    const status = params?.status?.toUpperCase();
+    if (status) {
+      if (nextView === "vendors" && VENDOR_STATUS_OPTIONS.includes(status as VendorStatusOption)) {
+        setVendorStatus(status as VendorStatusOption);
+      } else if (
+        nextView === "riders" &&
+        RIDER_STATUS_OPTIONS.includes(status as RiderStatusFilter)
+      ) {
+        setRiderStatus(status as RiderStatusFilter);
+      } else if (
+        nextView === "products" &&
+        PRODUCT_STATUS_OPTIONS.includes(status as ProductStatusFilter)
+      ) {
+        setProductStatus(status as ProductStatusFilter);
+      } else if (nextView === "orders") {
+        setOrderStatusFilter(status);
+      }
+    }
+    if (nextView === "orders") {
+      setOrderPeriodFilter(params?.period?.toUpperCase() || "ALL");
+      setOrderPaymentFilter(params?.payment?.toUpperCase() || "ALL");
+      setOrderSearch(params?.q || "");
+      setOrderPage(1);
+    }
+
     window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
@@ -875,6 +1117,31 @@ export default function AdminPage() {
     [fetchAdminJson],
   );
 
+  const loadCustomers = useCallback(
+    async (search: string, page: number) => {
+      setCustomerState((current) => (current === "ready" ? "ready" : "loading"));
+      setCustomerError(null);
+      try {
+        const params = new URLSearchParams({ page: String(page), pageSize: "25" });
+        if (search) params.set("q", search);
+        const json = await fetchAdminJson(
+          `/api/admin/customers?${params.toString()}`,
+          "Failed to load customers.",
+        );
+        setCustomers((json.customers ?? []) as AdminCustomer[]);
+        setCustomerMeta({
+          total: Number(json.total ?? 0),
+          pageCount: Number(json.pageCount ?? 1),
+        });
+        setCustomerState("ready");
+      } catch (err: unknown) {
+        setCustomerError(getErrorMessage(err, "Failed to load customers."));
+        setCustomerState("error");
+      }
+    },
+    [fetchAdminJson],
+  );
+
   const applyOperationsJson = useCallback((json: AdminOperationsPayload) => {
     setOperationsOrders(json.orders ?? []);
     setOperationsRiders(json.riders ?? []);
@@ -956,6 +1223,21 @@ export default function AdminPage() {
       setError(getErrorMessage(err, "Failed to load rider applications."));
     });
   }, [loadRiderApplications, riderStatus]);
+
+  // Debounce the customer search box.
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setCustomerSearch(customerSearchInput.trim());
+      setCustomerPage(1);
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [customerSearchInput]);
+
+  // Load customers lazily: only when the Customers tab is open, then on search/page change.
+  useEffect(() => {
+    if (view !== "users") return;
+    void loadCustomers(customerSearch, customerPage);
+  }, [view, customerSearch, customerPage, loadCustomers]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1260,63 +1542,50 @@ export default function AdminPage() {
     [productSearch, products],
   );
 
-  const handleGlobalSearch = useCallback(() => {
+  const handleGlobalSearch = useCallback(async () => {
     const query = globalSearch.trim();
     if (!query) {
-      setNotice("Enter an order reference, vendor, product or rider name.");
+      setNotice("Enter an order reference, name, email, phone number, vendor or product.");
       return;
     }
-
-    const order = operationsOrders.find((item) =>
-      matchesSearch(query, [
-        item.publicId,
-        item.ozowReference,
-        item.vendorName,
-        item.customerEmail,
-      ]),
-    );
-    if (order) {
-      setOperationsForm((current) => ({
-        ...current,
-        orderRef: order.ozowReference || order.publicId,
-      }));
-      navigateView("operations");
-      setNotice(`Opened order ${order.ozowReference || order.publicId}.`);
-      return;
+    setGlobalSearchLoading(true);
+    setError(null);
+    try {
+      const json = await fetchAdminJson(
+        `/api/admin/search?q=${encodeURIComponent(query)}`,
+        "Unable to search dashboard records.",
+      );
+      setGlobalSearchGroups((json.groups ?? {}) as GlobalSearchGroups);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Unable to search dashboard records."));
+      setGlobalSearchGroups(null);
+    } finally {
+      setGlobalSearchLoading(false);
     }
+  }, [fetchAdminJson, globalSearch]);
 
-    const vendor = vendors.find((item) =>
-      matchesSearch(query, [item.name, item.email, item.phone, item.suburb, item.city]),
-    );
-    if (vendor) {
-      setVendorSearch(query);
-      navigateView("vendors");
-      return;
-    }
-
-    const product = products.find((item) =>
-      matchesSearch(query, [item.name, item.slug, item.vendor.name]),
-    );
-    if (product) {
-      setProductSearch(query);
-      navigateView("products");
-      return;
-    }
-
-    const rider = riders.find((item) =>
-      matchesSearch(query, [item.fullName, item.email, item.phone, item.vehicleRegistration]),
-    );
-    if (rider) {
-      setRiderSearch(query);
-      navigateView("riders");
-      return;
-    }
-
-    setVendorStatus("ALL");
-    setVendorSearch(query);
-    navigateView("vendors");
-    setNotice("No loaded match was found. Searching all vendor records instead.");
-  }, [globalSearch, navigateView, operationsOrders, products, riders, vendors]);
+  const selectGlobalSearchResult = useCallback(
+    (result: GlobalSearchResult) => {
+      setGlobalSearchGroups(null);
+      if (result.orderRef) {
+        setOperationsForm((current) => ({ ...current, orderRef: result.orderRef || "" }));
+      }
+      if (result.view === "vendors") {
+        setVendorStatus("ALL");
+        setVendorSearch(result.query || result.title);
+      } else if (result.view === "products") {
+        setProductStatus("ALL");
+        setProductSearch(result.query || result.title);
+      } else if (result.view === "riders") {
+        setRiderStatus("ALL");
+        setRiderSearch(result.query || result.title);
+      } else if (result.view === "users") {
+        setCustomerSearchInput(result.query || result.title);
+      }
+      navigateView(result.view, result.orderRef ? { q: result.orderRef } : undefined);
+    },
+    [navigateView],
+  );
 
   const attentionRows = useMemo<AttentionRow[]>(() => {
     const rows: AttentionRow[] = [];
@@ -1422,61 +1691,201 @@ export default function AdminPage() {
     return rows;
   }, [operationsOrders, operationsRefunds, products, riders, vendors]);
 
-  const orderMonitoring = [
+  const orderMonitoring: Array<{
+    label: string;
+    value: string | number;
+    note: string;
+    icon: typeof LayoutDashboard;
+  }> = [
     {
       label: "Pending deliveries",
-      value: stats?.pendingDeliveries ?? 0,
-      color: "bg-sky-300",
+      value: stats ? stats.pendingDeliveries : "—",
+      note: "Waiting, preparing or out for delivery.",
+      icon: ShoppingBag,
     },
     {
       label: "Delayed orders",
-      value: stats?.delayedOrders ?? 0,
-      color: "bg-amber-300",
+      value: stats ? stats.delayedOrders : "—",
+      note: "Past the expected delivery window.",
+      icon: Clock,
     },
     {
       label: "Failed deliveries",
-      value: stats?.failedDeliveries ?? 0,
-      color: "bg-red-300",
+      value: stats ? stats.failedDeliveries : "—",
+      note: "Delivery could not be completed.",
+      icon: Truck,
     },
     {
       label: "Cancelled orders",
-      value: stats?.cancelledOrders ?? 0,
-      color: "bg-lethela-primary",
+      value: stats ? stats.cancelledOrders : "—",
+      note: "Cancelled and may need review.",
+      icon: Bell,
     },
   ];
 
-  const customerSignals = [
-    {
-      label: "Customers",
-      value: stats?.customerCount ?? 0,
-      note: "Registered customer accounts.",
-    },
-    {
-      label: "Product reviews",
-      value: stats?.reviewCount ?? 0,
-      note: "Customer ratings submitted.",
-    },
-    {
-      label: "Satisfaction",
-      value: stats?.reviewCount ? `${stats.customerSatisfactionScore}/5` : "N/A",
-      note: "Starts when customers submit ratings.",
-    },
-  ];
+  const filteredOrders = useMemo(() => {
+    const now = new Date();
+    const startToday = new Date(now);
+    startToday.setHours(0, 0, 0, 0);
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const periodStart =
+      orderPeriodFilter === "TODAY"
+        ? startToday
+        : orderPeriodFilter === "MONTH"
+          ? startMonth
+          : null;
+
+    return operationsOrders
+      .filter((order) => {
+        const statusMatches =
+          orderStatusFilter === "ALL" ||
+          order.status === orderStatusFilter ||
+          (orderStatusFilter === "CANCELLED" && order.status === "CANCELED");
+        const paymentMatches =
+          orderPaymentFilter === "ALL" || order.paymentStatus === orderPaymentFilter;
+        const periodMatches = !periodStart || new Date(order.createdAt) >= periodStart;
+        return (
+          statusMatches &&
+          paymentMatches &&
+          periodMatches &&
+          matchesSearch(orderSearch, [
+            order.publicId,
+            order.ozowReference,
+            order.customerName,
+            order.customerEmail,
+            order.vendorName,
+            order.vendorPhone,
+            order.riderName,
+          ])
+        );
+      })
+      .sort((a, b) =>
+        orderSort === "newest"
+          ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+  }, [
+    operationsOrders,
+    orderPaymentFilter,
+    orderPeriodFilter,
+    orderSearch,
+    orderSort,
+    orderStatusFilter,
+  ]);
+
+  const orderPageCount = Math.max(1, Math.ceil(filteredOrders.length / 10));
+  const visibleOrders = filteredOrders.slice((orderPage - 1) * 10, orderPage * 10);
+
+  useEffect(() => {
+    setOrderPage(1);
+  }, [orderPaymentFilter, orderPeriodFilter, orderSearch, orderSort, orderStatusFilter]);
+
+  const currentViewLabel =
+    ADMIN_NAV_GROUPS.flatMap((group) => group.items).find((item) => item.id === view)?.label ||
+    "Overview";
 
   return (
     <main className="min-h-screen bg-[#05071D] text-white">
       <AdminTopBar
-        onRefresh={load}
-        loading={loading}
         searchValue={globalSearch}
         onSearchChange={setGlobalSearch}
         onSearch={handleGlobalSearch}
         onNotifications={() => navigateView("operations")}
+        searchGroups={globalSearchGroups}
+        searchLoading={globalSearchLoading}
+        onSelectResult={selectGlobalSearchResult}
+        notificationCount={attentionRows.length}
       />
+
+      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3 px-4 pt-4 lg:hidden">
+        <div className="text-xs text-slate-500" aria-label="Breadcrumb">
+          Dashboard <span aria-hidden="true">/</span>{" "}
+          <span className="font-semibold text-slate-900">{currentViewLabel}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMobileNavigationOpen(true)}
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-lethela-primary"
+          aria-expanded={mobileNavigationOpen}
+          aria-controls="admin-mobile-navigation"
+        >
+          <Menu className="h-4 w-4" />
+          Menu
+        </button>
+      </div>
+
+      {mobileNavigationOpen ? (
+        <div
+          className="fixed inset-0 z-[70] lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Admin navigation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/70"
+            aria-label="Close navigation"
+            onClick={() => setMobileNavigationOpen(false)}
+          />
+          <aside
+            id="admin-mobile-navigation"
+            className="absolute bottom-0 left-0 top-0 w-[min(88vw,340px)] overflow-y-auto border-r border-white/10 bg-[#090D2C] p-4"
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
+                  Lethela admin
+                </p>
+                <p className="mt-1 font-semibold text-white">Command centre</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileNavigationOpen(false)}
+                className="grid h-11 w-11 place-items-center rounded-lg border border-white/15 text-white"
+                aria-label="Close navigation"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <nav className="mt-4 grid gap-5">
+              {ADMIN_NAV_GROUPS.map((group) => (
+                <div key={`mobile-${group.title}`}>
+                  <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+                    {group.title}
+                  </p>
+                  <div className="grid gap-1.5">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={`mobile-${item.id}`}
+                          type="button"
+                          onClick={() => {
+                            navigateView(item.id);
+                            setMobileNavigationOpen(false);
+                          }}
+                          className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm ${
+                            view === item.id
+                              ? "bg-lethela-primary text-white"
+                              : "border border-white/10 text-white/75"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      ) : null}
 
       <section className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[280px,minmax(0,1fr)]">
-          <aside className="rounded-xl border border-white/10 bg-[#090D2C]/95 p-4 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:overflow-y-auto">
+          <aside className="hidden rounded-xl border border-white/10 bg-[#090D2C]/95 p-4 lg:sticky lg:top-24 lg:block lg:h-[calc(100vh-7rem)] lg:overflow-y-auto">
             <div className="border-b border-white/10 pb-4">
               <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
                 Lethela Admin
@@ -1502,7 +1911,7 @@ export default function AdminPage() {
                           key={`${group.title}-${item.label}`}
                           className={`flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${
                             active
-                              ? "bg-lethela-primary text-white shadow-lg shadow-lethela-primary/20"
+                              ? "bg-lethela-primary text-white"
                               : "bg-white/[0.025] text-white/68 hover:bg-white/[0.075] hover:text-white"
                           }`}
                           type="button"
@@ -1520,21 +1929,39 @@ export default function AdminPage() {
 
             <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.035] p-3">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
-                Quick links
+                Quick actions
               </p>
-              <div className="mt-3 grid gap-2 text-sm">
-                <Link className="text-white/75 hover:text-white" href="/vendors/dashboard">
-                  Vendor dashboard
-                </Link>
-                <Link className="text-white/75 hover:text-white" href="/rider/dashboard">
-                  Rider dashboard
-                </Link>
+              <div className="mt-3 grid gap-1.5 text-sm">
+                <button
+                  type="button"
+                  onClick={() => navigateView("vendors", { status: "SUBMITTED" })}
+                  className="flex min-h-10 items-center justify-between rounded-md px-2 text-left text-white/75 hover:bg-white/[0.07] hover:text-white"
+                >
+                  Review vendors
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateView("riders", { status: "SUBMITTED" })}
+                  className="flex min-h-10 items-center justify-between rounded-md px-2 text-left text-white/75 hover:bg-white/[0.07] hover:text-white"
+                >
+                  Review riders
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateView("orders")}
+                  className="flex min-h-10 items-center justify-between rounded-md px-2 text-left text-white/75 hover:bg-white/[0.07] hover:text-white"
+                >
+                  View live orders
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           </aside>
 
           <div className="min-w-0 space-y-6">
-            <section className="rounded-xl border border-white/10 bg-[#0C1132] p-5 shadow-2xl shadow-black/20">
+            <section className="rounded-xl border border-white/10 bg-[#0C1132] p-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
@@ -1542,13 +1969,31 @@ export default function AdminPage() {
                   </p>
                   <h2 className="mt-2 text-2xl font-bold md:text-3xl">Lethela dashboard</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/68">
-                    Approve vendors, review orders and keep the marketplace moving.
+                    Monitor orders, vendors, riders, customers and marketplace operations.
                   </p>
-                  <p className="mt-2 text-xs text-white/45" aria-live="polite">
-                    {lastRefreshedAt
-                      ? `Last synced ${lastRefreshedAt.toLocaleTimeString()}`
-                      : "Connecting to live operations..."}
-                  </p>
+                  <div
+                    className="mt-3 flex flex-wrap items-center gap-3 text-xs"
+                    aria-live="polite"
+                  >
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold ${
+                        lastRefreshedAt && !error
+                          ? "border-emerald-300/35 bg-emerald-300/10 text-emerald-100"
+                          : "border-white/15 bg-white/5 text-white/55"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${lastRefreshedAt && !error ? "bg-emerald-400" : "bg-white/35"}`}
+                        aria-hidden="true"
+                      />
+                      {lastRefreshedAt && !error ? "Live data connected" : "Connecting"}
+                    </span>
+                    <span className="text-white/45">
+                      {lastRefreshedAt
+                        ? `Last synced ${lastRefreshedAt.toLocaleTimeString()}`
+                        : "Waiting for the first successful sync"}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -1585,79 +2030,131 @@ export default function AdminPage() {
 
             {view === "overview" ? (
               <div className="space-y-5">
-                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <PriorityCard
-                    label="Live orders"
-                    value={stats?.pendingDeliveries ?? 0}
-                    note="Orders waiting, preparing or out for delivery."
-                    icon={ShoppingBag}
-                    onClick={() => navigateView("orders")}
+                <section>
+                  <AdminSectionHeader
+                    eyebrow="Live marketplace"
+                    title="Immediate operations"
+                    description="The four signals most likely to require an owner decision right now."
                   />
-                  <PriorityCard
-                    label="Orders needing action"
-                    value={(stats?.delayedOrders ?? 0) + (stats?.failedDeliveries ?? 0)}
-                    note="Delayed, failed or exception orders."
-                    icon={Bell}
-                    onClick={() => navigateView("operations")}
-                  />
-                  <PriorityCard
-                    label="Pending vendor approvals"
-                    value={vendorCounts.submitted ?? vendorCounts.pending ?? 0}
-                    note="Complete vendor profiles waiting for owner review."
-                    icon={Store}
-                    onClick={() => navigateView("vendors")}
-                  />
-                  <PriorityCard
-                    label="Riders online now"
-                    value={stats?.availableRiders ?? 0}
-                    note={`${stats?.activeRiders ?? riderCounts.approved} approved rider(s) in total.`}
-                    icon={Bike}
-                    onClick={() => navigateView("riders")}
-                  />
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <PriorityCard
+                      label="Live orders"
+                      value={stats ? stats.pendingDeliveries : "—"}
+                      note="Orders waiting, preparing or out for delivery."
+                      icon={ShoppingBag}
+                      onClick={() => navigateView("orders")}
+                    />
+                    <PriorityCard
+                      label="Orders needing action"
+                      value={stats ? stats.delayedOrders + stats.failedDeliveries : "—"}
+                      note="Delayed, failed or exception orders."
+                      icon={Bell}
+                      onClick={() => navigateView("operations")}
+                    />
+                    <PriorityCard
+                      label="Pending vendor approvals"
+                      value={vendorCounts.submitted ?? vendorCounts.pending ?? 0}
+                      note="Complete vendor profiles waiting for owner review."
+                      icon={Store}
+                      onClick={() => navigateView("vendors", { status: "SUBMITTED" })}
+                    />
+                    <PriorityCard
+                      label="Riders online now"
+                      value={stats ? stats.availableRiders : "—"}
+                      note={`${stats?.activeRiders ?? riderCounts.approved} approved rider(s) in total.`}
+                      icon={Bike}
+                      onClick={() => navigateView("riders", { status: "APPROVED" })}
+                    />
+                  </div>
                 </section>
 
-                <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                  <MetricCard
-                    label="Revenue today"
-                    value={money(stats?.revenueTodayCents ?? 0)}
-                    note="Paid successful orders today."
-                    icon={WalletCards}
+                <section>
+                  <AdminSectionHeader
+                    eyebrow="Performance"
+                    title="Business today"
+                    description="Paid-order performance and service quality, kept separate from rider earnings."
                   />
-                  <MetricCard
-                    label="Revenue month"
-                    value={money(stats?.revenueMonthCents ?? 0)}
-                    note="Paid successful orders this month."
-                    icon={LineChart}
-                  />
-                  <MetricCard
-                    label="Orders today"
-                    value={stats?.ordersToday ?? 0}
-                    note={`${stats?.completedOrdersToday ?? 0} delivered today.`}
-                    icon={PackageCheck}
-                  />
-                  <MetricCard
-                    label="Cancelled orders"
-                    value={stats?.cancelledOrders ?? 0}
-                    note="Cancelled orders needing review."
-                    icon={Clock}
-                  />
-                  <MetricCard
-                    label="Average delivery"
-                    value={
-                      stats?.averageDeliveryTimeMins ? `${stats.averageDeliveryTimeMins}m` : "N/A"
-                    }
-                    note="Starts after completed deliveries."
-                    icon={Truck}
-                  />
-                  <MetricCard
-                    label="Satisfaction"
-                    value={stats?.reviewCount ? `${stats.customerSatisfactionScore}/5` : "N/A"}
-                    note="Customer review signal."
-                    icon={CheckCircle2}
-                  />
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <MetricCard
+                      label="Platform revenue today"
+                      value={stats ? money(stats.revenueTodayCents) : "—"}
+                      note="Commission only; rider fees and tips excluded."
+                      icon={WalletCards}
+                      onClick={() => navigateView("finance", { period: "today" })}
+                    />
+                    <MetricCard
+                      label="Platform revenue this month"
+                      value={stats ? money(stats.revenueMonthCents) : "—"}
+                      note="Commission from paid orders this month."
+                      icon={LineChart}
+                      onClick={() => navigateView("finance", { period: "month" })}
+                    />
+                    <MetricCard
+                      label="Orders today"
+                      value={stats ? stats.ordersToday : "—"}
+                      note={`${stats?.completedOrdersToday ?? 0} delivered today.`}
+                      icon={PackageCheck}
+                      onClick={() => navigateView("orders", { period: "today" })}
+                    />
+                    <MetricCard
+                      label="Completed deliveries"
+                      value={stats ? stats.completedOrdersToday : "—"}
+                      note="Orders delivered today."
+                      icon={CheckCircle2}
+                      onClick={() => navigateView("orders", { status: "DELIVERED" })}
+                    />
+                    <MetricCard
+                      label="Cancelled orders"
+                      value={stats ? stats.cancelledOrders : "—"}
+                      note="Cancelled orders needing review."
+                      icon={Clock}
+                      onClick={() => navigateView("orders", { status: "CANCELLED" })}
+                    />
+                    <MetricCard
+                      label="Average delivery"
+                      value={
+                        !stats
+                          ? "—"
+                          : stats.averageDeliveryTimeMins
+                            ? `${stats.averageDeliveryTimeMins}m`
+                            : "N/A"
+                      }
+                      note={
+                        stats && !stats.averageDeliveryTimeMins
+                          ? "No completed deliveries yet."
+                          : "Average time from order to delivery."
+                      }
+                      icon={Truck}
+                      onClick={() => navigateView("operations")}
+                    />
+                    <MetricCard
+                      label="Customer satisfaction"
+                      value={
+                        !stats
+                          ? "—"
+                          : stats.reviewCount
+                            ? `${stats.customerSatisfactionScore}/5`
+                            : "N/A"
+                      }
+                      note={
+                        stats && !stats.reviewCount
+                          ? "No customer reviews submitted yet."
+                          : `Across ${stats?.reviewCount ?? 0} review(s).`
+                      }
+                      icon={CheckCircle2}
+                      onClick={() => navigateView("operations")}
+                    />
+                    <MetricCard
+                      label="Average order value"
+                      value={stats ? money(stats.averageOrderValueTodayCents) : "—"}
+                      note="Average product value per order today."
+                      icon={ShoppingBag}
+                      onClick={() => navigateView("finance", { period: "today" })}
+                    />
+                  </div>
                 </section>
 
-                <NeedsAttentionTable rows={attentionRows} onNavigate={navigateView} />
+                <NeedsAttentionQueue rows={attentionRows} onNavigate={navigateView} />
               </div>
             ) : null}
 
@@ -1949,18 +2446,21 @@ export default function AdminPage() {
                     value={riderCounts.pending}
                     note="New rider applications."
                     icon={Clock}
+                    onClick={() => setRiderStatus("SUBMITTED")}
                   />
                   <MetricCard
                     label="Review"
                     value={riderCounts.underReview}
                     note="Documents being checked."
                     icon={PackageCheck}
+                    onClick={() => setRiderStatus("UNDER_REVIEW")}
                   />
                   <MetricCard
                     label="Approved"
                     value={riderCounts.approved}
                     note="Riders ready for shifts."
                     icon={Bike}
+                    onClick={() => setRiderStatus("APPROVED")}
                   />
                 </div>
                 {filteredRiders.map((rider) => (
@@ -2047,60 +2547,152 @@ export default function AdminPage() {
 
             {view === "users" ? (
               <section className="space-y-4">
-                <div className="grid gap-3 md:grid-cols-3">
-                  {customerSignals.map((signal) => (
-                    <MetricCard
-                      key={signal.label}
-                      label={signal.label}
-                      value={signal.value}
-                      note={signal.note}
-                      icon={Users}
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+                      People
+                    </p>
+                    <h3 className="mt-1 text-xl font-semibold">Customers</h3>
+                    <p className="mt-1 text-sm text-white/55">
+                      {customerMeta.total} registered account{customerMeta.total === 1 ? "" : "s"}.
+                      Contact details are for authorised support use only.
+                    </p>
+                  </div>
+                  <label className="w-full md:w-80">
+                    <span className="sr-only">Search customers</span>
+                    <input
+                      type="search"
+                      value={customerSearchInput}
+                      onChange={(event) => setCustomerSearchInput(event.target.value)}
+                      placeholder="Search name, email or phone"
+                      className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black placeholder:text-black/40"
+                      aria-label="Search customers"
                     />
-                  ))}
+                  </label>
                 </div>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-                    <p className="text-xs uppercase tracking-[0.14em] text-white/45">
-                      Customer service
-                    </p>
-                    <h3 className="mt-1 text-lg font-semibold">Account and order support</h3>
-                    <p className="mt-2 text-sm leading-6 text-white/62">
-                      Use order monitoring for delivery or payment issues, and messages for direct
-                      customer communication. Customer personal details remain restricted to
-                      authorised support workflows.
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
+
+                <div className="rounded-lg border border-white/10 bg-white/[0.035]">
+                  {customerState === "error" ? (
+                    <div className="p-6 text-sm">
+                      <p className="font-semibold text-white">Unable to load customers.</p>
+                      <p className="mt-1 text-white/60">{customerError}</p>
                       <Button
-                        className="bg-lethela-primary text-white hover:opacity-90"
-                        onClick={() => navigateView("orders")}
+                        className="mt-3 bg-lethela-primary text-white hover:opacity-90"
+                        onClick={() => void loadCustomers(customerSearch, customerPage)}
                       >
-                        Open order monitoring
+                        Retry
+                      </Button>
+                    </div>
+                  ) : customerState === "loading" && customers.length === 0 ? (
+                    <div className="space-y-2 p-4">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <div
+                          key={index}
+                          className="h-12 animate-pulse rounded-md border border-white/5 bg-white/[0.04]"
+                        />
+                      ))}
+                    </div>
+                  ) : customers.length === 0 ? (
+                    <div className="p-6 text-sm">
+                      <p className="font-semibold text-white">
+                        {customerSearch
+                          ? "No customers match this search."
+                          : "No customer accounts yet."}
+                      </p>
+                      <p className="mt-1 text-white/60">
+                        {customerSearch
+                          ? "Check the spelling or clear the search."
+                          : "Accounts appear here as soon as customers register."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto p-2">
+                      <table className="w-full min-w-[880px] border-separate border-spacing-y-2 text-left text-sm">
+                        <thead className="text-xs uppercase tracking-[0.12em] text-white/38">
+                          <tr>
+                            <th className="px-3 py-2">Customer</th>
+                            <th className="px-3 py-2">Phone</th>
+                            <th className="px-3 py-2">Orders</th>
+                            <th className="px-3 py-2">Total spent</th>
+                            <th className="px-3 py-2">Last order</th>
+                            <th className="px-3 py-2">Joined</th>
+                            <th className="px-3 py-2">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {customers.map((customer) => (
+                            <tr key={customer.id} className="bg-[#080B27]/75">
+                              <td className="rounded-l-lg px-3 py-3">
+                                <div className="font-semibold text-white">
+                                  {customer.name || "—"}
+                                </div>
+                                <div className="text-xs text-white/55">{customer.email}</div>
+                              </td>
+                              <td className="px-3 py-3 text-white/70">{customer.phone || "—"}</td>
+                              <td className="px-3 py-3 text-white/70">{customer.orderCount}</td>
+                              <td className="px-3 py-3 text-white/70">
+                                {money(customer.totalSpentCents)}
+                              </td>
+                              <td className="px-3 py-3 text-white/60">
+                                {customer.lastOrderAt ? formatDate(customer.lastOrderAt) : "—"}
+                              </td>
+                              <td className="px-3 py-3 text-white/60">
+                                {formatDate(customer.joinedAt)}
+                              </td>
+                              <td className="rounded-r-lg px-3 py-3">
+                                <span
+                                  className={`rounded-full border px-2.5 py-1 text-xs ${
+                                    customer.status === "LOCKED"
+                                      ? "border-red-300/35 bg-red-300/10 text-red-100"
+                                      : customer.status === "VERIFIED"
+                                        ? "border-emerald-300/35 bg-emerald-300/10 text-emerald-100"
+                                        : "border-white/15 bg-white/5 text-white/65"
+                                  }`}
+                                >
+                                  {customer.status === "VERIFIED"
+                                    ? "Verified"
+                                    : customer.status === "LOCKED"
+                                      ? "Locked"
+                                      : "Unverified"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {customerMeta.pageCount > 1 ? (
+                  <div className="flex items-center justify-between gap-3 text-sm text-white/60">
+                    <span>
+                      Page {customerPage} of {customerMeta.pageCount} · {customerMeta.total} total
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="border-white/20 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                        disabled={customerPage <= 1 || customerState === "loading"}
+                        onClick={() => setCustomerPage((page) => Math.max(1, page - 1))}
+                      >
+                        Previous
                       </Button>
                       <Button
                         variant="outline"
-                        className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
-                        onClick={() => navigateView("messages")}
+                        className="border-white/20 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                        disabled={
+                          customerPage >= customerMeta.pageCount || customerState === "loading"
+                        }
+                        onClick={() =>
+                          setCustomerPage((page) => Math.min(customerMeta.pageCount, page + 1))
+                        }
                       >
-                        Open messages
+                        Next
                       </Button>
                     </div>
                   </div>
-                  <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-                    <p className="text-xs uppercase tracking-[0.14em] text-white/45">Privacy</p>
-                    <h3 className="mt-1 text-lg font-semibold">Protected customer records</h3>
-                    <p className="mt-2 text-sm leading-6 text-white/62">
-                      Account, order and privacy-request data stays behind authenticated, no-store
-                      admin APIs. Use the audit log for sensitive operational changes.
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="mt-4 border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
-                      onClick={() => navigateView("operations")}
-                    >
-                      Review audit activity
-                    </Button>
-                  </div>
-                </div>
+                ) : null}
               </section>
             ) : null}
 
@@ -2108,16 +2700,14 @@ export default function AdminPage() {
               <section className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {orderMonitoring.map((item) => (
-                    <div
+                    <MetricCard
                       key={item.label}
-                      className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-4"
-                    >
-                      <div>
-                        <p className="text-sm text-white/65">{item.label}</p>
-                        <p className="mt-1 text-2xl font-bold">{item.value}</p>
-                      </div>
-                      <span className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
-                    </div>
+                      label={item.label}
+                      value={item.value}
+                      note={item.note}
+                      icon={item.icon}
+                      onClick={() => navigateView("operations")}
+                    />
                   ))}
                 </div>
 
@@ -2130,38 +2720,159 @@ export default function AdminPage() {
                       <h3 className="mt-1 text-lg font-semibold">Order monitoring</h3>
                     </div>
                     <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/55">
-                      {operationsOrders.length} loaded
+                      {filteredOrders.length} matching · {operationsOrders.length} recent loaded
                     </span>
                   </div>
-                  {operationsOrders.length === 0 ? (
+
+                  <div className="mt-4 grid gap-3 rounded-lg border border-white/10 bg-white/[0.025] p-3 sm:grid-cols-2 xl:grid-cols-6">
+                    <label className="xl:col-span-2">
+                      <span className="sr-only">Search orders</span>
+                      <input
+                        type="search"
+                        value={orderSearch}
+                        onChange={(event) => setOrderSearch(event.target.value)}
+                        placeholder="Order, customer, vendor or rider"
+                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black placeholder:text-black/45"
+                      />
+                    </label>
+                    <label>
+                      <span className="sr-only">Order status</span>
+                      <select
+                        value={orderStatusFilter}
+                        onChange={(event) => setOrderStatusFilter(event.target.value)}
+                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black"
+                      >
+                        <option value="ALL">All statuses</option>
+                        {[
+                          "NEW",
+                          "VENDOR_ACCEPTED",
+                          "PREPARING",
+                          "READY_FOR_PICKUP",
+                          "RIDER_ASSIGNED",
+                          "PICKED_UP",
+                          "ON_THE_WAY",
+                          "DELIVERED",
+                          "CANCELLED",
+                          "FAILED",
+                        ].map((status) => (
+                          <option key={status} value={status}>
+                            {status.replaceAll("_", " ")}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span className="sr-only">Payment status</span>
+                      <select
+                        value={orderPaymentFilter}
+                        onChange={(event) => setOrderPaymentFilter(event.target.value)}
+                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black"
+                      >
+                        <option value="ALL">All payments</option>
+                        <option value="PENDING">Pending payment</option>
+                        <option value="PAID">Paid</option>
+                        <option value="SUCCESS">Successful</option>
+                        <option value="FAILED">Failed</option>
+                        <option value="REFUNDED">Refunded</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span className="sr-only">Order period</span>
+                      <select
+                        value={orderPeriodFilter}
+                        onChange={(event) => setOrderPeriodFilter(event.target.value)}
+                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black"
+                      >
+                        <option value="ALL">All recent dates</option>
+                        <option value="TODAY">Today</option>
+                        <option value="MONTH">This month</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span className="sr-only">Sort orders</span>
+                      <select
+                        value={orderSort}
+                        onChange={(event) =>
+                          setOrderSort(event.target.value as "newest" | "oldest")
+                        }
+                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black"
+                      >
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  {filteredOrders.length === 0 ? (
                     <div className="mt-4">
                       <EmptyState
-                        title="No orders loaded"
-                        text="Paid and pending orders will appear here as customers begin ordering."
+                        title={
+                          operationsOrders.length
+                            ? "No orders match these filters"
+                            : "No orders loaded"
+                        }
+                        text={
+                          operationsOrders.length
+                            ? "Clear or change the filters to see other recent orders."
+                            : "Paid and pending orders will appear here as customers begin ordering."
+                        }
                       />
                     </div>
                   ) : (
                     <div className="mt-4 overflow-x-auto">
-                      <table className="min-w-[900px] text-sm">
+                      <table className="min-w-[1320px] text-sm">
                         <thead>
                           <tr>
-                            <th className="px-3 py-3 text-left">Reference</th>
+                            <th className="px-3 py-3 text-left">Order</th>
+                            <th className="px-3 py-3 text-left">Customer</th>
                             <th className="px-3 py-3 text-left">Vendor</th>
-                            <th className="px-3 py-3 text-left">Order status</th>
-                            <th className="px-3 py-3 text-left">Payment</th>
+                            <th className="px-3 py-3 text-left">Rider</th>
+                            <th className="px-3 py-3 text-right">Items</th>
+                            <th className="px-3 py-3 text-right">Subtotal</th>
+                            <th className="px-3 py-3 text-right">Delivery</th>
+                            <th className="px-3 py-3 text-right">Tip</th>
                             <th className="px-3 py-3 text-right">Total</th>
+                            <th className="px-3 py-3 text-left">Payment</th>
+                            <th className="px-3 py-3 text-left">Status</th>
                             <th className="px-3 py-3 text-left">Created</th>
                             <th className="px-3 py-3 text-right">Action</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {operationsOrders.map((order) => (
+                          {visibleOrders.map((order) => (
                             <tr key={order.id}>
                               <td className="border-t border-white/10 px-3 py-3 font-semibold">
                                 {order.ozowReference || order.publicId}
                               </td>
                               <td className="border-t border-white/10 px-3 py-3">
+                                <div>{order.customerName || "Guest"}</div>
+                                <div className="text-xs text-white/50">
+                                  {order.customerEmail || "—"}
+                                </div>
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3">
                                 {order.vendorName}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3">
+                                {order.riderName || "Unassigned"}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                                {order.itemCount}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                                {money(order.subtotalCents)}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                                {money(order.deliveryFeeCents)}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                                {money(order.riderTipCents)}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3 text-right font-semibold">
+                                {money(order.totalCents)}
+                              </td>
+                              <td className="border-t border-white/10 px-3 py-3">
+                                {order.paymentStatus}
                               </td>
                               <td className="border-t border-white/10 px-3 py-3">
                                 <span
@@ -2169,12 +2880,6 @@ export default function AdminPage() {
                                 >
                                   {order.status.replaceAll("_", " ")}
                                 </span>
-                              </td>
-                              <td className="border-t border-white/10 px-3 py-3">
-                                {order.paymentStatus}
-                              </td>
-                              <td className="border-t border-white/10 px-3 py-3 text-right font-semibold">
-                                {money(order.totalCents)}
                               </td>
                               <td className="border-t border-white/10 px-3 py-3 text-white/60">
                                 {formatDate(order.createdAt)}
@@ -2200,6 +2905,31 @@ export default function AdminPage() {
                       </table>
                     </div>
                   )}
+                  {orderPageCount > 1 ? (
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-white/60">
+                      <span>
+                        Page {orderPage} of {orderPageCount}
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="border-white/20 bg-transparent text-white"
+                          disabled={orderPage <= 1}
+                          onClick={() => setOrderPage((page) => Math.max(1, page - 1))}
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="border-white/20 bg-transparent text-white"
+                          disabled={orderPage >= orderPageCount}
+                          onClick={() => setOrderPage((page) => Math.min(orderPageCount, page + 1))}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </section>
             ) : null}
@@ -2404,6 +3134,89 @@ export default function AdminPage() {
               </section>
             ) : null}
 
+            {view === "finance" ? (
+              <section className="space-y-4" aria-labelledby="finance-heading">
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+                    Finance
+                  </p>
+                  <h3 id="finance-heading" className="mt-1 text-xl font-semibold">
+                    Marketplace money flow
+                  </h3>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-white/60">
+                    Paid orders only. Delivery fees and rider tips are shown separately because they
+                    belong entirely to the rider and are never counted as Lethela platform revenue.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <MetricCard
+                    label="Gross merchandise value"
+                    value={stats ? money(stats.grossMerchandiseValueMonthCents) : "—"}
+                    note="Product value from paid orders this month."
+                    icon={ShoppingBag}
+                    onClick={() => navigateView("orders", { period: "month" })}
+                  />
+                  <MetricCard
+                    label="Platform revenue"
+                    value={stats ? money(stats.revenueMonthCents) : "—"}
+                    note="Lethela commission this month."
+                    icon={LineChart}
+                    onClick={() => navigateView("orders", { period: "month" })}
+                  />
+                  <MetricCard
+                    label="Vendor sales"
+                    value={stats ? money(stats.vendorSalesMonthCents) : "—"}
+                    note="Vendor payout value this month."
+                    icon={Store}
+                    onClick={() => navigateView("orders", { period: "month" })}
+                  />
+                  <MetricCard
+                    label="Customer payments"
+                    value={stats ? money(stats.customerPaymentsMonthCents) : "—"}
+                    note="Full paid customer charge for reconciliation."
+                    icon={WalletCards}
+                    onClick={() => navigateView("orders", { period: "month" })}
+                  />
+                  <MetricCard
+                    label="Delivery earnings"
+                    value={stats ? money(stats.deliveryFeesMonthCents) : "—"}
+                    note="Delivery fees owed entirely to riders."
+                    icon={Bike}
+                    onClick={() => navigateView("riders", { status: "APPROVED" })}
+                  />
+                  <MetricCard
+                    label="Rider tips"
+                    value={stats ? money(stats.riderTipsMonthCents) : "—"}
+                    note="Tips owed entirely to riders."
+                    icon={WalletCards}
+                    onClick={() => navigateView("riders", { status: "APPROVED" })}
+                  />
+                  <MetricCard
+                    label="Total rider earnings"
+                    value={stats ? money(stats.riderEarningsMonthCents) : "—"}
+                    note="Recorded rider payout value this month."
+                    icon={Truck}
+                    onClick={() => navigateView("riders", { status: "APPROVED" })}
+                  />
+                  <MetricCard
+                    label="Open refund cases"
+                    value={
+                      operationsRefunds.filter(
+                        (refund) =>
+                          !["COMPLETED", "PAID", "REJECTED", "CANCELLED", "CLOSED"].includes(
+                            refund.status,
+                          ),
+                      ).length
+                    }
+                    note="Cases requiring finance or support review."
+                    icon={Bell}
+                    onClick={() => navigateView("operations", { filter: "refunds" })}
+                  />
+                </div>
+              </section>
+            ) : null}
+
             {view === "operations" ? (
               <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <MetricCard
@@ -2429,12 +3242,6 @@ export default function AdminPage() {
                   value={applicantChannels?.whatsapp.enabled ? "On" : "Off"}
                   note="Compulsory phone-based onboarding updates."
                   icon={Bell}
-                />
-                <MetricCard
-                  label="Payouts"
-                  value="Ready"
-                  note="Vendor and rider payout review lane."
-                  icon={WalletCards}
                 />
                 <MetricCard
                   label="Settings"
