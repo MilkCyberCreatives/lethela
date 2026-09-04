@@ -46,9 +46,9 @@ export default function MenuSectionList({
             {s.items.map((it) => (
               <div
                 key={it.id}
-                className="flex items-start justify-between rounded-lg border border-white/10 p-3"
+                className="flex flex-col gap-3 rounded-lg border border-white/10 p-3 sm:flex-row sm:items-start sm:justify-between"
               >
-                <div className="flex min-w-0 items-start gap-3 pr-3">
+                <div className="flex min-w-0 items-start gap-3 sm:pr-3">
                   {it.image ? (
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
                       <Image
@@ -78,14 +78,17 @@ export default function MenuSectionList({
                       </div>
                     ) : null}
                     <div className="mt-2 text-sm text-white/80">{formatZAR(it.priceCents)}</div>
-                    <div className="mt-3">
+                    <div className="mt-3 hidden sm:block">
                       <MealPreferenceControls itemId={it.id} />
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="sm:hidden">
+                  <MealPreferenceControls itemId={it.id} />
+                </div>
+                <div className="flex w-full items-center gap-2 sm:w-auto">
                   <Button
-                    className="bg-lethela-primary"
+                    className="min-h-11 w-full bg-lethela-primary sm:w-auto"
                     onClick={() => {
                       add(
                         {

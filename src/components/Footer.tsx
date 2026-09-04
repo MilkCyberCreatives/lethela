@@ -59,14 +59,21 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
       <footer className="shrink-0 border-t border-white/10 bg-lethela-secondary text-white">
         <div className="container flex min-h-12 flex-wrap items-center justify-center gap-x-4 gap-y-1 py-2 text-center text-[11px] text-white/65 sm:justify-between sm:text-left">
           <p>&copy; {new Date().getFullYear()} Lethela</p>
-          <div className="flex items-center gap-4">
-            <Link href="/privacy-policy" className="hover:text-white">
+          <div className="flex items-center gap-2">
+            <Link
+              href="/privacy-policy"
+              className="inline-flex min-h-11 items-center px-1 hover:text-white"
+            >
               Privacy
             </Link>
-            <Link href="/terms" className="hover:text-white">
+            <Link href="/terms" className="inline-flex min-h-11 items-center px-1 hover:text-white">
               Terms
             </Link>
-            <button type="button" onClick={reopenCookieConsent} className="hover:text-white">
+            <button
+              type="button"
+              onClick={reopenCookieConsent}
+              className="inline-flex min-h-11 items-center px-1 hover:text-white"
+            >
               Cookies
             </button>
           </div>
@@ -145,7 +152,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={social.label}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/12 bg-white/[0.04] text-white/78 transition-colors hover:border-white/25 hover:text-white"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/12 bg-white/[0.04] text-white/78 transition-colors hover:border-white/25 hover:text-white sm:h-9 sm:w-9"
                   >
                     <SocialIcon socialKey={item.key} />
                   </a>
@@ -202,7 +209,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
           <button
             type="button"
             onClick={reopenCookieConsent}
-            className="text-left text-white/65 underline-offset-4 transition hover:text-white hover:underline"
+            className="inline-flex min-h-11 items-center text-left text-white/65 underline-offset-4 transition hover:text-white hover:underline"
           >
             Cookie Settings
           </button>

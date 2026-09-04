@@ -93,3 +93,23 @@ test("image optimisation and session polling safeguards remain enabled", async (
   assert.match(providers, /refetchOnWindowFocus=\{false\}/);
   assert.match(providers, /refetchInterval=\{0\}/);
 });
+
+test("primary shopping and account surfaces preserve mobile-first ergonomics", async () => {
+  const [home, product, menu, preferences, auth, footer] = await Promise.all([
+    source("src/app/page.tsx"),
+    source("src/components/HomeProductCard.tsx"),
+    source("src/components/MenuSectionList.tsx"),
+    source("src/components/MealPreferenceControls.tsx"),
+    source("src/components/auth/AuthShell.tsx"),
+    source("src/components/Footer.tsx"),
+  ]);
+
+  assert.match(home, /snap-mandatory/);
+  assert.match(home, /auto-cols-\[82%\]/);
+  assert.match(product, /min-h-11/);
+  assert.match(menu, /flex-col gap-3/);
+  assert.match(menu, /min-h-11 w-full/);
+  assert.match(preferences, /h-11 w-11/);
+  assert.match(auth, /hidden overflow-hidden[\s\S]*lg:block/);
+  assert.match(footer, /min-h-11/);
+});

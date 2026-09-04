@@ -21,7 +21,7 @@ export default function HomeProductCard({ product }: { product: ProductLite }) {
   const area = vendor?.township || vendor?.suburb || vendor?.city || "Nearby";
 
   return (
-    <article className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] transition hover:border-lethela-primary/50">
+    <article className="snap-start overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] transition hover:border-lethela-primary/50">
       <Link
         href={`/products/${encodeURIComponent(product.id)}`}
         className="relative block aspect-[4/3] w-full bg-white/10"
@@ -54,7 +54,7 @@ export default function HomeProductCard({ product }: { product: ProductLite }) {
         </div>
 
         <Button
-          className="mt-4 h-10 w-full rounded-md bg-lethela-primary text-sm font-semibold text-white hover:opacity-95"
+          className="mt-4 min-h-11 w-full rounded-md bg-lethela-primary text-sm font-semibold text-white hover:opacity-95"
           onClick={() => {
             add(
               {

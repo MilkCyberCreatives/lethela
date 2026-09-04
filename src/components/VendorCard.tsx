@@ -20,7 +20,7 @@ export default function VendorCard({ v }: { v: Vendor }) {
           cuisines: v.cuisines,
         })
       }
-      className="group overflow-hidden rounded-2xl border border-white/10 bg-lethela-secondary transition"
+      className="group snap-start overflow-hidden rounded-2xl border border-white/10 bg-lethela-secondary transition"
     >
       <div className="relative aspect-[16/10]">
         <Image

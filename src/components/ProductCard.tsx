@@ -75,7 +75,7 @@ export default function ProductCard({
         ) : null}
 
         {showMealPreference ? (
-          <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="mt-3 flex flex-col items-start gap-2">
             <span className="text-[11px] text-white/55">Save or rate this meal</span>
             <MealPreferenceControls itemId={p.id} compact />
           </div>
@@ -83,7 +83,7 @@ export default function ProductCard({
 
         <div className="mt-3">
           <Button
-            className="w-full bg-lethela-primary hover:opacity-95"
+            className="min-h-11 w-full bg-lethela-primary hover:opacity-95"
             onClick={() => {
               add(
                 {

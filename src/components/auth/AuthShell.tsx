@@ -41,7 +41,7 @@ export default function AuthShell({
           }
         >
           {!compact ? (
-            <aside className="overflow-hidden rounded-[2rem] bg-lethela-secondary p-5 text-white shadow-[0_24px_70px_rgba(8,11,39,0.18)] sm:p-7 lg:sticky lg:top-28 lg:p-10">
+            <aside className="hidden overflow-hidden rounded-[2rem] bg-lethela-secondary p-5 text-white shadow-[0_24px_70px_rgba(8,11,39,0.18)] lg:sticky lg:top-28 lg:block lg:p-10">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/75">
                 <ShieldCheck className="h-4 w-4 text-lethela-primary" />
                 Secure Lethela access

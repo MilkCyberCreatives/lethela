@@ -62,15 +62,15 @@ export default function MealPreferenceControls({
   };
 
   return (
-    <div className={cn("flex items-center gap-3 text-white/80", className)}>
+    <div className={cn("flex max-w-full flex-wrap items-center gap-2 text-white/80", className)}>
       <button
         type="button"
         aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         aria-pressed={isFavorite}
         className={cn(
-          "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition hover:border-white/30 hover:text-white",
+          "inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 transition hover:border-white/30 hover:text-white",
           isFavorite && "border-lethela-primary bg-lethela-primary/10 text-lethela-primary",
-          compact && "h-8 w-8",
+          compact && "h-11 w-11",
         )}
         onClick={() => {
           const nextFavorite = !isFavorite;
@@ -92,7 +92,7 @@ export default function MealPreferenceControls({
         <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
       </button>
 
-      <div className="flex items-center gap-1" role="group" aria-label="Rate this meal">
+      <div className="flex items-center" role="group" aria-label="Rate this meal">
         {[1, 2, 3, 4, 5].map((starValue) => {
           const active = starValue <= rating;
           return (
@@ -101,9 +101,9 @@ export default function MealPreferenceControls({
               type="button"
               aria-label={`Rate ${starValue} star${starValue === 1 ? "" : "s"}`}
               className={cn(
-                "inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:text-[#f8d16a]",
+                "inline-flex h-11 w-11 items-center justify-center rounded-full transition hover:text-[#f8d16a]",
                 active ? "text-[#f8d16a]" : "text-white/40",
-                compact && "h-7 w-7",
+                compact && "h-11 w-11",
               )}
               onClick={() => {
                 setRating(profileKey, itemId, starValue);

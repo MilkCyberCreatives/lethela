@@ -167,7 +167,7 @@ function ProductRail({
     <section className="container py-8">
       <SectionHeader title={title} href={href} />
       {subtitle ? <p className="-mt-3 mb-5 text-sm text-white/62">{subtitle}</p> : null}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="no-scrollbar -mx-4 grid snap-x snap-mandatory grid-flow-col auto-cols-[82%] gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
         {products.map((product) => (
           <HomeProductCard key={product.id} product={product} />
         ))}
@@ -182,7 +182,7 @@ function VendorRail({ title, vendors }: { title: string; vendors: Vendor[] }) {
   return (
     <section id="vendors-near-you" className="container py-8">
       <SectionHeader title={title} href="/search" />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="no-scrollbar -mx-4 grid snap-x snap-mandatory grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid-flow-row md:auto-cols-auto md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-3">
         {vendors.map((vendor) => (
           <VendorCard key={vendor.id} v={vendor} />
         ))}
@@ -193,11 +193,11 @@ function VendorRail({ title, vendors }: { title: string; vendors: Vendor[] }) {
 
 function SectionHeader({ title, href }: { title: string; href: string }) {
   return (
-    <div className="mb-5 flex items-center justify-between gap-4">
-      <h2 className="text-2xl font-semibold">{title}</h2>
+    <div className="mb-5 flex items-start justify-between gap-3 sm:items-center sm:gap-4">
+      <h2 className="min-w-0 text-xl font-semibold leading-tight sm:text-2xl">{title}</h2>
       <Link
         href={href}
-        className="rounded-md border border-white/15 px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-lethela-primary hover:text-lethela-primary"
+        className="inline-flex min-h-11 shrink-0 items-center rounded-md border border-white/15 px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-lethela-primary hover:text-lethela-primary"
       >
         Browse all
       </Link>
