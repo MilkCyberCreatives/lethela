@@ -12,7 +12,6 @@ import StructuredData from "@/components/StructuredData";
 import VendorCard from "@/components/VendorCard";
 import { getHomeProducts, getHomeVendors } from "@/lib/home-data";
 import { getMarketplaceLaunchStatus } from "@/lib/launch-readiness";
-import { getDisplaySuburb } from "@/lib/location";
 import { buildPageMetadata } from "@/lib/seo";
 import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
 import { buildLaunchNotificationLink } from "@/lib/support";
@@ -74,9 +73,14 @@ const homeFaqSchema = {
 };
 
 const groceryCategories = new Set(["Groceries", "Drinks", "Snacks"]);
+const defaultArea = "Klipfontein View, Midrand 1685";
 
 export default async function HomePage() {
-  const address = await getDisplaySuburb();
+  // Keep the public homepage eligible for ISR and Vercel's edge cache. Hero
+  // restores the visitor's saved area in the browser, so reading the same
+  // preference through a request-time server API here only made every response
+  // private and forced a server round trip.
+  const address = defaultArea;
   const [vendors, products] = await Promise.all([
     getHomeVendors(address, 6),
     getHomeProducts(address, 36),

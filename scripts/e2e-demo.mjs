@@ -216,10 +216,15 @@ await scenario("admin signs in directly and reaches vendor approvals", async (pa
   if (!page.url().includes("/admin")) {
     throw new Error(`Admin reached unexpected path: ${page.url()}`);
   }
-  const bodyText = await page.locator("body").innerText();
-  if (!bodyText.includes("Vendor approvals")) {
-    throw new Error("Admin vendor approvals did not render after sign-in.");
-  }
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await page.getByRole("button", { name: "Vendor approvals", exact: true }).click();
+  await page
+    .getByText("Vendor approvals", { exact: true })
+    .last()
+    .waitFor({ state: "visible", timeout: 30000 })
+    .catch(() => {
+      throw new Error("Admin vendor approvals did not render after sign-in.");
+    });
 });
 
 await scenario("customer registers with a five-character password", async (page) => {

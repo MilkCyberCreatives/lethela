@@ -31,12 +31,17 @@ test("generated app icons and branded social images are configured", async () =>
 });
 
 test("the hero does not fetch hidden nearby-vendor content", async () => {
-  const hero = await source("src/components/Hero.tsx");
+  const [hero, homePage] = await Promise.all([
+    source("src/components/Hero.tsx"),
+    source("src/app/page.tsx"),
+  ]);
   assert.doesNotMatch(hero, /NearbyVendorResponse/);
   assert.doesNotMatch(hero, /fetch\(`\/api\/vendors/);
   assert.doesNotMatch(hero, /\{false \? \(/);
   assert.match(hero, /fetchPriority="high"/);
   assert.match(hero, /dynamic\(\(\) => import\("@\/components\/LocationPicker"\)/);
+  assert.match(homePage, /export const revalidate = 180/);
+  assert.doesNotMatch(homePage, /getDisplaySuburb|next\/headers|cookies\(/);
 });
 
 test("public catalogue code does not select private bank or KYC values", async () => {
