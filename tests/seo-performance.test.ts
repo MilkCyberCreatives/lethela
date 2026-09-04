@@ -95,13 +95,14 @@ test("image optimisation and session polling safeguards remain enabled", async (
 });
 
 test("primary shopping and account surfaces preserve mobile-first ergonomics", async () => {
-  const [home, product, menu, preferences, auth, footer] = await Promise.all([
+  const [home, product, menu, preferences, auth, footer, header] = await Promise.all([
     source("src/app/page.tsx"),
     source("src/components/HomeProductCard.tsx"),
     source("src/components/MenuSectionList.tsx"),
     source("src/components/MealPreferenceControls.tsx"),
     source("src/components/auth/AuthShell.tsx"),
     source("src/components/Footer.tsx"),
+    source("src/components/MainHeader.tsx"),
   ]);
 
   assert.match(home, /snap-mandatory/);
@@ -112,4 +113,5 @@ test("primary shopping and account surfaces preserve mobile-first ergonomics", a
   assert.match(preferences, /h-11 w-11/);
   assert.match(auth, /hidden overflow-hidden[\s\S]*lg:block/);
   assert.match(footer, /min-h-11/);
+  assert.match(header, /src="\/lethelalogo\.svg"[\s\S]*preload/);
 });
