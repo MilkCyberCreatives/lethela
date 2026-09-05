@@ -56,17 +56,20 @@ export default function RiderDashboardShell({
       <MainHeader />
       <section className="dashboard-shell">
         <aside className="dashboard-sidebar">
-          <div className="border-b border-white/10 pb-5">
+          <div className="dashboard-sidebar-intro border-b border-white/10 pb-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary">
               Lethela Rider
             </p>
             <h1 className="mt-2 text-xl font-bold">Delivery workspace</h1>
-            <p className="mt-2 text-xs leading-5 text-white/60">
+            <p className="dashboard-sidebar-description mt-2 text-xs leading-5 text-white/60">
               Manage dispatch, profile readiness, messages and rider earnings from one secure place.
             </p>
           </div>
 
-          <nav className="mt-5 grid gap-2" aria-label="Rider dashboard navigation">
+          <nav
+            className="dashboard-sidebar-nav mt-5 grid gap-2"
+            aria-label="Rider dashboard navigation"
+          >
             {navigation.map((item) => {
               const Icon = item.icon;
               const active = item.id === activeView;
@@ -80,7 +83,7 @@ export default function RiderDashboardShell({
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   <span className="min-w-0">
                     <span className="block truncate">{item.label}</span>
-                    <span className="mt-0.5 block truncate text-[11px] font-normal text-white/45">
+                    <span className="dashboard-side-link-hint mt-0.5 block truncate text-[11px] font-normal text-white/45">
                       {item.hint}
                     </span>
                   </span>
@@ -89,7 +92,7 @@ export default function RiderDashboardShell({
             })}
           </nav>
 
-          <div className="dashboard-security-note">
+          <div className="dashboard-security-note dashboard-sidebar-security">
             <div className="flex items-center gap-2 font-semibold text-white">
               <ShieldCheck className="h-4 w-4 text-lethela-primary" aria-hidden="true" />
               Private rider access

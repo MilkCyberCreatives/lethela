@@ -76,6 +76,7 @@ export default function MainHeader() {
                 alt="Lethela"
                 width={914}
                 height={266}
+                preload
                 className="h-7 w-auto sm:h-8"
               />
             </span>
@@ -159,7 +160,7 @@ export default function MainHeader() {
               </Link>
               <Button
                 variant="outline"
-                className="border-black/20 text-black hover:bg-black/5"
+                className="min-h-11 border-black/20 text-black hover:bg-black/5"
                 onClick={() => void handleSignOut()}
               >
                 Sign Out

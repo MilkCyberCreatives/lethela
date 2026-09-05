@@ -38,7 +38,7 @@ export default async function ProfilePage({
     <div className="min-h-dvh bg-[#f5f7fb] text-slate-950">
       <MainHeader />
 
-      <main className="container py-6 sm:py-10 lg:py-12">
+      <main className="container py-4 sm:py-10 lg:py-12">
         {resolved.welcome === "1" ? (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
@@ -51,28 +51,27 @@ export default async function ProfilePage({
           </div>
         ) : null}
 
-        <section className="overflow-hidden rounded-[2rem] bg-lethela-secondary text-white shadow-[0_24px_70px_rgba(8,11,39,0.16)]">
-          <div className="grid gap-7 p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:p-10">
+        <section className="overflow-hidden rounded-2xl bg-lethela-secondary text-white shadow-[0_24px_70px_rgba(8,11,39,0.16)] sm:rounded-[2rem]">
+          <div className="grid gap-4 p-5 sm:gap-7 sm:p-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:p-10">
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
                 <ShieldCheck className="h-4 w-4 text-lethela-primary" />
                 Private account area
               </div>
-              <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">
+              <h1 className="mt-3 text-2xl font-bold tracking-tight sm:mt-5 sm:text-4xl">
                 My Lethela account
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
-                Keep your delivery details current, view orders, manage saved meals and choose the
-                notifications you want to receive.
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70 sm:mt-3 sm:text-base sm:leading-7">
+                Manage delivery details, orders, saved meals and notification preferences.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
               <Link
                 href="/search"
                 className="inline-flex min-h-11 items-center justify-center rounded-xl bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               >
-                Browse marketplace
+                Shop marketplace
               </Link>
               <Link
                 href="/contact"
@@ -86,18 +85,18 @@ export default async function ProfilePage({
         </section>
 
         <div className="mt-6 grid min-w-0 items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
-          <aside className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-28">
+          <aside className="account-dashboard-nav rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-28">
             <p className="px-3 pb-2 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
               Account menu
             </p>
-            <nav aria-label="Account sections" className="grid gap-1">
+            <nav aria-label="Account sections" className="account-dashboard-nav-links grid gap-1">
               {accountLinks.map((item) => {
                 const Icon = item.icon;
                 return (
                   <a
                     key={item.href}
                     href={item.href}
-                    className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
+                    className="account-dashboard-nav-link flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
                   >
                     <Icon className="h-4 w-4 text-lethela-primary" />
                     {item.label}
@@ -105,7 +104,7 @@ export default async function ProfilePage({
                 );
               })}
             </nav>
-            <div className="mt-3 border-t border-slate-200 px-3 pt-4 text-xs leading-5 text-slate-500">
+            <div className="account-dashboard-privacy mt-3 border-t border-slate-200 px-3 pt-4 text-xs leading-5 text-slate-500">
               Your account and order information is private and excluded from search engines.
             </div>
           </aside>

@@ -26,7 +26,7 @@ export default function CartButton() {
     <Button
       onClick={openCart}
       aria-label="Open cart"
-      className="relative h-11 w-11 border-transparent bg-lethela-secondary px-0 text-white hover:bg-lethela-secondary focus-visible:ring-2 focus-visible:ring-lethela-primary sm:h-10 sm:w-auto sm:px-4"
+      className="relative h-11 w-11 border-transparent bg-lethela-secondary px-0 text-white hover:bg-lethela-secondary focus-visible:ring-2 focus-visible:ring-lethela-primary sm:w-auto sm:px-4"
     >
       <ShoppingCart className="h-5 w-5 text-white" />
 

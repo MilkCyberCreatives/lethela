@@ -587,7 +587,7 @@ function AdminTopBar({
               width={914}
               height={266}
               className="h-8 w-auto"
-              priority
+              preload
             />
           </span>
           <span className="hidden sm:block">
@@ -599,7 +599,7 @@ function AdminTopBar({
         </Link>
 
         <form
-          className="relative order-last flex min-w-0 basis-full items-center rounded-lg border border-white/10 bg-white/[0.05] px-2 sm:order-none sm:basis-auto sm:flex-1 sm:px-3"
+          className="relative order-last flex min-h-11 min-w-0 basis-full items-center rounded-lg border border-white/10 bg-white/[0.05] px-2 sm:order-none sm:basis-auto sm:flex-1 sm:px-3"
           onSubmit={(event) => {
             event.preventDefault();
             onSearch();
@@ -607,7 +607,7 @@ function AdminTopBar({
         >
           <Search className="h-4 w-4 text-white/40" />
           <input
-            className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/35"
+            className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/35"
             placeholder="Search orders, people or products..."
             value={searchValue}
             onChange={(event) => onSearchChange(event.target.value)}
@@ -615,7 +615,7 @@ function AdminTopBar({
           />
           <button
             type="submit"
-            className="rounded-md px-2 py-1 text-xs font-semibold text-white/65 hover:text-white"
+            className="inline-flex min-h-11 items-center rounded-md px-2 py-1 text-xs font-semibold text-white/65 hover:text-white"
           >
             {searchLoading ? "Searching" : "Search"}
           </button>
@@ -659,7 +659,7 @@ function AdminTopBar({
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
-            className="relative grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
+            className="relative grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
             aria-label={`Open operational notifications${notificationCount ? `, ${notificationCount} active` : ""}`}
             onClick={onNotifications}
           >
@@ -672,24 +672,24 @@ function AdminTopBar({
           </button>
           <Link
             href="/contact"
-            className="hidden h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white sm:grid"
+            className="hidden h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white sm:grid"
             aria-label="Open Lethela support"
           >
             <LifeBuoy className="h-4 w-4" />
           </Link>
-          <span className="hidden h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white/70 sm:inline-flex">
+          <span className="hidden h-11 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white/70 sm:inline-flex">
             <UserCircle className="h-4 w-4" />
             Owner
           </span>
           <Link
             href="/"
-            className="hidden rounded-lg border border-white/20 px-3 py-2 text-sm text-white/72 transition hover:border-lethela-primary hover:text-lethela-primary lg:inline-flex"
+            className="hidden min-h-11 items-center rounded-lg border border-white/20 px-3 py-2 text-sm text-white/72 transition hover:border-lethela-primary hover:text-lethela-primary lg:inline-flex"
           >
             View Marketplace
           </Link>
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
+            className="grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
             aria-label="Sign out"
             onClick={() => {
               void fetch("/api/admin/access", { method: "DELETE" }).finally(() => {

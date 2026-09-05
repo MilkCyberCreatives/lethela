@@ -107,6 +107,28 @@ test("rider overview and profile use one dashboard shell with accurate labels", 
   assert.match(client, /order\.riderPayoutCents/);
 });
 
+test("signed-in dashboards keep mobile navigation compact and controls touch friendly", async () => {
+  const [styles, vendor, rider, profile, admin, header] = await Promise.all([
+    source("src/app/dashboard.css"),
+    source("src/app/vendors/dashboard/page.tsx"),
+    source("src/components/rider/RiderDashboardShell.tsx"),
+    source("src/app/profile/page.tsx"),
+    source("src/app/admin/page.tsx"),
+    source("src/components/MainHeader.tsx"),
+  ]);
+
+  assert.match(styles, /min-height: 44px/);
+  assert.match(styles, /dashboard-sidebar-nav[\s\S]*grid-auto-flow: column/);
+  assert.match(styles, /account-dashboard-nav-links[\s\S]*overflow-x: auto/);
+  assert.match(vendor, /vendor-dashboard-nav/);
+  assert.match(vendor, /vendor-quick-action[\s\S]*min-h-11/);
+  assert.match(rider, /dashboard-side-link-hint/);
+  assert.match(profile, /grid grid-cols-2 gap-2/);
+  assert.match(admin, /h-11 w-11/);
+  assert.match(admin, /src="\/lethelalogo\.svg"[\s\S]*preload/);
+  assert.match(header, /src="\/lethelalogo\.svg"[\s\S]*preload/);
+});
+
 test("admin statistics use real availability, completion and paid-only rankings", async () => {
   const stats = await source("src/app/api/admin/stats/route.ts");
   assert.match(stats, /availableNow: true/);

@@ -461,12 +461,12 @@ export default function ProfileExperiencePanel() {
                           aria-label={`${enabled ? "Disable" : "Enable"} ${item.label}`}
                           onClick={() => void savePreference(item.key, !enabled)}
                           disabled={busyKey === item.key}
-                          className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+                          className={`relative h-11 w-12 shrink-0 rounded-full transition ${
                             enabled ? "bg-lethela-primary" : "bg-slate-300"
                           } disabled:cursor-not-allowed disabled:opacity-60`}
                         >
                           <span
-                            className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition ${
+                            className={`absolute top-3 h-5 w-5 rounded-full bg-white shadow-sm transition ${
                               enabled ? "left-6" : "left-1"
                             }`}
                           />

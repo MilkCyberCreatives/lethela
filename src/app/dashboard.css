@@ -41,6 +41,12 @@ body[data-lethela-dashboard] :focus-visible {
   outline-offset: 2px;
 }
 
+body[data-lethela-dashboard]
+  main
+  :is(button, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  min-height: 44px;
+}
+
 /* Admin and vendor app shells: dark sidebar rail. */
 body[data-lethela-dashboard="admin"] main > section > div > aside,
 body[data-lethela-dashboard="vendor"] main > section > div > aside,
@@ -446,12 +452,33 @@ body[data-lethela-dashboard] main a[class*="rounded"] {
   .dashboard-shell {
     padding: 18px;
   }
+
+  .dashboard-sidebar-nav {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(170px, 1fr);
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x proximity;
+  }
+
+  .dashboard-sidebar-nav > a {
+    scroll-snap-align: start;
+  }
 }
 
 @media (max-width: 640px) {
   body[data-lethela-dashboard] main > section,
   .dashboard-shell {
     padding-inline: 12px !important;
+  }
+
+  body[data-lethela-dashboard="vendor"] main > section {
+    padding-block: 12px !important;
+  }
+
+  body[data-lethela-dashboard="vendor"] main > section > div {
+    gap: 12px !important;
   }
 
   body[data-lethela-dashboard="admin"] main > section > div > aside,
@@ -464,4 +491,79 @@ body[data-lethela-dashboard] main a[class*="rounded"] {
   .dashboard-workspace-header {
     padding: 16px;
   }
+
+  .dashboard-shell {
+    gap: 12px;
+    padding-block: 12px;
+  }
+
+  .dashboard-sidebar,
+  .vendor-dashboard-sidebar {
+    padding: 14px !important;
+  }
+
+  .dashboard-sidebar-intro,
+  .vendor-dashboard-intro {
+    padding-bottom: 10px !important;
+  }
+
+  .dashboard-sidebar-description,
+  .dashboard-side-link-hint,
+  .vendor-dashboard-nav-hint,
+  .dashboard-sidebar-security {
+    display: none !important;
+  }
+
+  .dashboard-sidebar-nav,
+  .vendor-dashboard-nav {
+    margin-top: 10px !important;
+    grid-auto-columns: minmax(144px, 1fr) !important;
+  }
+
+  .dashboard-side-link {
+    min-height: 48px;
+    padding-block: 10px;
+  }
+
+  .account-dashboard-nav {
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .account-dashboard-nav-links {
+    display: flex;
+    min-width: 0;
+    max-width: 100%;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+  }
+
+  .account-dashboard-nav-link {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  .account-dashboard-privacy {
+    display: none;
+  }
+}
+
+.vendor-quick-action {
+  border-color: var(--dashboard-border-strong) !important;
+  background: #fff !important;
+  color: #334155 !important;
+}
+
+.vendor-quick-action:hover {
+  border-color: var(--dashboard-accent) !important;
+  color: var(--dashboard-accent) !important;
+}
+
+.vendor-quick-action-primary {
+  border-color: var(--dashboard-accent) !important;
+  background: var(--dashboard-accent) !important;
+  color: #fff !important;
 }

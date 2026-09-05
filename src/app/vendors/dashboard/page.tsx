@@ -403,26 +403,26 @@ export default async function VendorDashboardPage({
               {vendorSlug ? (
                 <Link
                   href={`/vendors/${vendorSlug}`}
-                  className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+                  className="vendor-quick-action inline-flex min-h-11 items-center rounded-full border border-white/30 px-4 py-2 text-xs font-medium"
                 >
                   View public profile
                 </Link>
               ) : null}
               <Link
                 href="/vendors/dashboard?tab=menu"
-                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+                className="vendor-quick-action inline-flex min-h-11 items-center rounded-full border border-white/30 px-4 py-2 text-xs font-medium"
               >
                 Manage menu
               </Link>
               <Link
                 href="/vendors/dashboard?tab=specials&action=create"
-                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+                className="vendor-quick-action inline-flex min-h-11 items-center rounded-full border border-white/30 px-4 py-2 text-xs font-medium"
               >
                 Create special
               </Link>
               <Link
                 href="/vendors/dashboard?tab=orders"
-                className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+                className="vendor-quick-action vendor-quick-action-primary inline-flex min-h-11 items-center rounded-full border border-white/30 px-4 py-2 text-xs font-medium"
               >
                 Open orders
               </Link>
@@ -449,7 +449,7 @@ export default async function VendorDashboardPage({
             </div>
             <form action="/api/vendors/profile/submit" method="post">
               <button
-                className="rounded-full bg-lethela-primary px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/50"
+                className="min-h-11 rounded-full bg-lethela-primary px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/50"
                 disabled={!readiness.canSubmit}
                 title={
                   readiness.canSubmit
@@ -689,8 +689,8 @@ export default async function VendorDashboardPage({
       <MainHeader />
       <section className="relative w-full px-4 py-6 sm:px-6 lg:h-[calc(100vh-88px)] lg:px-8 xl:px-10">
         <div className="grid h-full gap-6 lg:grid-cols-[270px,minmax(0,1fr)]">
-          <aside className="rounded-2xl border border-white/10 bg-[#0f1637] p-4 lg:h-full lg:overflow-y-auto lg:pr-3">
-            <div className="border-b border-white/10 pb-4">
+          <aside className="vendor-dashboard-sidebar rounded-2xl border border-white/10 bg-[#0f1637] p-4 lg:h-full lg:overflow-y-auto lg:pr-3">
+            <div className="vendor-dashboard-intro border-b border-white/10 pb-4">
               <p className="text-xs uppercase tracking-[0.14em] text-white/55">Dashboard</p>
               <h2 className="mt-2 text-lg font-semibold">{vendor?.name || "Vendor"}</h2>
               <p className="mt-1 text-xs text-white/60">
@@ -699,7 +699,10 @@ export default async function VendorDashboardPage({
                   : "Location not set"}
               </p>
             </div>
-            <nav className="mt-4 grid gap-2">
+            <nav
+              className="vendor-dashboard-nav mt-4 grid gap-2"
+              aria-label="Vendor dashboard sections"
+            >
               {tabs.map((item) => (
                 <Link
                   key={item.tab}
@@ -712,7 +715,9 @@ export default async function VendorDashboardPage({
                     />
                     {item.label}
                   </div>
-                  <div className="mt-1 text-xs text-white/55">{item.hint}</div>
+                  <div className="vendor-dashboard-nav-hint mt-1 text-xs text-white/55">
+                    {item.hint}
+                  </div>
                 </Link>
               ))}
             </nav>
@@ -729,7 +734,7 @@ export default async function VendorDashboardPage({
               {activeTab !== "overview" ? (
                 <Link
                   href="/vendors/dashboard?tab=overview"
-                  className="rounded-full border border-white/25 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+                  className="inline-flex min-h-11 items-center rounded-full border border-white/25 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
                 >
                   Back to overview
                 </Link>
