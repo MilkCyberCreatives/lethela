@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { hasResendConfig, sendEmail } from "@/lib/notification-channels";
 
 type PasswordResetPayload = {
   sub: string;
@@ -96,7 +97,7 @@ function resetEmailFrom() {
 }
 
 export function passwordResetEmailConfigured() {
-  return Boolean(process.env.RESEND_API_KEY?.trim() && resetEmailFrom());
+  return Boolean(hasResendConfig() && resetEmailFrom());
 }
 
 export async function sendPasswordResetEmail(input: {
@@ -104,9 +105,8 @@ export async function sendPasswordResetEmail(input: {
   resetUrl: string;
   name?: string | null;
 }) {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = resetEmailFrom();
-  if (!apiKey || !from) {
+  if (!passwordResetEmailConfigured()) {
     throw new Error("Password reset email is not configured.");
   }
 
@@ -129,24 +129,16 @@ export async function sendPasswordResetEmail(input: {
     "This link will expire in 30 minutes. If you did not request this, you can ignore this email.",
   ].join("\n");
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [input.to],
-      subject: "Reset your Lethela password",
-      html,
-      text,
-    }),
+  const result = await sendEmail({
+    to: input.to,
+    from,
+    subject: "Reset your Lethela password",
+    html,
+    text,
   });
 
-  if (!response.ok) {
-    const error = await response.text().catch(() => "");
-    throw new Error(error || "Failed to send password reset email.");
+  if (!result.delivered) {
+    throw new Error("Failed to send password reset email.");
   }
 }
 

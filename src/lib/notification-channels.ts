@@ -57,8 +57,12 @@ export function notificationEmailFrom() {
   );
 }
 
+export function hasResendConfig() {
+  return Boolean(process.env.RESEND_API_KEY?.trim());
+}
+
 export function hasEmailChannel() {
-  return Boolean(process.env.RESEND_API_KEY?.trim() && notificationEmailFrom());
+  return Boolean(hasResendConfig() && notificationEmailFrom());
 }
 
 export function hasWhatsAppChannel() {
@@ -69,7 +73,7 @@ export function hasWhatsAppChannel() {
   );
 }
 
-export async function sendResendEmail(message: EmailMessage) {
+export async function sendEmail(message: EmailMessage) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = message.from?.trim() || notificationEmailFrom();
   const to = Array.isArray(message.to)
@@ -105,6 +109,8 @@ export async function sendResendEmail(message: EmailMessage) {
     recipients: Array.isArray(to) ? to.length : 1,
   };
 }
+
+export { sendEmail as sendResendEmail };
 
 export async function sendTwilioWhatsApp(message: WhatsAppMessage) {
   const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim();

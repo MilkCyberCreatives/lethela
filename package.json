@@ -60,7 +60,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "recharts": "^3.3.0",
-    "sharp": "0.35.3",
+    "sharp": "0.35.4",
     "tailwind-merge": "2.5.2",
     "web-push": "^3.6.7",
     "zod": "3.23.8",
@@ -95,7 +95,7 @@
     "fast-uri": "4.1.4",
     "next": {
       "postcss": "8.5.23",
-      "sharp": "0.35.3"
+      "sharp": "0.35.4"
     },
     "next-auth": {
       "uuid": "11.1.1"

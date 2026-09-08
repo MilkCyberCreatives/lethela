@@ -60,6 +60,87 @@ function mapsApiKey() {
   return process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 }
 
+function nominatimBase() {
+  return (process.env.NOMINATIM_BASE_URL?.trim() || "https://nominatim.openstreetmap.org").replace(
+    /\/+$/,
+    "",
+  );
+}
+
+function nominatimHeaders() {
+  const contact =
+    process.env.NOMINATIM_CONTACT_EMAIL?.trim() ||
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ||
+    "support@lethela.co.za";
+  return {
+    "User-Agent": `Lethela/1.0 (${contact})`,
+    "Accept-Language": "en-ZA,en",
+  };
+}
+
+function nominatimDisabled() {
+  return process.env.NOMINATIM_DISABLED?.trim() === "true";
+}
+
+async function geocodeViaNominatim(query: string): Promise<LatLng | null> {
+  if (nominatimDisabled()) return null;
+  try {
+    const url = new URL(`${nominatimBase()}/search`);
+    url.searchParams.set("q", query);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("countrycodes", "za");
+    url.searchParams.set("limit", "1");
+
+    const response = await fetch(url.toString(), {
+      cache: "no-store",
+      signal: AbortSignal.timeout(4_500),
+      headers: nominatimHeaders(),
+    });
+    if (!response.ok) return null;
+
+    const json = await response.json();
+    const hit = Array.isArray(json) ? json[0] : null;
+    const lat = Number(hit?.lat);
+    const lng = Number(hit?.lon);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  } catch {
+    return null;
+  }
+}
+
+async function reverseViaNominatim(
+  point: LatLng,
+): Promise<{ suburb: string; city: string } | null> {
+  if (nominatimDisabled()) return null;
+  try {
+    const url = new URL(`${nominatimBase()}/reverse`);
+    url.searchParams.set("lat", String(point.lat));
+    url.searchParams.set("lon", String(point.lng));
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("zoom", "14");
+
+    const response = await fetch(url.toString(), {
+      cache: "no-store",
+      signal: AbortSignal.timeout(4_500),
+      headers: nominatimHeaders(),
+    });
+    if (!response.ok) return null;
+
+    const json = await response.json();
+    const address = json?.address;
+    if (!address) return null;
+    const suburb = String(
+      address.suburb || address.neighbourhood || address.village || address.town || "",
+    ).trim();
+    const city = String(
+      address.city || address.town || address.municipality || address.county || suburb || "",
+    ).trim();
+    return suburb ? { suburb, city: city || suburb } : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseGoogleDurationMinutes(value: unknown) {
   const match = String(value || "").match(/^([0-9]+(?:\.[0-9]+)?)s$/);
   if (!match) return null;
@@ -168,7 +249,9 @@ export async function geocodeSuburb(query: string): Promise<LatLng | null> {
   if (direct) return direct.point;
 
   const matched = FALLBACK_AREAS.find((area) => clean.includes(area.key));
-  return matched ? matched.point : null;
+  if (matched) return matched.point;
+
+  return geocodeViaNominatim(query);
 }
 
 export async function reverseGeocodePoint(point: LatLng) {
@@ -207,6 +290,9 @@ export async function reverseGeocodePoint(point: LatLng) {
       // fallback below
     }
   }
+
+  const osm = await reverseViaNominatim(point);
+  if (osm) return osm;
 
   const nearest = FALLBACK_AREAS.reduce(
     (best, area) => {

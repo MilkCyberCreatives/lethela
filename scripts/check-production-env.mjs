@@ -184,11 +184,14 @@ if (databaseUrl && databaseProvider === "sqlite") {
   }
 }
 
-requireNonPlaceholder(
+warnIfMissing(
   "GOOGLE_MAPS_API_KEY",
-  "must be set for server-side geocoding and delivery quotes.",
+  "optional — server geocoding and delivery quotes fall back to free OpenStreetMap/Nominatim and haversine estimates when unset.",
 );
-requireNonPlaceholder("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", "must be set for live browser maps.");
+warnIfMissing(
+  "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY",
+  "optional — order tracking uses the keyless Google Maps embed when unset.",
+);
 
 const uploadStorage = read("UPLOAD_STORAGE", values) || "local";
 if (!["local", "supabase"].includes(uploadStorage)) {
@@ -234,20 +237,37 @@ if (uploadStorage === "supabase") {
   );
 }
 
-requireNonPlaceholder("OZOW_SITE_CODE", "must be set for live payments.");
-requireNonPlaceholder("OZOW_PRIVATE_KEY", "must be set for live payments.");
+const launchMode = (
+  read("NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE", values) || "prelaunch"
+).toLowerCase();
+const paymentsRequired = launchMode === "public";
 
-const ozowIsTest = requireNonPlaceholder("OZOW_IS_TEST", "must be set to false in production.");
-if (ozowIsTest && ozowIsTest !== "false") {
-  errors.push("OZOW_IS_TEST: must be exactly 'false' for live payments.");
+if (paymentsRequired) {
+  requireNonPlaceholder("OZOW_SITE_CODE", "must be set for live payments in public launch mode.");
+  requireNonPlaceholder("OZOW_PRIVATE_KEY", "must be set for live payments in public launch mode.");
+} else {
+  warnIfMissing(
+    "OZOW_SITE_CODE",
+    "optional in pilot mode — public checkout is gated; set live payment keys before switching to public.",
+  );
 }
 
-const nextPublicOzowIsTest = requireNonPlaceholder(
-  "NEXT_PUBLIC_OZOW_IS_TEST",
-  "must be set to false in production.",
-);
+const ozowIsTest = read("OZOW_IS_TEST", values);
+if (ozowIsTest && ozowIsTest !== "false") {
+  errors.push("OZOW_IS_TEST: must be 'false' (or unset) in production.");
+}
+if (paymentsRequired && ozowIsTest !== "false") {
+  errors.push("OZOW_IS_TEST: must be exactly 'false' for live payments in public launch mode.");
+}
+
+const nextPublicOzowIsTest = read("NEXT_PUBLIC_OZOW_IS_TEST", values);
 if (nextPublicOzowIsTest && nextPublicOzowIsTest !== "false") {
-  errors.push("NEXT_PUBLIC_OZOW_IS_TEST: must be exactly 'false' for live checkout.");
+  errors.push("NEXT_PUBLIC_OZOW_IS_TEST: must be 'false' (or unset) in production.");
+}
+if (paymentsRequired && nextPublicOzowIsTest !== "false") {
+  errors.push(
+    "NEXT_PUBLIC_OZOW_IS_TEST: must be exactly 'false' for live checkout in public launch mode.",
+  );
 }
 
 if (
@@ -277,7 +297,7 @@ warnIfMissing(
 );
 requireNonPlaceholder(
   "RESEND_API_KEY",
-  "must be set so vendor and rider applicants receive email confirmations and approval notices.",
+  "must be set (Resend has a free tier) so vendor and rider applicants receive email confirmations and approval notices.",
 );
 const notificationEmailFrom =
   read("ADMIN_NOTIFICATION_EMAIL_FROM", values) || read("PASSWORD_RESET_EMAIL_FROM", values);
@@ -293,12 +313,15 @@ if (looksLikePlaceholder(adminNotificationRecipients)) {
     "ADMIN_NOTIFICATION_EMAILS/ADMIN_NOTIFICATION_WHATSAPP_TO: at least one owner notification recipient must be set.",
   );
 }
-requireNonPlaceholder(
+warnIfMissing(
   "TWILIO_ACCOUNT_SID",
-  "must be set so vendor and rider applicants receive WhatsApp confirmations and approval notices.",
+  "optional — WhatsApp applicant notifications are skipped when unset; email covers confirmations and approvals.",
 );
-requireNonPlaceholder("TWILIO_AUTH_TOKEN", "must be set for WhatsApp notifications.");
-requireNonPlaceholder("TWILIO_WHATSAPP_FROM", "must be set to a Twilio WhatsApp sender.");
+warnIfMissing("TWILIO_AUTH_TOKEN", "optional — needed only if WhatsApp notifications are enabled.");
+warnIfMissing(
+  "TWILIO_WHATSAPP_FROM",
+  "optional — needed only if WhatsApp notifications are enabled.",
+);
 warnIfMissing("PUSHER_APP_ID", "recommended if you want realtime updates.");
 warnIfMissing("PUSHER_KEY", "recommended if you want realtime updates.");
 warnIfMissing("PUSHER_SECRET", "recommended if you want realtime updates.");

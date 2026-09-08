@@ -36,8 +36,8 @@ function shouldRenderGoogleMap(apiKey?: string) {
 }
 
 function getMapMode(apiKey?: string): MapMode {
-  if (process.env.NEXT_PUBLIC_GOOGLE_MAPS_JS_MODE === "true") {
-    return shouldRenderGoogleMap(apiKey) ? "js" : "fallback";
+  if (process.env.NEXT_PUBLIC_GOOGLE_MAPS_JS_MODE === "true" && shouldRenderGoogleMap(apiKey)) {
+    return "js";
   }
 
   return "embed";
