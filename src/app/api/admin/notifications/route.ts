@@ -4,6 +4,16 @@ import { requireAdminRequest } from "@/lib/admin-auth";
 import { getApplicantNotificationChannelStatus } from "@/lib/application-notifications";
 import { getAdminNotificationChannelStatus } from "@/lib/admin-notifications";
 import { countRiderApplications } from "@/lib/rider-applications";
+import { hasWebPushConfig } from "@/lib/web-push";
+
+const RECENT_CAMPAIGN_SELECT = {
+  id: true,
+  title: true,
+  segment: true,
+  sentCount: true,
+  failedCount: true,
+  createdAt: true,
+} as const;
 
 function isLocalSqliteRuntime() {
   return (
@@ -20,6 +30,9 @@ export async function GET(req: NextRequest) {
   }
 
   if (isLocalSqliteRuntime()) {
+    const recentCampaigns = await prisma.pushCampaign
+      .findMany({ orderBy: { createdAt: "desc" }, take: 5, select: RECENT_CAMPAIGN_SELECT })
+      .catch(() => []);
     return NextResponse.json({
       ok: true,
       pendingCount: 0,
@@ -27,7 +40,8 @@ export async function GET(req: NextRequest) {
       riderUnderReviewCount: 0,
       totalPendingApprovals: 0,
       latestPending: [],
-      recentCampaigns: [],
+      recentCampaigns,
+      webPushConfigured: hasWebPushConfig(),
       channels: getAdminNotificationChannelStatus(),
       applicantChannels: getApplicantNotificationChannelStatus(),
     });
@@ -55,14 +69,7 @@ export async function GET(req: NextRequest) {
       prisma.pushCampaign.findMany({
         orderBy: { createdAt: "desc" },
         take: 5,
-        select: {
-          id: true,
-          title: true,
-          segment: true,
-          sentCount: true,
-          failedCount: true,
-          createdAt: true,
-        },
+        select: RECENT_CAMPAIGN_SELECT,
       }),
     ]);
 
@@ -74,6 +81,7 @@ export async function GET(req: NextRequest) {
     totalPendingApprovals: pendingCount + riderPendingCount + riderUnderReviewCount,
     latestPending,
     recentCampaigns,
+    webPushConfigured: hasWebPushConfig(),
     channels: getAdminNotificationChannelStatus(),
     applicantChannels: getApplicantNotificationChannelStatus(),
   });

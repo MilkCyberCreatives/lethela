@@ -14,6 +14,7 @@
     "smoke": "node scripts/smoke-site.mjs",
     "e2e:demo": "node scripts/e2e-demo.mjs",
     "e2e:dashboards": "node scripts/dashboard-inspect.mjs",
+    "verify:push": "node scripts/verify-push.mjs",
     "e2e:mobile": "node scripts/mobile-inspect.mjs",
     "check:all-routes": "node scripts/check-all-routes.mjs",
     "assets:catalog": "node scripts/generate-catalog-images.mjs",

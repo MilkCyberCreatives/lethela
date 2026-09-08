@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { chromium } from "playwright";
 
 const baseUrl = process.env.E2E_BASE_URL || "http://localhost:3000";
@@ -10,6 +13,75 @@ const accounts = {
   rider: ["demo.rider@lethela.test", "DemoRider2026"],
   admin: ["admin@lethela.co.za", "AdminDemo123!"],
 };
+
+// This suite creates real rows (a fresh customer account, cart/order activity).
+// Load the same .env files the dev server uses and refuse to run against
+// anything that is not an obvious local/test database, so a misconfigured
+// E2E_BASE_URL can never point this suite at a production database.
+function loadDotEnv() {
+  const merged = {};
+  for (const file of [".env", ".env.local"]) {
+    const filePath = path.resolve(process.cwd(), file);
+    if (!fs.existsSync(filePath)) continue;
+    for (const rawLine of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+      const separator = line.indexOf("=");
+      if (separator <= 0) continue;
+      const key = line.slice(0, separator).trim();
+      let value = line.slice(separator + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+
+const envFile = loadDotEnv();
+const databaseUrl = process.env.DATABASE_URL || envFile.DATABASE_URL || "";
+const databaseProvider = (
+  process.env.DATABASE_PROVIDER ||
+  envFile.DATABASE_PROVIDER ||
+  ""
+).toLowerCase();
+const looksLikeTestDatabase =
+  databaseUrl.startsWith("file:") ||
+  /\b(test|dev|demo|local)\b/i.test(databaseUrl) ||
+  /localhost|127\.0\.0\.1/.test(baseUrl);
+
+if (!looksLikeTestDatabase) {
+  console.error(
+    "Refusing to run: DATABASE_URL does not look like a local/test database " +
+      `(${databaseUrl.replace(/:\/\/[^@]*@/, "://<redacted>@")}) and E2E_BASE_URL ` +
+      `(${baseUrl}) is not localhost. This suite creates real accounts and orders — ` +
+      "point it at a disposable database or unset DATABASE_URL to skip this check locally.",
+  );
+  process.exit(1);
+}
+
+// Remove a customer account this run created, but only against a local SQLite
+// file we can see on disk — never against Postgres or a remote database.
+function deleteE2eCustomer(email) {
+  if (databaseProvider && databaseProvider !== "sqlite") return;
+  if (!databaseUrl.startsWith("file:")) return;
+  const dbPath = path.resolve(
+    path.dirname(path.resolve(process.cwd(), "prisma/schema.prisma")),
+    databaseUrl.replace("file:", ""),
+  );
+  if (!fs.existsSync(dbPath)) return;
+  try {
+    const db = new DatabaseSync(dbPath);
+    db.prepare("DELETE FROM User WHERE email = ?").run(email);
+    db.close();
+  } catch {
+    // Best-effort cleanup only; never fail the suite over housekeeping.
+  }
+}
 
 const browser = await chromium.launch({ executablePath, headless: true });
 const results = [];
@@ -98,13 +170,16 @@ async function signIn(page, [email, password]) {
     return Boolean(session?.user?.id);
   });
   // Let the post-login redirect finish before the scenario starts its next
-  // navigation. Starting another navigation at the earlier "commit" stage can
-  // race the redirect on a cold dev server and make an authenticated profile
-  // request arrive without the settled session cookie.
+  // navigation. The customer redirect lands on the heavy marketplace home; if
+  // the scenario navigates away while that is still loading, the aborted request
+  // can retry before the session cookie is fully attached. Wait for the
+  // destination to settle (URL left /signin AND the page reached "load").
   await page.waitForURL((url) => !url.pathname.startsWith("/signin"), {
     timeout: 60000,
     waitUntil: "domcontentloaded",
   });
+  await page.waitForLoadState("load", { timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(400);
 }
 
 async function dismissCookieBanner(page) {
@@ -116,6 +191,36 @@ async function dismissCookieBanner(page) {
     // Consent was already saved or the banner is not present on this route.
   }
 }
+
+// A cold `next dev` compiles each route on first request, which can push the
+// first timed assertion of a scenario past its budget. Warm every route the
+// suite touches before any scenario runs so the timing is representative.
+async function warmUpRoutes() {
+  const routes = [
+    "/",
+    "/signin",
+    "/signup",
+    "/profile",
+    "/vendors/dashboard",
+    "/rider/dashboard",
+    "/admin",
+    "/search?q=burger",
+    "/categories/kota",
+    "/vendors/hello-tomato",
+    "/api/auth/providers",
+  ];
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  for (const route of routes) {
+    await page
+      .goto(`${baseUrl}${route}`, { waitUntil: "domcontentloaded", timeout: 120000 })
+      .catch(() => {});
+  }
+  await context.close();
+  console.log(`Warmed ${routes.length} routes.`);
+}
+
+await warmUpRoutes();
 
 await scenario("mobile browse, search, cart and guest checkout", async (page) => {
   await gotoStable(page, baseUrl);
@@ -169,6 +274,17 @@ await scenario("customer sign-in and profile access", async (page) => {
   await signIn(page, accounts.customer);
   await gotoStable(page, `${baseUrl}/profile`);
   if (page.url().includes("/signin")) {
+    // signIn() already confirmed a live session via /api/auth/session, so a
+    // bounce here is the client post-login redirect racing this navigation on a
+    // cold server. Re-confirm the session and retry the authenticated request.
+    await page.waitForFunction(async () => {
+      const response = await fetch("/api/auth/session", { cache: "no-store" });
+      const session = await response.json();
+      return Boolean(session?.user?.id);
+    });
+    await gotoStable(page, `${baseUrl}/profile`);
+  }
+  if (page.url().includes("/signin")) {
     throw new Error("Customer was redirected away from profile.");
   }
   // The authenticated profile page renders the account details form section.
@@ -216,8 +332,19 @@ await scenario("admin signs in directly and reaches vendor approvals", async (pa
   if (!page.url().includes("/admin")) {
     throw new Error(`Admin reached unexpected path: ${page.url()}`);
   }
-  await page.getByRole("button", { name: "Menu", exact: true }).click();
-  await page.getByRole("button", { name: "Vendor approvals", exact: true }).click();
+  // A cold /admin compile can leave the page painted but not yet hydrated, so
+  // the first "Menu" tap is dropped. Open the drawer, then confirm it actually
+  // opened before continuing, retrying the tap once if hydration lagged.
+  const menuButton = page.getByRole("button", { name: "Menu", exact: true });
+  const mobileNav = page.locator("#admin-mobile-navigation");
+  await menuButton.click();
+  try {
+    await mobileNav.waitFor({ state: "visible", timeout: 8000 });
+  } catch {
+    await menuButton.click();
+    await mobileNav.waitFor({ state: "visible", timeout: 20000 });
+  }
+  await mobileNav.getByRole("button", { name: "Vendor approvals", exact: true }).click();
   await page
     .getByText("Vendor approvals", { exact: true })
     .last()
@@ -246,6 +373,10 @@ await scenario("customer registers with a five-character password", async (page)
     const session = await response.json();
     return Boolean(session?.user?.id);
   });
+  // This scenario's whole point is exercising account creation, so the account
+  // it makes is disposable by definition — clean it up rather than leaving a
+  // fresh throwaway row in the database on every run.
+  deleteE2eCustomer(email);
 });
 
 await scenario("every township category page shows approved listings", async (page) => {

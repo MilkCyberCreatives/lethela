@@ -59,7 +59,9 @@ async function resolveSegmentVisitorIds(segment: CampaignSegment) {
     .map((row) => row.userId)
     .filter((value): value is string => Boolean(value));
   const rows = await prisma.pushPreference.findMany({
-    where: orderedUserIds.length > 0 ? { userId: { notIn: orderedUserIds } } : undefined,
+    // NOT { in } (rather than notIn) so anonymous opt-ins (userId = null), who by
+    // definition have no orders, are still included in the "no order yet" segment.
+    where: orderedUserIds.length > 0 ? { NOT: { userId: { in: orderedUserIds } } } : undefined,
     select: { visitorId: true },
     take: 500,
   });

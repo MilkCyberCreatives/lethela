@@ -41,7 +41,8 @@ type DashboardView =
   | "orders"
   | "messages"
   | "finance"
-  | "operations";
+  | "operations"
+  | "activity";
 
 const DASHBOARD_VIEWS: DashboardView[] = [
   "overview",
@@ -53,6 +54,7 @@ const DASHBOARD_VIEWS: DashboardView[] = [
   "messages",
   "finance",
   "operations",
+  "activity",
 ];
 
 function isDashboardView(value: string | null): value is DashboardView {
@@ -178,6 +180,17 @@ type NotificationChannels = {
 type ApplicantNotificationChannels = {
   email: { enabled: boolean };
   whatsapp: { enabled: boolean };
+};
+
+type PushSegment = "ALL" | "ENGAGED" | "LOYAL" | "NO_ORDER_YET";
+
+type PushCampaignSummary = {
+  id: string;
+  title: string;
+  segment: string;
+  sentCount: number;
+  failedCount: number;
+  createdAt: string;
 };
 
 type PlatformMessage = {
@@ -308,7 +321,7 @@ type AdminCustomer = {
   email: string;
   phone: string | null;
   joinedAt: string;
-  status: "VERIFIED" | "UNVERIFIED" | "LOCKED";
+  status: "VERIFIED" | "UNVERIFIED" | "ACTIVE" | "LOCKED";
   orderCount: number;
   totalSpentCents: number;
   lastOrderAt: string | null;
@@ -399,6 +412,10 @@ const ADMIN_NAV_GROUPS: Array<{
       { id: "messages", label: "Messages", icon: MessageSquare },
       { id: "finance", label: "Finance", icon: WalletCards },
     ],
+  },
+  {
+    title: "System",
+    items: [{ id: "activity", label: "Activity log", icon: Clock }],
   },
 ];
 
@@ -692,10 +709,12 @@ function AdminTopBar({
             className="grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
             aria-label="Sign out"
             onClick={() => {
-              void fetch("/api/admin/access", { method: "DELETE" }).finally(() => {
-                router.push("/owner-access");
-                router.refresh();
-              });
+              void fetch("/api/admin/access", { method: "DELETE" })
+                .catch(() => {})
+                .finally(() => {
+                  router.push("/owner-access");
+                  router.refresh();
+                });
             }}
           >
             <LogOut className="h-4 w-4" />
@@ -924,6 +943,14 @@ export default function AdminPage() {
     body: "",
     channel: "ALL",
   });
+  const [webPushConfigured, setWebPushConfigured] = useState<boolean | null>(null);
+  const [pushCampaigns, setPushCampaigns] = useState<PushCampaignSummary[]>([]);
+  const [pushForm, setPushForm] = useState<{
+    title: string;
+    body: string;
+    url: string;
+    segment: PushSegment;
+  }>({ title: "", body: "", url: "/", segment: "ALL" });
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -1170,8 +1197,46 @@ export default function AdminPage() {
     ]);
     setChannels(notificationsJson.channels ?? null);
     setApplicantChannels(notificationsJson.applicantChannels ?? null);
+    setWebPushConfigured(Boolean(notificationsJson.webPushConfigured));
+    setPushCampaigns((notificationsJson.recentCampaigns ?? []) as PushCampaignSummary[]);
     setMessages(messagesJson.items ?? []);
   }, [fetchAdminJson]);
+
+  const sendPushCampaign = useCallback(async () => {
+    const title = pushForm.title.trim();
+    const message = pushForm.body.trim();
+    if (!title || !message) {
+      setError("Enter a push title and message before sending.");
+      return;
+    }
+    setSavingKey("push:send");
+    setError(null);
+    setNotice(null);
+    try {
+      await syncAdminAccess();
+      const response = await fetch("/api/push/notify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title,
+          body: message,
+          url: pushForm.url.trim() || "/",
+          segment: pushForm.segment,
+        }),
+      });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Failed to send push campaign.");
+      setNotice(
+        `Push sent to ${json.sent} device(s)${json.failed ? `, ${json.failed} failed` : ""}.`,
+      );
+      setPushForm((state) => ({ ...state, title: "", body: "" }));
+      await loadCommunicationData();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to send push campaign."));
+    } finally {
+      setSavingKey(null);
+    }
+  }, [loadCommunicationData, pushForm, syncAdminAccess]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1242,13 +1307,20 @@ export default function AdminPage() {
   }, [view, customerSearch, customerPage, loadCustomers]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
+    const refreshLive = () => {
       if (document.visibilityState !== "visible") return;
       void loadLiveData().catch(() => {
         // Manual refresh exposes a detailed error without interrupting the operator every 30 seconds.
       });
-    }, 30000);
-    return () => window.clearInterval(timer);
+    };
+    const timer = window.setInterval(refreshLive, 30000);
+    // Pull fresh data as soon as the operator returns to the tab, rather than
+    // showing up-to-30s-stale operations until the next interval tick.
+    document.addEventListener("visibilitychange", refreshLive);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshLive);
+    };
   }, [loadLiveData]);
 
   async function enableBrowserAlerts() {
@@ -1818,7 +1890,9 @@ export default function AdminPage() {
 
       {mobileNavigationOpen ? (
         <div
-          className="fixed inset-0 z-[70] lg:hidden"
+          // Above the cookie-consent banner (z-120) so every drawer item stays
+          // tappable while that banner is still on screen.
+          className="fixed inset-0 z-[130] lg:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Admin navigation"
@@ -1963,6 +2037,10 @@ export default function AdminPage() {
           </aside>
 
           <div className="min-w-0 space-y-6">
+            <div className="hidden text-xs text-slate-500 lg:block" aria-label="Breadcrumb">
+              Dashboard <span aria-hidden="true">/</span>{" "}
+              <span className="font-semibold text-slate-900">{currentViewLabel}</span>
+            </div>
             <section className="rounded-xl border border-white/10 bg-[#0C1132] p-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
@@ -2437,7 +2515,7 @@ export default function AdminPage() {
                   >
                     {RIDER_STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
-                        {option}
+                        {option.replaceAll("_", " ")}
                       </option>
                     ))}
                   </select>
@@ -2646,16 +2724,18 @@ export default function AdminPage() {
                                   className={`rounded-full border px-2.5 py-1 text-xs ${
                                     customer.status === "LOCKED"
                                       ? "border-red-300/35 bg-red-300/10 text-red-100"
-                                      : customer.status === "VERIFIED"
-                                        ? "border-emerald-300/35 bg-emerald-300/10 text-emerald-100"
-                                        : "border-white/15 bg-white/5 text-white/65"
+                                      : customer.status === "UNVERIFIED"
+                                        ? "border-amber-300/35 bg-amber-300/10 text-amber-100"
+                                        : "border-emerald-300/35 bg-emerald-300/10 text-emerald-100"
                                   }`}
                                 >
-                                  {customer.status === "VERIFIED"
-                                    ? "Verified"
-                                    : customer.status === "LOCKED"
-                                      ? "Locked"
-                                      : "Unverified"}
+                                  {customer.status === "LOCKED"
+                                    ? "Locked"
+                                    : customer.status === "UNVERIFIED"
+                                      ? "Unverified"
+                                      : customer.status === "VERIFIED"
+                                        ? "Verified"
+                                        : "Active"}
                                 </span>
                               </td>
                             </tr>
@@ -3268,6 +3348,127 @@ export default function AdminPage() {
                     type="password"
                   />
                 </div>
+
+                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
+                  <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                    Push notifications
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold">Send a broadcast push</h3>
+                  <p className="mt-1 text-sm text-white/60">
+                    Self-hosted web push. Goes to every subscribed device in the chosen segment that
+                    still allows marketing notifications.
+                  </p>
+                  {webPushConfigured === false ? (
+                    <p className="mt-3 rounded-lg border border-amber-300/35 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
+                      Web push keys are not configured. Set NEXT_PUBLIC_VAPID_PUBLIC_KEY and
+                      WEB_PUSH_VAPID_PRIVATE_KEY before sending.
+                    </p>
+                  ) : null}
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <label className="grid gap-1 text-sm md:col-span-2">
+                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        Title
+                      </span>
+                      <input
+                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        value={pushForm.title}
+                        maxLength={80}
+                        onChange={(event) =>
+                          setPushForm((state) => ({ ...state, title: event.target.value }))
+                        }
+                        placeholder="Fresh kotas near you"
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm md:col-span-2">
+                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        Message
+                      </span>
+                      <textarea
+                        className="min-h-20 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-black"
+                        value={pushForm.body}
+                        maxLength={200}
+                        onChange={(event) =>
+                          setPushForm((state) => ({ ...state, body: event.target.value }))
+                        }
+                        placeholder="Order now and get it delivered in under 30 minutes."
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        Open link
+                      </span>
+                      <input
+                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        value={pushForm.url}
+                        onChange={(event) =>
+                          setPushForm((state) => ({ ...state, url: event.target.value }))
+                        }
+                        placeholder="/"
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        Segment
+                      </span>
+                      <select
+                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        value={pushForm.segment}
+                        onChange={(event) =>
+                          setPushForm((state) => ({
+                            ...state,
+                            segment: event.target.value as PushSegment,
+                          }))
+                        }
+                      >
+                        <option value="ALL">Everyone subscribed</option>
+                        <option value="ENGAGED">Engaged (searched or browsed)</option>
+                        <option value="LOYAL">Loyal (clicked or added to cart)</option>
+                        <option value="NO_ORDER_YET">Registered, no order yet</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <Button
+                    className="mt-4 bg-lethela-primary text-white hover:opacity-90"
+                    disabled={savingKey === "push:send" || webPushConfigured === false}
+                    onClick={() => void sendPushCampaign()}
+                  >
+                    {savingKey === "push:send" ? "Sending..." : "Send push"}
+                  </Button>
+
+                  {pushCampaigns.length > 0 ? (
+                    <div className="mt-5 overflow-x-auto">
+                      <table className="w-full min-w-[520px] border-separate border-spacing-y-2 text-left text-sm">
+                        <thead className="text-xs uppercase tracking-[0.12em] text-white/38">
+                          <tr>
+                            <th className="px-3 py-2">Campaign</th>
+                            <th className="px-3 py-2">Segment</th>
+                            <th className="px-3 py-2">Sent</th>
+                            <th className="px-3 py-2">Failed</th>
+                            <th className="px-3 py-2">When</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pushCampaigns.map((campaign) => (
+                            <tr key={campaign.id} className="bg-[#080B27]/75">
+                              <td className="rounded-l-lg px-3 py-3 font-semibold text-white">
+                                {campaign.title}
+                              </td>
+                              <td className="px-3 py-3 text-white/70">{campaign.segment}</td>
+                              <td className="px-3 py-3 text-white/70">{campaign.sentCount}</td>
+                              <td className="px-3 py-3 text-white/70">{campaign.failedCount}</td>
+                              <td className="rounded-r-lg px-3 py-3 text-white/60">
+                                {new Date(campaign.createdAt).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
+                </div>
+
                 <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -3616,6 +3817,61 @@ export default function AdminPage() {
                   items={SCALE_READINESS_PLAYBOOK}
                   className="md:col-span-2"
                 />
+              </section>
+            ) : null}
+
+            {view === "activity" ? (
+              <section className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+                    System
+                  </p>
+                  <h3 className="mt-1 text-xl font-semibold">Activity log</h3>
+                  <p className="mt-1 text-sm text-white/55">
+                    Every recorded admin action — who did it, what changed and when.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-white/10 bg-white/[0.035]">
+                  {auditLogs.length === 0 ? (
+                    <div className="p-6 text-sm">
+                      <p className="font-semibold text-white">No admin activity recorded yet.</p>
+                      <p className="mt-1 text-white/60">
+                        Approvals, rejections, status changes and other owner actions appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto p-2">
+                      <table className="w-full min-w-[760px] border-separate border-spacing-y-2 text-left text-sm">
+                        <thead className="text-xs uppercase tracking-[0.12em] text-white/38">
+                          <tr>
+                            <th className="px-3 py-2">Action</th>
+                            <th className="px-3 py-2">Target</th>
+                            <th className="px-3 py-2">Actor</th>
+                            <th className="px-3 py-2">When</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {auditLogs.map((log) => (
+                            <tr key={log.id} className="bg-[#080B27]/75">
+                              <td className="rounded-l-lg px-3 py-3 font-semibold text-white">
+                                {log.action.replaceAll("_", " ")}
+                              </td>
+                              <td className="px-3 py-3 text-white/70">
+                                {log.targetType}
+                                <span className="block text-xs text-white/45">{log.targetId}</span>
+                              </td>
+                              <td className="px-3 py-3 text-white/70">{log.actor}</td>
+                              <td className="rounded-r-lg px-3 py-3 text-white/60">
+                                {new Date(log.createdAt).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </section>
             ) : null}
           </div>

@@ -3,17 +3,25 @@ import { getFallbackProducts, getFallbackVendorCards } from "@/lib/catalog-fallb
 import { shouldPreferCatalogFallback } from "@/lib/catalog-runtime";
 import { isPublicMarketplaceProduct, isPublicMarketplaceVendor } from "@/lib/public-catalog";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, absoluteUrl } from "@/lib/site";
 import { TOWNSHIP_CATEGORIES, categoryToSlug } from "@/lib/categories";
 
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date();
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${SITE_URL}/`,
+      lastModified: now,
       changeFrequency: "daily",
       priority: 1,
+    },
+    {
+      url: `${SITE_URL}/areas/klipfontein-view`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.85,
     },
     {
       url: `${SITE_URL}/about`,
@@ -186,6 +194,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 id: true,
                 vendorId: true,
                 name: true,
+                image: true,
                 status: true,
                 inStock: true,
                 isAlcohol: true,
@@ -232,12 +241,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             lastModified: product.updatedAt,
             changeFrequency: "daily" as const,
             priority: 0.75,
+            ...(product.image ? { images: [absoluteUrl(product.image)] } : {}),
           }))
       : shouldPreferCatalogFallback()
         ? getFallbackProducts().map((product) => ({
             url: `${SITE_URL}/products/${encodeURIComponent(product.id)}`,
             changeFrequency: "daily" as const,
             priority: 0.75,
+            ...(product.image ? { images: [absoluteUrl(product.image)] } : {}),
           }))
         : [];
 

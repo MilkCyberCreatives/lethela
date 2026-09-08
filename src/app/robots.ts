@@ -13,7 +13,7 @@ const privateRoutes = [
   "/account",
   "/profile",
   "/signin",
-  "/signup/",
+  "/signup",
   "/forgot-password",
   "/reset-password",
 ];

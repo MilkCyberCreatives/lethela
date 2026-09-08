@@ -25,6 +25,7 @@ test("admin navigation has one professional destination per dashboard view", asy
     "users",
     "messages",
     "finance",
+    "activity",
   ]);
   assert.equal(new Set(ids).size, ids.length);
 });
@@ -32,13 +33,14 @@ test("admin navigation has one professional destination per dashboard view", asy
 test("admin live refresh only reloads operational data while the tab is visible", async () => {
   const admin = await source("src/app/admin/page.tsx");
   const pollingBlock = admin.slice(
-    admin.indexOf("const timer = window.setInterval"),
+    admin.indexOf("const refreshLive = () => {"),
     admin.indexOf("async function enableBrowserAlerts"),
   );
 
   assert.match(pollingBlock, /document\.visibilityState !== "visible"/);
   assert.match(pollingBlock, /loadLiveData/);
-  assert.match(pollingBlock, /30000/);
+  assert.match(pollingBlock, /window\.setInterval\(refreshLive, 30000\)/);
+  assert.match(pollingBlock, /addEventListener\("visibilitychange", refreshLive\)/);
   assert.doesNotMatch(pollingBlock, /void load\(\)/);
 });
 

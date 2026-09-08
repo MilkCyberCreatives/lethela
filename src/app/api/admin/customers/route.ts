@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
+import { isEmailVerificationRequired } from "@/lib/email-verification";
 import { withQueryTimeout } from "@/lib/query-timeout";
 
 const CUSTOMER_ROLES = ["CUSTOMER", "USER"];
@@ -83,16 +84,27 @@ export async function GET(req: NextRequest) {
   );
 
   const now = Date.now();
+  // Only call an account out as "Unverified" when the platform is actually
+  // configured to require verification — otherwise every customer would show
+  // a flag for a step the site never asked them to complete.
+  const verificationRequired = isEmailVerificationRequired();
   const customers = rows.map((row) => {
     const spend = spendMap.get(row.id);
     const locked = row.lockedUntil ? new Date(row.lockedUntil).getTime() > now : false;
+    const status = locked
+      ? "LOCKED"
+      : row.emailVerifiedAt
+        ? "VERIFIED"
+        : verificationRequired
+          ? "UNVERIFIED"
+          : "ACTIVE";
     return {
       id: row.id,
       name: row.name ?? null,
       email: row.email,
       phone: row.phone ?? null,
       joinedAt: row.createdAt.toISOString(),
-      status: locked ? "LOCKED" : row.emailVerifiedAt ? "VERIFIED" : "UNVERIFIED",
+      status,
       orderCount: row._count.orders,
       totalSpentCents: spend?.totalSpentCents ?? 0,
       lastOrderAt: spend?.lastOrderAt ? new Date(spend.lastOrderAt).toISOString() : null,

@@ -1,6 +1,13 @@
 import { Suspense } from "react";
 import AuthShell from "@/components/auth/AuthShell";
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata = buildNoIndexMetadata({
+  title: "Choose a new password",
+  description: "Set a new password for your Lethela account.",
+  path: "/reset-password",
+});
 
 export default function ResetPasswordPage() {
   return (
