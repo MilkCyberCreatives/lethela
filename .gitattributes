@@ -1,0 +1,21 @@
+# Normalize line endings: LF in the repo, LF on checkout for every platform.
+# Prevents Windows CRLF from tripping `prettier --check` in the pre-commit hook and CI.
+* text=auto eol=lf
+
+# Explicit binary types (never touch these)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.mp4 binary
+*.webm binary
+*.zip binary
+*.gz binary
+*.db binary
