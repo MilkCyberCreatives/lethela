@@ -179,6 +179,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-dvh bg-lethela-secondary text-white" suppressHydrationWarning>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-lethela-secondary focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
         <RouteThemeMarker />
         <StructuredData data={globalSchema} />
         <MarketingScripts />
@@ -187,7 +193,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <VisitorTelemetry />
           </Suspense>
           <CookieConsentBanner />
-          {children}
+          <div id="main-content" tabIndex={-1} className="outline-none">
+            {children}
+          </div>
           <ScrollToTop />
         </Providers>
         <ConsentAnalytics />
