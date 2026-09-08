@@ -84,3 +84,70 @@ jobs:
 
       - name: Build production application
         run: npm run build
+
+  e2e:
+    name: End-to-end (demo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DATABASE_PROVIDER: sqlite
+      DATABASE_URL: file:./ci-e2e.db
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ci-only-nextauth-secret-not-for-production
+      VENDOR_SESSION_SECRET: ci-only-vendor-secret
+      RIDER_CONSOLE_SECRET: ci-only-rider-secret
+      ADMIN_APPROVAL_KEY: ci-only-admin-key
+      CRON_SECRET: ci-only-cron-secret
+      BANK_DATA_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      EMAIL_VERIFICATION_REQUIRED: "false"
+      DEMO_CATALOG_MODE: "true"
+      ALLOW_PRODUCTION_DEMO_CATALOG: "true"
+      ALLOW_PUBLIC_DEMO_ORDER: "true"
+      NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE: public
+      E2E_BASE_URL: http://localhost:3000
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare the demo database
+        run: |
+          node scripts/prisma-run.mjs db push --skip-generate --accept-data-loss
+          npm run db:seed
+
+      - name: Build production application
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start the app
+        run: |
+          npm start &
+          echo $! > .next-server.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000 >/dev/null; then
+              echo "App is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::App did not become ready on port 3000"
+          exit 1
+
+      - name: Run the end-to-end demo suite
+        run: npm run e2e:demo
+
+      - name: Stop the app
+        if: always()
+        run: |
+          if [ -f .next-server.pid ]; then kill "$(cat .next-server.pid)" || true; fi

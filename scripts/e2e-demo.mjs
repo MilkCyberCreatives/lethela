@@ -4,8 +4,18 @@ import { DatabaseSync } from "node:sqlite";
 import { chromium } from "playwright";
 
 const baseUrl = process.env.E2E_BASE_URL || "http://localhost:3000";
-const executablePath =
-  process.env.E2E_CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+
+// Prefer an explicit browser path, then a local Chrome install, otherwise fall
+// back to Playwright's bundled Chromium (this is what CI and non-Windows use).
+function resolveExecutablePath() {
+  const explicit = process.env.E2E_CHROME_PATH?.trim();
+  if (explicit) return explicit;
+  const localChrome = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+  if (fs.existsSync(localChrome)) return localChrome;
+  return undefined;
+}
+
+const executablePath = resolveExecutablePath();
 
 const accounts = {
   customer: ["demo.customer@lethela.test", "DemoBuyer2026"],
@@ -83,7 +93,10 @@ function deleteE2eCustomer(email) {
   }
 }
 
-const browser = await chromium.launch({ executablePath, headless: true });
+const browser = await chromium.launch({
+  ...(executablePath ? { executablePath } : {}),
+  headless: true,
+});
 const results = [];
 
 // The Next dev server keeps an HMR websocket and analytics beacons open, so the
