@@ -8,13 +8,15 @@ export type AppRole =
   | "VENDOR"
   | "RIDER";
 
-const STAFF_ROLES = new Set<AppRole>([
+export const STAFF_ROLE_VALUES: readonly AppRole[] = [
   "OWNER",
   "ADMIN",
   "OPERATIONS_MANAGER",
   "SUPPORT_AGENT",
   "FINANCE",
-]);
+];
+
+const STAFF_ROLES = new Set<AppRole>(STAFF_ROLE_VALUES);
 
 export function normalizeAppRole(value: unknown): AppRole {
   const role = String(value || "")

@@ -11,6 +11,7 @@ import {
 } from "@/lib/notification-channels";
 import { prisma } from "@/lib/db";
 import { hasWebPushConfig } from "@/lib/web-push";
+import { notifyStaff } from "@/lib/notifications";
 import { sendPushToAdmins } from "@/lib/push-notifications";
 
 export type ApplicationKind = "vendor" | "rider";
@@ -300,6 +301,18 @@ export async function notifyAdminsOfRiderApplication(
       ),
     );
   }
+
+  tasks.push(
+    settleWithin(
+      notifyStaff({
+        type: "rider-application",
+        title: "New rider application",
+        body: `${application.fullName} is waiting for owner approval.`,
+        href: "/admin?view=riders",
+      }),
+      3000,
+    ),
+  );
 
   await Promise.all(tasks);
   return { pendingCount };

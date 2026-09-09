@@ -60,7 +60,7 @@ test("admin attention queue and metrics use canonical live data", async () => {
 test("admin header controls are functional rather than decorative", async () => {
   const admin = await source("src/app/admin/page.tsx");
   assert.match(admin, /onSubmit=\{\(event\) =>/);
-  assert.match(admin, /onClick=\{onNotifications\}/);
+  assert.match(admin, /onOpenOperations=\{onNotifications\}/);
   assert.match(admin, /href="\/contact"/);
   assert.match(admin, /handleGlobalSearch/);
 });

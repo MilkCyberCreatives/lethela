@@ -12,6 +12,7 @@ import {
   splitCsv,
 } from "@/lib/notification-channels";
 import { hasWebPushConfig } from "@/lib/web-push";
+import { notifyStaff } from "@/lib/notifications";
 import { sendPushToAdmins } from "@/lib/push-notifications";
 
 export type AdminVendorApplicationNotification = {
@@ -179,6 +180,18 @@ export async function notifyAdminsOfVendorApplication(
   if (channels.whatsapp.enabled) {
     tasks.push(settleWithin(sendTwilioWhatsAppNotification(application, pendingCount), 3000));
   }
+
+  tasks.push(
+    settleWithin(
+      notifyStaff({
+        type: "vendor-application",
+        title: "New vendor application",
+        body: `${application.name} is waiting for admin approval.`,
+        href: "/admin?view=vendors",
+      }),
+      3000,
+    ),
+  );
 
   await Promise.all(tasks);
 

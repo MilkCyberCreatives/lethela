@@ -31,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import NotificationBell from "@/components/dashboard/NotificationBell";
 
 type DashboardView =
   | "overview"
@@ -674,19 +675,10 @@ function AdminTopBar({
         </form>
 
         <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            className="relative grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
-            aria-label={`Open operational notifications${notificationCount ? `, ${notificationCount} active` : ""}`}
-            onClick={onNotifications}
-          >
-            <Bell className="h-4 w-4" />
-            {notificationCount > 0 ? (
-              <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border border-[#05071D] bg-lethela-primary px-1 text-[10px] font-bold text-white">
-                {notificationCount > 99 ? "99+" : notificationCount}
-              </span>
-            ) : null}
-          </button>
+          <NotificationBell
+            operationsCount={notificationCount}
+            onOpenOperations={onNotifications}
+          />
           <Link
             href="/contact"
             className="hidden h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white sm:grid"
