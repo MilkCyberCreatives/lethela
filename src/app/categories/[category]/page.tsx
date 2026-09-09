@@ -254,7 +254,7 @@ export default async function CategoryPage({ params }: PageProps) {
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-bold md:text-4xl">{titleForCategory(resolvedCategory)}</h1>
           {isLiquorCategory ? (
-            <span className="rounded-full border border-lethela-primary/40 px-2 py-1 text-xs font-semibold text-lethela-primary">
+            <span className="rounded-full border border-lethela-primary/40 bg-lethela-primary px-2 py-1 text-xs font-semibold text-white">
               18+
             </span>
           ) : null}
@@ -276,7 +276,9 @@ export default async function CategoryPage({ params }: PageProps) {
           </p>
         ) : null}
 
-        <p className="mt-8 text-sm text-white/65">{optionsLabel(resolvedCategory, items.length)}</p>
+        <h2 className="mt-8 text-sm font-normal text-white/65">
+          {optionsLabel(resolvedCategory, items.length)}
+        </h2>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((product) => (
