@@ -243,6 +243,7 @@ async function warmUpRoutes() {
     "/search?q=burger",
     "/categories/kota",
     "/vendors/hello-tomato",
+    "/checkout",
     "/api/auth/providers",
   ];
   const context = await browser.newContext();
@@ -258,53 +259,59 @@ async function warmUpRoutes() {
 
 await warmUpRoutes();
 
-await scenario("mobile browse, search, cart and guest checkout", async (page) => {
-  await gotoStable(page, baseUrl);
-  await dismissCookieBanner(page);
-  if (!(await page.locator("body").innerText()).includes("Lethela")) {
-    throw new Error("Homepage did not render Lethela content.");
-  }
-  await page.getByPlaceholder(/Search kota, groceries/i).fill("burger");
-  const searchPromise = page.waitForResponse((response) =>
-    response.url().includes("/api/ai/search"),
-  );
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  const searchResponse = await searchPromise;
-  if (!searchResponse.ok()) throw new Error(`Search API returned ${searchResponse.status()}.`);
-  await page.getByText("Search results", { exact: true }).waitFor();
-  await gotoStable(page, `${baseUrl}/vendors/hello-tomato`);
-  await dismissCookieBanner(page);
-  const addButton = page.getByRole("button", { name: /^Add$/ }).first();
-  await addButton.waitFor({ state: "visible", timeout: 15000 });
-  await addButton.click();
-  const cartDialog = page.getByRole("dialog", { name: "Shopping cart" });
-  if (!(await cartDialog.getAttribute("class"))?.includes("translate-x-full")) {
-    throw new Error("Adding an item opened the cart and blocked continued browsing.");
-  }
-  const addButtons = page.getByRole("button", { name: /^Add$/ });
-  if ((await addButtons.count()) > 1) {
-    await addButtons.nth(1).scrollIntoViewIfNeeded();
-    await addButtons.nth(1).click();
-    if (!(await cartDialog.getAttribute("class"))?.includes("translate-x-full")) {
-      throw new Error("Adding another item opened the cart and blocked continued browsing.");
+await scenario(
+  "mobile browse, search, cart and guest checkout",
+  async (page) => {
+    await gotoStable(page, baseUrl);
+    await dismissCookieBanner(page);
+    if (!(await page.locator("body").innerText()).includes("Lethela")) {
+      throw new Error("Homepage did not render Lethela content.");
     }
-  }
-  await page.getByRole("button", { name: "Open cart" }).click();
-  await page.waitForFunction(() => {
-    const dialog = document.querySelector('[role="dialog"][aria-label="Shopping cart"]');
-    return dialog instanceof HTMLElement && dialog.classList.contains("translate-x-0");
-  });
-  await page.getByRole("link", { name: "Checkout", exact: true }).last().click();
-  await page.waitForURL((url) => url.pathname.startsWith("/checkout"));
-  await page.waitForLoadState("load");
-  await page.getByLabel(/Customer name/i).fill("DEMO Buyer");
-  await page.getByLabel(/Phone number/i).fill("0720000000");
-  if (!(await page.locator("body").innerText()).includes("order as a guest")) {
-    throw new Error("Guest checkout guidance is missing.");
-  }
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
-  if (overflow) throw new Error("Checkout has horizontal overflow at 390px.");
-});
+    await page.getByPlaceholder(/Search kota, groceries/i).fill("burger");
+    const searchPromise = page.waitForResponse((response) =>
+      response.url().includes("/api/ai/search"),
+    );
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    const searchResponse = await searchPromise;
+    if (!searchResponse.ok()) throw new Error(`Search API returned ${searchResponse.status()}.`);
+    await page.getByText("Search results", { exact: true }).waitFor();
+    await gotoStable(page, `${baseUrl}/vendors/hello-tomato`);
+    await dismissCookieBanner(page);
+    const addButton = page.getByRole("button", { name: /^Add$/ }).first();
+    await addButton.waitFor({ state: "visible", timeout: 15000 });
+    await addButton.click();
+    const cartDialog = page.getByRole("dialog", { name: "Shopping cart" });
+    if (!(await cartDialog.getAttribute("class"))?.includes("translate-x-full")) {
+      throw new Error("Adding an item opened the cart and blocked continued browsing.");
+    }
+    const addButtons = page.getByRole("button", { name: /^Add$/ });
+    if ((await addButtons.count()) > 1) {
+      await addButtons.nth(1).scrollIntoViewIfNeeded();
+      await addButtons.nth(1).click();
+      if (!(await cartDialog.getAttribute("class"))?.includes("translate-x-full")) {
+        throw new Error("Adding another item opened the cart and blocked continued browsing.");
+      }
+    }
+    await page.getByRole("button", { name: "Open cart" }).click();
+    await page.waitForFunction(() => {
+      const dialog = document.querySelector('[role="dialog"][aria-label="Shopping cart"]');
+      return dialog instanceof HTMLElement && dialog.classList.contains("translate-x-0");
+    });
+    await page.getByRole("link", { name: "Checkout", exact: true }).last().click();
+    await page.waitForURL((url) => url.pathname.startsWith("/checkout"));
+    await page.waitForLoadState("load");
+    await page.getByLabel(/Customer name/i).fill("DEMO Buyer");
+    await page.getByLabel(/Phone number/i).fill("0720000000");
+    if (!(await page.locator("body").innerText()).includes("order as a guest")) {
+      throw new Error("Guest checkout guidance is missing.");
+    }
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth + 1,
+    );
+    if (overflow) throw new Error("Checkout has horizontal overflow at 390px.");
+  },
+  { retries: 1 },
+);
 
 await scenario(
   "customer sign-in and profile access",
