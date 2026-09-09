@@ -1,0 +1,118 @@
+name: Provision production database schema
+
+# One-shot: pushes the Prisma schema into the production PostgreSQL database.
+# Run this once after DATABASE_URL / DATABASE_PROVIDER are set in the Vercel
+# production environment, before the first real deploy. It reads the connection
+# string from `vercel pull`, so the secret never leaves Vercel + this runner.
+
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Run even if the database already has a User table (DANGEROUS — only for a known-safe re-init)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lethela-provision-production-db
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    name: Push schema to production PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      VERCEL_ORG_ID: team_BLcgVmtxwgxliRt0sECEsRdI
+      VERCEL_PROJECT_ID: prj_fQ9srYuFRdvq4rldmokUAL0S7TzN
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Confirm Vercel credential
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Add a scoped VERCEL_TOKEN repository or production-environment secret first."
+            exit 1
+          fi
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@50.15.1
+
+      - name: Pull production environment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Load and validate the database target
+        shell: bash
+        run: |
+          ENV_FILE=.vercel/.env.production.local
+          if [ ! -f "$ENV_FILE" ]; then
+            echo "::error::$ENV_FILE not found — 'vercel pull' did not produce the production env."
+            exit 1
+          fi
+          strip() { local v="$1"; v="${v%\"}"; v="${v#\"}"; printf '%s' "$v"; }
+          db_url="$(strip "$(grep -E '^DATABASE_URL=' "$ENV_FILE" | head -1 | cut -d= -f2-)")"
+          db_provider="$(strip "$(grep -E '^DATABASE_PROVIDER=' "$ENV_FILE" | head -1 | cut -d= -f2-)")"
+          if [ "$db_provider" != "postgresql" ]; then
+            echo "::error::DATABASE_PROVIDER must be 'postgresql' in the Vercel production env (got '${db_provider:-unset}')."
+            exit 1
+          fi
+          case "$db_url" in
+            postgres://*|postgresql://*) : ;;
+            *)
+              echo "::error::DATABASE_URL must be a postgres:// connection string."
+              exit 1
+              ;;
+          esac
+          printf 'DATABASE_URL=%s\n' "$db_url" >> "$GITHUB_ENV"
+          printf 'DATABASE_PROVIDER=postgresql\n' >> "$GITHUB_ENV"
+          echo "Target host: $(printf '%s' "$db_url" | sed -E 's#^.*@##; s#[/?].*$##')"
+
+      - name: Refuse to overwrite an in-use database
+        shell: bash
+        run: |
+          if echo 'SELECT 1 FROM "User" LIMIT 1;' \
+            | npx prisma db execute --stdin --schema prisma/schema.postgresql.prisma >/dev/null 2>&1; then
+            echo "::warning::A \"User\" table already exists — this database is already initialised."
+            if [ "${{ inputs.force }}" != "true" ]; then
+              echo "::error::Refusing to touch a non-empty database. Re-run with force=true only if you are certain it is safe."
+              exit 1
+            fi
+            echo "force=true supplied — continuing against the existing database."
+          else
+            echo "Fresh database (no User table) — safe to create the schema."
+          fi
+
+      - name: Push the Prisma schema
+        run: node scripts/prisma-run.mjs db push --skip-generate | tee push.log
+
+      - name: Confirm the schema is live
+        shell: bash
+        run: |
+          echo 'SELECT 1;' | npx prisma db execute --stdin --schema prisma/schema.postgresql.prisma
+          {
+            echo '### Production database initialised'
+            echo ''
+            echo 'The Prisma schema was pushed to the production PostgreSQL database.'
+            echo 'Deploy next (Deploy production prebuilt workflow).'
+          } >> "$GITHUB_STEP_SUMMARY"
