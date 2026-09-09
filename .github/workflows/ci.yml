@@ -91,7 +91,7 @@ jobs:
     timeout-minutes: 25
     env:
       DATABASE_PROVIDER: sqlite
-      DATABASE_URL: file:./ci-e2e.db
+      DATABASE_URL: file:${{ github.workspace }}/prisma/ci-e2e.db
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ci-only-nextauth-secret-not-for-production
@@ -132,20 +132,26 @@ jobs:
 
       - name: Start the app
         run: |
-          npm start &
+          npm start > server.log 2>&1 &
           echo $! > .next-server.pid
           for i in $(seq 1 60); do
-            if curl -sf http://localhost:3000 >/dev/null; then
-              echo "App is up."
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 || true)"
+            if [ -n "$code" ] && [ "$code" != "000" ]; then
+              echo "App is responding (HTTP $code)."
               exit 0
             fi
             sleep 2
           done
           echo "::error::App did not become ready on port 3000"
+          cat server.log || true
           exit 1
 
       - name: Run the end-to-end demo suite
         run: npm run e2e:demo
+
+      - name: Server log
+        if: always()
+        run: cat server.log || true
 
       - name: Stop the app
         if: always()
