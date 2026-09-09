@@ -4,19 +4,21 @@ import { useEffect, useState } from "react";
 import { hasCookieConsent, readCookieConsent, writeCookieConsent } from "@/lib/cookie-consent";
 
 export default function CookieConsentBanner() {
-  const [visible, setVisible] = useState(false);
+  // Rendered on the server so it is part of the first paint (see
+  // CookieConsentBoot, which hides it pre-hydration for anyone who already
+  // chose). After hydration React takes over visibility.
+  const [dismissed, setDismissed] = useState(false);
   const [revising, setRevising] = useState(false);
 
   useEffect(() => {
     const reopen = () => {
       setRevising(true);
-      setVisible(true);
+      setDismissed(false);
     };
     window.addEventListener("lethela:cookie-consent-settings", reopen);
 
-    const existing = readCookieConsent();
-    if (!existing) {
-      setVisible(true);
+    if (readCookieConsent() || hasCookieConsent()) {
+      setDismissed(true);
     }
 
     return () => window.removeEventListener("lethela:cookie-consent-settings", reopen);
@@ -25,17 +27,17 @@ export default function CookieConsentBanner() {
   function save(status: "accepted" | "declined") {
     writeCookieConsent(status);
     setRevising(false);
-    setVisible(false);
+    setDismissed(true);
   }
 
-  if (!visible || (!revising && hasCookieConsent())) return null;
+  if (dismissed && !revising) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="cookie-consent-title"
-      className="fixed inset-x-0 bottom-0 z-[120] max-h-[85dvh] overflow-y-auto border-t border-white/15 bg-[#151515]/95 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-2xl backdrop-blur"
+      className="cookie-consent-banner fixed inset-x-0 bottom-0 z-[120] max-h-[85dvh] overflow-y-auto border-t border-white/15 bg-[#151515] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-2xl"
     >
       <div className="container flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="max-w-3xl">

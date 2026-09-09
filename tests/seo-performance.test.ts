@@ -38,7 +38,10 @@ test("the hero does not fetch hidden nearby-vendor content", async () => {
   assert.doesNotMatch(hero, /NearbyVendorResponse/);
   assert.doesNotMatch(hero, /fetch\(`\/api\/vendors/);
   assert.doesNotMatch(hero, /\{false \? \(/);
-  assert.match(hero, /fetchPriority="high"/);
+  // The hero backdrop is pure CSS (see .hero-shell) — no raster image on the
+  // critical path, so the headline is the LCP element.
+  assert.doesNotMatch(hero, /<Image[^>]*hero-lethela-branded/s);
+  assert.match(hero, /className="hero-shell/);
   assert.match(hero, /dynamic\(\(\) => import\("@\/components\/LocationPicker"\)/);
   assert.match(homePage, /export const revalidate = 180/);
   assert.doesNotMatch(homePage, /getDisplaySuburb|next\/headers|cookies\(/);

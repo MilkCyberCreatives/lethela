@@ -324,27 +324,16 @@ export default function Hero({
   }
 
   return (
-    // No `overflow-hidden` here: the `fill` image and gradient are already
+    // No `overflow-hidden` here: the gradient and .hero-shell texture are
     // bounded to the section box, and clipping the section would cut off the
     // search autocomplete where it floats past the hero edge.
-    <section className="relative">
-      <Image
-        aria-hidden
-        src="/hero-lethela-branded.jpg"
-        alt=""
-        fill
-        priority
-        fetchPriority="high"
-        sizes="100vw"
-        quality={72}
-        className="pointer-events-none object-cover object-center opacity-70"
-      />
+    <section className="hero-shell relative">
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-r from-[#080B27]/95 via-[#080B27]/70 to-black/25"
+        className="absolute inset-0 z-0 bg-gradient-to-r from-[#080B27]/95 via-[#080B27]/70 to-black/25"
       />
 
-      <div className="relative container py-12 md:py-20">
+      <div className="relative z-10 container py-12 md:py-20">
         <div className="flex max-w-3xl flex-col items-start text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary">
             {launchStatus.eyebrow}

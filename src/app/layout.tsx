@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import ConsentAnalytics from "@/components/ConsentAnalytics";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
+import CookieConsentBoot from "@/components/CookieConsentBoot";
 import MarketingScripts from "@/components/MarketingScripts";
 import Providers from "@/components/Providers";
 import RouteThemeMarker from "@/components/RouteThemeMarker";
@@ -192,6 +193,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Suspense fallback={null}>
             <VisitorTelemetry />
           </Suspense>
+          <CookieConsentBoot />
           <CookieConsentBanner />
           <div id="main-content" tabIndex={-1} className="outline-none">
             {children}

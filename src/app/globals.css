@@ -292,7 +292,8 @@
 
 @media (max-width: 640px) {
   section:has(form[aria-label="AI search with autocomplete"]) h1 {
-    font-size: 1.875rem;
+    font-size: 2.5rem;
+    line-height: 1.15;
   }
 
   section:has(form[aria-label="AI search with autocomplete"]) form {
@@ -353,4 +354,24 @@
   .hero-float {
     animation: none;
   }
+}
+
+/* Returning visitors already chose — CookieConsentBoot sets this attribute
+   before first paint so the SSR'd banner never flashes for them. */
+[data-lethela-cc="set"] .cookie-consent-banner {
+  display: none;
+}
+
+/* Decorative hero atmosphere. Pure CSS gradients (no raster) so the headline
+   is the LCP element and nothing on the critical path waits on an image. */
+.hero-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #080b27;
+  background-image: radial-gradient(ellipse at 82% 12%, rgba(255, 148, 96, 0.12), transparent 55%),
+    radial-gradient(ellipse at 68% 82%, rgba(181, 0, 27, 0.16), transparent 52%),
+    radial-gradient(ellipse at 8% 90%, rgba(24, 18, 54, 0.55), transparent 60%);
 }

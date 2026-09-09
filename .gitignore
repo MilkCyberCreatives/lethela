@@ -30,6 +30,7 @@ out
 prisma/dev.db
 prisma/dev.db-journal
 prisma/dev-copy.db
+prisma/lh-prod.db
 prisma/ci-e2e.db
 prisma/ci-e2e.db-journal
 server.log
