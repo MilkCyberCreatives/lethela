@@ -87,7 +87,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
       <div className="container py-8 md:py-10">
         <div className="mb-9 grid gap-5 rounded-3xl border border-white/10 bg-white/[0.045] p-6 md:grid-cols-[1fr_auto] md:items-center md:p-8">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
               Built for local business
             </p>
             <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">
@@ -115,7 +115,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
         </div>
         <div className="grid gap-7 lg:grid-cols-[1.25fr_repeat(3,minmax(0,0.7fr))]">
           <section>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">
               Local delivery
             </div>
             <h3 className="mt-3 text-2xl font-bold text-white">Lethela</h3>
@@ -162,7 +162,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
           </section>
 
           <section>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Explore</div>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">Explore</div>
             <ul className="mt-4 space-y-2.5 text-sm text-white/80">
               {EXPLORE_LINKS.map((item) => (
                 <li key={item.href}>
@@ -175,7 +175,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
           </section>
 
           <section>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Business</div>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">Business</div>
             <ul className="mt-4 space-y-2.5 text-sm text-white/80">
               {BUSINESS_LINKS.map((item) => (
                 <li key={`${item.href}-${item.label}`}>
@@ -188,7 +188,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
           </section>
 
           <section>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Legal</div>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">Legal</div>
             <ul className="mt-4 space-y-2.5 text-sm text-white/80">
               {LEGAL_LINKS.map((item) => (
                 <li key={item.href}>
