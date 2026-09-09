@@ -170,7 +170,7 @@ const globalSchema = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-ZA" data-scroll-behavior="smooth">
+    <html lang="en-ZA" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <link
           rel="search"
