@@ -118,7 +118,7 @@ async function gotoStable(page, url) {
     .catch(() => {});
 }
 
-async function scenario(name, run, viewport = { width: 390, height: 844 }) {
+async function runScenarioOnce(run, viewport) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
   const errors = [];
@@ -144,16 +144,39 @@ async function scenario(name, run, viewport = { width: 390, height: 844 }) {
   try {
     await run(page);
     if (errors.length) throw new Error(errors.join("\n"));
-    results.push({ name, ok: true });
-  } catch (error) {
-    results.push({
-      name,
-      ok: false,
-      error: error instanceof Error ? error.message : String(error),
-    });
   } finally {
     await context.close();
   }
+}
+
+async function scenario(name, run, options = {}) {
+  const viewport = options.viewport || { width: 390, height: 844 };
+  // A few scenarios drive third-party OAuth redirects or land on the heavy
+  // homepage right after login; against a cold dev server these can time out
+  // once. Retrying the whole scenario keeps CI honest (a real break fails
+  // every attempt) while removing the transient noise.
+  const attempts = Math.max(1, (options.retries || 0) + 1);
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await runScenarioOnce(run, viewport);
+      if (attempt > 1) console.log(`  (passed on retry ${attempt - 1})`);
+      results.push({ name, ok: true });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) {
+        console.log(
+          `  (retrying "${name}" after: ${error instanceof Error ? error.message : error})`,
+        );
+      }
+    }
+  }
+  results.push({
+    name,
+    ok: false,
+    error: lastError instanceof Error ? lastError.message : String(lastError),
+  });
 }
 
 async function signIn(page, [email, password]) {
@@ -283,31 +306,35 @@ await scenario("mobile browse, search, cart and guest checkout", async (page) =>
   if (overflow) throw new Error("Checkout has horizontal overflow at 390px.");
 });
 
-await scenario("customer sign-in and profile access", async (page) => {
-  await signIn(page, accounts.customer);
-  await gotoStable(page, `${baseUrl}/profile`);
-  if (page.url().includes("/signin")) {
-    // signIn() already confirmed a live session via /api/auth/session, so a
-    // bounce here is the client post-login redirect racing this navigation on a
-    // cold server. Re-confirm the session and retry the authenticated request.
-    await page.waitForFunction(async () => {
-      const response = await fetch("/api/auth/session", { cache: "no-store" });
-      const session = await response.json();
-      return Boolean(session?.user?.id);
-    });
+await scenario(
+  "customer sign-in and profile access",
+  async (page) => {
+    await signIn(page, accounts.customer);
     await gotoStable(page, `${baseUrl}/profile`);
-  }
-  if (page.url().includes("/signin")) {
-    throw new Error("Customer was redirected away from profile.");
-  }
-  // The authenticated profile page renders the account details form section.
-  await page
-    .locator("#profile-details")
-    .waitFor({ timeout: 15000 })
-    .catch(() => {
-      throw new Error("Profile account section did not render for the signed-in customer.");
-    });
-});
+    if (page.url().includes("/signin")) {
+      // signIn() already confirmed a live session via /api/auth/session, so a
+      // bounce here is the client post-login redirect racing this navigation on a
+      // cold server. Re-confirm the session and retry the authenticated request.
+      await page.waitForFunction(async () => {
+        const response = await fetch("/api/auth/session", { cache: "no-store" });
+        const session = await response.json();
+        return Boolean(session?.user?.id);
+      });
+      await gotoStable(page, `${baseUrl}/profile`);
+    }
+    if (page.url().includes("/signin")) {
+      throw new Error("Customer was redirected away from profile.");
+    }
+    // The authenticated profile page renders the account details form section.
+    await page
+      .locator("#profile-details")
+      .waitFor({ timeout: 15000 })
+      .catch(() => {
+        throw new Error("Profile account section did not render for the signed-in customer.");
+      });
+  },
+  { retries: 1 },
+);
 
 await scenario("vendor sign-in and dashboard access", async (page) => {
   await signIn(page, accounts.vendor);
@@ -430,45 +457,49 @@ await scenario("every township category page shows approved listings", async (pa
   }
 });
 
-await scenario("Google sign-in is offered and hands off directly to Google", async (page) => {
-  await gotoStable(page, `${baseUrl}/signin`);
-  await dismissCookieBanner(page);
-
-  const googleButton = page.getByRole("button", { name: /continue with google/i });
-  if (!(await googleButton.isVisible().catch(() => false))) {
-    console.log(
-      "  (skipped) GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not configured — Google button hidden.",
-    );
-    return;
-  }
-
-  await Promise.all([
-    page.waitForURL(/accounts\.google\.com/, { timeout: 30000, waitUntil: "commit" }),
-    googleButton.click(),
-  ]);
-
-  const handoff = new URL(page.url());
-  if (handoff.hostname !== "accounts.google.com") {
-    throw new Error(`Google sign-in did not reach Google: ${page.url()}`);
-  }
-  const params = handoff.searchParams;
-  if (!params.get("client_id")) {
-    throw new Error("Google authorization URL is missing client_id.");
-  }
-  if (params.get("redirect_uri") !== `${baseUrl}/api/auth/callback/google`) {
-    throw new Error(`Unexpected Google redirect_uri: ${params.get("redirect_uri")}`);
-  }
-
-  // The sign-up surfaces should offer the same option without extra steps.
-  for (const path of ["/signup", "/vendors/register", "/rider"]) {
-    await gotoStable(page, `${baseUrl}${path}`);
+await scenario(
+  "Google sign-in is offered and hands off directly to Google",
+  async (page) => {
+    await gotoStable(page, `${baseUrl}/signin`);
     await dismissCookieBanner(page);
-    const signupGoogle = page.getByRole("button", { name: /sign up with google/i });
-    if (!(await signupGoogle.isVisible().catch(() => false))) {
-      throw new Error(`"Sign up with Google" is missing on ${path}.`);
+
+    const googleButton = page.getByRole("button", { name: /continue with google/i });
+    if (!(await googleButton.isVisible().catch(() => false))) {
+      console.log(
+        "  (skipped) GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not configured — Google button hidden.",
+      );
+      return;
     }
-  }
-});
+
+    await Promise.all([
+      page.waitForURL(/accounts\.google\.com/, { timeout: 30000, waitUntil: "commit" }),
+      googleButton.click(),
+    ]);
+
+    const handoff = new URL(page.url());
+    if (handoff.hostname !== "accounts.google.com") {
+      throw new Error(`Google sign-in did not reach Google: ${page.url()}`);
+    }
+    const params = handoff.searchParams;
+    if (!params.get("client_id")) {
+      throw new Error("Google authorization URL is missing client_id.");
+    }
+    if (params.get("redirect_uri") !== `${baseUrl}/api/auth/callback/google`) {
+      throw new Error(`Unexpected Google redirect_uri: ${params.get("redirect_uri")}`);
+    }
+
+    // The sign-up surfaces should offer the same option without extra steps.
+    for (const path of ["/signup", "/vendors/register", "/rider"]) {
+      await gotoStable(page, `${baseUrl}${path}`);
+      await dismissCookieBanner(page);
+      const signupGoogle = page.getByRole("button", { name: /sign up with google/i });
+      if (!(await signupGoogle.isVisible().catch(() => false))) {
+        throw new Error(`"Sign up with Google" is missing on ${path}.`);
+      }
+    }
+  },
+  { retries: 1 },
+);
 
 await browser.close();
 

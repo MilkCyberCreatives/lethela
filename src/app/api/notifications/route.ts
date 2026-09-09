@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { listNotifications, markNotificationsRead } from "@/lib/notifications";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,19 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: "Sign in required." }, { status: 401 });
+  }
+
+  const limited = await checkRateLimit({
+    key: "notifications-mark-read",
+    limit: 120,
+    windowMs: 60_000,
+    headers: request.headers,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many requests." },
+      { status: 429, headers: { "retry-after": String(limited.retryAfterSec) } },
+    );
   }
 
   const payload = await request.json().catch(() => ({}));

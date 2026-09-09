@@ -43,6 +43,9 @@ test("notifications API requires a session for both read and write", () => {
   assert.match(route, /listNotifications\(session\.user\.id\)/);
   assert.match(route, /markNotificationsRead\(session\.user\.id/);
   assert.match(route, /private, no-store/);
+  // the write path is rate limited
+  assert.match(route, /checkRateLimit\(\{[\s\S]*?key: "notifications-mark-read"/);
+  assert.match(route, /status: 429/);
 });
 
 test("staff get a stored notification for new vendor and rider applications", () => {
