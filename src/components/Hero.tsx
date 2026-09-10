@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MapPin, Mic, Navigation, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import heroImage from "../../public/hero.jpg";
+import campaignHeroImage from "../../public/ads/lethela-house-campaign.webp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatZAR } from "@/lib/format";
@@ -330,15 +330,14 @@ export default function Hero({
     // search autocomplete where it floats past the hero edge.
     <section className="hero-shell relative">
       <Image
-        aria-hidden
-        src={heroImage}
-        alt=""
+        src={campaignHeroImage}
+        alt="A Lethela rider presenting a branded delivery box filled with local favourites"
         fill
         preload
         placeholder="blur"
         sizes="100vw"
         quality={72}
-        className="pointer-events-none z-0 object-cover object-[62%_center] opacity-70"
+        className="pointer-events-none z-0 object-cover object-[67%_center] opacity-95 md:object-center"
       />
       <div
         aria-hidden
