@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MapPin, Mic, Navigation, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import heroImage from "../../public/hero.jpg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatZAR } from "@/lib/format";
@@ -324,13 +325,24 @@ export default function Hero({
   }
 
   return (
-    // No `overflow-hidden` here: the gradient and .hero-shell texture are
+    // No `overflow-hidden` here: the image and gradient are
     // bounded to the section box, and clipping the section would cut off the
     // search autocomplete where it floats past the hero edge.
     <section className="hero-shell relative">
+      <Image
+        aria-hidden
+        src={heroImage}
+        alt=""
+        fill
+        preload
+        placeholder="blur"
+        sizes="100vw"
+        quality={72}
+        className="pointer-events-none z-0 object-cover object-[62%_center] opacity-70"
+      />
       <div
         aria-hidden
-        className="absolute inset-0 z-0 bg-gradient-to-r from-[#080B27]/95 via-[#080B27]/70 to-black/25"
+        className="absolute inset-0 z-[1] bg-gradient-to-r from-[#080B27]/95 via-[#080B27]/70 to-black/25"
       />
 
       <div className="relative z-10 container py-12 md:py-20">

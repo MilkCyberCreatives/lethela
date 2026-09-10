@@ -362,8 +362,8 @@
   display: none;
 }
 
-/* Decorative hero atmosphere. Pure CSS gradients (no raster) so the headline
-   is the LCP element and nothing on the critical path waits on an image. */
+/* Decorative hero fallback. These gradients remain visible while the hero
+   photo loads and preserve the section's contrast if imagery is unavailable. */
 .hero-shell::before {
   content: "";
   position: absolute;
