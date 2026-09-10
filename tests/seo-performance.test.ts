@@ -40,8 +40,12 @@ test("the hero does not fetch hidden nearby-vendor content", async () => {
   assert.doesNotMatch(hero, /\{false \? \(/);
   // Keep a responsive, preloaded local hero image in the rendered section.
   // The CSS texture remains as its loading/error fallback.
-  assert.match(hero, /import heroImage from "\.\.\/\.\.\/public\/hero\.jpg"/);
-  assert.match(hero, /src=\{heroImage\}[\s\S]*\bfill\b[\s\S]*\bpreload\b/);
+  assert.match(
+    hero,
+    /import campaignHeroImage from "\.\.\/\.\.\/public\/ads\/lethela-house-campaign\.webp"/,
+  );
+  assert.match(hero, /src=\{campaignHeroImage\}[\s\S]*\bfill\b[\s\S]*\bpreload\b/);
+  assert.match(hero, /alt="A Lethela rider presenting a branded delivery box/);
   assert.match(hero, /placeholder="blur"/);
   assert.match(hero, /sizes="100vw"/);
   assert.match(hero, /className="hero-shell/);
