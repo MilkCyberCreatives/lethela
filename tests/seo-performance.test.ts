@@ -38,9 +38,12 @@ test("the hero does not fetch hidden nearby-vendor content", async () => {
   assert.doesNotMatch(hero, /NearbyVendorResponse/);
   assert.doesNotMatch(hero, /fetch\(`\/api\/vendors/);
   assert.doesNotMatch(hero, /\{false \? \(/);
-  // The hero backdrop is pure CSS (see .hero-shell) — no raster image on the
-  // critical path, so the headline is the LCP element.
-  assert.doesNotMatch(hero, /<Image[^>]*hero-lethela-branded/s);
+  // Keep a responsive, preloaded local hero image in the rendered section.
+  // The CSS texture remains as its loading/error fallback.
+  assert.match(hero, /import heroImage from "\.\.\/\.\.\/public\/hero\.jpg"/);
+  assert.match(hero, /src=\{heroImage\}[\s\S]*\bfill\b[\s\S]*\bpreload\b/);
+  assert.match(hero, /placeholder="blur"/);
+  assert.match(hero, /sizes="100vw"/);
   assert.match(hero, /className="hero-shell/);
   assert.match(hero, /dynamic\(\(\) => import\("@\/components\/LocationPicker"\)/);
   assert.match(homePage, /export const revalidate = 180/);
