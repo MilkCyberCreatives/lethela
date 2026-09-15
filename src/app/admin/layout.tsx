@@ -16,7 +16,9 @@ export const metadata = buildNoIndexMetadata({
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await auth().catch(() => null);
   if (!session?.user?.id || !isAdminRole(session.user.role)) {
-    redirect("/signin?callbackUrl=/owner-access&message=Sign in with your authorised owner account.");
+    redirect(
+      "/signin?callbackUrl=/owner-access&message=Sign in with your authorised owner account.",
+    );
   }
 
   const allowDevBypass =
