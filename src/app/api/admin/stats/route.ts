@@ -65,6 +65,7 @@ export async function GET(req: NextRequest) {
   const month = startOfMonth();
   const [
     ordersToday,
+    paidOrdersToday,
     completedOrdersToday,
     deliveredOrders,
     financialsToday,
@@ -82,6 +83,7 @@ export async function GET(req: NextRequest) {
     topVendors,
   ] = await Promise.all([
     withQueryTimeout(prisma.order.count({ where: { createdAt: { gte: today } } }), 0),
+    withQueryTimeout(prisma.order.count({ where: paidOrderWhere(today) }), 0),
     withQueryTimeout(
       prisma.order.count({ where: { status: "DELIVERED", updatedAt: { gte: today } } }),
       0,
@@ -217,7 +219,9 @@ export async function GET(req: NextRequest) {
       riderEarningsTodayCents: financialsToday._sum.riderPayoutCents || 0,
       riderEarningsMonthCents: financialsMonth._sum.riderPayoutCents || 0,
       averageOrderValueTodayCents:
-        ordersToday > 0 ? Math.round((financialsToday._sum.subtotalCents || 0) / ordersToday) : 0,
+        paidOrdersToday > 0
+          ? Math.round((financialsToday._sum.subtotalCents || 0) / paidOrdersToday)
+          : 0,
       activeVendors,
       activeRiders: approvedRiders,
       availableRiders,
