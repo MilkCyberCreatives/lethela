@@ -48,8 +48,8 @@ export default async function OwnerAccessPage() {
               Secure owner sign in
             </h2>
             <p className="mt-2 text-sm text-white/75">
-              Use your authorised Google or email account first. Owner verification is kept
-              separate from your normal account password.
+              Use your authorised Google or email account first. Owner verification is kept separate
+              from your normal account password.
             </p>
             <div className="mt-4">
               <Link href="/signin?callbackUrl=/owner-access">
