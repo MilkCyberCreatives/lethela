@@ -8,7 +8,7 @@ import { normalizeAppRole, type AppRole } from "@/lib/auth-security";
 type AdminGuardResult =
   | {
       ok: true;
-      mode: "session" | "key" | "key-cookie" | "dev-bypass";
+      mode: "key" | "key-cookie" | "dev-bypass";
       role: AppRole;
       actor: string;
     }
@@ -50,26 +50,26 @@ export async function requireAdminRequest(
   try {
     const session = await auth();
     const role = normalizeAppRole(session?.user?.role);
-    if (session?.user?.id && hasAdminPermission(role, permission)) {
-      return { ok: true, mode: "session", role, actor: `user:${session.user.id}` };
-    }
-  } catch {
-    // Continue to the legacy approval-key fallback below.
-  }
+    const token = accessCookie ? readAdminAccessToken(accessCookie) : null;
 
-  try {
-    const session = await auth();
-    const role = normalizeAppRole(session?.user?.role);
     if (
       session?.user?.id &&
-      accessCookie &&
-      readAdminAccessToken(accessCookie)?.sub === session.user.id &&
+      token?.sub === session.user.id &&
       hasAdminPermission(role, permission)
     ) {
       return { ok: true, mode: "key-cookie", role, actor: `user:${session.user.id}` };
     }
+
+    if (session?.user?.id && hasAdminPermission(role, permission)) {
+      return {
+        ok: false,
+        status: 401,
+        error: "Admin security verification is required.",
+      };
+    }
   } catch {
-    // ignore auth adapter issues and continue to fallback checks
+    // Treat authentication adapter failures as unauthorised rather than
+    // weakening the owner verification requirement.
   }
 
   return {

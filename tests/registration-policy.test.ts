@@ -19,9 +19,9 @@ test("minimal registration accepts only the account credentials and normalizes e
 });
 
 test("registration password policy accepts long passphrases without composition rules", () => {
-  assert.equal(REGISTRATION_PASSWORD_MIN_LENGTH, 5);
-  assert.equal(registrationPasswordIsValid("12345"), true);
-  assert.equal(registrationPasswordIsValid("1234"), false);
+  assert.equal(REGISTRATION_PASSWORD_MIN_LENGTH, 6);
+  assert.equal(registrationPasswordIsValid("123456"), true);
+  assert.equal(registrationPasswordIsValid("12345"), false);
   assert.equal(registrationPasswordIsValid("this is a safe passphrase"), true);
   assert.equal(
     registrationPasswordIsValid("A".repeat(REGISTRATION_PASSWORD_MIN_LENGTH - 1)),

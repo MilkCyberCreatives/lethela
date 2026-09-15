@@ -373,12 +373,20 @@ await scenario("rider sign-in and dashboard access", async (page) => {
     });
 });
 
-await scenario("admin signs in directly and reaches vendor approvals", async (page) => {
+await scenario("admin completes owner verification and reaches vendor approvals", async (page) => {
   await signIn(page, accounts.admin);
   await gotoStable(page, `${baseUrl}/admin`);
-  if (!page.url().includes("/admin")) {
-    throw new Error(`Admin reached unexpected path: ${page.url()}`);
+  if (!page.url().includes("/owner-access")) {
+    throw new Error(`Admin did not reach owner verification: ${page.url()}`);
   }
+  const adminKey = process.env.ADMIN_APPROVAL_KEY?.trim();
+  if (!adminKey) throw new Error("ADMIN_APPROVAL_KEY is required for the admin E2E scenario.");
+  await page.getByPlaceholder("Enter admin approval key").fill(adminKey);
+  await page.getByRole("button", { name: "Continue with key" }).click();
+  await page.waitForURL((url) => url.pathname.startsWith("/admin"), {
+    timeout: 30000,
+    waitUntil: "domcontentloaded",
+  });
   // A cold /admin compile can leave the page painted but not yet hydrated, so
   // the first "Menu" tap is dropped. Open the drawer, then confirm it actually
   // opened before continuing, retrying the tap once if hydration lagged.
@@ -401,19 +409,19 @@ await scenario("admin signs in directly and reaches vendor approvals", async (pa
     });
 });
 
-await scenario("customer registers with a five-character password", async (page) => {
+await scenario("customer registers with a six-character password", async (page) => {
   await gotoStable(page, `${baseUrl}/signup`);
   await dismissCookieBanner(page);
   const email = `e2e.${Date.now()}@lethela.test`;
   await page.getByLabel("Email address").fill(email);
-  await page.getByLabel("Create password").fill("abcde");
+  await page.getByLabel("Create password").fill("abcdef");
   const registrationPromise = page.waitForResponse((response) =>
     response.url().includes("/api/auth/register"),
   );
   await page.getByRole("button", { name: "Create account" }).click();
   const registrationResponse = await registrationPromise;
   if (!registrationResponse.ok()) {
-    throw new Error(`Five-character registration returned ${registrationResponse.status()}.`);
+    throw new Error(`Six-character registration returned ${registrationResponse.status()}.`);
   }
   await page.waitForFunction(async () => {
     const response = await fetch("/api/auth/session", { cache: "no-store" });
