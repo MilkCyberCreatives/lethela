@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -107,15 +108,56 @@ function parseOrderFinancials(itemsJson: string | null | undefined) {
   }
 }
 
-export async function GET(req: NextRequest) {
-  const guard = await requireAdminRequest(req);
-  if (!guard.ok)
-    return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
+function orderPeriodStart(period: string) {
+  const now = new Date();
+  if (period === "TODAY") {
+    now.setHours(0, 0, 0, 0);
+    return now;
+  }
+  if (period === "MONTH") {
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  return null;
+}
 
-  const [orders, riders, operations, auditLogs] = await Promise.all([
+async function loadOrderPage(req: NextRequest) {
+  const params = req.nextUrl.searchParams;
+  const page = Math.max(1, Number.parseInt(params.get("page") || "1", 10) || 1);
+  const pageSize = Math.min(
+    100,
+    Math.max(1, Number.parseInt(params.get("pageSize") || "40", 10) || 40),
+  );
+  const status = (params.get("status") || "ALL").trim().toUpperCase();
+  const payment = (params.get("payment") || "ALL").trim().toUpperCase();
+  const period = (params.get("period") || "ALL").trim().toUpperCase();
+  const sort: Prisma.SortOrder = params.get("sort") === "oldest" ? "asc" : "desc";
+  const q = (params.get("q") || "").trim();
+  const periodStart = orderPeriodStart(period);
+
+  const filters: Prisma.OrderWhereInput[] = [];
+  if (status !== "ALL") filters.push({ status });
+  if (payment !== "ALL") filters.push({ paymentStatus: payment });
+  if (periodStart) filters.push({ createdAt: { gte: periodStart } });
+  if (q) {
+    filters.push({
+      OR: [
+        { publicId: { contains: q } },
+        { ozowReference: { contains: q } },
+        { vendor: { is: { name: { contains: q } } } },
+        { user: { is: { name: { contains: q } } } },
+        { user: { is: { email: { contains: q } } } },
+        { assignedRider: { is: { fullName: { contains: q } } } },
+      ],
+    });
+  }
+
+  const where: Prisma.OrderWhereInput = filters.length ? { AND: filters } : {};
+  const [orders, total] = await Promise.all([
     prisma.order.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 40,
+      where,
+      orderBy: { createdAt: sort },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
       select: {
         id: true,
         publicId: true,
@@ -131,12 +173,61 @@ export async function GET(req: NextRequest) {
         totalCents: true,
         itemsJson: true,
         createdAt: true,
-        vendor: { select: { name: true, phone: true } },
+        vendor: { select: { name: true, phone: true, etaMins: true } },
         user: { select: { email: true, name: true } },
         assignedRider: { select: { fullName: true } },
         _count: { select: { items: true } },
       },
     }),
+    prisma.order.count({ where }),
+  ]);
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  return {
+    orders: orders.map((order) => {
+      const financials = parseOrderFinancials(order.itemsJson);
+      return {
+        id: order.id,
+        publicId: order.publicId,
+        ozowReference: order.ozowReference,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        subtotalCents: order.subtotalCents,
+        deliveryFeeCents: order.deliveryFeeCents,
+        riderTipCents: order.riderTipCents || financials.riderTipCents,
+        riderPayoutCents:
+          order.riderPayoutCents || financials.riderPayoutCents || order.deliveryFeeCents,
+        vendorPayoutCents:
+          order.vendorPayoutCents || financials.vendorPayoutCents || order.subtotalCents,
+        platformFeeCents: order.platformFeeCents || financials.platformFeeCents,
+        deliveryDistanceKm: financials.deliveryDistanceKm,
+        containsAlcohol: financials.containsAlcohol,
+        etaMins: order.vendor?.etaMins ?? null,
+        totalCents: order.totalCents,
+        createdAt: order.createdAt,
+        vendorName: order.vendor?.name || "Unknown vendor",
+        vendorPhone: order.vendor?.phone || null,
+        customerName: order.user?.name || null,
+        customerEmail: order.user?.email || null,
+        riderName: order.assignedRider?.fullName || null,
+        itemCount: order._count.items,
+      };
+    }),
+    orderPagination: { page, pageSize, total, pageCount },
+  };
+}
+
+export async function GET(req: NextRequest) {
+  const guard = await requireAdminRequest(req);
+  if (!guard.ok)
+    return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
+
+  const orderPage = await loadOrderPage(req);
+  if (req.nextUrl.searchParams.get("ordersOnly") === "1") {
+    return NextResponse.json({ ok: true, ...orderPage });
+  }
+
+  const [riders, operations, auditLogs] = await Promise.all([
     prisma.riderApplication.findMany({
       where: { status: "APPROVED" },
       orderBy: { updatedAt: "desc" },
@@ -156,34 +247,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    orders: orders.map((order) => {
-      const financials = parseOrderFinancials(order.itemsJson);
-      return {
-        id: order.id,
-        publicId: order.publicId,
-        ozowReference: order.ozowReference,
-        status: order.status,
-        paymentStatus: order.paymentStatus,
-        subtotalCents: order.subtotalCents,
-        deliveryFeeCents: order.deliveryFeeCents,
-        riderTipCents: order.riderTipCents || financials.riderTipCents,
-        riderPayoutCents:
-          order.riderPayoutCents || financials.riderPayoutCents || order.deliveryFeeCents,
-        vendorPayoutCents:
-          order.vendorPayoutCents || financials.vendorPayoutCents || order.subtotalCents,
-        platformFeeCents: order.platformFeeCents || financials.platformFeeCents,
-        deliveryDistanceKm: financials.deliveryDistanceKm,
-        containsAlcohol: financials.containsAlcohol,
-        totalCents: order.totalCents,
-        createdAt: order.createdAt,
-        vendorName: order.vendor?.name || "Unknown vendor",
-        vendorPhone: order.vendor?.phone || null,
-        customerName: order.user?.name || null,
-        customerEmail: order.user?.email || null,
-        riderName: order.assignedRider?.fullName || null,
-        itemCount: order._count.items,
-      };
-    }),
+    ...orderPage,
     riders,
     auditLogs,
     ...operations,
