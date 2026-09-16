@@ -69,12 +69,7 @@ const DELIVERY_STATUSES: OrderStatus[] = [
   "PICKED_UP",
   "ON_THE_WAY",
 ];
-const EXCEPTION_STATUSES: OrderStatus[] = [
-  "CANCELLED",
-  "REFUND_REQUESTED",
-  "REFUNDED",
-  "FAILED",
-];
+const EXCEPTION_STATUSES: OrderStatus[] = ["CANCELLED", "REFUND_REQUESTED", "REFUNDED", "FAILED"];
 
 function vendorActions(status: OrderStatus): VendorOrderAction[] {
   if (status === "NEW") return ["VENDOR_ACCEPTED", "CANCELLED"];
@@ -98,7 +93,10 @@ function workflowGuidance(status: OrderStatus) {
     return { title: "Start preparing", note: "Move the order into preparation when work begins." };
   }
   if (status === "PREPARING") {
-    return { title: "Finish and call the rider", note: "Mark it ready only when pickup can happen." };
+    return {
+      title: "Finish and call the rider",
+      note: "Mark it ready only when pickup can happen.",
+    };
   }
   if (status === "READY_FOR_PICKUP") {
     return { title: "Waiting for rider", note: "Keep the order packed and ready for collection." };
@@ -113,7 +111,10 @@ function workflowGuidance(status: OrderStatus) {
     return { title: "Order complete", note: "No vendor action is required." };
   }
   if (EXCEPTION_STATUSES.includes(status)) {
-    return { title: "Review exception", note: "Keep the order reference ready if support is needed." };
+    return {
+      title: "Review exception",
+      note: "Keep the order reference ready if support is needed.",
+    };
   }
   return { title: "Monitor payment", note: "Wait for the order to become payable and actionable." };
 }
@@ -343,7 +344,9 @@ export default function OrdersManager() {
               </>
             ) : (
               <>
-                <p className="mt-1 text-sm font-semibold text-white">No active orders need action</p>
+                <p className="mt-1 text-sm font-semibold text-white">
+                  No active orders need action
+                </p>
                 <p className="mt-1 text-xs text-white/60">
                   New paid orders will move to the front of this workspace automatically.
                 </p>
