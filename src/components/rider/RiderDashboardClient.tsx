@@ -215,36 +215,41 @@ export default function RiderDashboardClient() {
               <>
                 <h2 className="mt-2 text-xl font-bold">Continue delivery {priorityOrder.ref}</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
-                  {priorityOrder.status.replaceAll("_", " ")} · {priorityOrder.vendor} · pickup in {priorityOrder.pickupArea}.
-                  Keep this assignment moving before waiting for another delivery.
+                  {priorityOrder.status.replaceAll("_", " ")} · {priorityOrder.vendor} · pickup in{" "}
+                  {priorityOrder.pickupArea}. Keep this assignment moving before waiting for another
+                  delivery.
                 </p>
               </>
             ) : !application ? (
               <>
                 <h2 className="mt-2 text-xl font-bold">Submit your rider application</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
-                  Use the same email as this account so Lethela can connect your application to this dashboard.
+                  Use the same email as this account so Lethela can connect your application to this
+                  dashboard.
                 </p>
               </>
             ) : !data.readiness?.approved ? (
               <>
                 <h2 className="mt-2 text-xl font-bold">Finish onboarding and approval</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
-                  Complete any missing profile or document requirements. Dispatch unlocks only after Lethela approval.
+                  Complete any missing profile or document requirements. Dispatch unlocks only after
+                  Lethela approval.
                 </p>
               </>
             ) : !data.readiness?.canReceiveDispatch ? (
               <>
                 <h2 className="mt-2 text-xl font-bold">Finish dispatch setup</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
-                  Your account is approved, but dispatch readiness still needs attention in Profile & documents.
+                  Your account is approved, but dispatch readiness still needs attention in Profile
+                  & documents.
                 </p>
               </>
             ) : (
               <>
                 <h2 className="mt-2 text-xl font-bold">Ready for work</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
-                  No active delivery is assigned. Use Shift status above to go online and receive available work.
+                  No active delivery is assigned. Use Shift status above to go online and receive
+                  available work.
                 </p>
               </>
             )}
@@ -505,7 +510,8 @@ export default function RiderDashboardClient() {
             </div>
           ) : (
             <p className="mt-3 text-sm text-white/65">
-              Submit the rider application with the same email as your account to link this dashboard.
+              Submit the rider application with the same email as your account to link this
+              dashboard.
             </p>
           )}
         </section>
