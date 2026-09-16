@@ -121,7 +121,10 @@ export async function POST(req: NextRequest) {
 
   const adminCount = await prisma.user.count({ where: { role: { in: ["OWNER", "ADMIN"] } } });
   if (adminCount !== 0) {
-    return json({ ok: false, error: "This account is not authorised for the admin dashboard." }, 403);
+    return json(
+      { ok: false, error: "This account is not authorised for the admin dashboard." },
+      403,
+    );
   }
 
   const allowedEmails = configuredBootstrapEmails();
@@ -147,7 +150,8 @@ export async function POST(req: NextRequest) {
     json({
       ok: true,
       promoted: true,
-      message: "Owner access enabled. Sign out and sign back in once to refresh your owner session.",
+      message:
+        "Owner access enabled. Sign out and sign back in once to refresh your owner session.",
     }),
     session.user.id,
   );
