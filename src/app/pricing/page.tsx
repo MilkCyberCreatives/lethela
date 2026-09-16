@@ -73,7 +73,9 @@ export default function PricingPage() {
         <article className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
           <h2 className="text-xl font-semibold">Vendor information</h2>
           <div className="mt-4 space-y-2 text-sm text-white/78">
-            <p>Approved local businesses can sell through Lethela and manage their stores online.</p>
+            <p>
+              Approved local businesses can sell through Lethela and manage their stores online.
+            </p>
             <p>
               Current vendor commercial terms and settlement information are available securely in
               the authenticated Vendor Dashboard.
