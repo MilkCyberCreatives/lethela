@@ -379,10 +379,7 @@ await scenario("admin completes owner verification and reaches vendor approvals"
   if (!page.url().includes("/owner-access")) {
     throw new Error(`Admin did not reach owner verification: ${page.url()}`);
   }
-  const adminKey = process.env.ADMIN_APPROVAL_KEY?.trim();
-  if (!adminKey) throw new Error("ADMIN_APPROVAL_KEY is required for the admin E2E scenario.");
-  await page.getByPlaceholder("Enter admin approval key").fill(adminKey);
-  await page.getByRole("button", { name: "Continue with key" }).click();
+  await page.getByRole("button", { name: "Continue to admin" }).click();
   await page.waitForURL((url) => url.pathname.startsWith("/admin"), {
     timeout: 30000,
     waitUntil: "domcontentloaded",
