@@ -7,7 +7,11 @@ import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function AdminPortalKeyForm() {
+type AdminPortalKeyFormProps = {
+  requireKey?: boolean;
+};
+
+export default function AdminPortalKeyForm({ requireKey = true }: AdminPortalKeyFormProps) {
   const router = useRouter();
   const [adminKey, setAdminKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -16,7 +20,7 @@ export default function AdminPortalKeyForm() {
 
   async function submit() {
     const normalized = adminKey.trim();
-    if (!normalized) return;
+    if (requireKey && !normalized) return;
 
     setSubmitting(true);
     setError(null);
@@ -26,7 +30,7 @@ export default function AdminPortalKeyForm() {
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({ adminKey: normalized }),
+      body: JSON.stringify(normalized ? { adminKey: normalized } : {}),
     });
     const json = await response.json().catch(() => ({}));
     setSubmitting(false);
@@ -36,10 +40,6 @@ export default function AdminPortalKeyForm() {
       return;
     }
 
-    // First-time bootstrap promotes this account to owner and rotates its
-    // session, which signs the current token out. Sending the user straight to
-    // /admin would just bounce them back here, so ask them to re-authenticate
-    // once; the admin-access cookie that was just set stays valid afterwards.
     if (json.promoted) {
       setAdminKey("");
       setNotice(
@@ -56,16 +56,17 @@ export default function AdminPortalKeyForm() {
   return (
     <div className="mt-4 rounded-2xl border border-white/15 bg-white/5 p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">
-        Owner approval
+        {requireKey ? "Owner recovery" : "Owner confirmation"}
       </p>
       <p className="mt-2 text-sm leading-6 text-white/70">
-        Enter the private admin key to unlock vendor approvals, rider approvals, refunds and support
-        operations.
+        {requireKey
+          ? "Enter the private recovery key only for first-owner setup or account recovery."
+          : "Your signed-in owner account is already authorised. Continue to unlock admin operations on this browser. The recovery key is optional here."}
       </p>
       <div className="mt-4 grid gap-3">
         <Input
           type="password"
-          placeholder="Enter admin approval key"
+          placeholder={requireKey ? "Enter admin approval key" : "Recovery key (optional)"}
           value={adminKey}
           onChange={(event) => setAdminKey(event.target.value)}
           className="bg-white text-black"
@@ -73,10 +74,14 @@ export default function AdminPortalKeyForm() {
         <Button
           className="bg-lethela-primary text-white hover:opacity-90"
           onClick={submit}
-          disabled={!adminKey.trim() || submitting}
+          disabled={(requireKey && !adminKey.trim()) || submitting}
         >
           <ShieldCheck className="mr-2 h-4 w-4" />
-          {submitting ? "Continuing..." : "Continue with key"}
+          {submitting
+            ? "Continuing..."
+            : requireKey
+              ? "Continue with recovery key"
+              : "Continue to admin"}
         </Button>
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

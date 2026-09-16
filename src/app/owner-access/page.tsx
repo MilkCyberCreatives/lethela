@@ -38,8 +38,8 @@ export default async function OwnerAccessPage() {
         <p className="text-xs uppercase tracking-[0.16em] text-white/60">Owner access</p>
         <h1 className="mt-2 text-3xl font-bold">Manage Lethela</h1>
         <p className="mt-3 max-w-2xl text-sm text-white/75">
-          Sign in with an authorised Lethela owner account, then complete the private owner
-          verification before opening the command centre.
+          Sign in with an authorised Lethela owner account, then confirm this browser before opening
+          the command centre.
         </p>
 
         {!isSignedInAdmin ? (
@@ -48,8 +48,8 @@ export default async function OwnerAccessPage() {
               Secure owner sign in
             </h2>
             <p className="mt-2 text-sm text-white/75">
-              Use your authorised Google or email account first. Owner verification is kept separate
-              from your normal account password.
+              Use your authorised Google or email account first. Owner access remains separate from
+              ordinary customer, vendor and rider accounts.
             </p>
             <div className="mt-4">
               <Link href="/signin?callbackUrl=/owner-access">
@@ -62,10 +62,10 @@ export default async function OwnerAccessPage() {
         ) : (
           <div className="mt-6">
             <p className="text-sm text-white/75">
-              Your owner account is signed in. Complete the private verification below to unlock
-              admin operations on this browser.
+              Your owner account is signed in. Confirm this browser to unlock admin operations. You
+              do not need a separate admin key for normal owner access.
             </p>
-            <AdminPortalKeyForm />
+            <AdminPortalKeyForm requireKey={false} />
           </div>
         )}
 

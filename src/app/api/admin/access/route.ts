@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAdminAccessToken, ADMIN_ACCESS_COOKIE_NAME } from "@/lib/admin-access";
+import { isAdminRole } from "@/lib/auth-security";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { isAdminRole } from "@/lib/auth-security";
 
 const BodySchema = z.object({
-  adminKey: z.string().trim().min(1),
+  adminKey: z.string().trim().optional(),
 });
 
 const PRIVATE_HEADERS = {
@@ -46,6 +46,21 @@ function configuredBootstrapEmails() {
     .filter(Boolean);
 }
 
+function withAdminAccessCookie(response: NextResponse, userId: string) {
+  response.cookies.set(
+    ADMIN_ACCESS_COOKIE_NAME,
+    createAdminAccessToken({ userId, expiresInHours: 8 }),
+    {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 8 * 60 * 60,
+    },
+  );
+  return response;
+}
+
 export async function POST(req: NextRequest) {
   const rateLimit = await checkRateLimit({
     key: "admin-access",
@@ -61,20 +76,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const configuredKey = process.env.ADMIN_APPROVAL_KEY?.trim();
   const authSecret = process.env.NEXTAUTH_SECRET?.trim();
-  if (!configuredKey || (process.env.NODE_ENV === "production" && !authSecret)) {
+  if (process.env.NODE_ENV === "production" && !authSecret) {
     return json({ ok: false, error: "Secure admin access is not fully configured." }, 503);
-  }
-
-  const body = await req.json().catch(() => ({}));
-  const parsed = BodySchema.safeParse(body);
-  if (!parsed.success) {
-    return json({ ok: false, error: "Enter a valid admin approval key." }, 400);
-  }
-
-  if (!keysMatch(parsed.data.adminKey, configuredKey)) {
-    return json({ ok: false, error: "Invalid admin approval key." }, 401);
   }
 
   const session = await auth().catch(() => null);
@@ -82,75 +86,75 @@ export async function POST(req: NextRequest) {
     return json(
       {
         ok: false,
-        error: "Sign in with an authorised staff account before entering the security key.",
+        error: "Sign in with an authorised staff account before opening admin operations.",
       },
       401,
     );
   }
-  let promoted = false;
-  let message = "Admin access enabled for this browser.";
 
-  if (!isAdminRole(session.user.role)) {
-    const adminCount = await prisma.user.count({ where: { role: { in: ["OWNER", "ADMIN"] } } });
-    if (adminCount === 0) {
-      const allowedEmails = configuredBootstrapEmails();
-      const sessionEmail = session.user.email?.trim().toLowerCase() || "";
-
-      if (process.env.NODE_ENV === "production" && allowedEmails.length === 0) {
-        return json(
-          { ok: false, error: "Owner bootstrap email allowlist is not configured." },
-          503,
-        );
-      }
-
-      if (allowedEmails.length > 0 && !allowedEmails.includes(sessionEmail)) {
-        return json(
-          { ok: false, error: "This account is not authorised to initialise owner access." },
-          403,
-        );
-      }
-
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { role: "OWNER", twoFactorEnabled: true, sessionVersion: { increment: 1 } },
-      });
-      promoted = true;
-      message =
-        "Owner access enabled. Sign out and sign back in once to refresh your owner session.";
-    } else {
-      return json(
-        { ok: false, error: "This account is not authorised for the admin dashboard." },
-        403,
-      );
-    }
+  if (isAdminRole(session.user.role)) {
+    return withAdminAccessCookie(
+      json({
+        ok: true,
+        promoted: false,
+        message: "Admin access enabled for this browser.",
+      }),
+      session.user.id,
+    );
   }
 
-  if (!promoted) {
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { twoFactorEnabled: true },
-    });
+  const configuredKey = process.env.ADMIN_APPROVAL_KEY?.trim();
+  if (!configuredKey) {
+    return json({ ok: false, error: "Owner recovery is not fully configured." }, 503);
   }
 
-  const response = json({
-    ok: true,
-    promoted,
-    message,
+  const body = await req.json().catch(() => ({}));
+  const parsed = BodySchema.safeParse(body);
+  const providedKey = parsed.success ? parsed.data.adminKey?.trim() || "" : "";
+  if (!providedKey) {
+    return json({ ok: false, error: "Enter a valid admin approval key." }, 400);
+  }
+
+  if (!keysMatch(providedKey, configuredKey)) {
+    return json({ ok: false, error: "Invalid admin approval key." }, 401);
+  }
+
+  const adminCount = await prisma.user.count({ where: { role: { in: ["OWNER", "ADMIN"] } } });
+  if (adminCount !== 0) {
+    return json(
+      { ok: false, error: "This account is not authorised for the admin dashboard." },
+      403,
+    );
+  }
+
+  const allowedEmails = configuredBootstrapEmails();
+  const sessionEmail = session.user.email?.trim().toLowerCase() || "";
+
+  if (process.env.NODE_ENV === "production" && allowedEmails.length === 0) {
+    return json({ ok: false, error: "Owner bootstrap email allowlist is not configured." }, 503);
+  }
+
+  if (allowedEmails.length > 0 && !allowedEmails.includes(sessionEmail)) {
+    return json(
+      { ok: false, error: "This account is not authorised to initialise owner access." },
+      403,
+    );
+  }
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { role: "OWNER", twoFactorEnabled: true, sessionVersion: { increment: 1 } },
   });
 
-  response.cookies.set(
-    ADMIN_ACCESS_COOKIE_NAME,
-    createAdminAccessToken({ userId: session.user.id, expiresInHours: 8 }),
-    {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 8 * 60 * 60,
-    },
+  return withAdminAccessCookie(
+    json({
+      ok: true,
+      promoted: true,
+      message:
+        "Owner access enabled. Sign out and sign back in once to refresh your owner session.",
+    }),
+    session.user.id,
   );
-
-  return response;
 }
 
 export async function DELETE() {

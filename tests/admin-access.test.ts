@@ -26,7 +26,7 @@ function withAdminAccessEnv(fn: () => void) {
   }
 }
 
-test("admin access token round-trips with a configured admin key", () => {
+test("admin access token round-trips with the authentication secret", () => {
   withAdminAccessEnv(() => {
     const token = createAdminAccessToken({ userId: "owner-1", expiresInHours: 24 });
     const payload = readAdminAccessToken(token);
@@ -47,10 +47,20 @@ test("admin access token is rejected when tampered with", () => {
   });
 });
 
-test("admin access token becomes invalid once the admin key is unavailable", () => {
+test("admin access token remains valid when the recovery key is unavailable", () => {
   withAdminAccessEnv(() => {
     const token = createAdminAccessToken({ userId: "owner-1", expiresInHours: 24 });
     delete process.env.ADMIN_APPROVAL_KEY;
+
+    const payload = readAdminAccessToken(token);
+    assert.equal(payload?.sub, "owner-1");
+  });
+});
+
+test("admin access token is invalid after the authentication secret changes", () => {
+  withAdminAccessEnv(() => {
+    const token = createAdminAccessToken({ userId: "owner-1", expiresInHours: 24 });
+    process.env.NEXTAUTH_SECRET = "rotated-test-auth-secret";
 
     assert.equal(readAdminAccessToken(token), null);
   });

@@ -17,23 +17,21 @@ function base64UrlDecode(value: string) {
 }
 
 function adminAccessSecret() {
-  const adminKey = process.env.ADMIN_APPROVAL_KEY?.trim();
   const authSecret = process.env.NEXTAUTH_SECRET?.trim();
-  if (!adminKey) return "";
   if (process.env.NODE_ENV === "production" && !authSecret) return "";
 
-  return `${authSecret || "lethela-admin-access-development"}:${adminKey}`;
+  return `${authSecret || "lethela-admin-access-development"}:admin-access-cookie-v1`;
 }
 
 function signValue(value: string) {
   const secret = adminAccessSecret();
-  if (!secret) throw new Error("Secure admin access secrets are not configured.");
+  if (!secret) throw new Error("Secure admin access secret is not configured.");
   return crypto.createHmac("sha256", secret).update(value, "utf8").digest("base64url");
 }
 
 export function createAdminAccessToken(input: { userId: string; expiresInHours?: number }) {
   if (!adminAccessSecret()) {
-    throw new Error("ADMIN_APPROVAL_KEY and NEXTAUTH_SECRET are required for secure admin access.");
+    throw new Error("NEXTAUTH_SECRET is required for secure admin access in production.");
   }
 
   const payload: AdminAccessPayload = {
