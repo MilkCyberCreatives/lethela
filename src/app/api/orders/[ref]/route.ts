@@ -12,6 +12,22 @@ const privateHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
 };
 
+const INTERNAL_DELIVERY_DETAIL_KEYS = new Set([
+  "platformFeeCents",
+  "vendorPayoutCents",
+  "riderPayoutCents",
+  "payoutNote",
+]);
+
+function publicDeliveryDetails(details: unknown) {
+  if (!details || typeof details !== "object" || Array.isArray(details)) return null;
+  return Object.fromEntries(
+    Object.entries(details as Record<string, unknown>).filter(
+      ([key]) => !INTERNAL_DELIVERY_DETAIL_KEYS.has(key),
+    ),
+  );
+}
+
 export async function GET(req: NextRequest, { params }: Params) {
   const limited = await checkRateLimit({
     key: "order-tracking-details",
@@ -158,7 +174,7 @@ export async function GET(req: NextRequest, { params }: Params) {
         updatedAt: order.updatedAt,
         totalCents: order.totalCents,
         items,
-        deliveryDetails,
+        deliveryDetails: publicDeliveryDetails(deliveryDetails),
         vendor: {
           name: order.vendor?.name,
           suburb: order.vendor?.suburb,
