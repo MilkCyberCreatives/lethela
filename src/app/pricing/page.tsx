@@ -8,28 +8,22 @@ import { DELIVERY_FEE_TIERS, DELIVERY_PRICING_WORDING } from "@/lib/pricing";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Clear Lethela delivery, vendor pilot and rider payout pricing for Klipfontein View and future township delivery areas.",
+    "Clear Lethela customer delivery and rider payout information for Klipfontein View and future township delivery areas.",
   alternates: {
     canonical: "/pricing",
   },
   openGraph: {
     title: "Lethela pricing",
     description:
-      "See customer delivery fees, vendor pilot terms and rider payout rules before joining Lethela.",
+      "See customer delivery fees and rider payout rules for the Lethela township delivery marketplace.",
     url: "/pricing",
   },
   twitter: {
     title: "Lethela pricing",
     description:
-      "See customer delivery fees, vendor pilot terms and rider payout rules before joining Lethela.",
+      "See customer delivery fees and rider payout rules for the Lethela township delivery marketplace.",
   },
 };
-
-const vendorPlans = [
-  ["Starter Vendor", "R49/month + 5% per completed order, capped at R5"],
-  ["Standard Vendor", "R99/month + 3% per completed order, capped at R3"],
-  ["Growth Vendor", "R199/month + 0% commission"],
-];
 
 export default function PricingPage() {
   return (
@@ -77,30 +71,31 @@ export default function PricingPage() {
         </article>
 
         <article className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-          <h2 className="text-xl font-semibold">Vendor pilot offer</h2>
+          <h2 className="text-xl font-semibold">Vendor information</h2>
           <div className="mt-4 space-y-2 text-sm text-white/78">
-            <p>First 50 approved vendors register for free.</p>
-            <p>The first month is free.</p>
             <p>
-              1 July to 30 September 2026 pilot fee: 5% per completed order, capped at R5 per order.
+              Approved local businesses can sell through Lethela and manage their stores online.
             </p>
-            <p>No hidden charges. Vendors remain in control of their product prices.</p>
+            <p>
+              Current vendor commercial terms and settlement information are available securely in
+              the authenticated Vendor Dashboard.
+            </p>
+            <p>Vendors remain in control of their product prices and store availability.</p>
           </div>
-          <h3 className="mt-5 text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
-            Planned options after the pilot
-          </h3>
-          <div className="mt-3 grid gap-2">
-            {vendorPlans.map(([name, fee]) => (
-              <div key={name} className="rounded-lg border border-white/10 px-3 py-2 text-sm">
-                <div className="font-semibold">{name}</div>
-                <div className="mt-1 text-white/65">{fee}</div>
-              </div>
-            ))}
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              href="/vendors/register"
+              className="rounded-full bg-lethela-primary px-4 py-2 text-sm font-medium"
+            >
+              Apply as vendor
+            </Link>
+            <Link
+              href="/vendors/dashboard"
+              className="rounded-full border border-white/30 px-4 py-2 text-sm"
+            >
+              Vendor Dashboard
+            </Link>
           </div>
-          <p className="mt-4 text-xs leading-5 text-white/55">
-            Final post-pilot terms are confirmed with vendors before they take effect. Existing
-            vendors receive advance notice of pricing changes.
-          </p>
         </article>
 
         <article className="rounded-lg border border-white/10 bg-white/[0.035] p-5 lg:col-span-2">
