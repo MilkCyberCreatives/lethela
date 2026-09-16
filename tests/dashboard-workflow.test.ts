@@ -9,7 +9,10 @@ async function source(path: string) {
 test("vendor orders are grouped around operational work instead of raw status codes", async () => {
   const orders = await source("src/components/dashboard/OrdersManager.tsx");
 
-  assert.match(orders, /type WorkflowFilter = "ACTION" \| "DELIVERY" \| "EXCEPTIONS" \| "COMPLETED" \| "ALL"/);
+  assert.match(
+    orders,
+    /type WorkflowFilter = "ACTION" \| "DELIVERY" \| "EXCEPTIONS" \| "COMPLETED" \| "ALL"/,
+  );
   assert.match(orders, /label: "Needs action"/);
   assert.match(orders, /label: "In delivery"/);
   assert.match(orders, /label: "Exceptions"/);
