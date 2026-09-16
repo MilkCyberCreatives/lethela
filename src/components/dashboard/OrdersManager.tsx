@@ -21,6 +21,7 @@ type OrderStatus =
   | "FAILED";
 
 type VendorOrderAction = "VENDOR_ACCEPTED" | "PREPARING" | "READY_FOR_PICKUP" | "CANCELLED";
+type WorkflowFilter = "ACTION" | "DELIVERY" | "EXCEPTIONS" | "COMPLETED" | "ALL";
 
 type Order = {
   publicId: string;
@@ -53,22 +54,22 @@ type Order = {
   } | null;
 };
 
-const STATUS: Array<OrderStatus> = [
-  "PENDING_PAYMENT",
-  "PAID",
-  "NEW",
-  "VENDOR_ACCEPTED",
-  "PREPARING",
+const WORKFLOW_FILTERS: Array<{ value: WorkflowFilter; label: string }> = [
+  { value: "ACTION", label: "Needs action" },
+  { value: "DELIVERY", label: "In delivery" },
+  { value: "EXCEPTIONS", label: "Exceptions" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "ALL", label: "All orders" },
+];
+
+const ACTION_STATUSES: OrderStatus[] = ["NEW", "VENDOR_ACCEPTED", "PREPARING"];
+const DELIVERY_STATUSES: OrderStatus[] = [
   "READY_FOR_PICKUP",
   "RIDER_ASSIGNED",
   "PICKED_UP",
   "ON_THE_WAY",
-  "DELIVERED",
-  "CANCELLED",
-  "REFUND_REQUESTED",
-  "REFUNDED",
-  "FAILED",
 ];
+const EXCEPTION_STATUSES: OrderStatus[] = ["CANCELLED", "REFUND_REQUESTED", "REFUNDED", "FAILED"];
 
 function vendorActions(status: OrderStatus): VendorOrderAction[] {
   if (status === "NEW") return ["VENDOR_ACCEPTED", "CANCELLED"];
@@ -77,12 +78,81 @@ function vendorActions(status: OrderStatus): VendorOrderAction[] {
   return [];
 }
 
+function actionLabel(action: VendorOrderAction) {
+  if (action === "VENDOR_ACCEPTED") return "Accept order";
+  if (action === "PREPARING") return "Start preparing";
+  if (action === "READY_FOR_PICKUP") return "Ready for rider";
+  return "Cancel order";
+}
+
+function workflowGuidance(status: OrderStatus) {
+  if (status === "NEW") {
+    return { title: "Accept this order", note: "Confirm that the store can fulfil it now." };
+  }
+  if (status === "VENDOR_ACCEPTED") {
+    return { title: "Start preparing", note: "Move the order into preparation when work begins." };
+  }
+  if (status === "PREPARING") {
+    return {
+      title: "Finish and call the rider",
+      note: "Mark it ready only when pickup can happen.",
+    };
+  }
+  if (status === "READY_FOR_PICKUP") {
+    return { title: "Waiting for rider", note: "Keep the order packed and ready for collection." };
+  }
+  if (["RIDER_ASSIGNED", "PICKED_UP", "ON_THE_WAY"].includes(status)) {
+    return {
+      title: "Delivery in progress",
+      note: "Use live tracking below if a rider position is available.",
+    };
+  }
+  if (status === "DELIVERED") {
+    return { title: "Order complete", note: "No vendor action is required." };
+  }
+  if (EXCEPTION_STATUSES.includes(status)) {
+    return {
+      title: "Review exception",
+      note: "Keep the order reference ready if support is needed.",
+    };
+  }
+  return { title: "Monitor payment", note: "Wait for the order to become payable and actionable." };
+}
+
+function workflowMatch(order: Order, filter: WorkflowFilter) {
+  if (filter === "ACTION") return ACTION_STATUSES.includes(order.status);
+  if (filter === "DELIVERY") return DELIVERY_STATUSES.includes(order.status);
+  if (filter === "EXCEPTIONS") return EXCEPTION_STATUSES.includes(order.status);
+  if (filter === "COMPLETED") return order.status === "DELIVERED";
+  return true;
+}
+
+function workflowPriority(status: OrderStatus) {
+  const priorities: Partial<Record<OrderStatus, number>> = {
+    NEW: 0,
+    VENDOR_ACCEPTED: 1,
+    PREPARING: 2,
+    READY_FOR_PICKUP: 3,
+    RIDER_ASSIGNED: 4,
+    PICKED_UP: 5,
+    ON_THE_WAY: 6,
+    PAID: 7,
+    PENDING_PAYMENT: 8,
+    REFUND_REQUESTED: 9,
+    FAILED: 10,
+    CANCELLED: 11,
+    REFUNDED: 12,
+    DELIVERED: 13,
+  };
+  return priorities[status] ?? 99;
+}
+
 export default function OrdersManager() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"ALL" | OrderStatus>("ALL");
+  const [filter, setFilter] = useState<WorkflowFilter>("ALL");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tracking, setTracking] = useState<
@@ -119,12 +189,18 @@ export default function OrdersManager() {
         deliveryDetails: order.deliveryDetails ?? null,
       }));
 
+      const firstPriorityOrder =
+        nextOrders.find((order) => ACTION_STATUSES.includes(order.status)) ||
+        nextOrders.find((order) => DELIVERY_STATUSES.includes(order.status)) ||
+        nextOrders[0] ||
+        null;
+
       setOrders(nextOrders);
       setSelectedId((current) => {
         if (current && nextOrders.some((order) => order.publicId === current)) {
           return current;
         }
-        return nextOrders[0]?.publicId ?? null;
+        return firstPriorityOrder?.publicId ?? null;
       });
     } catch (loadError: unknown) {
       setError(loadError instanceof Error ? loadError.message : "Failed to load orders");
@@ -139,13 +215,10 @@ export default function OrdersManager() {
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(async () => {
-      const activeOrders = orders.filter(
-        (order) =>
-          order.status === "RIDER_ASSIGNED" ||
-          order.status === "PICKED_UP" ||
-          order.status === "ON_THE_WAY",
-      );
+    const timer = window.setInterval(async () => {
+      if (document.visibilityState !== "visible") return;
+
+      const activeOrders = orders.filter((order) => DELIVERY_STATUSES.includes(order.status));
       if (activeOrders.length === 0) return;
 
       const updates = await Promise.all(
@@ -168,58 +241,56 @@ export default function OrdersManager() {
       });
     }, 7000);
 
-    return () => clearInterval(timer);
+    return () => window.clearInterval(timer);
   }, [orders]);
 
-  const statusCounts = useMemo(() => {
-    const counts: Record<"ALL" | OrderStatus, number> = {
+  const workflowCounts = useMemo(
+    () => ({
       ALL: orders.length,
-      PENDING_PAYMENT: 0,
-      PAID: 0,
-      NEW: 0,
-      VENDOR_ACCEPTED: 0,
-      PREPARING: 0,
-      READY_FOR_PICKUP: 0,
-      RIDER_ASSIGNED: 0,
-      PICKED_UP: 0,
-      ON_THE_WAY: 0,
-      DELIVERED: 0,
-      CANCELLED: 0,
-      REFUND_REQUESTED: 0,
-      REFUNDED: 0,
-      FAILED: 0,
-    };
+      ACTION: orders.filter((order) => ACTION_STATUSES.includes(order.status)).length,
+      DELIVERY: orders.filter((order) => DELIVERY_STATUSES.includes(order.status)).length,
+      EXCEPTIONS: orders.filter((order) => EXCEPTION_STATUSES.includes(order.status)).length,
+      COMPLETED: orders.filter((order) => order.status === "DELIVERED").length,
+    }),
+    [orders],
+  );
 
-    for (const order of orders) {
-      counts[order.status] += 1;
-    }
-    return counts;
-  }, [orders]);
+  const priorityOrder = useMemo(
+    () =>
+      orders.find((order) => ACTION_STATUSES.includes(order.status)) ||
+      orders.find((order) => DELIVERY_STATUSES.includes(order.status)) ||
+      null,
+    [orders],
+  );
 
   const filteredOrders = useMemo(() => {
     const text = query.trim().toLowerCase();
-    return orders.filter((order) => {
-      if (filter !== "ALL" && order.status !== filter) {
-        return false;
-      }
-      if (!text) return true;
+    return orders
+      .filter((order) => {
+        if (!workflowMatch(order, filter)) return false;
+        if (!text) return true;
 
-      const haystack = [
-        order.publicId,
-        order.status,
-        order.paymentStatus,
-        order.deliveryDetails?.customerName,
-        order.deliveryDetails?.customerPhone,
-        order.deliveryDetails?.whatsappNumber,
-        order.deliveryDetails?.destinationSuburb,
-        order.deliveryDetails?.landmark,
-        ...order.items.map((item) => item.product?.name || "item"),
-      ]
-        .join(" ")
-        .toLowerCase();
+        const haystack = [
+          order.publicId,
+          order.status,
+          order.paymentStatus,
+          order.deliveryDetails?.customerName,
+          order.deliveryDetails?.customerPhone,
+          order.deliveryDetails?.whatsappNumber,
+          order.deliveryDetails?.destinationSuburb,
+          order.deliveryDetails?.landmark,
+          ...order.items.map((item) => item.product?.name || "item"),
+        ]
+          .join(" ")
+          .toLowerCase();
 
-      return haystack.includes(text);
-    });
+        return haystack.includes(text);
+      })
+      .sort((left, right) => {
+        const priorityDifference = workflowPriority(left.status) - workflowPriority(right.status);
+        if (priorityDifference !== 0) return priorityDifference;
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      });
   }, [filter, orders, query]);
 
   const selectedOrder =
@@ -234,7 +305,8 @@ export default function OrdersManager() {
         ? window.prompt("Why is this order being cancelled? This is recorded for support.")
         : null;
     if (status === "CANCELLED" && !reason) return;
-    if (!window.confirm(`Change this order to ${status.replaceAll("_", " ")}?`)) return;
+    if (!window.confirm(`${actionLabel(status)} for ${publicId}?`)) return;
+
     const response = await fetch(`/api/vendors/orders/${encodeURIComponent(publicId)}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -253,20 +325,66 @@ export default function OrdersManager() {
 
   return (
     <DashCard title="Orders">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2 text-xs">
-          {(["ALL", ...STATUS] as const).map((value) => (
+      <div className="rounded-xl border border-lethela-primary/20 bg-lethela-primary/[0.07] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
+              Next action
+            </p>
+            {priorityOrder ? (
+              <>
+                <p className="mt-1 text-sm font-semibold text-white">
+                  {ACTION_STATUSES.includes(priorityOrder.status)
+                    ? `${workflowCounts.ACTION} order${workflowCounts.ACTION === 1 ? "" : "s"} need vendor action`
+                    : `${workflowCounts.DELIVERY} order${workflowCounts.DELIVERY === 1 ? "" : "s"} in delivery`}
+                </p>
+                <p className="mt-1 text-xs text-white/60">
+                  {workflowGuidance(priorityOrder.status).title}: {priorityOrder.publicId}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-1 text-sm font-semibold text-white">
+                  No active orders need action
+                </p>
+                <p className="mt-1 text-xs text-white/60">
+                  New paid orders will move to the front of this workspace automatically.
+                </p>
+              </>
+            )}
+          </div>
+          {priorityOrder ? (
             <button
-              key={value}
               type="button"
-              onClick={() => setFilter(value)}
-              className={`rounded-full border px-3 py-1 transition-colors ${
-                filter === value
+              onClick={() => {
+                const nextFilter = ACTION_STATUSES.includes(priorityOrder.status)
+                  ? "ACTION"
+                  : "DELIVERY";
+                setFilter(nextFilter);
+                setSelectedId(priorityOrder.publicId);
+              }}
+              className="inline-flex min-h-11 items-center rounded-lg bg-lethela-primary px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
+            >
+              Open priority order
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2 text-xs" aria-label="Order workflow filters">
+          {WORKFLOW_FILTERS.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setFilter(item.value)}
+              className={`min-h-10 rounded-full border px-3 py-2 transition-colors ${
+                filter === item.value
                   ? "border-lethela-primary bg-lethela-primary/10 text-white"
                   : "border-white/15 text-white/70 hover:border-white/35 hover:text-white"
               }`}
             >
-              {value === "ALL" ? "All" : value.replaceAll("_", " ")} ({statusCounts[value]})
+              {item.label} ({workflowCounts[item.value]})
             </button>
           ))}
         </div>
@@ -275,14 +393,14 @@ export default function OrdersManager() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search order id or item"
-            className="rounded border border-white/15 bg-white px-3 py-2 text-sm text-black"
+            placeholder="Search order, customer or item"
+            className="min-h-11 rounded border border-white/15 bg-white px-3 py-2 text-sm text-black"
           />
           <button
             type="button"
             onClick={() => load(false)}
             disabled={refreshing}
-            className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
+            className="min-h-11 rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
           >
             {refreshing ? "Refreshing..." : "Refresh"}
           </button>
@@ -296,13 +414,16 @@ export default function OrdersManager() {
           <div className="h-20 rounded-lg bg-white/10" />
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="mt-4 text-sm text-white/70">No orders match the current filters.</div>
+        <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.03] p-4 text-sm text-white/70">
+          No orders match this workflow view. Choose another view or clear the search.
+        </div>
       ) : (
         <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr,0.85fr]">
           <div className="space-y-3">
             {filteredOrders.map((order) => {
               const driver = tracking[order.publicId];
               const isSelected = selectedId === order.publicId;
+              const guidance = workflowGuidance(order.status);
 
               return (
                 <button
@@ -344,6 +465,9 @@ export default function OrdersManager() {
                       </span>
                     ))}
                   </div>
+                  <p className="mt-2 text-xs text-lethela-primary/90">
+                    {guidance.title} · <span className="text-white/55">{guidance.note}</span>
+                  </p>
 
                   {driver ? (
                     <div className="mt-3 h-2 rounded bg-white/10">
@@ -360,6 +484,18 @@ export default function OrdersManager() {
 
           {selectedOrder ? (
             <div className="space-y-3 rounded-lg border border-white/10 bg-white/5 p-4">
+              <div className="rounded-lg border border-lethela-primary/20 bg-lethela-primary/[0.06] p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-lethela-primary">
+                  Next step
+                </p>
+                <p className="mt-1 text-sm font-semibold">
+                  {workflowGuidance(selectedOrder.status).title}
+                </p>
+                <p className="mt-1 text-xs text-white/60">
+                  {workflowGuidance(selectedOrder.status).note}
+                </p>
+              </div>
+
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="text-xs uppercase tracking-[0.12em] text-white/60">
@@ -369,14 +505,20 @@ export default function OrdersManager() {
                 </div>
 
                 <div className="flex flex-wrap justify-end gap-2">
-                  {vendorActions(selectedOrder.status).map((status) => (
+                  {vendorActions(selectedOrder.status).map((status, index) => (
                     <button
                       key={status}
                       type="button"
                       onClick={() => void updateStatus(selectedOrder.publicId, status)}
-                      className="rounded border border-white/20 px-3 py-2 text-xs hover:border-lethela-primary"
+                      className={`min-h-10 rounded border px-3 py-2 text-xs font-semibold transition-colors ${
+                        status === "CANCELLED"
+                          ? "border-red-300/40 text-red-100 hover:bg-red-300/10"
+                          : index === 0
+                            ? "border-lethela-primary bg-lethela-primary text-white hover:opacity-90"
+                            : "border-white/20 hover:border-lethela-primary"
+                      }`}
                     >
-                      {status.replaceAll("_", " ")}
+                      {actionLabel(status)}
                     </button>
                   ))}
                 </div>

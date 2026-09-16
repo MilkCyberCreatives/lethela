@@ -87,6 +87,18 @@ function statusClass(status?: string) {
   return "border-white/15 bg-white/5 text-white/75";
 }
 
+function riderOrderPriority(status: string) {
+  const priority: Record<string, number> = {
+    ON_THE_WAY: 0,
+    PICKED_UP: 1,
+    RIDER_ASSIGNED: 2,
+    READY_FOR_PICKUP: 3,
+    PREPARING: 4,
+    VENDOR_ACCEPTED: 5,
+  };
+  return priority[status] ?? 20;
+}
+
 export default function RiderDashboardClient() {
   const [data, setData] = useState<RiderMeResponse | null>(null);
   const [messages, setMessages] = useState<PlatformMessage[]>([]);
@@ -184,10 +196,82 @@ export default function RiderDashboardClient() {
   }
 
   const application = data.application;
-  const orders = data.activeOrders || [];
+  const orders = [...(data.activeOrders || [])].sort((left, right) => {
+    const priorityDifference = riderOrderPriority(left.status) - riderOrderPriority(right.status);
+    if (priorityDifference !== 0) return priorityDifference;
+    return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+  });
+  const priorityOrder = orders[0] || null;
 
   return (
     <div className="space-y-5">
+      <section className="rounded-lg border border-lethela-primary/25 bg-lethela-primary/[0.07] p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary">
+              Next step
+            </p>
+            {priorityOrder ? (
+              <>
+                <h2 className="mt-2 text-xl font-bold">Continue delivery {priorityOrder.ref}</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                  {priorityOrder.status.replaceAll("_", " ")} · {priorityOrder.vendor} · pickup in{" "}
+                  {priorityOrder.pickupArea}. Keep this assignment moving before waiting for another
+                  delivery.
+                </p>
+              </>
+            ) : !application ? (
+              <>
+                <h2 className="mt-2 text-xl font-bold">Submit your rider application</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                  Use the same email as this account so Lethela can connect your application to this
+                  dashboard.
+                </p>
+              </>
+            ) : !data.readiness?.approved ? (
+              <>
+                <h2 className="mt-2 text-xl font-bold">Finish onboarding and approval</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                  Complete any missing profile or document requirements. Dispatch unlocks only after
+                  Lethela approval.
+                </p>
+              </>
+            ) : !data.readiness?.canReceiveDispatch ? (
+              <>
+                <h2 className="mt-2 text-xl font-bold">Finish dispatch setup</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                  Your account is approved, but dispatch readiness still needs attention in Profile
+                  & documents.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="mt-2 text-xl font-bold">Ready for work</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                  No active delivery is assigned. Use Shift status above to go online and receive
+                  available work.
+                </p>
+              </>
+            )}
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {priorityOrder?.consoleUrl ? (
+              <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
+                <Link href={priorityOrder.consoleUrl}>Open rider console</Link>
+              </Button>
+            ) : !application ? (
+              <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
+                <Link href="/rider">Start rider application</Link>
+              </Button>
+            ) : !data.readiness?.canReceiveDispatch ? (
+              <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
+                <Link href="/rider/dashboard/profile">Open profile & documents</Link>
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-lg border border-white/10 bg-[#0C1132] p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
