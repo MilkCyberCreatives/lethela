@@ -66,8 +66,9 @@ export default function PayoutsPanel() {
       <DashCard title="Payouts and Settlements">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-white/70">
-            Vendor payouts show product sales only. Lethela delivery fees and customer tips are
-            tracked separately for riders.
+            Lethela currently charges a 2% service fee on product sales per order. Your vendor
+            payout is the product subtotal less this 2% fee. Delivery fees and customer tips are
+            excluded from the fee and go fully to the rider.
           </p>
           <button
             type="button"
