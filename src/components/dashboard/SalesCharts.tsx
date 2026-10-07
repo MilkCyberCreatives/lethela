@@ -186,7 +186,7 @@ export default function SalesCharts() {
     <div className="grid gap-4">
       <DashCard title="Financial Snapshot">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+          <div className="grid flex-1 basis-72 gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
               <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Orders</div>
               <div className="mt-2 text-xl font-semibold text-slate-900">
