@@ -182,7 +182,7 @@ async function scenario(name, run, options = {}) {
 async function signIn(page, [email, password]) {
   await gotoStable(page, `${baseUrl}/signin`);
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   const callbackPromise = page.waitForResponse((response) =>
     response.url().includes("/api/auth/callback/credentials"),
   );

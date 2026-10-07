@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { ArrowRight, LifeBuoy, Mail } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import {
+  AuthAlert,
+  AuthField,
+  authInputClass,
+  authLinkClass,
+  authPrimaryButtonClass,
+} from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -13,7 +19,6 @@ export default function ForgotPasswordForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resetUrl, setResetUrl] = useState<string | null>(null);
-  const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -49,71 +54,46 @@ export default function ForgotPasswordForm() {
 
   return (
     <div className="text-slate-950">
-      <form className="grid gap-3" onSubmit={submit}>
-        <label htmlFor="recovery-email" className="grid gap-1.5 text-sm font-medium text-slate-800">
-          <span>Email address</span>
+      <form className="grid gap-4" onSubmit={submit}>
+        <AuthField label="Email address" htmlFor="recovery-email">
           <Input
             id="recovery-email"
             type="email"
+            inputMode="email"
+            autoCapitalize="none"
+            spellCheck={false}
             placeholder="you@example.co.za"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="border-slate-300 bg-white text-black"
+            className={authInputClass}
             autoComplete="email"
             required
           />
-        </label>
+        </AuthField>
+        {message ? <AuthAlert tone="success">{message}</AuthAlert> : null}
+        {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
+        {resetUrl ? (
+          <AuthAlert tone="info">
+            Local reset link:{" "}
+            <a href={resetUrl} className="font-semibold underline">
+              Open reset page
+            </a>
+          </AuthAlert>
+        ) : null}
         <Button
           type="submit"
           disabled={submitting || !email.trim()}
-          className="h-11 bg-lethela-primary text-white"
+          className={`mt-1 ${authPrimaryButtonClass}`}
         >
-          <Mail className="mr-2 h-4 w-4" />
           {submitting ? "Sending..." : "Send reset link"}
         </Button>
-        {message ? (
-          <div
-            role="status"
-            className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
-          >
-            {message}
-          </div>
-        ) : null}
-        {error ? (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {error}
-          </div>
-        ) : null}
-        {resetUrl ? (
-          <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            Local reset link:{" "}
-            <a href={resetUrl} className="underline">
-              Open reset page
-            </a>
-          </p>
-        ) : null}
       </form>
-      <div className="mt-5 grid gap-2 text-sm text-slate-600 md:grid-cols-2">
-        <Link
-          href="/signin"
-          className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
-        >
+      <p className="mt-6 border-t border-slate-200 pt-5 text-center text-sm text-slate-600">
+        <Link href="/signin" className={`inline-flex items-center gap-1.5 ${authLinkClass}`}>
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back to sign in
-          <ArrowRight className="h-4 w-4" />
         </Link>
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 hover:border-lethela-primary"
-        >
-          WhatsApp support
-          <LifeBuoy className="h-4 w-4" />
-        </a>
-      </div>
+      </p>
     </div>
   );
 }

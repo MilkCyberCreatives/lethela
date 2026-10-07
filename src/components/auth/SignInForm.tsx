@@ -4,11 +4,29 @@ import Link from "next/link";
 import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { Bike, ShoppingBag, Store } from "lucide-react";
+import {
+  AuthAlert,
+  AuthDivider,
+  AuthField,
+  GoogleMark,
+  PasswordInput,
+  authInputClass,
+  authLinkClass,
+  authPrimaryButtonClass,
+  authSecondaryButtonClass,
+} from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { safePostLoginPath, type AppRole } from "@/lib/auth-roles";
 import { REGISTRATION_PASSWORD_MIN_LENGTH } from "@/lib/registration-policy";
 import { rememberOAuthIntent } from "@/lib/google-auth";
+
+const NEW_ACCOUNT_LINKS = [
+  { href: "/signup", label: "Customer", detail: "Order", Icon: ShoppingBag },
+  { href: "/vendors/register", label: "Vendor", detail: "Sell", Icon: Store },
+  { href: "/rider", label: "Rider", detail: "Deliver", Icon: Bike },
+] as const;
 
 type VerificationState = "sent" | "success" | "invalid" | "";
 
@@ -93,12 +111,38 @@ export default function SignInForm({ googleEnabled = false }: { googleEnabled?: 
 
   return (
     <div>
+      {verification ? (
+        <AuthAlert tone={verification === "success" ? "success" : "info"} className="mb-5">
+          <p>{verificationMessages[verification]}</p>
+          {verification !== "success" ? (
+            <button
+              type="button"
+              onClick={() => void resendVerification()}
+              disabled={resending}
+              className="mt-1.5 font-semibold underline underline-offset-2 disabled:opacity-50"
+            >
+              {resending ? "Sending..." : "Resend verification email"}
+            </button>
+          ) : null}
+        </AuthAlert>
+      ) : null}
+      {message ? (
+        <AuthAlert tone="info" className="mb-5">
+          {message}
+        </AuthAlert>
+      ) : null}
+      {resendNotice ? (
+        <AuthAlert tone="success" className="mb-5">
+          {resendNotice}
+        </AuthAlert>
+      ) : null}
+
       {googleEnabled ? (
         <>
           <Button
             type="button"
             variant="outline"
-            className="h-12 w-full border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+            className={authSecondaryButtonClass}
             onClick={() => {
               rememberOAuthIntent("customer");
               void signIn("google", {
@@ -109,116 +153,68 @@ export default function SignInForm({ googleEnabled = false }: { googleEnabled?: 
             <GoogleMark />
             Continue with Google
           </Button>
-          <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.16em] text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" />
-            or use email
-            <span className="h-px flex-1 bg-slate-200" />
-          </div>
+          <AuthDivider label="or sign in with email" />
         </>
       ) : null}
-      {verification ? (
-        <div
-          role="status"
-          className={`mb-4 rounded-lg border p-3 text-sm ${
-            verification === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-              : "border-amber-200 bg-amber-50 text-amber-900"
-          }`}
-        >
-          <p>{verificationMessages[verification]}</p>
-          {verification !== "success" ? (
-            <button
-              type="button"
-              onClick={() => void resendVerification()}
-              disabled={resending}
-              className="mt-2 font-semibold underline underline-offset-2 disabled:opacity-50"
-            >
-              {resending ? "Sending..." : "Resend verification email"}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-      {message ? (
-        <p
-          role="status"
-          className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
-        >
-          {message}
-        </p>
-      ) : null}
-      {resendNotice ? (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-          {resendNotice}
-        </p>
-      ) : null}
+
       <form className="grid gap-4" onSubmit={submit}>
-        <label className="grid gap-1.5 text-sm font-medium text-slate-800">
-          <span>Email</span>
+        <AuthField label="Email address" htmlFor="signin-email">
           <Input
+            id="signin-email"
             type="email"
+            inputMode="email"
             autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="you@example.co.za"
+            className={authInputClass}
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
-        </label>
-        <label className="grid gap-1.5 text-sm font-medium text-slate-800">
-          <span>Password</span>
-          <Input
-            type="password"
+        </AuthField>
+        <AuthField
+          label="Password"
+          htmlFor="signin-password"
+          aside={
+            <Link href="/forgot-password" className={`text-sm ${authLinkClass}`}>
+              Forgot password?
+            </Link>
+          }
+        >
+          <PasswordInput
+            id="signin-password"
             autoComplete="current-password"
             minLength={REGISTRATION_PASSWORD_MIN_LENGTH}
             required
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
-        </label>
-        {error ? (
-          <p role="alert" className="text-sm text-red-700">
-            {error}
-          </p>
-        ) : null}
-        <Button type="submit" className="h-11 bg-lethela-primary text-white" disabled={submitting}>
+        </AuthField>
+        {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
+        <Button type="submit" className={`mt-1 ${authPrimaryButtonClass}`} disabled={submitting}>
           {submitting ? "Signing in..." : "Sign in"}
         </Button>
       </form>
-      <div className="mt-5 grid gap-2 text-sm text-slate-600">
-        <Link href="/forgot-password" className="underline">
-          Forgot password?
-        </Link>
-        <Link href="/signup" className="underline">
-          Create customer account
-        </Link>
-        <Link href="/vendors/register" className="underline">
-          Create vendor account
-        </Link>
-        <Link href="/rider" className="underline">
-          Create rider account
-        </Link>
+
+      <div className="mt-8 border-t border-slate-200 pt-6">
+        <p className="text-sm font-semibold text-slate-900">New to Lethela?</p>
+        <p className="mt-1 text-sm text-slate-600">Create a free account in under a minute.</p>
+        <ul className="mt-4 grid grid-cols-3 gap-2">
+          {NEW_ACCOUNT_LINKS.map(({ href, label, detail, Icon }) => (
+            <li key={href}>
+              <Link
+                href={href}
+                className="flex h-full flex-col items-center gap-1 rounded-xl border border-slate-200 px-2 py-3 text-center transition-colors hover:border-lethela-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lethela-primary/30"
+              >
+                <Icon className="h-5 w-5 text-lethela-primary" aria-hidden="true" />
+                <span className="text-sm font-semibold text-slate-900">{label}</span>
+                <span className="text-xs text-slate-500">{detail}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
-  );
-}
-
-function GoogleMark() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="mr-2 h-5 w-5">
-      <path
-        fill="#4285F4"
-        d="M21.6 12.23c0-.72-.06-1.25-.2-1.8H12v3.48h5.52a4.75 4.75 0 0 1-2.05 3.03l-.02.12 2.98 2.31.2.02c1.83-1.7 2.97-4.18 2.97-7.16Z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 22c2.69 0 4.94-.88 6.59-2.61l-3.12-2.45c-.84.57-1.97.97-3.47.97a6.03 6.03 0 0 1-5.7-4.17l-.11.01-3.1 2.4-.04.1A9.95 9.95 0 0 0 12 22Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M6.3 13.74A6.2 6.2 0 0 1 5.97 12c0-.61.11-1.2.32-1.74v-.12L3.15 7.7l-.1.05A10 10 0 0 0 2 12c0 1.53.35 2.98 1.05 4.25l3.25-2.51Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 6.09c1.87 0 3.13.81 3.85 1.48l2.8-2.74A9.42 9.42 0 0 0 12 2a9.95 9.95 0 0 0-8.95 5.75l3.24 2.51A6.05 6.05 0 0 1 12 6.09Z"
-      />
-    </svg>
   );
 }
