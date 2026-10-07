@@ -54,8 +54,8 @@ test("framework versions are pinned to patched releases", async () => {
     dependencies: Record<string, string>;
     devDependencies: Record<string, string>;
   };
-  assert.equal(pkg.dependencies.next, "16.3.3");
+  assert.equal(pkg.dependencies.next, "16.4.0");
   assert.equal(pkg.dependencies.react, "19.2.8");
   assert.equal(pkg.dependencies["react-dom"], "19.2.8");
-  assert.equal(pkg.devDependencies["eslint-config-next"], "16.3.3");
+  assert.equal(pkg.devDependencies["eslint-config-next"], "16.4.0");
 });
