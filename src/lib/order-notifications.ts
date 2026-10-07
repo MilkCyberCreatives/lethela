@@ -1,6 +1,16 @@
 import { prisma, prismaRuntimeInfo } from "@/server/db";
-import { hasWhatsAppChannel, sendTwilioWhatsApp } from "@/lib/notification-channels";
-import { sendPushToUsers } from "@/lib/push-notifications";
+import {
+  escapeHtml,
+  hasWhatsAppChannel,
+  normalizeWhatsAppRecipient,
+  sendEmail,
+  sendTwilioWhatsApp,
+  settleWithin,
+  splitCsv,
+} from "@/lib/notification-channels";
+import { sendPushToAdmins, sendPushToUsers } from "@/lib/push-notifications";
+import { notifyStaff } from "@/lib/notifications";
+import { absoluteUrl } from "@/lib/site";
 
 type OrderPayloadItem = {
   name?: string;
@@ -284,6 +294,10 @@ export async function notifyOrderStatusPush(orderId: string, status: string) {
   });
   if (!order) return { sent: 0, failed: 0, total: 0 };
 
+  if (status === "READY_FOR_PICKUP") {
+    await notifyAdminsOfOrder(orderId, "ready");
+  }
+
   const orderRef = order.publicId || order.ozowReference || orderId;
   const label = status.replaceAll("_", " ").toLowerCase();
   const vendorUserIds = [
@@ -312,4 +326,92 @@ export async function notifyOrderStatusPush(orderId: string, status: string) {
     failed: vendorDelivery.failed + customerDelivery.failed,
     total: vendorDelivery.total + customerDelivery.total,
   };
+}
+
+type AdminOrderEvent = "paid" | "ready";
+
+const ADMIN_ORDER_ALERTS: Record<AdminOrderEvent, { title: string; action: string }> = {
+  paid: { title: "New paid order", action: "Watch for the vendor to accept it." },
+  ready: { title: "Order ready for a rider", action: "Assign an approved rider now." },
+};
+
+// Dispatch is manual, so the admin team must hear about every paid order and
+// every order that is waiting for a rider (including after a rider declines).
+export async function notifyAdminsOfOrder(orderId: string, event: AdminOrderEvent) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      publicId: true,
+      ozowReference: true,
+      totalCents: true,
+      deliveryFeeCents: true,
+      itemsJson: true,
+      vendor: { select: { name: true } },
+    },
+  });
+  if (!order) return { delivered: false as const };
+
+  const orderRef = order.publicId || order.ozowReference || orderId;
+  const details = parseOrderPayload(order.itemsJson).deliveryDetails;
+  const address = [details?.standNumber, details?.streetSection, details?.destinationSuburb]
+    .map(cleanLine)
+    .filter(Boolean)
+    .join(", ");
+  const { title, action } = ADMIN_ORDER_ALERTS[event];
+  const adminUrl = absoluteUrl("/admin?view=operations");
+  const lines = [
+    `${title}: ${orderRef}`,
+    `Vendor: ${cleanLine(order.vendor.name)}`,
+    `Total: ${rand(order.totalCents)} (delivery ${rand(order.deliveryFeeCents)})`,
+    `Deliver to: ${address || "See order"}`,
+    action,
+    `Open operations: ${adminUrl}`,
+  ];
+  const text = lines.join("\n");
+
+  const emails = splitCsv(process.env.ADMIN_NOTIFICATION_EMAILS);
+  const whatsapp = splitCsv(process.env.ADMIN_NOTIFICATION_WHATSAPP_TO)
+    .map(normalizeWhatsAppRecipient)
+    .filter(Boolean);
+  const tasks: Promise<unknown>[] = [
+    settleWithin(
+      notifyStaff({
+        type: `order-${event}`,
+        title,
+        body: `${orderRef} from ${cleanLine(order.vendor.name)}. ${action}`,
+        href: "/admin?view=operations",
+      }),
+      3000,
+    ),
+    settleWithin(
+      sendPushToAdmins({
+        title,
+        body: `${orderRef} from ${cleanLine(order.vendor.name)}. ${action}`,
+        url: "/admin?view=operations",
+        tag: `lethela-admin-order-${orderRef}`,
+      }),
+      3000,
+    ),
+  ];
+  if (emails.length > 0) {
+    tasks.push(
+      settleWithin(
+        sendEmail({
+          to: emails,
+          subject: `${title}: ${orderRef}`,
+          text,
+          html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">${lines
+            .map((line) => `<p style="margin:0 0 6px">${escapeHtml(line)}</p>`)
+            .join("")}</div>`,
+        }),
+        3000,
+      ),
+    );
+  }
+  if (hasWhatsAppChannel() && whatsapp.length > 0) {
+    tasks.push(settleWithin(sendTwilioWhatsApp({ to: whatsapp, body: text }), 3000));
+  }
+
+  await Promise.all(tasks);
+  return { delivered: true as const };
 }
