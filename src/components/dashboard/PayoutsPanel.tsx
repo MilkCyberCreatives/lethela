@@ -65,7 +65,7 @@ export default function PayoutsPanel() {
     <div className="grid gap-4">
       <DashCard title="Payouts and Settlements">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-slate-600">
             Lethela currently charges a 2% service fee on product sales per order. Your vendor
             payout is the product subtotal less this 2% fee. Delivery fees and customer tips are
             excluded from the fee and go fully to the rider.
@@ -74,12 +74,12 @@ export default function PayoutsPanel() {
             type="button"
             onClick={load}
             disabled={loading}
-            className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
-        {error ? <p className="mt-3 text-xs text-red-200">{error}</p> : null}
+        {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <StatCard
             label="Vendor available"
@@ -111,16 +111,16 @@ export default function PayoutsPanel() {
             <StatusRow label="Pending settlement" count={payouts?.pendingOrdersCount ?? 0} />
             <StatusRow label="Failed or cancelled" count={payouts?.failedOrdersCount ?? 0} />
           </div>
-          <div className="mt-4 rounded-xl border border-white/10 bg-black/15 px-4 py-4 text-sm">
-            <div className="text-xs uppercase tracking-[0.12em] text-white/55">
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
+            <div className="text-xs uppercase tracking-[0.12em] text-slate-500">
               Next estimated payout
             </div>
-            <div className="mt-2 text-lg font-semibold text-white">
+            <div className="mt-2 text-lg font-semibold text-slate-900">
               {loading || !payouts
                 ? "..."
                 : new Date(payouts.nextEstimatedPayoutAt).toLocaleString()}
             </div>
-            <div className="mt-1 text-xs text-white/60">
+            <div className="mt-1 text-xs text-slate-500">
               {payouts?.latestPaidAt
                 ? `Latest paid order: ${new Date(payouts.latestPaidAt).toLocaleString()}`
                 : "No paid orders yet."}
@@ -131,7 +131,7 @@ export default function PayoutsPanel() {
         <DashCard title="Recent Settled Orders">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-[0.12em] text-white/55">
+              <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
                 <tr>
                   <th className="pb-3 pr-4 font-medium">Order</th>
                   <th className="pb-3 pr-4 font-medium">Time</th>
@@ -143,37 +143,39 @@ export default function PayoutsPanel() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr className="border-t border-white/10">
+                  <tr className="border-t border-slate-200">
                     <td colSpan={6} className="py-4">
                       <div className="grid animate-pulse gap-2">
-                        <div className="h-5 rounded bg-white/10" />
-                        <div className="h-5 rounded bg-white/10" />
-                        <div className="h-5 rounded bg-white/10" />
+                        <div className="h-5 rounded bg-slate-100" />
+                        <div className="h-5 rounded bg-slate-100" />
+                        <div className="h-5 rounded bg-slate-100" />
                       </div>
                     </td>
                   </tr>
                 ) : payouts && payouts.recentSettlements.length > 0 ? (
                   payouts.recentSettlements.map((settlement) => (
-                    <tr key={settlement.publicId} className="border-t border-white/10">
-                      <td className="py-3 pr-4 font-medium text-white/88">{settlement.publicId}</td>
-                      <td className="py-3 pr-4 text-white/65">
+                    <tr key={settlement.publicId} className="border-t border-slate-200">
+                      <td className="py-3 pr-4 font-medium text-slate-700">
+                        {settlement.publicId}
+                      </td>
+                      <td className="py-3 pr-4 text-slate-600">
                         {new Date(settlement.createdAt).toLocaleString()}
                       </td>
-                      <td className="py-3 pr-4 text-white/65">{settlement.itemsCount}</td>
-                      <td className="py-3 pr-4 font-semibold text-white">
+                      <td className="py-3 pr-4 text-slate-600">{settlement.itemsCount}</td>
+                      <td className="py-3 pr-4 font-semibold text-slate-900">
                         {money(settlement.amountCents)}
                       </td>
-                      <td className="py-3 pr-4 text-white/70">
+                      <td className="py-3 pr-4 text-slate-600">
                         {money(settlement.riderPayoutCents)}
                       </td>
-                      <td className="py-3 font-semibold text-white">
+                      <td className="py-3 font-semibold text-slate-900">
                         {money(settlement.totalPaidCents)}
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr className="border-t border-white/10">
-                    <td colSpan={6} className="py-6 text-center text-white/60">
+                  <tr className="border-t border-slate-200">
+                    <td colSpan={6} className="py-6 text-center text-slate-500">
                       No paid orders to settle yet.
                     </td>
                   </tr>
@@ -189,18 +191,18 @@ export default function PayoutsPanel() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-      <div className="text-xs uppercase tracking-[0.12em] text-white/55">{label}</div>
-      <div className="mt-2 text-xl font-semibold text-white">{value}</div>
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+      <div className="text-xs uppercase tracking-[0.12em] text-slate-500">{label}</div>
+      <div className="mt-2 text-xl font-semibold text-slate-900">{value}</div>
     </div>
   );
 }
 
 function StatusRow({ label, count }: { label: string; count: number }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
-      <span className="text-white/78">{label}</span>
-      <span className="font-semibold text-white">{count}</span>
+    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+      <span className="text-slate-600">{label}</span>
+      <span className="font-semibold text-slate-900">{count}</span>
     </div>
   );
 }

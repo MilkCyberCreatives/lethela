@@ -134,11 +134,11 @@ function formatWhatsAppPhone(value: string) {
 
 function DashboardPanelSkeleton({ lines = 4 }: { lines?: number }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-      <div className="h-5 w-40 rounded bg-white/10" />
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="h-5 w-40 rounded bg-slate-100" />
       <div className="mt-4 space-y-3">
         {Array.from({ length: lines }).map((_, index) => (
-          <div key={index} className="h-10 rounded-xl bg-white/10" />
+          <div key={index} className="h-10 rounded-xl bg-slate-100" />
         ))}
       </div>
     </div>
@@ -149,15 +149,20 @@ function SupportCard() {
   const whatsappPhone = getOrderWhatsAppPhone();
   const whatsappHref = `https://wa.me/${whatsappPhone}`;
   return (
-    <div className="rounded-2xl border border-lethela-primary/20 bg-[#141b43] p-5">
-      <div className="mb-2 text-sm font-semibold text-white">Support</div>
-      <p className="text-sm text-white/80">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="mb-2 text-sm font-semibold text-slate-900">Support</div>
+      <p className="text-sm text-slate-700">
         Need help? Message Lethela on WhatsApp:{" "}
-        <a className="underline" href={whatsappHref} target="_blank" rel="noreferrer">
+        <a
+          className="font-semibold text-lethela-primary underline"
+          href={whatsappHref}
+          target="_blank"
+          rel="noreferrer"
+        >
           {formatWhatsAppPhone(whatsappPhone)}
         </a>
       </p>
-      <p className="mt-3 text-xs text-white/60">
+      <p className="mt-3 text-xs text-slate-500">
         Use the tabs to manage products, orders, hours, specials, and store settings without a long
         landing page.
       </p>
@@ -372,14 +377,14 @@ export default async function VendorDashboardPage({
   const overview = (
     <div className="grid h-full gap-4 xl:grid-cols-[1.15fr,0.85fr]">
       <div className="grid content-start gap-4">
-        <div className="rounded-2xl border border-white/15 bg-white/5 p-5">
+        <div className="rounded-2xl border border-slate-300 bg-white p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-white/65">
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-600">
                 Vendor control center
               </p>
               <h1 className="mt-1 text-2xl font-bold">{vendor?.name || "Vendor Dashboard"}</h1>
-              <p className="mt-2 text-sm text-white/75">
+              <p className="mt-2 text-sm text-slate-600">
                 {vendor?.suburb && vendor?.city
                   ? `${vendor.suburb}, ${vendor.city}`
                   : "Location not set"}
@@ -403,26 +408,26 @@ export default async function VendorDashboardPage({
               {vendorSlug ? (
                 <Link
                   href={`/vendors/${vendorSlug}`}
-                  className="vendor-quick-action inline-flex min-h-11 items-center rounded-full border border-white/30 px-4 py-2 text-xs font-medium"
+                  className="vendor-quick-action inline-flex min-h-11 items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium"
                 >
                   View public profile
                 </Link>
               ) : null}
               <Link
                 href="/vendors/dashboard?tab=menu"
-                className="vendor-quick-action inline-flex min-h-11 items-center rounded-full border border-white/30 px-4 py-2 text-xs font-medium"
+                className="vendor-quick-action inline-flex min-h-11 items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium"
               >
                 Manage menu
               </Link>
               <Link
                 href="/vendors/dashboard?tab=specials&action=create"
-                className="vendor-quick-action inline-flex min-h-11 items-center rounded-full border border-white/30 px-4 py-2 text-xs font-medium"
+                className="vendor-quick-action inline-flex min-h-11 items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium"
               >
                 Create special
               </Link>
               <Link
                 href="/vendors/dashboard?tab=orders"
-                className="vendor-quick-action vendor-quick-action-primary inline-flex min-h-11 items-center rounded-full border border-white/30 px-4 py-2 text-xs font-medium"
+                className="vendor-quick-action vendor-quick-action-primary inline-flex min-h-11 items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium"
               >
                 Open orders
               </Link>
@@ -430,26 +435,26 @@ export default async function VendorDashboardPage({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-emerald-200/20 bg-white/5 p-5">
+        <div className="rounded-2xl border border-emerald-200 bg-white p-5">
           {vendor?.reviewReason ? (
-            <div className="mb-4 rounded-xl border border-amber-200/30 bg-amber-300/10 p-4 text-sm text-amber-50">
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
               <strong>Owner review:</strong> {vendor.reviewReason}
             </div>
           ) : null}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-white/60">
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
                 Profile completion
               </p>
               <h2 className="mt-1 text-xl font-semibold">Complete your profile before approval</h2>
-              <p className="mt-2 text-sm text-white/70">
+              <p className="mt-2 text-sm text-slate-600">
                 Lethela reviews complete stores only. Finish the required sections, then submit for
                 approval from here.
               </p>
             </div>
             <form action="/api/vendors/profile/submit" method="post">
               <button
-                className="min-h-11 rounded-full bg-lethela-primary px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/50"
+                className="min-h-11 rounded-full bg-lethela-primary px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                 disabled={!readiness.canSubmit}
                 title={
                   readiness.canSubmit
@@ -467,12 +472,12 @@ export default async function VendorDashboardPage({
                 key={check.key}
                 className={`rounded-xl border px-3 py-3 text-sm ${
                   check.complete
-                    ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-50"
-                    : "border-white/10 bg-black/10 text-white/70"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-slate-200 bg-slate-50 text-slate-600"
                 }`}
               >
                 <div className="font-semibold">{check.label}</div>
-                <div className="mt-1 text-xs opacity-75">
+                <div className="mt-1 text-xs">
                   {check.complete ? "Complete" : "Required before approval"}
                 </div>
               </div>
@@ -481,23 +486,41 @@ export default async function VendorDashboardPage({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Revenue" value={money(revenue30)} hint="Last 30 days" />
-          <MetricCard label="Orders today" value={String(ordersToday)} hint="Live activity" />
+          <MetricCard
+            label="Revenue"
+            value={money(revenue30)}
+            hint="Last 30 days"
+            href="/vendors/dashboard?tab=analytics"
+          />
+          <MetricCard
+            label="Orders today"
+            value={String(ordersToday)}
+            hint="Live activity"
+            href="/vendors/dashboard?tab=orders"
+          />
           <MetricCard
             label="Products live"
             value={`${inStock}/${products.length || 0}`}
             hint="In stock now"
+            href="/vendors/dashboard?tab=menu"
           />
-          <MetricCard label="Open days" value={`${hours.length}/7`} hint="Trading schedule" />
+          <MetricCard
+            label="Open days"
+            value={`${hours.length}/7`}
+            hint="Trading schedule"
+            href="/vendors/dashboard?tab=hours"
+          />
           <MetricCard
             label="Specials live"
             value={String(publishedSpecials)}
             hint="Published promos"
+            href="/vendors/dashboard?tab=specials"
           />
           <MetricCard
             label="Late flags"
             value={String(unresolvedLateCount)}
             hint="Needs follow-up"
+            href="/vendors/dashboard?tab=orders"
           />
         </div>
 
@@ -507,13 +530,13 @@ export default async function VendorDashboardPage({
               issues.slice(0, 3).map((issue) => (
                 <div
                   key={issue}
-                  className="rounded-lg border border-amber-200/20 bg-amber-300/10 px-3 py-2 text-sm text-amber-50"
+                  className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
                 >
                   {issue}
                 </div>
               ))
             ) : (
-              <div className="rounded-lg border border-white/10 bg-black/10 px-3 py-2 text-sm text-white/70">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                 No urgent issues detected.
               </div>
             )}
@@ -523,7 +546,7 @@ export default async function VendorDashboardPage({
               topProducts.map(([name, qty], index) => (
                 <div
                   key={name}
-                  className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-sm"
+                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                 >
                   <span>
                     {index + 1}. {name}
@@ -532,7 +555,7 @@ export default async function VendorDashboardPage({
                 </div>
               ))
             ) : (
-              <div className="rounded-lg border border-white/10 bg-black/10 px-3 py-2 text-sm text-white/60">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
                 Sales data appears here once orders start coming in.
               </div>
             )}
@@ -559,9 +582,9 @@ export default async function VendorDashboardPage({
           <MiniStat label="Pending payments" value={String(pendingPayments)} />
         </InfoCard>
         <InfoCard title="Next promo">
-          <div className="rounded-lg border border-white/10 px-3 py-3 text-sm">
+          <div className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm">
             <div className="font-semibold">{nextPromo ? nextPromo.title : "No upcoming promo"}</div>
-            <div className="mt-1 text-xs text-white/65">
+            <div className="mt-1 text-xs text-slate-600">
               {nextPromo
                 ? new Date(nextPromo.startsAt).toLocaleString()
                 : "Create a future special to plan demand ahead."}
@@ -573,13 +596,13 @@ export default async function VendorDashboardPage({
             {lateFlags.map((flag) => (
               <div
                 key={flag.orderPublic}
-                className="rounded-lg border border-white/10 px-3 py-2 text-sm"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-semibold">{flag.orderPublic}</span>
-                  <span className="text-xs text-white/55">ETA {flag.etaMinutes} min</span>
+                  <span className="text-xs text-slate-500">ETA {flag.etaMinutes} min</span>
                 </div>
-                <p className="mt-1 text-xs text-white/65">
+                <p className="mt-1 text-xs text-slate-600">
                   {flag.aiMessage || "Late delivery attention needed."}
                 </p>
               </div>
@@ -672,9 +695,9 @@ export default async function VendorDashboardPage({
   if (resolved.welcome === "1") {
     content = (
       <div className="grid gap-4">
-        <div className="rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-4 text-sm text-emerald-50">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
           <p className="font-semibold">Your vendor account is ready.</p>
-          <p className="mt-1 text-emerald-50/75">
+          <p className="mt-1 text-emerald-800">
             Add your store details here. Your draft stays private until the approval checklist is
             complete.
           </p>
@@ -685,7 +708,7 @@ export default async function VendorDashboardPage({
   }
 
   return (
-    <main className="min-h-screen bg-lethela-secondary text-white">
+    <main className="min-h-screen bg-[#f4f6fb] text-slate-900">
       <MainHeader />
       <section className="relative w-full px-4 py-6 sm:px-6 lg:h-[calc(100vh-88px)] lg:px-8 xl:px-10">
         <div className="grid h-full gap-6 lg:grid-cols-[270px,minmax(0,1fr)]">
@@ -723,8 +746,8 @@ export default async function VendorDashboardPage({
             </nav>
           </aside>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0b112a] p-4 lg:h-full lg:overflow-hidden">
-            <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 lg:h-full lg:overflow-hidden">
+            <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-200 pb-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.14em] text-lethela-primary/85">
                   Current view
@@ -734,7 +757,7 @@ export default async function VendorDashboardPage({
               {activeTab !== "overview" ? (
                 <Link
                   href="/vendors/dashboard?tab=overview"
-                  className="inline-flex min-h-11 items-center rounded-full border border-white/25 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+                  className="inline-flex min-h-11 items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
                 >
                   Back to overview
                 </Link>
@@ -748,20 +771,33 @@ export default async function VendorDashboardPage({
   );
 }
 
-function MetricCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+function MetricCard({
+  label,
+  value,
+  hint,
+  href,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  href: string;
+}) {
   return (
-    <div className="rounded-2xl border border-lethela-primary/20 bg-[#141b43] p-4">
-      <p className="text-xs uppercase tracking-[0.12em] text-lethela-primary/85">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">{value}</p>
-      <p className="mt-1 text-xs text-white/60">{hint}</p>
-    </div>
+    <Link
+      href={href}
+      className="block rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-lethela-primary"
+    >
+      <p className="text-xs uppercase tracking-[0.12em] text-lethela-primary">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
+      <p className="mt-1 text-xs text-slate-500">{hint}</p>
+    </Link>
   );
 }
 
 function InfoCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-      <div className="mb-4 flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.12em] text-white/82">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="mb-4 flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.12em] text-slate-700">
         <span className="h-2.5 w-2.5 rounded-full bg-lethela-primary" />
         {title}
       </div>
@@ -772,7 +808,7 @@ function InfoCard({ title, children }: { title: string; children: ReactNode }) {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/10 px-3 py-2 text-sm">
+    <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
       <span>{label}</span>
       <span className="font-semibold text-lethela-primary">{value}</span>
     </div>

@@ -113,11 +113,11 @@ export default function BulkImportProducts() {
 
   return (
     <DashCard title="Bulk Import (CSV)">
-      <p className="mb-2 text-xs text-white/70">
+      <p className="mb-2 text-xs text-slate-600">
         Columns: name, slug, description, price, image, isAlcohol
       </p>
       <textarea
-        className="h-40 w-full rounded bg-white p-2 text-sm text-black"
+        className="h-40 w-full rounded border border-slate-300 bg-white p-2 text-sm text-black"
         value={csv}
         onChange={(event) => setCsv(event.target.value)}
       />
@@ -126,14 +126,14 @@ export default function BulkImportProducts() {
           type="button"
           onClick={importRows}
           disabled={busy}
-          className="rounded bg-lethela-primary px-3 py-2 text-sm disabled:opacity-60"
+          className="rounded bg-lethela-primary px-3 py-2 text-sm text-white disabled:opacity-60"
         >
           {busy ? "Importing..." : "Import"}
         </button>
-        <span className="text-xs text-white/70">{previewCount} row(s) ready</span>
+        <span className="text-xs text-slate-600">{previewCount} row(s) ready</span>
       </div>
       {log ? (
-        <pre className="mt-3 max-h-44 overflow-auto whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-2 text-xs">
+        <pre className="mt-3 max-h-44 overflow-auto whitespace-pre-wrap rounded border border-slate-200 bg-white p-2 text-xs">
           {log}
         </pre>
       ) : null}

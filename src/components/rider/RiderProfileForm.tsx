@@ -209,22 +209,26 @@ export default function RiderProfileForm() {
 
   if (loading)
     return (
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+      <div className="rounded-xl border border-slate-200 bg-white p-6">
         Loading rider profile...
       </div>
     );
 
   return (
     <form className="space-y-5" onSubmit={save}>
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-5">
         <div>
-          <p className="text-xs uppercase tracking-[0.14em] text-white/55">Profile setup</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Profile setup</p>
           <h1 className="mt-1 text-2xl font-semibold">Rider profile</h1>
-          <p className="mt-2 text-sm text-white/65">
+          <p className="mt-2 text-sm text-slate-600">
             Status: {status.replaceAll("_", " ")} · {readiness?.percent || 0}% complete
           </p>
         </div>
-        <Button asChild variant="outline" className="border-white/20 text-white">
+        <Button
+          asChild
+          variant="outline"
+          className="border-slate-300 bg-white text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
+        >
           <Link href="/rider/dashboard">Back to dashboard</Link>
         </Button>
       </div>
@@ -232,13 +236,13 @@ export default function RiderProfileForm() {
       {reviewReason ? (
         <div
           role="alert"
-          className="rounded-xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm text-amber-50"
+          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
         >
           <strong>Changes requested:</strong> {reviewReason}
         </div>
       ) : null}
       {readiness?.missing?.length ? (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
           Still required: {readiness.missing.join(", ")}
         </div>
       ) : null}
@@ -278,7 +282,7 @@ export default function RiderProfileForm() {
         <label className="grid gap-1.5 text-sm">
           <span>Delivery method</span>
           <select
-            className="h-10 rounded-md border border-white/20 bg-[#080B27] px-3"
+            className="h-10 rounded-md border border-slate-300 bg-white px-3"
             value={form.vehicleType}
             onChange={(event) =>
               update("vehicleType", event.target.value as FormState["vehicleType"])
@@ -374,7 +378,7 @@ export default function RiderProfileForm() {
             {DAYS.map((day) => (
               <label
                 key={day}
-                className="flex items-center gap-2 rounded border border-white/15 px-3 py-2 text-sm"
+                className="flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm"
               >
                 <input
                   type="checkbox"
@@ -461,7 +465,7 @@ export default function RiderProfileForm() {
       {error ? (
         <p
           role="alert"
-          className="rounded-lg border border-red-300/30 bg-red-300/10 p-3 text-sm text-red-100"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
         >
           {error}
         </p>
@@ -469,13 +473,17 @@ export default function RiderProfileForm() {
       {message ? (
         <p
           role="status"
-          className="rounded-lg border border-emerald-300/30 bg-emerald-300/10 p-3 text-sm text-emerald-100"
+          className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
         >
           {message}
         </p>
       ) : null}
-      <div className="flex flex-wrap gap-3 rounded-xl border border-white/10 bg-[#080B27] p-4">
-        <Button type="submit" className="bg-white text-black" disabled={saving}>
+      <div className="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-4">
+        <Button
+          type="submit"
+          className="border border-slate-300 bg-white text-black"
+          disabled={saving}
+        >
           {saving ? "Saving..." : "Save profile"}
         </Button>
         <Button
@@ -497,7 +505,7 @@ export default function RiderProfileForm() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-white/10 bg-white/5 p-5">
+    <section className="rounded-xl border border-slate-200 bg-white p-5">
       <h2 className="text-lg font-semibold">{title}</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">{children}</div>
     </section>
@@ -521,7 +529,7 @@ function InputField({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="border-white/20 bg-[#080B27] text-white"
+        className="border-slate-300 bg-white text-slate-900"
       />
     </label>
   );
@@ -543,13 +551,13 @@ function UploadField({
       <input
         type="file"
         accept={accept}
-        className="rounded border border-white/20 p-2"
+        className="rounded border border-slate-300 bg-white p-2"
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file) void onFile(file);
         }}
       />
-      <span className="text-xs text-white/50">
+      <span className="text-xs text-slate-500">
         {value ? "Uploaded securely" : "Required before submission"}
       </span>
     </label>
