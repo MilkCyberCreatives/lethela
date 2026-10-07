@@ -1,148 +1,203 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, CheckCircle2, Headphones, ShieldCheck } from "lucide-react";
-import Footer from "@/components/Footer";
-import MainHeader from "@/components/MainHeader";
+import { ArrowLeft, Bike, Check, MessageCircle, ShoppingBag, Store } from "lucide-react";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
+
+export type AuthAudience = "account" | "customer" | "vendor" | "rider";
+
+const BRAND_PANEL: Record<AuthAudience, { eyebrow: string; headline: string; points: string[] }> = {
+  account: {
+    eyebrow: "Lethela – Siyashesha",
+    headline: "Your township marketplace, one account away.",
+    points: [
+      "Order from local businesses near you",
+      "Run your store or your deliveries from the same sign-in",
+      "Help is a WhatsApp message away",
+    ],
+  },
+  customer: {
+    eyebrow: "For customers",
+    headline: "Order from the businesses around you.",
+    points: [
+      "Meals, groceries and more from local vendors",
+      "Lethela riders bring it to your door",
+      "Add delivery details only when you check out",
+    ],
+  },
+  vendor: {
+    eyebrow: "For vendors",
+    headline: "Sell to your neighbourhood. Lethela handles delivery.",
+    points: [
+      "Start with just your email and a password",
+      "Add your store details and products in your dashboard",
+      "Your store goes live once Lethela approves it",
+    ],
+  },
+  rider: {
+    eyebrow: "For riders",
+    headline: "Deliver in your community and earn.",
+    points: [
+      "Free to register",
+      "Keep the full delivery fee and every tip",
+      "Start delivering once your profile is approved",
+    ],
+  },
+};
+
+const ROLE_TABS = [
+  { audience: "customer", href: "/signup", label: "Customer", Icon: ShoppingBag },
+  { audience: "vendor", href: "/vendors/register", label: "Vendor", Icon: Store },
+  { audience: "rider", href: "/rider", label: "Rider", Icon: Bike },
+] as const;
 
 export default function AuthShell({
   title,
   supportingText,
   children,
-  compact = false,
+  audience = "account",
+  showRoleTabs = false,
+  after,
 }: {
   title: string;
   supportingText: string;
   children: ReactNode;
-  compact?: boolean;
+  audience?: AuthAudience;
+  /** Show the Customer / Vendor / Rider switch above the title (sign-up pages). */
+  showRoleTabs?: boolean;
+  /** Optional content rendered under the form, such as "what happens next". */
+  after?: ReactNode;
 }) {
   const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
+  const panel = BRAND_PANEL[audience];
 
   return (
-    <div
-      className={`flex flex-col bg-[#f5f7fb] text-slate-950 ${compact ? "h-dvh overflow-hidden" : "min-h-dvh"}`}
-    >
-      <MainHeader />
-      <main className={`relative min-h-0 flex-1 overflow-hidden ${compact ? "flex" : ""}`}>
-        <div
-          aria-hidden="true"
-          className="absolute -left-32 top-24 h-72 w-72 rounded-full bg-lethela-primary/[0.07] blur-3xl"
+    <div className="min-h-dvh bg-white text-slate-950 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <aside className="relative hidden overflow-hidden bg-lethela-secondary lg:block">
+        <Image
+          src="/hero.jpg"
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 48vw, 1px"
+          quality={72}
+          className="object-cover object-[62%_center]"
         />
-        <div
-          aria-hidden="true"
-          className="absolute -right-32 bottom-16 h-80 w-80 rounded-full bg-[#080B27]/[0.08] blur-3xl"
-        />
-
-        <div
-          className={
-            compact
-              ? "container relative flex min-h-0 flex-1 items-center justify-center py-3 sm:py-5"
-              : "container relative grid items-start gap-6 py-8 md:py-12 lg:grid-cols-[minmax(0,0.82fr)_minmax(28rem,1fr)] lg:gap-10 lg:py-16"
-          }
-        >
-          {!compact ? (
-            <aside className="hidden overflow-hidden rounded-[2rem] bg-lethela-secondary p-5 text-white shadow-[0_24px_70px_rgba(8,11,39,0.18)] lg:sticky lg:top-28 lg:block lg:p-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/75">
-                <ShieldCheck className="h-4 w-4 text-lethela-primary" />
-                Secure Lethela access
-              </div>
-              <h2 className="mt-4 max-w-lg text-2xl font-bold tracking-tight sm:text-3xl lg:mt-6 lg:text-4xl">
-                Your local marketplace, one account away.
-              </h2>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-white/70 sm:text-base">
-                Order from nearby businesses, manage your store, or deliver in your community—all
-                with one secure Lethela account.
-              </p>
-
-              <div className="mt-7 hidden gap-3 lg:grid">
-                {[
-                  "Clear steps and helpful guidance",
-                  "Your details stay protected",
-                  "Support is close when you need it",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm text-white/82"
-                  >
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-lethela-primary" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 hidden items-center gap-3 border-t border-white/10 pt-6 text-sm text-white/65 lg:flex">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.08]">
-                  <Headphones className="h-5 w-5 text-white" />
-                </span>
-                <span>
-                  Need a hand?{" "}
-                  <a
-                    href={whatsappHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-semibold text-white underline decoration-white/35 underline-offset-4 hover:decoration-white"
-                  >
-                    Chat with support
-                  </a>
-                </span>
-              </div>
-            </aside>
-          ) : null}
-
-          <section
-            aria-labelledby="auth-page-title"
-            className={
-              compact
-                ? "max-h-full w-full max-w-xl overflow-y-auto rounded-[1.5rem] border border-slate-200/80 bg-white p-3 shadow-[0_18px_55px_rgba(15,23,42,0.10)] sm:p-6"
-                : "w-full rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.10)] sm:p-8 lg:p-10"
-            }
-          >
-            <Link
-              href="/"
-              className={`inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-lethela-primary ${compact ? "[@media(max-height:700px)]:hidden" : ""}`}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to marketplace
-            </Link>
-            <p
-              className={`${compact ? "mt-3 [@media(max-height:700px)]:hidden" : "mt-7"} text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary`}
-            >
-              Welcome to Lethela
+        <div aria-hidden="true" className="absolute inset-0 bg-lethela-secondary/45" />
+        <div className="relative flex h-full min-h-dvh flex-col justify-end p-10 xl:p-14">
+          <div className="max-w-md rounded-2xl bg-lethela-secondary/95 p-7 text-white xl:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/60">
+              {panel.eyebrow}
             </p>
+            <h2 className="mt-3 text-[1.75rem] font-bold leading-tight tracking-tight xl:text-[2rem]">
+              {panel.headline}
+            </h2>
+            <ul className="mt-6 grid gap-3">
+              {panel.points.map((point) => (
+                <li key={point} className="flex items-start gap-3 text-[15px] text-white/85">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-lethela-primary">
+                    <Check className="h-3 w-3 text-white" strokeWidth={3} aria-hidden="true" />
+                  </span>
+                  {point}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 border-t border-white/10 pt-5 text-sm text-white/55">
+              Launching from Klipfontein View, Midrand.
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <div className="flex min-h-dvh flex-col">
+        <header className="flex items-center justify-between gap-4 px-5 pb-2 pt-5 sm:px-10 sm:pt-7">
+          <Link href="/" aria-label="Lethela home" className="shrink-0">
+            <Image
+              src="/lethelalogo.svg"
+              alt="Lethela - Siyashesha"
+              width={914}
+              height={266}
+              preload
+              className="h-9 w-auto sm:h-10"
+            />
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-slate-600 transition-colors hover:text-lethela-primary"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Back to marketplace</span>
+            <span className="sm:hidden">Marketplace</span>
+          </Link>
+        </header>
+
+        <main className="flex flex-1 justify-center px-5 py-6 sm:px-10 sm:py-10 lg:items-center">
+          <section aria-labelledby="auth-page-title" className="w-full max-w-[26rem]">
+            {showRoleTabs ? (
+              <nav aria-label="Account type" className="mb-7">
+                <ul className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+                  {ROLE_TABS.map(({ audience: tabAudience, href, label, Icon }) => {
+                    const active = tabAudience === audience;
+                    return (
+                      <li key={href}>
+                        <Link
+                          href={href}
+                          aria-current={active ? "page" : undefined}
+                          className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition-colors ${
+                            active
+                              ? "bg-white text-slate-950 ring-1 ring-slate-200"
+                              : "text-slate-600 hover:text-slate-950"
+                          }`}
+                        >
+                          <Icon
+                            className={`h-4 w-4 ${active ? "text-lethela-primary" : ""}`}
+                            aria-hidden="true"
+                          />
+                          {label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
+            ) : null}
+
             <h1
               id="auth-page-title"
-              className={`${compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"} mt-1.5 font-bold tracking-tight text-slate-950`}
+              className="text-[1.75rem] font-bold leading-tight tracking-tight text-slate-950 sm:text-[2rem]"
             >
               {title}
             </h1>
-            <p
-              className={`${compact ? "mt-2 text-sm leading-5 [@media(max-height:700px)]:hidden" : "mt-3 text-sm leading-6 sm:text-base"} max-w-xl text-slate-600`}
-            >
-              {supportingText}
-            </p>
-            <div
-              className={`${compact ? "mt-4" : "mt-7"} [&_form_input:not([type='checkbox'])]:h-12 [&_form_input:not([type='checkbox'])]:border-slate-300 [&_form_input:not([type='checkbox'])]:bg-slate-50/70 [&_form_input:not([type='checkbox'])]:px-4 [&_form_input:not([type='checkbox'])]:text-slate-950 [&_form_input:not([type='checkbox'])]:placeholder:text-slate-400`}
-            >
-              {children}
-            </div>
-            {!compact ? (
-              <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-200 pt-5 text-xs text-slate-500">
-                <span className="font-medium text-slate-700">Secure account access</span>
-                <Link
-                  href="/privacy-policy"
-                  className="underline underline-offset-4 hover:text-slate-900"
-                >
-                  Privacy
-                </Link>
-                <Link href="/terms" className="underline underline-offset-4 hover:text-slate-900">
-                  Terms
-                </Link>
-              </div>
-            ) : null}
+            <p className="mt-2 text-[15px] leading-6 text-slate-600">{supportingText}</p>
+
+            <div className="mt-7">{children}</div>
+            {after ? <div className="mt-6">{after}</div> : null}
           </section>
-        </div>
-      </main>
-      <Footer compact={compact} />
+        </main>
+
+        <footer className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-slate-100 px-5 py-5 text-xs text-slate-500 sm:justify-between sm:px-10">
+          <a
+            href={whatsappHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-11 items-center gap-1.5 font-medium text-slate-600 hover:text-lethela-primary"
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            Need help? Chat on WhatsApp
+          </a>
+          <span className="flex items-center gap-4">
+            <Link
+              href="/privacy-policy"
+              className="inline-flex min-h-11 items-center hover:text-slate-900"
+            >
+              Privacy
+            </Link>
+            <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-slate-900">
+              Terms
+            </Link>
+            <span>© {new Date().getFullYear()} Lethela</span>
+          </span>
+        </footer>
+      </div>
     </div>
   );
 }

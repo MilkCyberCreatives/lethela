@@ -385,16 +385,16 @@ export default async function VendorDashboardPage({
                   : "Location not set"}
               </p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full border border-white/20 px-3 py-1">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium capitalize text-slate-700">
                   {vendorStatusLabel(vendor?.status)}
                 </span>
-                <span className="rounded-full border border-white/20 px-3 py-1">
-                  {vendorRole || "STAFF"}
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium capitalize text-slate-700">
+                  {(vendorRole || "STAFF").toLowerCase()}
                 </span>
-                <span className="rounded-full border border-white/20 px-3 py-1">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
                   {readiness.percent}% ready
                 </span>
-                <span className="rounded-full border border-white/20 px-3 py-1">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
                   {vendor?.isActive ? "Store live" : "Store paused"}
                 </span>
               </div>

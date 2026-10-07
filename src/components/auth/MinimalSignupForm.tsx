@@ -4,7 +4,18 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, MailCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, MailCheck } from "lucide-react";
+import {
+  AuthAlert,
+  AuthDivider,
+  AuthField,
+  GoogleMark,
+  PasswordInput,
+  authInputClass,
+  authLinkClass,
+  authPrimaryButtonClass,
+  authSecondaryButtonClass,
+} from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -83,7 +94,6 @@ export default function MinimalSignupForm({
   const config = ACCOUNT_CONFIG[accountType];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
@@ -179,35 +189,54 @@ export default function MinimalSignupForm({
 
   if (verificationSent) {
     return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-slate-800">
-        <div className="flex items-start gap-3">
-          <MailCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true" />
-          <div>
-            <h2 className="font-semibold">Check your email</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              We sent a verification link to <span className="font-semibold">{email}</span>. Open it
-              within 24 hours, then sign in to continue your setup.
-            </p>
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+      <div className="rounded-2xl border border-slate-200 p-5 text-slate-800">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50">
+          <MailCheck className="h-5 w-5 text-emerald-700" aria-hidden="true" />
+        </span>
+        <h2 className="mt-4 text-lg font-semibold text-slate-950">Check your email</h2>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          We sent a verification link to <span className="font-semibold">{email}</span>. Open it
+          within 24 hours, then sign in to continue your setup.
+        </p>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <Button asChild className={authPrimaryButtonClass}>
+            <Link href={config.signInHref}>Go to sign in</Link>
+          </Button>
           <Button
             type="button"
             variant="outline"
+            className={authSecondaryButtonClass}
             disabled={resending}
             onClick={() => void resendVerification()}
           >
-            {resending ? "Sending..." : "Resend verification email"}
-          </Button>
-          <Button asChild className="bg-lethela-primary text-white">
-            <Link href={config.signInHref}>Go to sign in</Link>
+            {resending ? "Sending..." : "Resend email"}
           </Button>
         </div>
-        {notice ? <p className="mt-3 text-sm text-emerald-700">{notice}</p> : null}
-        {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
+        {notice ? (
+          <AuthAlert tone="success" className="mt-4">
+            {notice}
+          </AuthAlert>
+        ) : null}
+        {error ? (
+          <AuthAlert tone="error" className="mt-4">
+            {error}
+          </AuthAlert>
+        ) : null}
       </div>
     );
   }
+
+  const passwordHint =
+    password && !passwordFits
+      ? { text: "That password is too long. Use a shorter one.", tone: "text-red-700" }
+      : passwordReady
+        ? { text: "Good to go", tone: "text-emerald-700" }
+        : {
+            text: `At least ${REGISTRATION_PASSWORD_MIN_LENGTH} characters${
+              password ? ` (${passwordLength} so far)` : ""
+            }. No special rules.`,
+            tone: "text-slate-500",
+          };
 
   return (
     <div>
@@ -216,34 +245,21 @@ export default function MinimalSignupForm({
           <Button
             type="button"
             variant="outline"
-            className="mb-4 h-12 w-full border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+            className={authSecondaryButtonClass}
             onClick={() => {
               rememberOAuthIntent(accountType);
               void signIn("google", { callbackUrl: config.dashboard });
             }}
           >
-            <span aria-hidden className="mr-2 text-base font-bold text-[#4285F4]">
-              G
-            </span>
+            <GoogleMark />
             Sign up with Google
           </Button>
-          <div className="mb-4 flex items-center gap-3 text-xs uppercase tracking-[0.16em] text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" />
-            or use email
-            <span className="h-px flex-1 bg-slate-200" />
-          </div>
+          <AuthDivider label="or use your email" />
         </>
       ) : null}
-      <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">
-        <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-        Only 2 fields. Complete your profile inside the dashboard.
-      </div>
 
-      <form className="grid gap-3.5" onSubmit={submit}>
-        <div className="grid gap-1.5">
-          <label className="text-sm font-medium text-slate-800" htmlFor="signup-email">
-            Email address
-          </label>
+      <form className="grid gap-4" onSubmit={submit}>
+        <AuthField label="Email address" htmlFor="signup-email">
           <Input
             id="signup-email"
             name="email"
@@ -252,94 +268,67 @@ export default function MinimalSignupForm({
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="you@example.com"
+            placeholder="you@example.co.za"
+            className={authInputClass}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
           />
-        </div>
+        </AuthField>
 
-        <div className="grid gap-1.5">
-          <div className="flex items-center justify-between gap-3">
-            <label className="text-sm font-medium text-slate-800" htmlFor="new-password">
-              Create password
-            </label>
-            <span
+        <AuthField
+          label="Create password"
+          htmlFor="new-password"
+          hint={
+            <p
               id="signup-password-guidance"
-              className={`text-xs ${password && passwordReady ? "text-emerald-700" : "text-slate-500"}`}
+              aria-live="polite"
+              className={`flex items-center gap-1.5 text-xs ${passwordHint.tone}`}
             >
-              {password && !passwordFits
-                ? "Use a shorter password"
-                : password && passwordReady
-                  ? "Ready"
-                  : `${passwordLength}/${REGISTRATION_PASSWORD_MIN_LENGTH} minimum`}
-            </span>
-          </div>
-          <div className="relative">
-            <Input
-              id="new-password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="new-password"
-              minLength={REGISTRATION_PASSWORD_MIN_LENGTH}
-              maxLength={REGISTRATION_PASSWORD_MAX_LENGTH}
-              aria-describedby="signup-password-guidance"
-              className="!pr-12"
-              placeholder={`At least ${REGISTRATION_PASSWORD_MIN_LENGTH} characters`}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-            <button
-              type="button"
-              className="absolute inset-y-0 right-0 inline-flex w-12 items-center justify-center text-slate-500 transition-colors hover:text-slate-900"
-              onClick={() => setShowPassword((current) => !current)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              aria-pressed={showPassword}
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" aria-hidden="true" />
-              ) : (
-                <Eye className="h-4 w-4" aria-hidden="true" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {error ? (
-          <p
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {error}
-          </p>
-        ) : null}
-
-        <Button
-          type="submit"
-          className="h-11 bg-lethela-primary text-white hover:opacity-90"
-          disabled={loading}
+              {passwordReady ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : null}
+              {passwordHint.text}
+            </p>
+          }
         >
+          <PasswordInput
+            id="new-password"
+            name="password"
+            autoComplete="new-password"
+            minLength={REGISTRATION_PASSWORD_MIN_LENGTH}
+            maxLength={REGISTRATION_PASSWORD_MAX_LENGTH}
+            aria-describedby="signup-password-guidance"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
+        </AuthField>
+
+        {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
+
+        <Button type="submit" className={`mt-1 ${authPrimaryButtonClass}`} disabled={loading}>
           {loading ? config.loadingLabel : config.label}
-          {!loading ? <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /> : null}
+          {!loading ? <ArrowRight className="h-4 w-4" aria-hidden="true" /> : null}
         </Button>
 
-        <p className="text-xs leading-5 text-slate-500">
-          By selecting {config.label}, you agree to Lethela&apos;s{" "}
-          <Link href="/terms" className="font-medium underline underline-offset-2">
+        <p className="text-center text-xs leading-5 text-slate-500">
+          By continuing you agree to Lethela&apos;s{" "}
+          <Link href="/terms" className="font-medium text-slate-700 underline underline-offset-2">
             Terms
           </Link>{" "}
           and{" "}
-          <Link href="/privacy-policy" className="font-medium underline underline-offset-2">
+          <Link
+            href="/privacy-policy"
+            className="font-medium text-slate-700 underline underline-offset-2"
+          >
             Privacy Policy
           </Link>
           .
         </p>
       </form>
 
-      <p className="mt-3 text-sm text-slate-600">
-        Already registered?{" "}
-        <Link href={config.signInHref} className="font-semibold text-lethela-primary underline">
+      <p className="mt-6 border-t border-slate-200 pt-5 text-center text-sm text-slate-600">
+        Already have an account?{" "}
+        <Link href={config.signInHref} className={authLinkClass}>
           Sign in
         </Link>
       </p>
