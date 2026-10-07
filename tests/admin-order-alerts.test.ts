@@ -17,3 +17,11 @@ test("admins are alerted when an order is waiting for a rider", async () => {
   assert.match(file, /ADMIN_NOTIFICATION_EMAILS/);
   assert.match(file, /ADMIN_NOTIFICATION_WHATSAPP_TO/);
 });
+
+test("South African local numbers get the +27 code for WhatsApp", async () => {
+  const { normalizeWhatsAppRecipient } = await import("../src/lib/notification-channels");
+  assert.equal(normalizeWhatsAppRecipient("072 390 8919"), "whatsapp:+27723908919");
+  assert.equal(normalizeWhatsAppRecipient("+27 72 390 8919"), "whatsapp:+27723908919");
+  assert.equal(normalizeWhatsAppRecipient("27723908919"), "whatsapp:+27723908919");
+  assert.equal(normalizeWhatsAppRecipient("whatsapp:+27723908919"), "whatsapp:+27723908919");
+});
