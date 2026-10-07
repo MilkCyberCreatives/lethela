@@ -14,8 +14,9 @@ export default function SignUpPage() {
   return (
     <AuthShell
       title="Create your account"
-      supportingText="Start in seconds. Add delivery details only when you check out."
-      compact
+      supportingText="Just your email and a password. Add delivery details when you check out."
+      audience="customer"
+      showRoleTabs
     >
       <MinimalSignupForm accountType="customer" googleEnabled={googleEnabled} />
     </AuthShell>
