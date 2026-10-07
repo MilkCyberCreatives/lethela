@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { hasResendConfig, sendEmail } from "@/lib/notification-channels";
+import { escapeHtml, hasResendConfig, sendEmail } from "@/lib/notification-channels";
 
 type PasswordResetPayload = {
   sub: string;
@@ -113,7 +113,7 @@ export async function sendPasswordResetEmail(input: {
   const label = input.name?.trim() || input.to;
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
-      <p>Hello ${label},</p>
+      <p>Hello ${escapeHtml(label)},</p>
       <p>We received a request to reset your Lethela password.</p>
       <p><a href="${input.resetUrl}">Reset your password</a></p>
       <p>This link will expire in 30 minutes. If you did not request this, you can ignore this email.</p>
