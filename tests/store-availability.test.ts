@@ -10,3 +10,10 @@ test("store availability uses Africa/Johannesburg hours and temporary closure", 
   assert.equal(isStoreOpenNow(monday, { now: sixPmJohannesburg }), false);
   assert.equal(isStoreOpenNow(monday, { now: tenAmJohannesburg, temporaryClosed: true }), false);
 });
+
+test("store availability handles the UTC/Johannesburg day boundary", () => {
+  const tuesdayOnly = [{ day: 2, openMin: 0, closeMin: 2 * 60, closed: false }];
+  // 23:30 UTC on Monday is 01:30 on Tuesday in Johannesburg.
+  const lateMondayUtc = new Date("2026-07-20T23:30:00.000Z");
+  assert.equal(isStoreOpenNow(tuesdayOnly, { now: lateMondayUtc }), true);
+});

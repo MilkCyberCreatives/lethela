@@ -15,6 +15,7 @@ import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 import { DEFAULT_DELIVERY_FEE_CENTS, DELIVERY_PRICING_WORDING } from "@/lib/pricing";
 import { getVendorTrustSnapshot } from "@/lib/customer-experience";
 import { getVendorBySlug as getVendorProfile } from "@/server/queries";
+import { isStoreOpenNow, johannesburgClock } from "@/lib/store-availability";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -57,10 +58,12 @@ function formatMinutes(totalMinutes: number) {
 function getVendorHoursState(
   hours: Array<{ day: number; openMin: number; closeMin: number; closed: boolean }>,
   isActive: boolean,
+  temporaryClosed: boolean,
 ) {
+  // Use South African time, matching checkout, so the page never shows "Open now"
+  // while checkout says the store is closed (servers run on UTC).
   const now = new Date();
-  const todayIndex = now.getDay();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const todayIndex = johannesburgClock(now).day;
   const today = hours.find((entry) => entry.day === todayIndex) ?? null;
 
   if (!today) {
@@ -77,7 +80,7 @@ function getVendorHoursState(
     };
   }
 
-  const isOpenNow = isActive && currentMinutes >= today.openMin && currentMinutes < today.closeMin;
+  const isOpenNow = isActive && isStoreOpenNow(hours, { temporaryClosed, now });
   return {
     isOpenNow,
     todayLabel: `${formatMinutes(today.openMin)} - ${formatMinutes(today.closeMin)}`,
@@ -145,7 +148,11 @@ export default async function VendorProfilePage({ params }: PageProps) {
   const visibleMenuCount = menuItemCount || vendor.products.length;
   const vendorHours: OperatingHourView[] =
     "hours" in vendor && Array.isArray(vendor.hours) ? (vendor.hours as OperatingHourView[]) : [];
-  const hoursState = getVendorHoursState(vendorHours, vendor.isActive);
+  const hoursState = getVendorHoursState(
+    vendorHours,
+    vendor.isActive,
+    "temporaryClosed" in vendor && Boolean(vendor.temporaryClosed),
+  );
   const hasReviews = trust.reviewCount > 0 && trust.averageRating != null;
   const whatsappText = [
     `Hello Lethela, I would like to order from ${vendor.name}.`,
