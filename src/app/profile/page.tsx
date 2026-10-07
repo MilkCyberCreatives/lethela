@@ -110,13 +110,13 @@ export default async function ProfilePage({
           </aside>
 
           <div className="grid min-w-0 gap-6">
-            <section id="profile-details" className="scroll-mt-28">
+            <section id="profile-details" className="min-w-0 scroll-mt-28">
               <UserProfileForm />
             </section>
-            <section id="order-history" className="scroll-mt-28">
+            <section id="order-history" className="min-w-0 scroll-mt-28">
               <OrderHistoryPanel />
             </section>
-            <section id="saved-activity" className="scroll-mt-28">
+            <section id="saved-activity" className="min-w-0 scroll-mt-28">
               <ProfileExperiencePanel />
             </section>
           </div>

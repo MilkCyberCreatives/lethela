@@ -168,7 +168,9 @@ export default function MainHeader() {
             </div>
           ) : (
             <Link href="/signin">
-              <Button className="bg-lethela-primary text-white hover:opacity-90">Sign In</Button>
+              <Button className="min-h-11 bg-lethela-primary text-white hover:opacity-90">
+                Sign In
+              </Button>
             </Link>
           )}
         </nav>
