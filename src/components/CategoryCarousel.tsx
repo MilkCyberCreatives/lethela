@@ -51,10 +51,10 @@ export default function CategoryCarousel() {
               <span className="mx-auto grid h-9 w-9 place-items-center rounded-full bg-lethela-primary text-white">
                 <Icon className="h-5 w-5" aria-hidden strokeWidth={2} />
               </span>
-              <span className="mt-2 flex items-center justify-center gap-1 text-center text-xs font-semibold">
+              <span className="mt-2 flex h-5 items-center justify-center gap-1 text-center text-xs font-semibold">
                 {item.label}
                 {item.badge ? (
-                  <span className="rounded-full border border-lethela-primary/40 bg-lethela-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  <span className="rounded-full border border-lethela-primary/40 bg-lethela-primary px-1.5 text-[10px] font-semibold leading-4 text-white">
                     {item.badge}
                   </span>
                 ) : null}
