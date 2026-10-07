@@ -14,7 +14,7 @@ export default function SignInPage() {
   return (
     <AuthShell
       title="Welcome back"
-      supportingText="One sign-in for shopping, selling, deliveries and owner access."
+      supportingText="Sign in to order, run your store or manage your deliveries."
     >
       <SignInForm googleEnabled={googleEnabled} />
     </AuthShell>

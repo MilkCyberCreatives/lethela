@@ -140,7 +140,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
                 WhatsApp
               </a>
             </div>
-            <div className="mt-5 text-sm text-white/60">{LEGAL_SERVICE_AREA}</div>
+            <div className="mt-5 text-sm text-white/60">Serving {LEGAL_SERVICE_AREA}.</div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {visibleSocials.map((item) => {
                 const social = socialByKey.get(item.key);

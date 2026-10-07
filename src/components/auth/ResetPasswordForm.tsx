@@ -3,9 +3,15 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
-import { ArrowRight, LockKeyhole } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import {
+  AuthAlert,
+  AuthField,
+  PasswordInput,
+  authLinkClass,
+  authPrimaryButtonClass,
+} from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { REGISTRATION_PASSWORD_MIN_LENGTH } from "@/lib/registration-policy";
 
 export default function ResetPasswordForm() {
@@ -56,75 +62,54 @@ export default function ResetPasswordForm() {
 
   return (
     <div className="text-slate-950">
-      <form className="grid gap-3" onSubmit={submit}>
-        <label htmlFor="new-password" className="grid gap-1.5 text-sm font-medium text-slate-800">
-          <span>New password</span>
-          <Input
+      {!token ? (
+        <AuthAlert tone="error" className="mb-5">
+          This reset link is missing or invalid.{" "}
+          <Link href="/forgot-password" className="font-semibold underline">
+            Request a new link
+          </Link>
+          .
+        </AuthAlert>
+      ) : null}
+      <form className="grid gap-4" onSubmit={submit}>
+        <AuthField label="New password" htmlFor="new-password">
+          <PasswordInput
             id="new-password"
-            type="password"
             placeholder={`At least ${REGISTRATION_PASSWORD_MIN_LENGTH} characters`}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="border-slate-300 bg-white text-black"
             autoComplete="new-password"
             minLength={REGISTRATION_PASSWORD_MIN_LENGTH}
             required
           />
-        </label>
-        <label
-          htmlFor="confirm-new-password"
-          className="grid gap-1.5 text-sm font-medium text-slate-800"
-        >
-          <span>Confirm new password</span>
-          <Input
+        </AuthField>
+        <AuthField label="Confirm new password" htmlFor="confirm-new-password">
+          <PasswordInput
             id="confirm-new-password"
-            type="password"
             placeholder="Enter the same password again"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            className="border-slate-300 bg-white text-black"
             autoComplete="new-password"
             minLength={REGISTRATION_PASSWORD_MIN_LENGTH}
             required
           />
-        </label>
+        </AuthField>
+        {message ? <AuthAlert tone="success">{message}</AuthAlert> : null}
+        {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
         <Button
           type="submit"
           disabled={submitting || !password.trim() || !confirmPassword.trim() || !token}
-          className="h-11 bg-lethela-primary text-white"
+          className={`mt-1 ${authPrimaryButtonClass}`}
         >
-          <LockKeyhole className="mr-2 h-4 w-4" />
           {submitting ? "Updating..." : "Update password"}
         </Button>
-        {message ? (
-          <div
-            role="status"
-            className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
-          >
-            {message}
-          </div>
-        ) : null}
-        {error ? (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {error}
-          </div>
-        ) : null}
-        {!token ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            This reset link is missing or invalid.
-          </p>
-        ) : null}
       </form>
-      <Link
-        href="/signin"
-        className="mt-5 inline-flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:border-lethela-primary"
-      >
-        Back to sign in
-        <ArrowRight className="h-4 w-4" />
-      </Link>
+      <p className="mt-6 border-t border-slate-200 pt-5 text-center text-sm text-slate-600">
+        <Link href="/signin" className={`inline-flex items-center gap-1.5 ${authLinkClass}`}>
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to sign in
+        </Link>
+      </p>
     </div>
   );
 }

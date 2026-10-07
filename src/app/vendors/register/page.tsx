@@ -26,11 +26,12 @@ export default function VendorRegisterPage() {
   return (
     <AuthShell
       title="Create your vendor account"
-      supportingText="Use your email and a secure password now. Build your store profile in the dashboard."
-      compact
+      supportingText="Just your email and a password for now. Build your store profile in your dashboard."
+      audience="vendor"
+      showRoleTabs
+      after={<OnboardingPreview accountType="vendor" />}
     >
       <VendorSignupForm googleEnabled={isGoogleAuthEnabled()} />
-      <OnboardingPreview accountType="vendor" />
     </AuthShell>
   );
 }
