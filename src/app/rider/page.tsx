@@ -26,11 +26,12 @@ export default function RiderPage() {
   return (
     <AuthShell
       title="Create your rider account"
-      supportingText="Use your email and a secure password now. Complete rider setup in your dashboard."
-      compact
+      supportingText="Just your email and a password for now. Finish your rider details in your dashboard."
+      audience="rider"
+      showRoleTabs
+      after={<OnboardingPreview accountType="rider" />}
     >
       <RiderSignupForm googleEnabled={isGoogleAuthEnabled()} />
-      <OnboardingPreview accountType="rider" />
     </AuthShell>
   );
 }

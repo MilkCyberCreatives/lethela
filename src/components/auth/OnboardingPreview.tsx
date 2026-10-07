@@ -1,3 +1,5 @@
+import { ChevronDown } from "lucide-react";
+
 type OnboardingPreviewProps = {
   accountType: "vendor" | "rider";
 };
@@ -29,18 +31,27 @@ export default function OnboardingPreview({ accountType }: OnboardingPreviewProp
   const details = content[accountType];
 
   return (
-    <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-slate-700">
-      <summary className="cursor-pointer text-xs font-semibold text-slate-700">
+    <details className="group rounded-xl border border-slate-200 text-slate-700 open:bg-slate-50/70">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
         {details.summary}
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
       </summary>
-      <ol className="mt-2 grid gap-1 pl-4 text-xs leading-5 text-slate-600">
-        {details.steps.map((step) => (
-          <li key={step} className="list-decimal">
-            {step}
+      <ol className="grid gap-3 px-4 pb-4 pt-1">
+        {details.steps.map((step, index) => (
+          <li key={step} className="flex gap-3 text-sm leading-5 text-slate-600">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-lethela-primary ring-1 ring-slate-200">
+              {index + 1}
+            </span>
+            <span className="pt-0.5">{step}</span>
           </li>
         ))}
       </ol>
-      <p className="mt-2 text-xs font-medium text-slate-700">{details.note}</p>
+      <p className="border-t border-slate-200 px-4 py-3 text-xs font-medium text-slate-700">
+        {details.note}
+      </p>
     </details>
   );
 }
