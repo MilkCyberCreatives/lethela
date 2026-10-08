@@ -478,11 +478,10 @@ function matchesSearch(query: string, values: Array<string | null | undefined>) 
 
 function statusClass(status: string) {
   if (["ACTIVE", "APPROVED"].includes(status))
-    return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
-  if (["REJECTED"].includes(status)) return "border-red-300/30 bg-red-300/10 text-red-100";
-  if (["UNDER_REVIEW"].includes(status))
-    return "border-amber-300/30 bg-amber-300/10 text-amber-100";
-  return "border-white/15 bg-white/5 text-white/80";
+    return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  if (["REJECTED"].includes(status)) return "border-red-200 bg-red-50 text-red-800";
+  if (["UNDER_REVIEW"].includes(status)) return "border-amber-200 bg-amber-50 text-amber-800";
+  return "border-slate-300 bg-white text-slate-700";
 }
 
 function MetricCard({
@@ -502,17 +501,17 @@ function MetricCard({
     <>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.14em] text-white/55">{label}</p>
-          <p className="mt-1 text-xl font-bold text-white">{value}</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">{label}</p>
+          <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
         </div>
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p className="mt-2 flex items-center justify-between gap-2 text-xs leading-5 text-white/60">
+      <p className="mt-2 flex items-center justify-between gap-2 text-xs leading-5 text-slate-500">
         <span>{note}</span>
         {onClick ? (
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/35" aria-hidden="true" />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
         ) : null}
       </p>
     </>
@@ -521,7 +520,7 @@ function MetricCard({
   if (onClick) {
     return (
       <button
-        className="admin-metric-card rounded-lg border border-white/10 bg-white/[0.045] p-4 text-left transition-colors hover:border-lethela-primary/60 hover:bg-lethela-primary/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
+        className="admin-metric-card rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-lethela-primary/60 hover:bg-lethela-primary/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
         type="button"
         onClick={onClick}
         aria-label={`${label}: ${value}. ${note}`}
@@ -532,7 +531,7 @@ function MetricCard({
   }
 
   return (
-    <article className="admin-metric-card rounded-lg border border-white/10 bg-white/[0.045] p-4">
+    <article className="admin-metric-card rounded-lg border border-slate-200 bg-white p-4">
       {content}
     </article>
   );
@@ -553,18 +552,18 @@ function AdminSectionHeader({
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-lethela-primary">
           {eyebrow}
         </p>
-        <h3 className="mt-1 text-lg font-semibold text-white">{title}</h3>
+        <h3 className="mt-1 text-lg font-semibold text-slate-900">{title}</h3>
       </div>
-      <p className="max-w-xl text-sm leading-6 text-white/55 sm:text-right">{description}</p>
+      <p className="max-w-xl text-sm leading-6 text-slate-600 sm:text-right">{description}</p>
     </div>
   );
 }
 
 function EmptyState({ title, text }: { title: string; text: string }) {
   return (
-    <div className="rounded-lg border border-white/15 bg-white/[0.04] p-5 text-sm text-white/75">
-      <p className="font-semibold text-white">{title}</p>
-      <p className="mt-1 text-white/60">{text}</p>
+    <div className="rounded-lg border border-slate-300 bg-white p-5 text-sm text-slate-600">
+      <p className="font-semibold text-slate-900">{title}</p>
+      <p className="mt-1 text-slate-500">{text}</p>
     </div>
   );
 }
@@ -609,8 +608,8 @@ function AdminTopBar({
             />
           </span>
           <span className="hidden sm:block">
-            <span className="block text-sm font-semibold">Admin</span>
-            <span className="block text-[11px] uppercase tracking-[0.14em] text-white/45">
+            <span className="block text-sm font-semibold text-white">Admin</span>
+            <span className="block text-[11px] uppercase tracking-[0.14em] text-white/60">
               Command centre
             </span>
           </span>
@@ -735,20 +734,22 @@ function PriorityCard({
       type="button"
       onClick={onClick}
       aria-label={`${label}: ${value}. ${note}`}
-      className="admin-priority-card rounded-xl border border-white/10 bg-white/[0.055] p-5 text-left transition-colors hover:border-lethela-primary/60 hover:bg-lethela-primary/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
+      className="admin-priority-card rounded-xl border border-slate-200 bg-white p-5 text-left transition-colors hover:border-lethela-primary/60 hover:bg-lethela-primary/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+            {label}
+          </p>
           <p className="mt-3 text-3xl font-bold">{value}</p>
         </div>
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
           <Icon className="h-5 w-5" />
         </span>
       </div>
-      <p className="mt-4 flex items-center justify-between gap-2 text-sm leading-6 text-white/62">
+      <p className="mt-4 flex items-center justify-between gap-2 text-sm leading-6 text-slate-600">
         <span>{note}</span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-white/40" aria-hidden="true" />
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
       </p>
     </button>
   );
@@ -766,9 +767,9 @@ type AttentionRow = {
 };
 
 function priorityPillClass(priority: AttentionRow["priority"]) {
-  if (priority === "High") return "border-red-300/35 bg-red-300/10 text-red-100";
-  if (priority === "Medium") return "border-amber-300/35 bg-amber-300/10 text-amber-100";
-  return "border-white/15 bg-white/5 text-white/65";
+  if (priority === "High") return "border-red-200 bg-red-50 text-red-800";
+  if (priority === "Medium") return "border-amber-200 bg-amber-50 text-amber-800";
+  return "border-slate-300 bg-white text-slate-600";
 }
 
 function NeedsAttentionQueue({
@@ -786,15 +787,15 @@ function NeedsAttentionQueue({
   const visibleRows = activeRows.slice(0, limit);
 
   return (
-    <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+    <section className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Operations queue
           </p>
           <h3 className="mt-1 text-xl font-semibold">Needs attention</h3>
         </div>
-        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/55">
+        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500">
           {activeRows.length} active issue{activeRows.length === 1 ? "" : "s"}
         </span>
       </div>
@@ -812,10 +813,10 @@ function NeedsAttentionQueue({
             {visibleRows.map((row) => (
               <div
                 key={`${row.type}-${row.issue}`}
-                className="flex flex-col rounded-lg border border-white/10 bg-[#080B27]/70 p-4"
+                className="flex flex-col rounded-lg border border-slate-200 bg-white p-4"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white/70">
+                  <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
                     {row.type}
                   </span>
                   <span
@@ -824,8 +825,8 @@ function NeedsAttentionQueue({
                     {row.priority}
                   </span>
                 </div>
-                <p className="mt-2 text-sm font-medium leading-snug text-white">{row.issue}</p>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-white/55">
+                <p className="mt-2 text-sm font-medium leading-snug text-slate-900">{row.issue}</p>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
                   <span>{row.area}</span>
                   <span>Owner: {row.assignedTo}</span>
                   <span>{row.status}</span>
@@ -845,7 +846,7 @@ function NeedsAttentionQueue({
             <button
               type="button"
               onClick={() => onNavigate("operations")}
-              className="mt-4 inline-flex items-center gap-1 rounded-md border border-white/20 px-3 py-2 text-xs font-semibold text-white/80 transition-colors hover:border-lethela-primary hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
+              className="mt-4 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-lethela-primary hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
             >
               View all {activeRows.length} in Operations
               <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1851,7 +1852,7 @@ export default function AdminPage() {
     "Overview";
 
   return (
-    <main className="min-h-screen bg-[#05071D] text-white">
+    <main className="min-h-screen bg-[#f4f6fb] text-slate-900">
       <AdminTopBar
         searchValue={globalSearch}
         onSearchChange={setGlobalSearch}
@@ -1864,7 +1865,7 @@ export default function AdminPage() {
       />
 
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3 px-4 pt-4 lg:hidden">
-        <div className="text-xs text-slate-500" aria-label="Breadcrumb">
+        <div className="text-xs text-slate-600" aria-label="Breadcrumb">
           Dashboard <span aria-hidden="true">/</span>{" "}
           <span className="font-semibold text-slate-900">{currentViewLabel}</span>
         </div>
@@ -2029,18 +2030,18 @@ export default function AdminPage() {
           </aside>
 
           <div className="min-w-0 space-y-6">
-            <div className="hidden text-xs text-slate-500 lg:block" aria-label="Breadcrumb">
+            <div className="hidden text-xs text-slate-600 lg:block" aria-label="Breadcrumb">
               Dashboard <span aria-hidden="true">/</span>{" "}
               <span className="font-semibold text-slate-900">{currentViewLabel}</span>
             </div>
-            <section className="rounded-xl border border-white/10 bg-[#0C1132] p-5">
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
                     Owner workspace
                   </p>
                   <h2 className="mt-2 text-2xl font-bold md:text-3xl">Lethela dashboard</h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/68">
+                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
                     Monitor orders, vendors, riders, customers and marketplace operations.
                   </p>
                   <div
@@ -2050,17 +2051,17 @@ export default function AdminPage() {
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold ${
                         lastRefreshedAt && !error
-                          ? "border-emerald-300/35 bg-emerald-300/10 text-emerald-100"
-                          : "border-white/15 bg-white/5 text-white/55"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                          : "border-slate-300 bg-white text-slate-500"
                       }`}
                     >
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${lastRefreshedAt && !error ? "bg-emerald-400" : "bg-white/35"}`}
+                        className={`h-1.5 w-1.5 rounded-full ${lastRefreshedAt && !error ? "bg-emerald-400" : "bg-slate-400"}`}
                         aria-hidden="true"
                       />
                       {lastRefreshedAt && !error ? "Live data connected" : "Connecting"}
                     </span>
-                    <span className="text-white/45">
+                    <span className="text-slate-500">
                       {lastRefreshedAt
                         ? `Last synced ${lastRefreshedAt.toLocaleTimeString()}`
                         : "Waiting for the first successful sync"}
@@ -2078,7 +2079,7 @@ export default function AdminPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                    className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                     onClick={enableBrowserAlerts}
                     disabled={pushPermission === "granted"}
                   >
@@ -2089,12 +2090,12 @@ export default function AdminPage() {
               </div>
 
               {notice ? (
-                <div className="mt-4 rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-2 text-xs text-emerald-100">
+                <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
                   {notice}
                 </div>
               ) : null}
               {error ? (
-                <div className="mt-4 rounded-lg border border-red-300/40 bg-red-300/10 px-3 py-2 text-xs text-red-100">
+                <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
                   {error}
                 </div>
               ) : null}
@@ -2238,14 +2239,14 @@ export default function AdminPage() {
                   placeholder="Search vendors by name, slug, email, or area"
                   onChange={setVendorSearch}
                 />
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-slate-500">
                     Vendor status filter
                   </label>
                   <select
                     value={vendorStatus}
                     onChange={(event) => setVendorStatus(event.target.value as VendorStatusOption)}
-                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black md:max-w-xs"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-black md:max-w-xs"
                   >
                     {VENDOR_STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -2264,12 +2265,12 @@ export default function AdminPage() {
                   return (
                     <article
                       key={vendor.id}
-                      className="rounded-lg border border-white/10 bg-white/[0.035] p-5"
+                      className="rounded-lg border border-slate-200 bg-white p-5"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                           <h3 className="text-lg font-semibold">{vendor.name}</h3>
-                          <p className="text-xs text-white/60">/{vendor.slug}</p>
+                          <p className="text-xs text-slate-500">/{vendor.slug}</p>
                         </div>
                         <span
                           className={`rounded-full border px-3 py-1 text-xs ${statusClass(vendor.status)}`}
@@ -2277,12 +2278,14 @@ export default function AdminPage() {
                           {vendor.status} {vendor.isActive ? "Live" : "Not live"}
                         </span>
                       </div>
-                      <p className="mt-3 text-sm text-white/78">{location || "Location not set"}</p>
-                      <p className="mt-1 text-xs text-white/60">
+                      <p className="mt-3 text-sm text-slate-600">
+                        {location || "Location not set"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
                         {vendor.email || "No email provided"}
                         {vendor.phone ? ` | ${vendor.phone}` : ""}
                       </p>
-                      <div className="mt-4 grid gap-2 text-xs text-white/65 md:grid-cols-3">
+                      <div className="mt-4 grid gap-2 text-xs text-slate-600 md:grid-cols-3">
                         <div>Delivery: Lethela R10/km (R10 minimum)</div>
                         <div>Owner linked: {vendor.ownerId ? "Yes" : "No"}</div>
                         <div>
@@ -2308,7 +2311,7 @@ export default function AdminPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          className="border-amber-300/50 bg-transparent text-amber-100 hover:bg-amber-200/10"
+                          className="border-amber-200 bg-transparent text-amber-800 hover:border-amber-300 hover:bg-amber-100"
                           disabled={saving}
                           onClick={() => updateVendorStatus(vendor.id, "changes_requested")}
                         >
@@ -2316,7 +2319,7 @@ export default function AdminPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          className="border-red-300/50 bg-transparent text-red-100 hover:bg-red-200/10"
+                          className="border-red-200 bg-transparent text-red-800 hover:border-red-300 hover:bg-red-100"
                           disabled={saving}
                           onClick={() => updateVendorStatus(vendor.id, "reject")}
                         >
@@ -2324,7 +2327,7 @@ export default function AdminPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          className="border-white/25 bg-transparent text-white hover:bg-white/10"
+                          className="border-slate-300 bg-transparent text-slate-900 hover:border-slate-400 hover:bg-slate-50"
                           disabled={saving}
                           onClick={() => updateVendorStatus(vendor.id, "suspend")}
                         >
@@ -2369,7 +2372,7 @@ export default function AdminPage() {
                             </Button>
                             <Button
                               variant="outline"
-                              className="border-amber-300/50 bg-transparent text-amber-100"
+                              className="border-amber-200 bg-transparent text-amber-800 hover:border-amber-300 hover:bg-amber-100"
                               disabled={savingKey === `liquor:${vendor.id}`}
                               onClick={() => updateLiquorStatus(vendor.id, "CHANGES_REQUESTED")}
                             >
@@ -2398,8 +2401,8 @@ export default function AdminPage() {
                   placeholder="Search products by name, vendor, status, or reason"
                   onChange={setProductSearch}
                 />
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-slate-500">
                     Product status filter
                   </label>
                   <select
@@ -2407,7 +2410,7 @@ export default function AdminPage() {
                     onChange={(event) =>
                       setProductStatus(event.target.value as ProductStatusFilter)
                     }
-                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black md:max-w-xs"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-black md:max-w-xs"
                   >
                     {PRODUCT_STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -2419,12 +2422,12 @@ export default function AdminPage() {
                 {filteredProducts.map((product) => (
                   <article
                     key={product.id}
-                    className="rounded-lg border border-white/10 bg-white/[0.035] p-5"
+                    className="rounded-lg border border-slate-200 bg-white p-5"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold">{product.name}</h3>
-                        <p className="mt-1 text-xs text-white/60">
+                        <p className="mt-1 text-xs text-slate-500">
                           {product.vendor.name} · /{product.slug} · {money(product.priceCents)}
                         </p>
                       </div>
@@ -2435,9 +2438,9 @@ export default function AdminPage() {
                       </span>
                     </div>
                     {product.description ? (
-                      <p className="mt-3 text-sm text-white/70">{product.description}</p>
+                      <p className="mt-3 text-sm text-slate-600">{product.description}</p>
                     ) : null}
-                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-white/60">
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
                       <span>{product.inStock ? "In stock" : "Out of stock"}</span>
                       <span>
                         {product.isAlcohol
@@ -2448,7 +2451,7 @@ export default function AdminPage() {
                       <span>Updated: {formatDate(product.updatedAt)}</span>
                     </div>
                     {product.reviewReason ? (
-                      <p className="mt-3 rounded-lg border border-amber-200/20 bg-amber-300/10 p-3 text-sm text-amber-50">
+                      <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                         Review reason: {product.reviewReason}
                       </p>
                     ) : null}
@@ -2462,7 +2465,7 @@ export default function AdminPage() {
                       </Button>
                       <Button
                         variant="outline"
-                        className="border-amber-300/50 bg-transparent text-amber-100"
+                        className="border-amber-200 bg-transparent text-amber-800 hover:border-amber-300 hover:bg-amber-100"
                         disabled={savingKey === `product:${product.id}`}
                         onClick={() => updateProductStatus(product.id, "CHANGES_REQUESTED")}
                       >
@@ -2470,7 +2473,7 @@ export default function AdminPage() {
                       </Button>
                       <Button
                         variant="outline"
-                        className="border-red-300/50 bg-transparent text-red-100"
+                        className="border-red-200 bg-transparent text-red-800 hover:border-red-300 hover:bg-red-100"
                         disabled={savingKey === `product:${product.id}`}
                         onClick={() => updateProductStatus(product.id, "REJECTED")}
                       >
@@ -2496,14 +2499,14 @@ export default function AdminPage() {
                   placeholder="Search riders by name, phone, vehicle, or area"
                   onChange={setRiderSearch}
                 />
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-slate-500">
                     Rider status filter
                   </label>
                   <select
                     value={riderStatus}
                     onChange={(event) => setRiderStatus(event.target.value as RiderStatusFilter)}
-                    className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black md:max-w-xs"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-black md:max-w-xs"
                   >
                     {RIDER_STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -2538,16 +2541,16 @@ export default function AdminPage() {
                 {filteredRiders.map((rider) => (
                   <article
                     key={rider.id}
-                    className="rounded-lg border border-white/10 bg-white/[0.035] p-5"
+                    className="rounded-lg border border-slate-200 bg-white p-5"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold">{rider.fullName}</h3>
-                        <p className="text-sm text-white/78">
+                        <p className="text-sm text-slate-600">
                           {[rider.suburb, rider.city].filter(Boolean).join(", ") ||
                             "Location not set"}
                         </p>
-                        <p className="text-xs text-white/60">
+                        <p className="text-xs text-slate-500">
                           {rider.email} | {rider.phone}
                         </p>
                       </div>
@@ -2557,7 +2560,7 @@ export default function AdminPage() {
                         {rider.status.replaceAll("_", " ")}
                       </span>
                     </div>
-                    <div className="mt-4 grid gap-2 text-xs text-white/65 md:grid-cols-3">
+                    <div className="mt-4 grid gap-2 text-xs text-slate-600 md:grid-cols-3">
                       <div>
                         Vehicle: {rider.vehicleType}
                         {rider.vehicleRegistration ? ` (${rider.vehicleRegistration})` : ""}
@@ -2574,7 +2577,7 @@ export default function AdminPage() {
                       </div>
                     </div>
                     {rider.aiSummary ? (
-                      <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white/75">
+                      <div className="mt-4 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
                         {rider.aiSummary}
                       </div>
                     ) : null}
@@ -2595,7 +2598,7 @@ export default function AdminPage() {
                           className={
                             status === "APPROVED"
                               ? "bg-lethela-primary text-white hover:opacity-90"
-                              : "border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                              : "border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:text-lethela-primary"
                           }
                           disabled={savingKey === `rider:${rider.id}:${status}`}
                           onClick={() => updateRiderStatus(rider.id, status)}
@@ -2621,11 +2624,11 @@ export default function AdminPage() {
               <section className="space-y-4">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
                       People
                     </p>
                     <h3 className="mt-1 text-xl font-semibold">Customers</h3>
-                    <p className="mt-1 text-sm text-white/55">
+                    <p className="mt-1 text-sm text-slate-600">
                       {customerMeta.total} registered account{customerMeta.total === 1 ? "" : "s"}.
                       Contact details are for authorised support use only.
                     </p>
@@ -2637,17 +2640,17 @@ export default function AdminPage() {
                       value={customerSearchInput}
                       onChange={(event) => setCustomerSearchInput(event.target.value)}
                       placeholder="Search name, email or phone"
-                      className="h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-black placeholder:text-black/40"
+                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-black placeholder:text-black/40"
                       aria-label="Search customers"
                     />
                   </label>
                 </div>
 
-                <div className="rounded-lg border border-white/10 bg-white/[0.035]">
+                <div className="rounded-lg border border-slate-200 bg-white">
                   {customerState === "error" ? (
                     <div className="p-6 text-sm">
-                      <p className="font-semibold text-white">Unable to load customers.</p>
-                      <p className="mt-1 text-white/60">{customerError}</p>
+                      <p className="font-semibold text-slate-900">Unable to load customers.</p>
+                      <p className="mt-1 text-slate-500">{customerError}</p>
                       <Button
                         className="mt-3 bg-lethela-primary text-white hover:opacity-90"
                         onClick={() => void loadCustomers(customerSearch, customerPage)}
@@ -2660,18 +2663,18 @@ export default function AdminPage() {
                       {Array.from({ length: 6 }).map((_, index) => (
                         <div
                           key={index}
-                          className="h-12 animate-pulse rounded-md border border-white/5 bg-white/[0.04]"
+                          className="h-12 animate-pulse rounded-md border border-slate-200 bg-white"
                         />
                       ))}
                     </div>
                   ) : customers.length === 0 ? (
                     <div className="p-6 text-sm">
-                      <p className="font-semibold text-white">
+                      <p className="font-semibold text-slate-900">
                         {customerSearch
                           ? "No customers match this search."
                           : "No customer accounts yet."}
                       </p>
-                      <p className="mt-1 text-white/60">
+                      <p className="mt-1 text-slate-500">
                         {customerSearch
                           ? "Check the spelling or clear the search."
                           : "Accounts appear here as soon as customers register."}
@@ -2680,7 +2683,7 @@ export default function AdminPage() {
                   ) : (
                     <div className="overflow-x-auto p-2">
                       <table className="w-full min-w-[880px] border-separate border-spacing-y-2 text-left text-sm">
-                        <thead className="text-xs uppercase tracking-[0.12em] text-white/38">
+                        <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
                           <tr>
                             <th className="px-3 py-2">Customer</th>
                             <th className="px-3 py-2">Phone</th>
@@ -2693,32 +2696,32 @@ export default function AdminPage() {
                         </thead>
                         <tbody>
                           {customers.map((customer) => (
-                            <tr key={customer.id} className="bg-[#080B27]/75">
+                            <tr key={customer.id} className="bg-white">
                               <td className="rounded-l-lg px-3 py-3">
-                                <div className="font-semibold text-white">
+                                <div className="font-semibold text-slate-900">
                                   {customer.name || "—"}
                                 </div>
-                                <div className="text-xs text-white/55">{customer.email}</div>
+                                <div className="text-xs text-slate-500">{customer.email}</div>
                               </td>
-                              <td className="px-3 py-3 text-white/70">{customer.phone || "—"}</td>
-                              <td className="px-3 py-3 text-white/70">{customer.orderCount}</td>
-                              <td className="px-3 py-3 text-white/70">
+                              <td className="px-3 py-3 text-slate-600">{customer.phone || "—"}</td>
+                              <td className="px-3 py-3 text-slate-600">{customer.orderCount}</td>
+                              <td className="px-3 py-3 text-slate-600">
                                 {money(customer.totalSpentCents)}
                               </td>
-                              <td className="px-3 py-3 text-white/60">
+                              <td className="px-3 py-3 text-slate-500">
                                 {customer.lastOrderAt ? formatDate(customer.lastOrderAt) : "—"}
                               </td>
-                              <td className="px-3 py-3 text-white/60">
+                              <td className="px-3 py-3 text-slate-500">
                                 {formatDate(customer.joinedAt)}
                               </td>
                               <td className="rounded-r-lg px-3 py-3">
                                 <span
                                   className={`rounded-full border px-2.5 py-1 text-xs ${
                                     customer.status === "LOCKED"
-                                      ? "border-red-300/35 bg-red-300/10 text-red-100"
+                                      ? "border-red-200 bg-red-50 text-red-800"
                                       : customer.status === "UNVERIFIED"
-                                        ? "border-amber-300/35 bg-amber-300/10 text-amber-100"
-                                        : "border-emerald-300/35 bg-emerald-300/10 text-emerald-100"
+                                        ? "border-amber-200 bg-amber-50 text-amber-800"
+                                        : "border-emerald-200 bg-emerald-50 text-emerald-800"
                                   }`}
                                 >
                                   {customer.status === "LOCKED"
@@ -2739,14 +2742,14 @@ export default function AdminPage() {
                 </div>
 
                 {customerMeta.pageCount > 1 ? (
-                  <div className="flex items-center justify-between gap-3 text-sm text-white/60">
+                  <div className="flex items-center justify-between gap-3 text-sm text-slate-500">
                     <span>
                       Page {customerPage} of {customerMeta.pageCount} · {customerMeta.total} total
                     </span>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        className="border-white/20 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                        className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                         disabled={customerPage <= 1 || customerState === "loading"}
                         onClick={() => setCustomerPage((page) => Math.max(1, page - 1))}
                       >
@@ -2754,7 +2757,7 @@ export default function AdminPage() {
                       </Button>
                       <Button
                         variant="outline"
-                        className="border-white/20 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                        className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                         disabled={
                           customerPage >= customerMeta.pageCount || customerState === "loading"
                         }
@@ -2785,20 +2788,20 @@ export default function AdminPage() {
                   ))}
                 </div>
 
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                <div className="rounded-lg border border-slate-200 bg-white p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Recent orders
                       </p>
                       <h3 className="mt-1 text-lg font-semibold">Order monitoring</h3>
                     </div>
-                    <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/55">
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500">
                       {filteredOrders.length} matching · {operationsOrders.length} recent loaded
                     </span>
                   </div>
 
-                  <div className="mt-4 grid gap-3 rounded-lg border border-white/10 bg-white/[0.025] p-3 sm:grid-cols-2 xl:grid-cols-6">
+                  <div className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2 xl:grid-cols-6">
                     <label className="xl:col-span-2">
                       <span className="sr-only">Search orders</span>
                       <input
@@ -2806,7 +2809,7 @@ export default function AdminPage() {
                         value={orderSearch}
                         onChange={(event) => setOrderSearch(event.target.value)}
                         placeholder="Order, customer, vendor or rider"
-                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black placeholder:text-black/45"
+                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black placeholder:text-black/45"
                       />
                     </label>
                     <label>
@@ -2814,7 +2817,7 @@ export default function AdminPage() {
                       <select
                         value={orderStatusFilter}
                         onChange={(event) => setOrderStatusFilter(event.target.value)}
-                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black"
+                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black"
                       >
                         <option value="ALL">All statuses</option>
                         {[
@@ -2840,7 +2843,7 @@ export default function AdminPage() {
                       <select
                         value={orderPaymentFilter}
                         onChange={(event) => setOrderPaymentFilter(event.target.value)}
-                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black"
+                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black"
                       >
                         <option value="ALL">All payments</option>
                         <option value="PENDING">Pending payment</option>
@@ -2855,7 +2858,7 @@ export default function AdminPage() {
                       <select
                         value={orderPeriodFilter}
                         onChange={(event) => setOrderPeriodFilter(event.target.value)}
-                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black"
+                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black"
                       >
                         <option value="ALL">All recent dates</option>
                         <option value="TODAY">Today</option>
@@ -2869,7 +2872,7 @@ export default function AdminPage() {
                         onChange={(event) =>
                           setOrderSort(event.target.value as "newest" | "oldest")
                         }
-                        className="h-11 w-full rounded-lg border border-white/15 bg-white px-3 text-sm text-black"
+                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black"
                       >
                         <option value="newest">Newest first</option>
                         <option value="oldest">Oldest first</option>
@@ -2915,50 +2918,50 @@ export default function AdminPage() {
                         <tbody>
                           {visibleOrders.map((order) => (
                             <tr key={order.id}>
-                              <td className="border-t border-white/10 px-3 py-3 font-semibold">
+                              <td className="border-t border-slate-200 px-3 py-3 font-semibold">
                                 {order.ozowReference || order.publicId}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3">
+                              <td className="border-t border-slate-200 px-3 py-3">
                                 <div>{order.customerName || "Guest"}</div>
-                                <div className="text-xs text-white/50">
+                                <div className="text-xs text-slate-500">
                                   {order.customerEmail || "—"}
                                 </div>
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3">
+                              <td className="border-t border-slate-200 px-3 py-3">
                                 {order.vendorName}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3">
+                              <td className="border-t border-slate-200 px-3 py-3">
                                 {order.riderName || "Unassigned"}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                              <td className="border-t border-slate-200 px-3 py-3 text-right">
                                 {order.itemCount}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                              <td className="border-t border-slate-200 px-3 py-3 text-right">
                                 {money(order.subtotalCents)}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                              <td className="border-t border-slate-200 px-3 py-3 text-right">
                                 {money(order.deliveryFeeCents)}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                              <td className="border-t border-slate-200 px-3 py-3 text-right">
                                 {money(order.riderTipCents)}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3 text-right font-semibold">
+                              <td className="border-t border-slate-200 px-3 py-3 text-right font-semibold">
                                 {money(order.totalCents)}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3">
+                              <td className="border-t border-slate-200 px-3 py-3">
                                 {order.paymentStatus}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3">
+                              <td className="border-t border-slate-200 px-3 py-3">
                                 <span
                                   className={`rounded-full border px-2.5 py-1 text-xs ${statusClass(order.status)}`}
                                 >
                                   {order.status.replaceAll("_", " ")}
                                 </span>
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3 text-white/60">
+                              <td className="border-t border-slate-200 px-3 py-3 text-slate-500">
                                 {formatDate(order.createdAt)}
                               </td>
-                              <td className="border-t border-white/10 px-3 py-3 text-right">
+                              <td className="border-t border-slate-200 px-3 py-3 text-right">
                                 <button
                                   type="button"
                                   className="rounded-md bg-lethela-primary px-3 py-2 text-xs font-semibold text-white"
@@ -2980,14 +2983,14 @@ export default function AdminPage() {
                     </div>
                   )}
                   {orderPageCount > 1 ? (
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-white/60">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
                       <span>
                         Page {orderPage} of {orderPageCount}
                       </span>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
-                          className="border-white/20 bg-transparent text-white"
+                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                           disabled={orderPage <= 1}
                           onClick={() => setOrderPage((page) => Math.max(1, page - 1))}
                         >
@@ -2995,7 +2998,7 @@ export default function AdminPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          className="border-white/20 bg-transparent text-white"
+                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                           disabled={orderPage >= orderPageCount}
                           onClick={() => setOrderPage((page) => Math.min(orderPageCount, page + 1))}
                         >
@@ -3010,14 +3013,14 @@ export default function AdminPage() {
 
             {view === "messages" ? (
               <section className="grid gap-4 xl:grid-cols-[0.95fr,1.05fr]">
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                <div className="rounded-lg border border-slate-200 bg-white p-5">
                   <div className="flex items-center gap-3">
                     <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
                       <MessageSquare className="h-5 w-5" />
                     </span>
                     <div>
                       <h3 className="text-lg font-semibold">Send owner message</h3>
-                      <p className="text-sm text-white/60">
+                      <p className="text-sm text-slate-500">
                         Message vendors, riders, or everyone from one place.
                       </p>
                     </div>
@@ -3025,11 +3028,11 @@ export default function AdminPage() {
 
                   <div className="mt-5 grid gap-3">
                     <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Recipient
                       </span>
                       <select
-                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                         value={messageForm.recipientType}
                         onChange={(event) =>
                           setMessageForm((state) => ({
@@ -3049,11 +3052,11 @@ export default function AdminPage() {
 
                     {messageForm.recipientType === "VENDOR" ? (
                       <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                           Vendor
                         </span>
                         <select
-                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                           value={messageForm.recipientId}
                           onChange={(event) =>
                             setMessageForm((state) => ({
@@ -3074,11 +3077,11 @@ export default function AdminPage() {
 
                     {messageForm.recipientType === "RIDER" ? (
                       <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                           Rider
                         </span>
                         <select
-                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                           value={messageForm.recipientId}
                           onChange={(event) =>
                             setMessageForm((state) => ({
@@ -3098,11 +3101,11 @@ export default function AdminPage() {
                     ) : null}
 
                     <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Channel
                       </span>
                       <select
-                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                         value={messageForm.channel}
                         onChange={(event) =>
                           setMessageForm((state) => ({
@@ -3118,11 +3121,11 @@ export default function AdminPage() {
                     </label>
 
                     <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Subject
                       </span>
                       <input
-                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                         value={messageForm.subject}
                         onChange={(event) =>
                           setMessageForm((state) => ({ ...state, subject: event.target.value }))
@@ -3132,11 +3135,11 @@ export default function AdminPage() {
                     </label>
 
                     <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Message
                       </span>
                       <textarea
-                        className="min-h-36 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-black"
+                        className="min-h-36 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black"
                         value={messageForm.body}
                         onChange={(event) =>
                           setMessageForm((state) => ({ ...state, body: event.target.value }))
@@ -3155,17 +3158,17 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+                <div className="rounded-lg border border-slate-200 bg-white p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-lg font-semibold">Recent owner messages</h3>
-                      <p className="text-sm text-white/60">
+                      <p className="text-sm text-slate-500">
                         Sent dashboard messages are saved here for audit and follow-up.
                       </p>
                     </div>
                     <Button
                       variant="outline"
-                      className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                      className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                       onClick={load}
                     >
                       Refresh
@@ -3182,22 +3185,22 @@ export default function AdminPage() {
                       messages.map((message) => (
                         <article
                           key={message.id}
-                          className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
+                          className="rounded-lg border border-slate-200 bg-white p-4"
                         >
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                               <h4 className="text-sm font-semibold">{message.subject}</h4>
-                              <p className="mt-1 text-xs text-white/45">
+                              <p className="mt-1 text-xs text-slate-500">
                                 {message.recipientType.replaceAll("_", " ")}
                                 {message.recipientId ? ` · ${message.recipientId}` : ""} ·{" "}
                                 {new Date(message.createdAt).toLocaleString()}
                               </p>
                             </div>
-                            <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/65">
+                            <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs text-slate-600">
                               {message.channel.replaceAll("_", " ")}
                             </span>
                           </div>
-                          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-white/72">
+                          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
                             {message.body}
                           </p>
                         </article>
@@ -3210,14 +3213,14 @@ export default function AdminPage() {
 
             {view === "finance" ? (
               <section className="space-y-4" aria-labelledby="finance-heading">
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+                <div className="rounded-lg border border-slate-200 bg-white p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Finance
                   </p>
                   <h3 id="finance-heading" className="mt-1 text-xl font-semibold">
                     Marketplace money flow
                   </h3>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-white/60">
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
                     Paid orders only. Delivery fees and rider tips are shown separately because they
                     belong entirely to the rider and are never counted as Lethela platform revenue.
                   </p>
@@ -3323,17 +3326,17 @@ export default function AdminPage() {
                   note={`Browser push: ${pushPermission}`}
                   icon={Settings}
                 />
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
-                  <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                <div className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2 xl:col-span-4">
+                  <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
                     Settings / Developer Tools
                   </p>
                   <h3 className="mt-1 text-lg font-semibold">Admin access key</h3>
-                  <p className="mt-1 text-sm text-white/60">
+                  <p className="mt-1 text-sm text-slate-500">
                     Use this only when the production admin approval key is required to restore
                     owner access on this browser.
                   </p>
                   <input
-                    className="mt-4 h-10 w-full max-w-md rounded-lg border border-white/10 bg-white px-3 text-sm text-black outline-none focus:ring-2 focus:ring-lethela-primary"
+                    className="mt-4 h-10 w-full max-w-md rounded-lg border border-slate-200 bg-white px-3 text-sm text-black outline-none focus:ring-2 focus:ring-lethela-primary"
                     value={adminKey}
                     onChange={(event) => setAdminKey(event.target.value)}
                     placeholder="ADMIN_APPROVAL_KEY"
@@ -3341,17 +3344,17 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
-                  <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                <div className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2 xl:col-span-4">
+                  <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
                     Push notifications
                   </p>
                   <h3 className="mt-1 text-lg font-semibold">Send a broadcast push</h3>
-                  <p className="mt-1 text-sm text-white/60">
+                  <p className="mt-1 text-sm text-slate-500">
                     Self-hosted web push. Goes to every subscribed device in the chosen segment that
                     still allows marketing notifications.
                   </p>
                   {webPushConfigured === false ? (
-                    <p className="mt-3 rounded-lg border border-amber-300/35 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
+                    <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                       Web push keys are not configured. Set NEXT_PUBLIC_VAPID_PUBLIC_KEY and
                       WEB_PUSH_VAPID_PRIVATE_KEY before sending.
                     </p>
@@ -3359,11 +3362,11 @@ export default function AdminPage() {
 
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <label className="grid gap-1 text-sm md:col-span-2">
-                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Title
                       </span>
                       <input
-                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                         value={pushForm.title}
                         maxLength={80}
                         onChange={(event) =>
@@ -3373,11 +3376,11 @@ export default function AdminPage() {
                       />
                     </label>
                     <label className="grid gap-1 text-sm md:col-span-2">
-                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Message
                       </span>
                       <textarea
-                        className="min-h-20 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-black"
+                        className="min-h-20 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black"
                         value={pushForm.body}
                         maxLength={200}
                         onChange={(event) =>
@@ -3387,11 +3390,11 @@ export default function AdminPage() {
                       />
                     </label>
                     <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Open link
                       </span>
                       <input
-                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                         value={pushForm.url}
                         onChange={(event) =>
                           setPushForm((state) => ({ ...state, url: event.target.value }))
@@ -3400,11 +3403,11 @@ export default function AdminPage() {
                       />
                     </label>
                     <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Segment
                       </span>
                       <select
-                        className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                         value={pushForm.segment}
                         onChange={(event) =>
                           setPushForm((state) => ({
@@ -3432,7 +3435,7 @@ export default function AdminPage() {
                   {pushCampaigns.length > 0 ? (
                     <div className="mt-5 overflow-x-auto">
                       <table className="w-full min-w-[520px] border-separate border-spacing-y-2 text-left text-sm">
-                        <thead className="text-xs uppercase tracking-[0.12em] text-white/38">
+                        <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
                           <tr>
                             <th className="px-3 py-2">Campaign</th>
                             <th className="px-3 py-2">Segment</th>
@@ -3443,14 +3446,14 @@ export default function AdminPage() {
                         </thead>
                         <tbody>
                           {pushCampaigns.map((campaign) => (
-                            <tr key={campaign.id} className="bg-[#080B27]/75">
-                              <td className="rounded-l-lg px-3 py-3 font-semibold text-white">
+                            <tr key={campaign.id} className="bg-white">
+                              <td className="rounded-l-lg px-3 py-3 font-semibold text-slate-900">
                                 {campaign.title}
                               </td>
-                              <td className="px-3 py-3 text-white/70">{campaign.segment}</td>
-                              <td className="px-3 py-3 text-white/70">{campaign.sentCount}</td>
-                              <td className="px-3 py-3 text-white/70">{campaign.failedCount}</td>
-                              <td className="rounded-r-lg px-3 py-3 text-white/60">
+                              <td className="px-3 py-3 text-slate-600">{campaign.segment}</td>
+                              <td className="px-3 py-3 text-slate-600">{campaign.sentCount}</td>
+                              <td className="px-3 py-3 text-slate-600">{campaign.failedCount}</td>
+                              <td className="rounded-r-lg px-3 py-3 text-slate-500">
                                 {new Date(campaign.createdAt).toLocaleString()}
                               </td>
                             </tr>
@@ -3461,21 +3464,21 @@ export default function AdminPage() {
                   ) : null}
                 </div>
 
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
+                <div className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2 xl:col-span-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Order control
                       </p>
                       <h3 className="mt-1 text-lg font-semibold">Operations center</h3>
-                      <p className="mt-1 text-sm text-white/60">
+                      <p className="mt-1 text-sm text-slate-500">
                         Update order lifecycle, assign approved riders, log refund cases and keep an
                         audit trail for support follow-up.
                       </p>
                     </div>
                     <Button
                       variant="outline"
-                      className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                      className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                       onClick={load}
                     >
                       Refresh
@@ -3485,11 +3488,11 @@ export default function AdminPage() {
                   <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr,1.1fr]">
                     <div className="grid gap-3">
                       <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                           Order
                         </span>
                         <select
-                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                           value={operationsForm.orderRef}
                           onChange={(event) =>
                             setOperationsForm((state) => ({
@@ -3508,11 +3511,11 @@ export default function AdminPage() {
                       </label>
 
                       <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                           Manual reference
                         </span>
                         <input
-                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                           value={operationsForm.orderRef}
                           onChange={(event) =>
                             setOperationsForm((state) => ({
@@ -3525,11 +3528,11 @@ export default function AdminPage() {
                       </label>
 
                       <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                           Status
                         </span>
                         <select
-                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                           value={operationsForm.status}
                           onChange={(event) =>
                             setOperationsForm((state) => ({
@@ -3562,11 +3565,11 @@ export default function AdminPage() {
                       </label>
 
                       <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                           Approved rider
                         </span>
                         <select
-                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                           value={operationsForm.riderApplicationId}
                           onChange={(event) =>
                             setOperationsForm((state) => ({
@@ -3586,11 +3589,11 @@ export default function AdminPage() {
 
                       <div className="grid gap-3 md:grid-cols-2">
                         <label className="grid gap-1 text-sm">
-                          <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                             Refund amount
                           </span>
                           <input
-                            className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                             value={operationsForm.refundAmountRand}
                             onChange={(event) =>
                               setOperationsForm((state) => ({
@@ -3602,11 +3605,11 @@ export default function AdminPage() {
                           />
                         </label>
                         <label className="grid gap-1 text-sm">
-                          <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                          <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                             Evidence URL
                           </span>
                           <input
-                            className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                             value={operationsForm.evidenceUrl}
                             onChange={(event) =>
                               setOperationsForm((state) => ({
@@ -3620,11 +3623,11 @@ export default function AdminPage() {
                       </div>
 
                       <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                           Refund reason
                         </span>
                         <input
-                          className="h-10 rounded-lg border border-white/10 bg-white px-3 text-sm text-black"
+                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
                           value={operationsForm.refundReason}
                           onChange={(event) =>
                             setOperationsForm((state) => ({
@@ -3637,11 +3640,11 @@ export default function AdminPage() {
                       </label>
 
                       <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-white/50">
+                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
                           Operations note
                         </span>
                         <textarea
-                          className="min-h-24 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-black"
+                          className="min-h-24 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black"
                           value={operationsForm.note}
                           onChange={(event) =>
                             setOperationsForm((state) => ({ ...state, note: event.target.value }))
@@ -3660,7 +3663,7 @@ export default function AdminPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                           disabled={savingKey === "operation:dispatch"}
                           onClick={() => void submitOperation("dispatch")}
                         >
@@ -3668,7 +3671,7 @@ export default function AdminPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                           disabled={savingKey === "operation:refund"}
                           onClick={() => void submitOperation("refund")}
                         >
@@ -3676,7 +3679,7 @@ export default function AdminPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
                           disabled={savingKey === "operation:event"}
                           onClick={() => void submitOperation("event")}
                         >
@@ -3686,21 +3689,23 @@ export default function AdminPage() {
                     </div>
 
                     <div className="grid gap-3">
-                      <div className="rounded-lg border border-white/10 bg-black/10 p-4">
-                        <h4 className="text-sm font-semibold text-white">
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <h4 className="text-sm font-semibold text-slate-900">
                           Recent order money split
                         </h4>
                         <div className="mt-3 grid gap-2">
                           {operationsOrders.length === 0 ? (
-                            <p className="text-sm text-white/55">No recent orders loaded yet.</p>
+                            <p className="text-sm text-slate-500">No recent orders loaded yet.</p>
                           ) : (
                             operationsOrders.slice(0, 5).map((order) => (
                               <div
                                 key={order.id}
-                                className="rounded-lg border border-white/10 bg-white/[0.035] p-3 text-xs text-white/70"
+                                className="rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600"
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <span className="font-semibold text-white">{order.publicId}</span>
+                                  <span className="font-semibold text-slate-900">
+                                    {order.publicId}
+                                  </span>
                                   <span>{order.vendorName}</span>
                                 </div>
                                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -3711,7 +3716,7 @@ export default function AdminPage() {
                                   <span>Rider payout: {money(order.riderPayoutCents)}</span>
                                   <span>Total paid: {money(order.totalCents)}</span>
                                 </div>
-                                <div className="mt-2 text-white/50">
+                                <div className="mt-2 text-slate-500">
                                   {order.deliveryDistanceKm != null
                                     ? `${order.deliveryDistanceKm.toFixed(2)} km`
                                     : "Distance pending"}
@@ -3767,29 +3772,29 @@ export default function AdminPage() {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2 xl:col-span-4">
+                <div className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2 xl:col-span-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
                         Owner control room
                       </p>
                       <h3 className="mt-1 text-lg font-semibold">Operating readiness workflow</h3>
                     </div>
                     <Link
                       href="/admin/launch-checklist"
-                      className="rounded-lg border border-white/15 px-3 py-2 text-sm text-white/75 transition hover:border-lethela-primary hover:text-lethela-primary"
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 transition hover:border-lethela-primary hover:text-lethela-primary"
                     >
                       Open readiness checklist
                     </Link>
                   </div>
-                  <div className="mt-4 grid gap-3 text-sm text-white/70 md:grid-cols-3">
-                    <p className="rounded-lg border border-white/10 p-3">
+                  <div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
+                    <p className="rounded-lg border border-slate-200 bg-white p-3">
                       Vendor registration sends an applicant confirmation and owner alert.
                     </p>
-                    <p className="rounded-lg border border-white/10 p-3">
+                    <p className="rounded-lg border border-slate-200 bg-white p-3">
                       Rider registration sends an applicant confirmation and owner alert.
                     </p>
-                    <p className="rounded-lg border border-white/10 p-3">
+                    <p className="rounded-lg border border-slate-200 bg-white p-3">
                       Approval or rejection sends a decision notice by email and WhatsApp.
                     </p>
                   </div>
@@ -3815,27 +3820,29 @@ export default function AdminPage() {
             {view === "activity" ? (
               <section className="space-y-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
                     System
                   </p>
                   <h3 className="mt-1 text-xl font-semibold">Activity log</h3>
-                  <p className="mt-1 text-sm text-white/55">
+                  <p className="mt-1 text-sm text-slate-600">
                     Every recorded admin action — who did it, what changed and when.
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-white/10 bg-white/[0.035]">
+                <div className="rounded-lg border border-slate-200 bg-white">
                   {auditLogs.length === 0 ? (
                     <div className="p-6 text-sm">
-                      <p className="font-semibold text-white">No admin activity recorded yet.</p>
-                      <p className="mt-1 text-white/60">
+                      <p className="font-semibold text-slate-900">
+                        No admin activity recorded yet.
+                      </p>
+                      <p className="mt-1 text-slate-500">
                         Approvals, rejections, status changes and other owner actions appear here.
                       </p>
                     </div>
                   ) : (
                     <div className="overflow-x-auto p-2">
                       <table className="w-full min-w-[760px] border-separate border-spacing-y-2 text-left text-sm">
-                        <thead className="text-xs uppercase tracking-[0.12em] text-white/38">
+                        <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
                           <tr>
                             <th className="px-3 py-2">Action</th>
                             <th className="px-3 py-2">Target</th>
@@ -3845,16 +3852,16 @@ export default function AdminPage() {
                         </thead>
                         <tbody>
                           {auditLogs.map((log) => (
-                            <tr key={log.id} className="bg-[#080B27]/75">
-                              <td className="rounded-l-lg px-3 py-3 font-semibold text-white">
+                            <tr key={log.id} className="bg-white">
+                              <td className="rounded-l-lg px-3 py-3 font-semibold text-slate-900">
                                 {log.action.replaceAll("_", " ")}
                               </td>
-                              <td className="px-3 py-3 text-white/70">
+                              <td className="px-3 py-3 text-slate-600">
                                 {log.targetType}
-                                <span className="block text-xs text-white/45">{log.targetId}</span>
+                                <span className="block text-xs text-slate-500">{log.targetId}</span>
                               </td>
-                              <td className="px-3 py-3 text-white/70">{log.actor}</td>
-                              <td className="rounded-r-lg px-3 py-3 text-white/60">
+                              <td className="px-3 py-3 text-slate-600">{log.actor}</td>
+                              <td className="rounded-r-lg px-3 py-3 text-slate-500">
                                 {new Date(log.createdAt).toLocaleString()}
                               </td>
                             </tr>
@@ -3883,13 +3890,13 @@ function OperationsList({
   className?: string;
 }) {
   return (
-    <div className={`rounded-lg border border-white/10 bg-white/[0.035] p-5 ${className}`}>
+    <div className={`rounded-lg border border-slate-200 bg-white p-5 ${className}`}>
       <h3 className="text-lg font-semibold">{title}</h3>
       <div className="mt-4 grid gap-3">
         {items.map((item) => (
-          <div key={item} className="flex gap-3 rounded-lg border border-white/10 p-3">
+          <div key={item} className="flex gap-3 rounded-lg border border-slate-200 bg-white p-3">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-lethela-primary" />
-            <p className="text-sm leading-6 text-white/72">{item}</p>
+            <p className="text-sm leading-6 text-slate-600">{item}</p>
           </div>
         ))}
       </div>
@@ -3907,20 +3914,17 @@ function OperationsFeed({
   items: Array<{ id: string; title: string; body: string; meta: string }>;
 }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-black/10 p-4">
-      <h4 className="text-sm font-semibold text-white">{title}</h4>
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <h4 className="text-sm font-semibold text-slate-900">{title}</h4>
       <div className="mt-3 grid gap-2">
         {items.length === 0 ? (
-          <p className="text-sm text-white/55">{empty}</p>
+          <p className="text-sm text-slate-500">{empty}</p>
         ) : (
           items.slice(0, 5).map((item) => (
-            <article
-              key={item.id}
-              className="rounded-lg border border-white/10 bg-white/[0.04] p-3"
-            >
-              <div className="text-sm font-medium text-white">{item.title}</div>
-              <p className="mt-1 text-xs leading-5 text-white/65">{item.body}</p>
-              <div className="mt-2 text-[11px] text-white/40">{item.meta}</div>
+            <article key={item.id} className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="text-sm font-medium text-slate-900">{item.title}</div>
+              <p className="mt-1 text-xs leading-5 text-slate-600">{item.body}</p>
+              <div className="mt-2 text-[11px] text-slate-500">{item.meta}</div>
             </article>
           ))
         )}
@@ -3941,11 +3945,11 @@ function SearchBox({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/50">
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-slate-500">
         {label}
       </label>
-      <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white px-3">
+      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
         <Search className="h-4 w-4 text-black/45" />
         <input
           className="h-10 min-w-0 flex-1 bg-transparent text-sm text-black outline-none"

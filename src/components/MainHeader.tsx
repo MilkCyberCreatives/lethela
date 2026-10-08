@@ -160,7 +160,7 @@ export default function MainHeader() {
               </Link>
               <Button
                 variant="outline"
-                className="min-h-11 border-black/20 text-black hover:bg-black/5"
+                className="min-h-11 border-black/20 bg-white text-black hover:border-black/30 hover:bg-black/5"
                 onClick={() => void handleSignOut()}
               >
                 Sign Out
@@ -168,7 +168,9 @@ export default function MainHeader() {
             </div>
           ) : (
             <Link href="/signin">
-              <Button className="bg-lethela-primary text-white hover:opacity-90">Sign In</Button>
+              <Button className="min-h-11 bg-lethela-primary text-white hover:opacity-90">
+                Sign In
+              </Button>
             </Link>
           )}
         </nav>
@@ -181,7 +183,7 @@ export default function MainHeader() {
                 variant="outline"
                 aria-label="Open navigation menu"
                 title="Open navigation menu"
-                className="h-11 w-11 border-black/20 px-0 text-black hover:bg-black/5"
+                className="h-11 w-11 border-black/20 bg-white px-0 text-black hover:border-black/30 hover:bg-black/5"
               >
                 <Menu className="h-5 w-5" aria-hidden="true" />
               </Button>

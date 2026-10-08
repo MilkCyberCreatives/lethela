@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import DashCard from "./DashCard";
+import FormField from "./FormField";
 
 type Product = {
   id: string;
@@ -238,46 +239,49 @@ export default function ProductsManager() {
     <div className="grid gap-5">
       <DashCard title={editingId ? "Edit Product" : "Add Product"}>
         <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-            <div className="text-xs uppercase tracking-[0.12em] text-white/60">Total</div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Total</div>
             <div className="mt-2 text-xl font-semibold">{summary.total}</div>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-            <div className="text-xs uppercase tracking-[0.12em] text-white/60">In stock</div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.12em] text-slate-500">In stock</div>
             <div className="mt-2 text-xl font-semibold">{summary.inStock}</div>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-            <div className="text-xs uppercase tracking-[0.12em] text-white/60">Out of stock</div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Out of stock</div>
             <div className="mt-2 text-xl font-semibold">{summary.outOfStock}</div>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-            <div className="text-xs uppercase tracking-[0.12em] text-white/60">Liquor 18+</div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Liquor 18+</div>
             <div className="mt-2 text-xl font-semibold">{summary.liquor}</div>
           </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <input
-            className="rounded bg-white px-3 py-2 text-black"
-            placeholder="Name*"
-            value={form.name}
-            onChange={(event) => {
-              const name = event.target.value;
-              setForm((current) => ({ ...current, name }));
-              if (!slugEdited) {
-                setForm((current) => ({ ...current, slug: slugify(name) }));
-              }
-            }}
-          />
-          <input
-            className="rounded bg-white px-3 py-2 text-black"
-            placeholder="slug* (kebab-case)"
-            value={form.slug}
-            onChange={(event) => {
-              setSlugEdited(true);
-              setForm((current) => ({ ...current, slug: slugify(event.target.value) }));
-            }}
-          />
+          <FormField label="Product name (required)">
+            <input
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+              value={form.name}
+              onChange={(event) => {
+                const name = event.target.value;
+                setForm((current) => ({ ...current, name }));
+                if (!slugEdited) {
+                  setForm((current) => ({ ...current, slug: slugify(name) }));
+                }
+              }}
+            />
+          </FormField>
+          <FormField label="Product link (fills in from the name)">
+            <input
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+              placeholder="e.g. beef-kota"
+              value={form.slug}
+              onChange={(event) => {
+                setSlugEdited(true);
+                setForm((current) => ({ ...current, slug: slugify(event.target.value) }));
+              }}
+            />
+          </FormField>
 
           <div className="flex flex-wrap items-center gap-3 md:col-span-2">
             <input
@@ -300,16 +304,18 @@ export default function ProductsManager() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
             >
               Upload image
             </button>
-            {form.image ? <span className="text-xs text-white/70">Image: {form.image}</span> : null}
+            {form.image ? (
+              <span className="text-xs text-slate-600">Image: {form.image}</span>
+            ) : null}
           </div>
 
           {form.image ? (
             <div className="md:col-span-2">
-              <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={form.image}
@@ -320,19 +326,20 @@ export default function ProductsManager() {
             </div>
           ) : null}
 
-          <textarea
-            className="rounded bg-white px-3 py-2 text-black md:col-span-2"
-            placeholder="Description"
-            rows={3}
-            value={form.description}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, description: event.target.value }))
-            }
-          />
+          <FormField label="Description" className="md:col-span-2">
+            <textarea
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+              rows={3}
+              value={form.description}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, description: event.target.value }))
+              }
+            />
+          </FormField>
 
-          <div className="flex items-center gap-2">
+          <FormField label="Price in rand" className="md:col-span-2">
             <input
-              className="w-40 rounded bg-white px-3 py-2 text-black"
+              className="w-40 rounded border border-slate-300 bg-white px-3 py-2 text-black"
               type="number"
               min={1}
               step={1}
@@ -344,8 +351,7 @@ export default function ProductsManager() {
                 }))
               }
             />
-            <span className="text-sm">ZAR</span>
-          </div>
+          </FormField>
 
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -374,14 +380,14 @@ export default function ProductsManager() {
           <button
             type="button"
             onClick={generateDescription}
-            className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
           >
             AI: Generate description
           </button>
           <button
             type="button"
             onClick={suggestPrice}
-            className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
           >
             AI: Suggest price
           </button>
@@ -396,7 +402,7 @@ export default function ProductsManager() {
           <button
             type="button"
             onClick={() => void load()}
-            className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
           >
             Refresh list
           </button>
@@ -404,14 +410,14 @@ export default function ProductsManager() {
             <button
               type="button"
               onClick={resetForm}
-              className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
             >
               Cancel edit
             </button>
           ) : null}
         </div>
 
-        {status ? <p className="mt-3 text-xs text-white/75">{status}</p> : null}
+        {status ? <p className="mt-3 text-xs text-slate-600">{status}</p> : null}
       </DashCard>
 
       <DashCard title="Your Products">
@@ -421,40 +427,40 @@ export default function ProductsManager() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search products"
-              className="rounded border border-white/15 bg-white px-3 py-2 text-sm text-black"
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
             />
             <select
               value={stockFilter}
               onChange={(event) => setStockFilter(event.target.value as "ALL" | "IN" | "OUT")}
-              className="rounded border border-white/15 bg-white px-3 py-2 text-sm text-black"
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
             >
               <option value="ALL">All stock states</option>
               <option value="IN">In stock</option>
               <option value="OUT">Out of stock</option>
             </select>
           </div>
-          <div className="text-xs text-white/60">{filteredItems.length} visible product(s)</div>
+          <div className="text-xs text-slate-500">{filteredItems.length} visible product(s)</div>
         </div>
 
         {loading ? (
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-32 animate-pulse rounded-lg bg-white/10" />
+              <div key={index} className="h-32 animate-pulse rounded-lg bg-slate-100" />
             ))}
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="text-sm text-white/70">No products match the current filter.</div>
+          <div className="text-sm text-slate-600">No products match the current filter.</div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {filteredItems.map((product) => (
-              <div key={product.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <div key={product.id} className="rounded-lg border border-slate-200 bg-white p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="truncate font-semibold">{product.name}</div>
-                  <span className="rounded border border-white/20 px-2 py-1 text-xs">
+                  <span className="rounded border border-slate-300 bg-white px-2 py-1 text-xs">
                     R{(product.priceCents / 100).toFixed(2)}
                   </span>
                 </div>
-                <div className="mt-1 truncate text-xs text-white/70">{product.slug}</div>
+                <div className="mt-1 truncate text-xs text-slate-600">{product.slug}</div>
                 {product.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -464,14 +470,14 @@ export default function ProductsManager() {
                   />
                 ) : null}
                 <div className="mt-2 line-clamp-3 text-sm">{product.description}</div>
-                <div className="mt-3 flex items-center justify-between text-xs text-white/70">
+                <div className="mt-3 flex items-center justify-between text-xs text-slate-600">
                   <span>{product.isAlcohol ? "Liquor 18+" : "Food/Drink"}</span>
                   <span>{product.inStock ? "In stock" : "Out of stock"}</span>
                 </div>
-                <div className="mt-2 text-xs text-white/60">
+                <div className="mt-2 text-xs text-slate-500">
                   Review: {product.status.replaceAll("_", " ")}
                   {product.reviewReason ? (
-                    <span className="mt-1 block text-amber-100">{product.reviewReason}</span>
+                    <span className="mt-1 block text-amber-800">{product.reviewReason}</span>
                   ) : null}
                 </div>
                 <div className="mt-3 flex items-center gap-3 text-xs">
@@ -490,7 +496,7 @@ export default function ProductsManager() {
                   <button
                     type="button"
                     onClick={() => remove(product.id)}
-                    className="underline-offset-2 hover:text-red-200 hover:underline"
+                    className="underline-offset-2 hover:text-red-900 hover:underline"
                   >
                     Delete
                   </button>

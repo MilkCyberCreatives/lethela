@@ -27,7 +27,7 @@ export default function AdvancedAutomationsPanel() {
 
   return (
     <DashCard title="Advanced Automations">
-      <p className="text-sm text-white/80">
+      <p className="text-sm text-slate-700">
         Run deep automations: stock safety, alcohol compliance, smart hours, promo drafting, upsell
         combos, late-order alerts, fraud signals, and daily health summaries.
       </p>
@@ -42,12 +42,12 @@ export default function AdvancedAutomationsPanel() {
       </button>
 
       {log ? (
-        <pre className="mt-3 max-h-64 overflow-y-auto whitespace-pre-wrap rounded border border-white/20 bg-white/5 p-3 text-xs text-white/80">
+        <pre className="mt-3 max-h-64 overflow-y-auto whitespace-pre-wrap rounded border border-slate-300 bg-white p-3 text-xs text-slate-700">
           {log}
         </pre>
       ) : null}
 
-      <p className="mt-4 text-[11px] leading-relaxed text-white/50">
+      <p className="mt-4 text-[11px] leading-relaxed text-slate-500">
         Next step: optional auto-apply mode for suggested hours and customer outreach drafts.
       </p>
     </DashCard>

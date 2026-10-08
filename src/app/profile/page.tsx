@@ -86,7 +86,7 @@ export default async function ProfilePage({
 
         <div className="mt-6 grid min-w-0 items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
           <aside className="account-dashboard-nav rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-28">
-            <p className="px-3 pb-2 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <p className="px-3 pb-2 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               Account menu
             </p>
             <nav aria-label="Account sections" className="account-dashboard-nav-links grid gap-1">
@@ -110,13 +110,13 @@ export default async function ProfilePage({
           </aside>
 
           <div className="grid min-w-0 gap-6">
-            <section id="profile-details" className="scroll-mt-28">
+            <section id="profile-details" className="min-w-0 scroll-mt-28">
               <UserProfileForm />
             </section>
-            <section id="order-history" className="scroll-mt-28">
+            <section id="order-history" className="min-w-0 scroll-mt-28">
               <OrderHistoryPanel />
             </section>
-            <section id="saved-activity" className="scroll-mt-28">
+            <section id="saved-activity" className="min-w-0 scroll-mt-28">
               <ProfileExperiencePanel />
             </section>
           </div>

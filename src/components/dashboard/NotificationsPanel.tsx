@@ -13,9 +13,9 @@ type NotificationItem = {
 };
 
 const toneClasses: Record<NotificationItem["tone"], string> = {
-  info: "border-sky-200/20 bg-sky-300/10 text-sky-50",
-  warning: "border-amber-200/20 bg-amber-300/10 text-amber-50",
-  danger: "border-red-200/20 bg-red-300/10 text-red-50",
+  info: "border-sky-200 bg-sky-50 text-sky-800",
+  warning: "border-amber-200 bg-amber-50 text-amber-800",
+  danger: "border-red-200 bg-red-50 text-red-800",
 };
 
 export default function NotificationsPanel() {
@@ -47,7 +47,7 @@ export default function NotificationsPanel() {
   return (
     <DashCard title="Notifications and Issues">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-white/70">
+        <p className="text-sm text-slate-600">
           This is the operational inbox for store blockers, missed settings, and urgent order
           signals.
         </p>
@@ -55,17 +55,17 @@ export default function NotificationsPanel() {
           type="button"
           onClick={load}
           disabled={loading}
-          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
+          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
         >
           {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
-      {error ? <p className="mt-3 text-xs text-red-200">{error}</p> : null}
+      {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
 
       <div className="mt-4 space-y-3">
         {!loading && items.length === 0 ? (
-          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/70">
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
             No active dashboard notifications right now.
           </div>
         ) : null}
