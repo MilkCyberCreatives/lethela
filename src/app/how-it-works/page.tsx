@@ -124,8 +124,7 @@ export default function HowItWorksPage() {
             <Truck className="h-7 w-7 text-lethela-primary" />
             <h2 className="mt-4 text-2xl font-bold">Earn by delivering locally</h2>
             <p className="mt-3 text-sm leading-7 text-white/65">
-              Approved riders see assigned deliveries, update progress and keep 100% of customer
-              tips.
+              Approved riders see assigned deliveries, update progress and keep every customer tip.
             </p>
             <Link
               href="/rider"

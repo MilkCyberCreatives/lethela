@@ -6,8 +6,13 @@ export const INCLUDED_DELIVERY_RADIUS_KM = 1;
 export const DELIVERY_FEE_PER_KM_CENTS = 1000;
 export const EXTRA_DELIVERY_FEE_PER_KM_CENTS = DELIVERY_FEE_PER_KM_CENTS;
 export const MAX_LAUNCH_DELIVERY_DISTANCE_KM = 10;
+// Lethela's pricing structure is for signed-in users only. Use this wording on the
+// signed-in Pricing page and dashboards, never on pages that anyone can open.
 export const DELIVERY_PRICING_WORDING =
   "Lethela delivery is R10 per road kilometre with a R10 minimum. The full delivery fee goes to the rider.";
+// Figure-free wording for public pages, the cart and checkout.
+export const PUBLIC_DELIVERY_WORDING =
+  "Delivery is worked out from the road distance between the shop and you, and you see the exact fee before you pay. The full delivery fee goes to the rider.";
 
 export const DELIVERY_FEE_TIERS = [
   { maxKm: 1, feeCents: 1000, label: "0-1 km" },

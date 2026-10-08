@@ -8,10 +8,7 @@ function xmlEscape(value: string) {
 }
 
 export async function GET() {
-  const routes = [
-    { path: "/areas/klipfontein-view", changeFrequency: "weekly", priority: "0.82" },
-    { path: "/pricing", changeFrequency: "monthly", priority: "0.65" },
-  ];
+  const routes = [{ path: "/areas/klipfontein-view", changeFrequency: "weekly", priority: "0.82" }];
   const urls = routes
     .map(
       (route) => `  <url>

@@ -117,7 +117,7 @@ export default function KlipfonteinViewAreaPage() {
             ],
             [
               "Clear delivery pricing",
-              "Delivery starts from R10 and is calculated according to the delivery distance.",
+              "Delivery is worked out from the road distance to your address, and you see the exact fee before you pay.",
             ],
             [
               "Community rider network",

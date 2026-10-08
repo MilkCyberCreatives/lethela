@@ -3,8 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Vendor } from "@/types";
-import { formatZAR } from "@/lib/format";
-import { DEFAULT_DELIVERY_FEE_CENTS } from "@/lib/pricing";
 import { recordVendorClick } from "@/lib/tracking";
 
 export default function VendorCard({ v }: { v: Vendor }) {
@@ -62,9 +60,7 @@ export default function VendorCard({ v }: { v: Vendor }) {
             {v.isOpen === false ? "Closed" : "Open"}
           </span>
           <span className="rounded-md bg-white/10 px-2 py-1">{v.eta}</span>
-          <span className="rounded-md bg-white/10 px-2 py-1">
-            Delivery from {formatZAR(v.deliveryFeeCents ?? DEFAULT_DELIVERY_FEE_CENTS)}
-          </span>
+          <span className="rounded-md bg-white/10 px-2 py-1">Delivery by Lethela</span>
           {!hasRating ? (
             <span className="rounded-md bg-white/10 px-2 py-1">No ratings yet</span>
           ) : null}

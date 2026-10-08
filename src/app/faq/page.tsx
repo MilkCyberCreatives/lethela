@@ -46,7 +46,7 @@ const faq = [
   },
   {
     q: "How is the delivery fee calculated?",
-    a: "Delivery is R10 per road kilometre, with a R10 minimum. The full delivery fee goes to the assigned rider. Google road routing is used where available, with a clearly labelled conservative estimate only as a fallback.",
+    a: "Delivery is worked out from the road distance between the shop and your address, and you see the exact fee before you pay. The full delivery fee goes to the assigned rider. Google road routing is used where available, with a clearly labelled conservative estimate only as a fallback.",
   },
   {
     q: "How does Lethela handle alcohol?",
@@ -54,7 +54,7 @@ const faq = [
   },
   {
     q: "Are prices and delivery fees shown before I pay?",
-    a: "Yes. Customers see item prices, the calculated delivery fee, any rider tip and manual-quote limits before completing checkout. Public vendor and rider pilot pricing is also available on the Pricing page.",
+    a: "Yes. Customers see item prices, the calculated delivery fee, any rider tip and manual-quote limits before completing checkout. Once you sign in, you can also see the full vendor and rider pilot pricing on the Pricing page.",
   },
   {
     q: "What happens if something is missing or wrong?",
