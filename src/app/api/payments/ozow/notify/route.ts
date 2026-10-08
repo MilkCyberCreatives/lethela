@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
-import { notifyVendorOfPaidOrder } from "@/lib/order-notifications";
+import { notifyAdminsOfOrder, notifyVendorOfPaidOrder } from "@/lib/order-notifications";
 import { buildOzowResponseHash } from "@/lib/ozow";
 import { settleWithin } from "@/lib/notification-channels";
 import { recordOrderEvent } from "@/lib/order-operations";
@@ -220,7 +220,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (paymentStatus === "PAID" && updated.count === 1) {
-    await settleWithin(notifyVendorOfPaidOrder(order.id), 4_000);
+    await settleWithin(
+      Promise.all([notifyVendorOfPaidOrder(order.id), notifyAdminsOfOrder(order.id, "paid")]),
+      4_000,
+    );
   }
 
   return NextResponse.json({ ok: true, duplicate: updated.count === 0 });

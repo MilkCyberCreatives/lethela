@@ -40,7 +40,10 @@ export function normalizeWhatsAppRecipient(value: string | null | undefined) {
   if (raw.toLowerCase().startsWith("whatsapp:")) return raw;
   const digits = raw.replace(/[^\d+]/g, "");
   if (!digits) return "";
-  return `whatsapp:${digits.startsWith("+") ? digits : `+${digits}`}`;
+  if (digits.startsWith("+")) return `whatsapp:${digits}`;
+  // South African local numbers (072 123 4567) need the +27 country code.
+  if (digits.startsWith("0")) return `whatsapp:+27${digits.slice(1)}`;
+  return `whatsapp:+${digits}`;
 }
 
 export function normalizeWhatsAppSender(value?: string | null) {
