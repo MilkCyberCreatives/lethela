@@ -9,9 +9,9 @@ import { useCart } from "@/store/cart";
 import { readPreferredLocation } from "@/lib/location-preference";
 import {
   DEFAULT_DELIVERY_FEE_CENTS,
-  DELIVERY_PRICING_WORDING,
   EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   INCLUDED_DELIVERY_RADIUS_KM,
+  PUBLIC_DELIVERY_WORDING,
 } from "@/lib/pricing";
 import { useUIStore } from "@/store/ui";
 import { trackWhatsAppClick } from "@/lib/visitor";
@@ -290,7 +290,7 @@ export default function CartDrawer() {
                     ? "Refreshing delivery quote..."
                     : deliveryQuote.manualQuoteRequired
                       ? "This address is outside the current delivery zone. Use WhatsApp for a manual quote."
-                      : DELIVERY_PRICING_WORDING}
+                      : PUBLIC_DELIVERY_WORDING}
                 </div>
               </>
             ) : (

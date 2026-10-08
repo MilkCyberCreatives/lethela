@@ -1,31 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
+import { auth } from "@/auth";
 import { formatZAR } from "@/lib/format";
 import { DELIVERY_FEE_TIERS, DELIVERY_PRICING_WORDING } from "@/lib/pricing";
+import { buildNoIndexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildNoIndexMetadata({
   title: "Pricing",
   description:
     "Clear Lethela customer delivery and rider payout information for Klipfontein View and future township delivery areas.",
-  alternates: {
-    canonical: "/pricing",
-  },
-  openGraph: {
-    title: "Lethela pricing",
-    description:
-      "See customer delivery fees and rider payout rules for the Lethela township delivery marketplace.",
-    url: "/pricing",
-  },
-  twitter: {
-    title: "Lethela pricing",
-    description:
-      "See customer delivery fees and rider payout rules for the Lethela township delivery marketplace.",
-  },
-};
+  path: "/pricing",
+});
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  // Lethela's pricing structure is only for signed-in users (any role).
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin?callbackUrl=/pricing");
+  }
+
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
       <MainHeader />

@@ -8,11 +8,10 @@ import MainHeader from "@/components/MainHeader";
 import MenuSectionList from "@/components/MenuSectionList";
 import ProductCard from "@/components/ProductCard";
 import StructuredData from "@/components/StructuredData";
-import { formatZAR } from "@/lib/format";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 import { buildPageMetadata } from "@/lib/seo";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
-import { DEFAULT_DELIVERY_FEE_CENTS, DELIVERY_PRICING_WORDING } from "@/lib/pricing";
+import { PUBLIC_DELIVERY_WORDING } from "@/lib/pricing";
 import { getVendorTrustSnapshot } from "@/lib/customer-experience";
 import { getVendorBySlug as getVendorProfile } from "@/server/queries";
 import { isStoreOpenNow, johannesburgClock } from "@/lib/store-availability";
@@ -243,7 +242,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
                 Today: {hoursState.todayLabel}
               </span>
               <span className="rounded-full border border-white/20 px-3 py-1">
-                Delivery from {formatZAR(DEFAULT_DELIVERY_FEE_CENTS)}
+                Delivery by Lethela
               </span>
               <span className="rounded-full border border-white/20 px-3 py-1">
                 ETA {vendor.etaMins}-{vendor.etaMins + 10} min
@@ -274,7 +273,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
                 </span>
               ) : null}
             </div>
-            <p className="text-xs text-white/60">{DELIVERY_PRICING_WORDING}</p>
+            <p className="text-xs text-white/60">{PUBLIC_DELIVERY_WORDING}</p>
 
             <div className="flex flex-wrap gap-3">
               <a
