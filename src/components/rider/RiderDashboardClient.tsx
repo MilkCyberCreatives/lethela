@@ -81,10 +81,10 @@ function money(cents: number) {
 }
 
 function statusClass(status?: string) {
-  if (status === "APPROVED") return "border-emerald-300/35 bg-emerald-300/10 text-emerald-100";
-  if (status === "REJECTED") return "border-red-300/35 bg-red-300/10 text-red-100";
-  if (status === "UNDER_REVIEW") return "border-amber-300/35 bg-amber-300/10 text-amber-100";
-  return "border-white/15 bg-white/5 text-white/75";
+  if (status === "APPROVED") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  if (status === "REJECTED") return "border-red-200 bg-red-50 text-red-800";
+  if (status === "UNDER_REVIEW") return "border-amber-200 bg-amber-50 text-amber-800";
+  return "border-slate-300 bg-white text-slate-600";
 }
 
 function riderOrderPriority(status: string) {
@@ -152,14 +152,14 @@ export default function RiderDashboardClient() {
 
   if (loading) {
     return (
-      <div className="grid animate-pulse gap-4 rounded-lg border border-white/10 bg-white/[0.04] p-5">
-        <div className="h-5 w-40 rounded bg-white/10" />
+      <div className="grid animate-pulse gap-4 rounded-lg border border-slate-200 bg-white p-5">
+        <div className="h-5 w-40 rounded bg-slate-100" />
         <div className="grid gap-3 md:grid-cols-3">
-          <div className="h-24 rounded-lg bg-white/10" />
-          <div className="h-24 rounded-lg bg-white/10" />
-          <div className="h-24 rounded-lg bg-white/10" />
+          <div className="h-24 rounded-lg bg-slate-100" />
+          <div className="h-24 rounded-lg bg-slate-100" />
+          <div className="h-24 rounded-lg bg-slate-100" />
         </div>
-        <div className="h-32 rounded-lg bg-white/10" />
+        <div className="h-32 rounded-lg bg-slate-100" />
       </div>
     );
   }
@@ -167,14 +167,14 @@ export default function RiderDashboardClient() {
   if (!data?.ok) {
     const signInHref = `/signin?callbackUrl=${encodeURIComponent("/rider/dashboard")}`;
     return (
-      <section className="rounded-lg border border-white/10 bg-[#0C1132] p-5">
+      <section className="rounded-lg border border-slate-200 bg-white p-5">
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
             <Lock className="h-5 w-5" />
           </span>
           <div>
             <h1 className="text-2xl font-bold">Rider sign-in required</h1>
-            <p className="mt-1 text-sm text-white/65">
+            <p className="mt-1 text-sm text-slate-600">
               {data?.error || "Sign in with a rider account to view this dashboard."}
             </p>
           </div>
@@ -186,7 +186,7 @@ export default function RiderDashboardClient() {
           <Button
             asChild
             variant="outline"
-            className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+            className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
           >
             <Link href="/rider">Create rider account</Link>
           </Button>
@@ -214,7 +214,7 @@ export default function RiderDashboardClient() {
             {priorityOrder ? (
               <>
                 <h2 className="mt-2 text-xl font-bold">Continue delivery {priorityOrder.ref}</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                   {priorityOrder.status.replaceAll("_", " ")} · {priorityOrder.vendor} · pickup in{" "}
                   {priorityOrder.pickupArea}. Keep this assignment moving before waiting for another
                   delivery.
@@ -223,7 +223,7 @@ export default function RiderDashboardClient() {
             ) : !application ? (
               <>
                 <h2 className="mt-2 text-xl font-bold">Submit your rider application</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                   Use the same email as this account so Lethela can connect your application to this
                   dashboard.
                 </p>
@@ -231,7 +231,7 @@ export default function RiderDashboardClient() {
             ) : !data.readiness?.approved ? (
               <>
                 <h2 className="mt-2 text-xl font-bold">Finish onboarding and approval</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                   Complete any missing profile or document requirements. Dispatch unlocks only after
                   Lethela approval.
                 </p>
@@ -239,7 +239,7 @@ export default function RiderDashboardClient() {
             ) : !data.readiness?.canReceiveDispatch ? (
               <>
                 <h2 className="mt-2 text-xl font-bold">Finish dispatch setup</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                   Your account is approved, but dispatch readiness still needs attention in Profile
                   & documents.
                 </p>
@@ -247,7 +247,7 @@ export default function RiderDashboardClient() {
             ) : (
               <>
                 <h2 className="mt-2 text-xl font-bold">Ready for work</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                   No active delivery is assigned. Use Shift status above to go online and receive
                   available work.
                 </p>
@@ -272,14 +272,14 @@ export default function RiderDashboardClient() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-white/10 bg-[#0C1132] p-5">
+      <section className="rounded-lg border border-slate-200 bg-white p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
               Rider workspace
             </p>
             <h1 className="mt-2 text-2xl font-bold md:text-3xl">Delivery dashboard</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/68">
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
               {application
                 ? `Welcome ${application.fullName}. Your dashboard is connected to your Lethela rider application.`
                 : "Your rider account is active, but no rider application is linked to this email address yet."}
@@ -292,7 +292,7 @@ export default function RiderDashboardClient() {
             <Button
               asChild
               variant="outline"
-              className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+              className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
             >
               <Link href="/rider/dashboard/profile">Complete profile</Link>
             </Button>
@@ -328,10 +328,10 @@ export default function RiderDashboardClient() {
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[1.1fr,0.9fr]">
-        <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+        <section className="rounded-lg border border-slate-200 bg-white p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-white/50">Dispatch</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Dispatch</p>
               <h2 className="mt-1 text-lg font-semibold">Active delivery lane</h2>
             </div>
             <Navigation className="h-5 w-5 text-lethela-primary" />
@@ -351,23 +351,23 @@ export default function RiderDashboardClient() {
               orders.map((order) => (
                 <article
                   key={order.ref}
-                  className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
+                  className="rounded-lg border border-slate-200 bg-white p-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold">{order.ref}</p>
-                      <p className="mt-1 text-xs text-white/60">{order.vendor}</p>
+                      <p className="mt-1 text-xs text-slate-500">{order.vendor}</p>
                     </div>
-                    <span className="rounded-full border border-lethela-primary/35 bg-lethela-primary/10 px-3 py-1 text-xs text-red-100">
+                    <span className="rounded-full border border-lethela-primary/35 bg-lethela-primary/10 px-3 py-1 text-xs text-red-800">
                       {order.status.replaceAll("_", " ")}
                     </span>
                   </div>
-                  <div className="mt-3 flex items-center gap-2 text-sm text-white/75">
+                  <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
                     <MapPin className="h-4 w-4 text-lethela-primary" />
                     {order.pickupArea}
                   </div>
                   {order.pickupInstructions ? (
-                    <p className="mt-2 rounded-lg border border-white/10 bg-black/15 p-3 text-xs text-white/65">
+                    <p className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                       Pickup: {order.pickupInstructions}
                     </p>
                   ) : null}
@@ -377,15 +377,17 @@ export default function RiderDashboardClient() {
                         <Link href={order.consoleUrl}>Open rider console</Link>
                       </Button>
                     ) : (
-                      <span className="text-xs text-amber-100">
+                      <span className="text-xs text-amber-800">
                         Rider console secret is not configured.
                       </span>
                     )}
-                    <span className="text-xs text-white/60">
+                    <span className="text-xs text-slate-500">
                       Delivery fee: {money(order.deliveryFeeCents)}
                     </span>
-                    <span className="text-xs text-white/60">Tip: {money(order.riderTipCents)}</span>
-                    <span className="text-xs font-semibold text-white">
+                    <span className="text-xs text-slate-500">
+                      Tip: {money(order.riderTipCents)}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-900">
                       Rider total: {money(order.riderPayoutCents)}
                     </span>
                   </div>
@@ -398,10 +400,10 @@ export default function RiderDashboardClient() {
           </Button>
         </section>
 
-        <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+        <section className="rounded-lg border border-slate-200 bg-white p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-white/50">
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
                 Operating readiness
               </p>
               <h2 className="mt-1 text-lg font-semibold">Rider checklist</h2>
@@ -412,12 +414,12 @@ export default function RiderDashboardClient() {
             {checklist.map((item) => (
               <div
                 key={item.label}
-                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3"
+                className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3"
               >
                 <CheckCircle2
-                  className={`h-4 w-4 ${item.complete ? "text-lethela-primary" : "text-white/30"}`}
+                  className={`h-4 w-4 ${item.complete ? "text-lethela-primary" : "text-slate-400"}`}
                 />
-                <span className="text-sm text-white/75">{item.label}</span>
+                <span className="text-sm text-slate-600">{item.label}</span>
               </div>
             ))}
           </div>
@@ -425,7 +427,7 @@ export default function RiderDashboardClient() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5 md:col-span-2">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <ShieldCheck className="h-5 w-5 text-lethela-primary" />
@@ -433,7 +435,7 @@ export default function RiderDashboardClient() {
             </div>
             <Button
               variant="outline"
-              className="border-white/30 bg-transparent text-white hover:border-lethela-primary hover:text-lethela-primary"
+              className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
               onClick={load}
             >
               Refresh messages
@@ -449,18 +451,18 @@ export default function RiderDashboardClient() {
               messages.map((message) => (
                 <article
                   key={message.id}
-                  className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
+                  className="rounded-lg border border-slate-200 bg-white p-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold">{message.subject}</h3>
-                      <p className="mt-1 text-xs text-white/45">
+                      <p className="mt-1 text-xs text-slate-500">
                         {new Date(message.createdAt).toLocaleString()} ·{" "}
                         {message.channel.replaceAll("_", " ")}
                       </p>
                     </div>
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-white/72">
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
                     {message.body}
                   </p>
                 </article>
@@ -469,24 +471,24 @@ export default function RiderDashboardClient() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+        <section className="rounded-lg border border-slate-200 bg-white p-5">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-5 w-5 text-lethela-primary" />
             <h2 className="text-lg font-semibold">Availability</h2>
           </div>
-          <p className="mt-3 text-sm text-white/65">
+          <p className="mt-3 text-sm text-slate-600">
             {application?.availableHours ||
               "Availability will appear after your rider application is submitted."}
           </p>
         </section>
 
-        <section className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+        <section className="rounded-lg border border-slate-200 bg-white p-5">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-5 w-5 text-lethela-primary" />
             <h2 className="text-lg font-semibold">Application profile</h2>
           </div>
           {application ? (
-            <div className="mt-3 space-y-2 text-sm text-white/65">
+            <div className="mt-3 space-y-2 text-sm text-slate-600">
               <p>
                 <span
                   className={`rounded-full border px-3 py-1 text-xs ${statusClass(application.status)}`}
@@ -503,13 +505,13 @@ export default function RiderDashboardClient() {
                 Emergency: {application.emergencyContactName} ({application.emergencyContactPhone})
               </p>
               {application.aiSummary ? (
-                <p className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                <p className="rounded-lg border border-slate-200 bg-white p-3">
                   {application.aiSummary}
                 </p>
               ) : null}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-white/65">
+            <p className="mt-3 text-sm text-slate-600">
               Submit the rider application with the same email as your account to link this
               dashboard.
             </p>
@@ -532,26 +534,26 @@ function Metric({
   icon: typeof Bike;
 }) {
   return (
-    <article className="rounded-lg border border-white/10 bg-white/[0.045] p-4">
+    <article className="rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.14em] text-white/55">{label}</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">{label}</p>
           <p className="mt-2 text-xl font-bold">{value}</p>
         </div>
         <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
           <Icon className="h-5 w-5" />
         </span>
       </div>
-      <p className="mt-3 text-xs text-white/60">{note}</p>
+      <p className="mt-3 text-xs text-slate-500">{note}</p>
     </article>
   );
 }
 
 function EmptyPanel({ title, text }: { title: string; text: string }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
       <p className="text-sm font-semibold">{title}</p>
-      <p className="mt-1 text-sm text-white/60">{text}</p>
+      <p className="mt-1 text-sm text-slate-500">{text}</p>
     </div>
   );
 }

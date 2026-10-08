@@ -2,7 +2,7 @@
    Flat design: solid surfaces separated by 1px borders and small background
    steps. No shadows, no gradients, no blur. */
 
-body[data-lethela-dashboard] {
+[data-lethela-dashboard] {
   --dashboard-canvas: #f4f6fb;
   --dashboard-surface: #ffffff;
   --dashboard-surface-muted: #f6f8fc;
@@ -17,39 +17,39 @@ body[data-lethela-dashboard] {
   color: var(--dashboard-text);
 }
 
-body[data-lethela-dashboard] main {
+[data-lethela-dashboard] main {
   min-height: 100dvh;
   background: var(--dashboard-canvas) !important;
   color: var(--dashboard-text) !important;
 }
 
-body[data-lethela-dashboard] main > header {
+[data-lethela-dashboard] main > header {
   border-bottom: 1px solid var(--dashboard-border) !important;
 }
 
-body[data-lethela-dashboard] main > section {
+[data-lethela-dashboard] main > section {
   width: min(100%, 1640px);
   margin-inline: auto;
 }
 
-body[data-lethela-dashboard] ::selection {
+[data-lethela-dashboard] ::selection {
   background: rgba(181, 0, 27, 0.18);
 }
 
-body[data-lethela-dashboard] :focus-visible {
+[data-lethela-dashboard] :focus-visible {
   outline: 2px solid rgba(181, 0, 27, 0.55);
   outline-offset: 2px;
 }
 
-body[data-lethela-dashboard]
+[data-lethela-dashboard]
   main
   :is(button, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
   min-height: 44px;
 }
 
 /* Admin and vendor app shells: dark sidebar rail. */
-body[data-lethela-dashboard="admin"] main > section > div > aside,
-body[data-lethela-dashboard="vendor"] main > section > div > aside,
+[data-lethela-dashboard="admin"] main > section > div > aside,
+[data-lethela-dashboard="vendor"] main > section > div > aside,
 .dashboard-sidebar {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 16px !important;
@@ -57,13 +57,13 @@ body[data-lethela-dashboard="vendor"] main > section > div > aside,
   color: #fff !important;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > aside a,
-body[data-lethela-dashboard="admin"] main > section > div > aside button,
-body[data-lethela-dashboard="admin"] main > section > div > aside p,
-body[data-lethela-dashboard="admin"] main > section > div > aside h1,
-body[data-lethela-dashboard="vendor"] main > section > div > aside a,
-body[data-lethela-dashboard="vendor"] main > section > div > aside p,
-body[data-lethela-dashboard="vendor"] main > section > div > aside h2,
+[data-lethela-dashboard="admin"] main > section > div > aside a,
+[data-lethela-dashboard="admin"] main > section > div > aside button,
+[data-lethela-dashboard="admin"] main > section > div > aside p,
+[data-lethela-dashboard="admin"] main > section > div > aside h1,
+[data-lethela-dashboard="vendor"] main > section > div > aside a,
+[data-lethela-dashboard="vendor"] main > section > div > aside p,
+[data-lethela-dashboard="vendor"] main > section > div > aside h2,
 .dashboard-sidebar,
 .dashboard-sidebar a,
 .dashboard-sidebar p,
@@ -73,8 +73,8 @@ body[data-lethela-dashboard="vendor"] main > section > div > aside h2,
   color: #fff;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > aside nav button,
-body[data-lethela-dashboard="vendor"] main > section > div > aside nav a,
+[data-lethela-dashboard="admin"] main > section > div > aside nav button,
+[data-lethela-dashboard="vendor"] main > section > div > aside nav a,
 .dashboard-side-link {
   min-height: 44px;
   border-radius: 10px !important;
@@ -84,135 +84,38 @@ body[data-lethela-dashboard="vendor"] main > section > div > aside nav a,
     color 140ms ease;
 }
 
-/* Turn repeated dark panels into real workspace surfaces. */
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child {
+/* Workspace surfaces. Components carry their own light colour classes; these rules keep the
+   shared pieces (form fields, tables) consistent across the admin, vendor and rider
+   workspaces. */
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child {
   border: 0 !important;
   background: transparent !important;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child,
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child,
+[data-lethela-dashboard="admin"] main > section > div > div:last-child,
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child,
 .dashboard-workspace {
   color: var(--dashboard-text);
 }
 
-body[data-lethela-dashboard="admin"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(section, article, div)[class*="border-white/"],
-body[data-lethela-dashboard="vendor"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(section, article, div)[class*="border-white/"],
-.dashboard-workspace :is(section, article, div)[class*="border-white/"] {
-  border-color: var(--dashboard-border) !important;
-  background: var(--dashboard-surface) !important;
-  color: var(--dashboard-text) !important;
-}
-
-body[data-lethela-dashboard="admin"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(section, article, div)[class*="border-emerald"],
-body[data-lethela-dashboard="vendor"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(section, article, div)[class*="border-emerald"],
-.dashboard-workspace :is(section, article, div)[class*="border-emerald"] {
-  background: #f0fdf4 !important;
-  border-color: #bbf7d0 !important;
-  color: #14532d !important;
-}
-
-body[data-lethela-dashboard="admin"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(section, article, div)[class*="border-amber"],
-body[data-lethela-dashboard="vendor"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(section, article, div)[class*="border-amber"],
-.dashboard-workspace :is(section, article, div)[class*="border-amber"] {
-  background: #fffbeb !important;
-  border-color: #fde68a !important;
-  color: #78350f !important;
-}
-
-body[data-lethela-dashboard="admin"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(section, article, div)[class*="border-red"],
-body[data-lethela-dashboard="vendor"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(section, article, div)[class*="border-red"],
-.dashboard-workspace :is(section, article, div)[class*="border-red"] {
-  background: #fff1f2 !important;
-  border-color: #fecdd3 !important;
-  color: #881337 !important;
-}
-
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child :is(h1, h2, h3, h4),
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(h1, h2, h3, h4),
+[data-lethela-dashboard="admin"] main > section > div > div:last-child :is(h1, h2, h3, h4),
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(h1, h2, h3, h4),
 .dashboard-workspace :is(h1, h2, h3, h4) {
-  color: var(--dashboard-text) !important;
   letter-spacing: -0.02em;
 }
 
-body[data-lethela-dashboard="admin"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(p, span, div)[class*="text-white/"],
-body[data-lethela-dashboard="vendor"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(p, span, div)[class*="text-white/"],
-.dashboard-workspace :is(p, span, div)[class*="text-white/"] {
-  color: var(--dashboard-muted) !important;
+/* Grid columns follow the screen width instead of stretching to their widest table or chart,
+   so dashboards never scroll sideways on phones. Zero specificity, so min-w-* classes still win. */
+:where([data-lethela-dashboard] .grid, .dashboard-workspace .grid) > * {
+  min-width: 0;
 }
 
-body[data-lethela-dashboard="admin"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(p, span, div)[class~="text-white"],
-body[data-lethela-dashboard="vendor"]
-  main
-  > section
-  > div
-  > div:last-child
-  :is(p, span, div)[class~="text-white"],
-.dashboard-workspace :is(p, span, div)[class~="text-white"] {
-  color: var(--dashboard-text) !important;
-}
-
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child input,
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child select,
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child textarea,
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child input,
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child select,
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child textarea,
+[data-lethela-dashboard="admin"] main > section > div > div:last-child input,
+[data-lethela-dashboard="admin"] main > section > div > div:last-child select,
+[data-lethela-dashboard="admin"] main > section > div > div:last-child textarea,
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child input,
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child select,
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child textarea,
 .dashboard-workspace input,
 .dashboard-workspace select,
 .dashboard-workspace textarea {
@@ -221,8 +124,8 @@ body[data-lethela-dashboard="vendor"] main > section > div > div:last-child text
   color: #0f172a !important;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child table,
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child table,
+[data-lethela-dashboard="admin"] main > section > div > div:last-child table,
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child table,
 .dashboard-workspace table {
   width: 100%;
   border-collapse: separate;
@@ -233,8 +136,8 @@ body[data-lethela-dashboard="vendor"] main > section > div > div:last-child tabl
   background: #fff;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child th,
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child th,
+[data-lethela-dashboard="admin"] main > section > div > div:last-child th,
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child th,
 .dashboard-workspace th {
   background: var(--dashboard-surface-muted);
   color: #475569 !important;
@@ -243,53 +146,30 @@ body[data-lethela-dashboard="vendor"] main > section > div > div:last-child th,
   text-transform: uppercase;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child tbody tr,
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child tbody tr,
+[data-lethela-dashboard="admin"] main > section > div > div:last-child tbody tr,
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child tbody tr,
 .dashboard-workspace tbody tr {
   background: var(--dashboard-surface) !important;
   color: var(--dashboard-text) !important;
 }
 
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child td,
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child td,
+[data-lethela-dashboard="admin"] main > section > div > div:last-child td,
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child td,
 .dashboard-workspace td {
   border-color: var(--dashboard-border) !important;
   background: var(--dashboard-surface) !important;
   color: var(--dashboard-text) !important;
 }
 
-body[data-lethela-dashboard="admin"]
-  main
-  > section
-  > div
-  > div:last-child
-  button[class*="border-white/"],
-.dashboard-workspace button[class*="border-white/"] {
-  border-color: var(--dashboard-border) !important;
-  background: var(--dashboard-surface) !important;
-  color: var(--dashboard-text) !important;
-}
-
-body[data-lethela-dashboard="admin"]
-  main
-  > section
-  > div
-  > div:last-child
-  button[class*="border-white/"]:hover,
-.dashboard-workspace button[class*="border-white/"]:hover {
-  border-color: var(--dashboard-accent) !important;
-  background: #fff7f8 !important;
-}
-
-body[data-lethela-dashboard="admin"] main > section > div > div:last-child tr:hover td,
-body[data-lethela-dashboard="vendor"] main > section > div > div:last-child tr:hover td,
+[data-lethela-dashboard="admin"] main > section > div > div:last-child tr:hover td,
+[data-lethela-dashboard="vendor"] main > section > div > div:last-child tr:hover td,
 .dashboard-workspace tr:hover td {
   background: var(--dashboard-surface-muted);
 }
 
 /* Interactive controls: colour feedback only, no lift. */
-body[data-lethela-dashboard] main button:not(:disabled),
-body[data-lethela-dashboard] main a[class*="rounded"] {
+[data-lethela-dashboard] main button:not(:disabled),
+[data-lethela-dashboard] main a[class*="rounded"] {
   transition:
     border-color 140ms ease,
     background-color 140ms ease,
@@ -379,6 +259,10 @@ body[data-lethela-dashboard] main a[class*="rounded"] {
   color: #fff !important;
 }
 
+.dashboard-side-link[data-active="true"] .dashboard-side-link-hint {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .dashboard-workspace {
   min-width: 0;
 }
@@ -408,14 +292,14 @@ body[data-lethela-dashboard] main a[class*="rounded"] {
 }
 
 @media (max-width: 1023px) {
-  body[data-lethela-dashboard="admin"] main > section > div,
-  body[data-lethela-dashboard="vendor"] main > section > div,
+  [data-lethela-dashboard="admin"] main > section > div,
+  [data-lethela-dashboard="vendor"] main > section > div,
   .dashboard-shell {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  body[data-lethela-dashboard="admin"] main > section > div > aside,
-  body[data-lethela-dashboard="vendor"] main > section > div > aside,
+  [data-lethela-dashboard="admin"] main > section > div > aside,
+  [data-lethela-dashboard="vendor"] main > section > div > aside,
   .dashboard-sidebar {
     position: relative !important;
     top: auto !important;
@@ -424,7 +308,7 @@ body[data-lethela-dashboard] main a[class*="rounded"] {
     overflow: visible !important;
   }
 
-  body[data-lethela-dashboard="admin"] main > section > div > aside nav {
+  [data-lethela-dashboard="admin"] main > section > div > aside nav {
     display: flex !important;
     gap: 12px !important;
     overflow-x: auto;
@@ -432,12 +316,12 @@ body[data-lethela-dashboard] main a[class*="rounded"] {
     scroll-snap-type: x proximity;
   }
 
-  body[data-lethela-dashboard="admin"] main > section > div > aside nav > div {
+  [data-lethela-dashboard="admin"] main > section > div > aside nav > div {
     min-width: 220px;
     scroll-snap-align: start;
   }
 
-  body[data-lethela-dashboard="vendor"] main > section > div > aside nav {
+  [data-lethela-dashboard="vendor"] main > section > div > aside nav {
     grid-auto-flow: column;
     grid-auto-columns: minmax(190px, 1fr);
     overflow-x: auto;
@@ -445,7 +329,7 @@ body[data-lethela-dashboard] main a[class*="rounded"] {
     scroll-snap-type: x proximity;
   }
 
-  body[data-lethela-dashboard="vendor"] main > section > div > aside nav > a {
+  [data-lethela-dashboard="vendor"] main > section > div > aside nav > a {
     scroll-snap-align: start;
   }
 
@@ -468,21 +352,21 @@ body[data-lethela-dashboard] main a[class*="rounded"] {
 }
 
 @media (max-width: 640px) {
-  body[data-lethela-dashboard] main > section,
+  [data-lethela-dashboard] main > section,
   .dashboard-shell {
     padding-inline: 12px !important;
   }
 
-  body[data-lethela-dashboard="vendor"] main > section {
+  [data-lethela-dashboard="vendor"] main > section {
     padding-block: 12px !important;
   }
 
-  body[data-lethela-dashboard="vendor"] main > section > div {
+  [data-lethela-dashboard="vendor"] main > section > div {
     gap: 12px !important;
   }
 
-  body[data-lethela-dashboard="admin"] main > section > div > aside,
-  body[data-lethela-dashboard="vendor"] main > section > div > aside,
+  [data-lethela-dashboard="admin"] main > section > div > aside,
+  [data-lethela-dashboard="vendor"] main > section > div > aside,
   .dashboard-sidebar,
   .dashboard-workspace-header {
     border-radius: 14px !important;
@@ -566,4 +450,9 @@ body[data-lethela-dashboard] main a[class*="rounded"] {
   border-color: var(--dashboard-accent) !important;
   background: var(--dashboard-accent) !important;
   color: #fff !important;
+}
+
+.vendor-quick-action-primary:hover {
+  color: #fff !important;
+  opacity: 0.9;
 }
