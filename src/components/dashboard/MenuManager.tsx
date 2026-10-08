@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import DashCard from "./DashCard";
+import FormField from "./FormField";
 
 type MenuItem = {
   id: string;
@@ -315,19 +316,19 @@ export default function MenuManager() {
 
   return (
     <DashCard title="Public Menu Manager">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-lethela-primary/20 bg-[#141b43] px-4 py-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-lethela-primary/20 bg-lethela-primary/[0.04] px-4 py-4">
         <div>
-          <div className="text-sm font-semibold text-white">
+          <div className="text-sm font-semibold text-slate-900">
             This controls the customer-facing menu.
           </div>
-          <p className="mt-1 text-xs text-white/70">
+          <p className="mt-1 text-xs text-slate-600">
             Published items appear on your restaurant page. Draft items stay hidden until you are
             ready.
           </p>
         </div>
         <Link
           href="/vendors/dashboard?tab=overview"
-          className="rounded-full border border-white/20 px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
+          className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium hover:border-lethela-primary hover:text-lethela-primary"
         >
           Back to overview
         </Link>
@@ -346,14 +347,15 @@ export default function MenuManager() {
 
       <div className="grid gap-4 xl:grid-cols-[0.92fr,1.08fr]">
         <div className="space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="mb-3 text-sm font-semibold text-white">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="mb-3 text-sm font-semibold text-slate-900">
               {editingSectionId ? "Edit section" : "Add section"}
             </div>
             <div className="flex gap-2">
               <input
-                className="flex-1 rounded bg-white px-3 py-2 text-sm text-black"
-                placeholder="Section name"
+                className="flex-1 rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+                aria-label="Section name"
+                placeholder="e.g. Breakfast, Kota, Drinks"
                 value={sectionForm.title}
                 onChange={(event) => setSectionForm({ title: event.target.value })}
               />
@@ -370,86 +372,94 @@ export default function MenuManager() {
               <button
                 type="button"
                 onClick={resetSectionForm}
-                className="mt-2 text-xs text-white/65 hover:text-white"
+                className="mt-2 text-xs text-slate-600 hover:text-slate-900"
               >
                 Cancel section edit
               </button>
             ) : null}
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold text-white">
+              <div className="text-sm font-semibold text-slate-900">
                 {editingItemId ? "Edit menu item" : "Add menu item"}
               </div>
               <button
                 type="button"
                 onClick={() => resetItemForm()}
-                className="text-xs text-white/65 hover:text-white"
+                className="text-xs text-slate-600 hover:text-slate-900"
               >
                 Reset
               </button>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <select
-                className="rounded bg-white px-3 py-2 text-sm text-black"
-                value={itemForm.sectionId}
-                onChange={(event) =>
-                  setItemForm((current) => ({ ...current, sectionId: event.target.value }))
-                }
-              >
-                <option value="">Select section</option>
-                {sections.map((section) => (
-                  <option key={section.id} value={section.id}>
-                    {section.title}
-                  </option>
-                ))}
-              </select>
-              <input
-                className="rounded bg-white px-3 py-2 text-sm text-black"
-                placeholder="Item name"
-                value={itemForm.name}
-                onChange={(event) =>
-                  setItemForm((current) => ({ ...current, name: event.target.value }))
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-sm text-black"
-                placeholder="Price in rand"
-                type="number"
-                min="1"
-                step="0.01"
-                value={itemForm.price}
-                onChange={(event) =>
-                  setItemForm((current) => ({ ...current, price: event.target.value }))
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-sm text-black"
-                placeholder="Tags (comma separated)"
-                value={itemForm.tags}
-                onChange={(event) =>
-                  setItemForm((current) => ({ ...current, tags: event.target.value }))
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-sm text-black md:col-span-2"
-                placeholder="Image URL"
-                value={itemForm.image}
-                onChange={(event) =>
-                  setItemForm((current) => ({ ...current, image: event.target.value }))
-                }
-              />
-              <textarea
-                className="rounded bg-white px-3 py-2 text-sm text-black md:col-span-2"
-                placeholder="Description"
-                rows={3}
-                value={itemForm.description}
-                onChange={(event) =>
-                  setItemForm((current) => ({ ...current, description: event.target.value }))
-                }
-              />
-              <label className="flex items-center gap-2 text-sm text-white/80 md:col-span-2">
+              <FormField label="Section">
+                <select
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+                  value={itemForm.sectionId}
+                  onChange={(event) =>
+                    setItemForm((current) => ({ ...current, sectionId: event.target.value }))
+                  }
+                >
+                  <option value="">Select section</option>
+                  {sections.map((section) => (
+                    <option key={section.id} value={section.id}>
+                      {section.title}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Item name">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+                  value={itemForm.name}
+                  onChange={(event) =>
+                    setItemForm((current) => ({ ...current, name: event.target.value }))
+                  }
+                />
+              </FormField>
+              <FormField label="Price in rand">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={itemForm.price}
+                  onChange={(event) =>
+                    setItemForm((current) => ({ ...current, price: event.target.value }))
+                  }
+                />
+              </FormField>
+              <FormField label="Tags">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+                  placeholder="Comma separated"
+                  value={itemForm.tags}
+                  onChange={(event) =>
+                    setItemForm((current) => ({ ...current, tags: event.target.value }))
+                  }
+                />
+              </FormField>
+              <FormField label="Image URL" className="md:col-span-2">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+                  value={itemForm.image}
+                  onChange={(event) =>
+                    setItemForm((current) => ({ ...current, image: event.target.value }))
+                  }
+                />
+              </FormField>
+              <FormField label="Description" className="md:col-span-2">
+                <textarea
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+                  rows={3}
+                  value={itemForm.description}
+                  onChange={(event) =>
+                    setItemForm((current) => ({ ...current, description: event.target.value }))
+                  }
+                />
+              </FormField>
+              <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
                 <input
                   type="checkbox"
                   checked={itemForm.isAlcohol}
@@ -459,7 +469,7 @@ export default function MenuManager() {
                 />
                 Liquor item (requires a verified vendor licence and customer age check)
               </label>
-              <label className="flex items-center gap-2 text-sm text-white/80 md:col-span-2">
+              <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
                 <input
                   type="checkbox"
                   checked={itemForm.draft}
@@ -480,25 +490,25 @@ export default function MenuManager() {
                 {editingItemId ? "Update item" : "Add item"}
               </button>
               {sections.length === 0 ? (
-                <span className="text-xs text-amber-100/80">Create a section first.</span>
+                <span className="text-xs text-amber-800">Create a section first.</span>
               ) : null}
             </div>
           </div>
 
           {status ? (
-            <div className="rounded-xl border border-white/10 bg-black/10 px-3 py-3 text-sm text-white/80">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
               {status}
             </div>
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-sm font-semibold text-white">Sections and items</div>
+            <div className="text-sm font-semibold text-slate-900">Sections and items</div>
             <button
               type="button"
               onClick={() => void load()}
-              className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
             >
               Refresh
             </button>
@@ -506,11 +516,11 @@ export default function MenuManager() {
 
           {loading ? (
             <div className="grid animate-pulse gap-3">
-              <div className="h-20 rounded-xl bg-white/10" />
-              <div className="h-20 rounded-xl bg-white/10" />
+              <div className="h-20 rounded-xl bg-slate-100" />
+              <div className="h-20 rounded-xl bg-slate-100" />
             </div>
           ) : sections.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-white/15 bg-black/10 px-4 py-6 text-sm text-white/70">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-600">
               No menu sections yet. Start with a section like Breakfast, Kota, Mogodu, Drinks, or
               Specials.
             </div>
@@ -519,12 +529,12 @@ export default function MenuManager() {
               {sections.map((section) => (
                 <div
                   key={section.id}
-                  className="rounded-2xl border border-white/10 bg-black/10 p-4"
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="text-base font-semibold text-white">{section.title}</div>
-                      <div className="mt-1 text-xs text-white/60">
+                      <div className="text-base font-semibold text-slate-900">{section.title}</div>
+                      <div className="mt-1 text-xs text-slate-500">
                         {section.items.length} item(s) in this section
                       </div>
                     </div>
@@ -535,14 +545,14 @@ export default function MenuManager() {
                           setEditingSectionId(section.id);
                           setSectionForm({ title: section.title });
                         }}
-                        className="rounded border border-white/20 px-3 py-2 text-xs hover:border-lethela-primary hover:text-lethela-primary"
+                        className="rounded border border-slate-300 bg-white px-3 py-2 text-xs hover:border-lethela-primary hover:text-lethela-primary"
                       >
                         Edit section
                       </button>
                       <button
                         type="button"
                         onClick={() => void removeSection(section.id)}
-                        className="rounded border border-white/20 px-3 py-2 text-xs hover:border-red-300 hover:text-red-200"
+                        className="rounded border border-slate-300 bg-white px-3 py-2 text-xs hover:border-red-300 hover:text-red-900"
                       >
                         Delete section
                       </button>
@@ -551,33 +561,33 @@ export default function MenuManager() {
 
                   <div className="mt-3 space-y-3">
                     {section.items.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-sm text-white/60">
+                      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-4 text-sm text-slate-500">
                         No items in this section yet.
                       </div>
                     ) : (
                       section.items.map((item) => (
                         <div
                           key={item.id}
-                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-3"
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-3"
                         >
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-medium text-white">{item.name}</span>
+                                <span className="font-medium text-slate-900">{item.name}</span>
                                 <span
                                   className={`rounded-full border px-2 py-0.5 text-[11px] ${
                                     item.draft
-                                      ? "border-amber-200/20 bg-amber-300/10 text-amber-100"
-                                      : "border-emerald-200/20 bg-emerald-300/10 text-emerald-100"
+                                      ? "border-amber-200 bg-amber-50 text-amber-800"
+                                      : "border-emerald-200 bg-emerald-50 text-emerald-800"
                                   }`}
                                 >
                                   {item.draft ? "Draft" : "Published"}
                                 </span>
                               </div>
                               {item.description ? (
-                                <p className="mt-1 text-sm text-white/72">{item.description}</p>
+                                <p className="mt-1 text-sm text-slate-600">{item.description}</p>
                               ) : null}
-                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/60">
+                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                                 <span>{formatMoney(item.priceCents)}</span>
                                 {item.tags.length > 0 ? (
                                   <span>| {item.tags.join(", ")}</span>
@@ -592,21 +602,21 @@ export default function MenuManager() {
                                   setEditingItemId(item.id);
                                   setItemForm(itemToForm(item));
                                 }}
-                                className="rounded border border-white/20 px-3 py-2 text-xs hover:border-lethela-primary hover:text-lethela-primary"
+                                className="rounded border border-slate-300 bg-white px-3 py-2 text-xs hover:border-lethela-primary hover:text-lethela-primary"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => void toggleDraft(item)}
-                                className="rounded border border-white/20 px-3 py-2 text-xs hover:border-lethela-primary hover:text-lethela-primary"
+                                className="rounded border border-slate-300 bg-white px-3 py-2 text-xs hover:border-lethela-primary hover:text-lethela-primary"
                               >
                                 {item.draft ? "Publish" : "Move to draft"}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => void removeItem(item.id)}
-                                className="rounded border border-white/20 px-3 py-2 text-xs hover:border-red-300 hover:text-red-200"
+                                className="rounded border border-slate-300 bg-white px-3 py-2 text-xs hover:border-red-300 hover:text-red-900"
                               >
                                 Delete
                               </button>
@@ -628,9 +638,9 @@ export default function MenuManager() {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-      <div className="text-xs uppercase tracking-[0.12em] text-white/60">{label}</div>
-      <div className="mt-2 text-xl font-semibold text-white">{value}</div>
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+      <div className="text-xs uppercase tracking-[0.12em] text-slate-500">{label}</div>
+      <div className="mt-2 text-xl font-semibold text-slate-900">{value}</div>
     </div>
   );
 }

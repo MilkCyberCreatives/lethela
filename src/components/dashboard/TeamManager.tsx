@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import DashCard from "./DashCard";
+import FormField from "./FormField";
 
 type TeamMember = {
   id: string;
@@ -113,45 +114,50 @@ export default function TeamManager() {
     <div className="grid gap-4">
       <DashCard title="Team and Permissions">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-slate-600">
             Add managers and staff so store operations are not dependent on one login.
           </p>
           <button
             type="button"
             onClick={load}
             disabled={loading}
-            className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
-        {error ? <p className="mt-3 text-xs text-red-200">{error}</p> : null}
+        {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
         <div className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr,180px,120px]">
-          <input
-            className="rounded bg-white px-3 py-2 text-sm text-black"
-            placeholder="Staff email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <input
-            className="rounded bg-white px-3 py-2 text-sm text-black"
-            placeholder="Display name (optional)"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <select
-            className="rounded bg-white px-3 py-2 text-sm text-black"
-            value={role}
-            onChange={(event) => setRole(event.target.value as "MANAGER" | "STAFF")}
-          >
-            <option value="STAFF">Staff</option>
-            <option value="MANAGER">Manager</option>
-          </select>
+          <FormField label="Staff email">
+            <input
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </FormField>
+          <FormField label="Display name (optional)">
+            <input
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </FormField>
+          <FormField label="Role">
+            <select
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+              value={role}
+              onChange={(event) => setRole(event.target.value as "MANAGER" | "STAFF")}
+            >
+              <option value="STAFF">Staff</option>
+              <option value="MANAGER">Manager</option>
+            </select>
+          </FormField>
           <button
             type="button"
             onClick={addMember}
             disabled={saving || !email}
-            className="rounded bg-lethela-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            className="self-end rounded bg-lethela-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {saving ? "Adding..." : "Add member"}
           </button>
@@ -161,7 +167,7 @@ export default function TeamManager() {
       <DashCard title="Current Access">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="text-xs uppercase tracking-[0.12em] text-white/55">
+            <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
               <tr>
                 <th className="pb-3 pr-4 font-medium">Name</th>
                 <th className="pb-3 pr-4 font-medium">Email</th>
@@ -172,30 +178,30 @@ export default function TeamManager() {
             </thead>
             <tbody>
               {loading ? (
-                <tr className="border-t border-white/10">
+                <tr className="border-t border-slate-200">
                   <td colSpan={5} className="py-4">
                     <div className="grid animate-pulse gap-2">
-                      <div className="h-5 rounded bg-white/10" />
-                      <div className="h-5 rounded bg-white/10" />
-                      <div className="h-5 rounded bg-white/10" />
+                      <div className="h-5 rounded bg-slate-100" />
+                      <div className="h-5 rounded bg-slate-100" />
+                      <div className="h-5 rounded bg-slate-100" />
                     </div>
                   </td>
                 </tr>
               ) : members.length > 0 ? (
                 members.map((member) => (
-                  <tr key={member.id} className="border-t border-white/10">
-                    <td className="py-3 pr-4 font-medium text-white/88">
+                  <tr key={member.id} className="border-t border-slate-200">
+                    <td className="py-3 pr-4 font-medium text-slate-700">
                       {member.name || (member.isOwner ? "Store owner" : "Team member")}
                     </td>
-                    <td className="py-3 pr-4 text-white/65">{member.email}</td>
+                    <td className="py-3 pr-4 text-slate-600">{member.email}</td>
                     <td className="py-3 pr-4">
                       {member.isOwner ? (
-                        <span className="inline-flex rounded-full border border-white/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/80">
+                        <span className="inline-flex rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700">
                           OWNER
                         </span>
                       ) : (
                         <select
-                          className="rounded bg-white px-3 py-2 text-xs text-black"
+                          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs text-black"
                           value={member.role}
                           onChange={(event) =>
                             void updateRole(member.id, event.target.value as "MANAGER" | "STAFF")
@@ -206,17 +212,17 @@ export default function TeamManager() {
                         </select>
                       )}
                     </td>
-                    <td className="py-3 pr-4 text-white/65">
+                    <td className="py-3 pr-4 text-slate-600">
                       {new Date(member.joinedAt).toLocaleDateString()}
                     </td>
                     <td className="py-3">
                       {member.isOwner ? (
-                        <span className="text-xs text-white/50">Protected</span>
+                        <span className="text-xs text-slate-500">Protected</span>
                       ) : (
                         <button
                           type="button"
                           onClick={() => void removeMember(member.id)}
-                          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-red-300 hover:text-red-200"
+                          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-red-300 hover:text-red-900"
                         >
                           Remove
                         </button>
@@ -225,8 +231,8 @@ export default function TeamManager() {
                   </tr>
                 ))
               ) : (
-                <tr className="border-t border-white/10">
-                  <td colSpan={5} className="py-6 text-center text-white/60">
+                <tr className="border-t border-slate-200">
+                  <td colSpan={5} className="py-6 text-center text-slate-500">
                     No extra team members yet.
                   </td>
                 </tr>

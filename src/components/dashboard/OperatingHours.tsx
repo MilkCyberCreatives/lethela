@@ -109,7 +109,7 @@ export default function OperatingHours() {
       <DashCard title="Operating Hours">
         <div className="grid gap-3">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="h-12 animate-pulse rounded-lg bg-white/10" />
+            <div key={index} className="h-12 animate-pulse rounded-lg bg-slate-100" />
           ))}
         </div>
       </DashCard>
@@ -122,21 +122,21 @@ export default function OperatingHours() {
         <button
           type="button"
           onClick={applyWeekdayTemplate}
-          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
         >
           Copy Monday to weekdays
         </button>
         <button
           type="button"
           onClick={applyEverydayTemplate}
-          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
         >
           Reset default hours
         </button>
         <button
           type="button"
           onClick={() => void load()}
-          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
         >
           Refresh
         </button>
@@ -146,7 +146,7 @@ export default function OperatingHours() {
         {hours.map((hour, index) => (
           <div
             key={hour.day}
-            className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3"
+            className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3"
           >
             <div className="w-10 text-sm font-medium">{DAYS[hour.day]}</div>
             <label className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export default function OperatingHours() {
             {!hour.closed ? (
               <>
                 <input
-                  className="rounded bg-white px-2 py-1 text-sm text-black"
+                  className="rounded border border-slate-300 bg-white px-2 py-1 text-sm text-black"
                   value={toTime(hour.openMin)}
                   onChange={(event) =>
                     setHours((current) =>
@@ -180,7 +180,7 @@ export default function OperatingHours() {
                 />
                 <span className="text-sm">to</span>
                 <input
-                  className="rounded bg-white px-2 py-1 text-sm text-black"
+                  className="rounded border border-slate-300 bg-white px-2 py-1 text-sm text-black"
                   value={toTime(hour.closeMin)}
                   onChange={(event) =>
                     setHours((current) =>
@@ -194,7 +194,7 @@ export default function OperatingHours() {
                 />
               </>
             ) : (
-              <span className="text-xs text-white/60">No trading hours set for this day.</span>
+              <span className="text-xs text-slate-500">No trading hours set for this day.</span>
             )}
           </div>
         ))}
@@ -209,7 +209,7 @@ export default function OperatingHours() {
         {saving ? "Saving..." : "Save hours"}
       </button>
 
-      {status ? <p className="mt-3 text-xs text-white/75">{status}</p> : null}
+      {status ? <p className="mt-3 text-xs text-slate-600">{status}</p> : null}
     </DashCard>
   );
 }

@@ -33,5 +33,6 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     }
   }
 
-  return children;
+  // Server-rendered theme marker so the light dashboard styles apply on first paint.
+  return <div data-lethela-dashboard="admin">{children}</div>;
 }

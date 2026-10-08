@@ -23,16 +23,16 @@ export default function AutomationsPanel() {
 
   return (
     <DashCard title="Automations">
-      <p className="text-sm text-white/80">Run AI-powered business automations on demand.</p>
+      <p className="text-sm text-slate-700">Run AI-powered business automations on demand.</p>
       <button
         type="button"
         onClick={run}
-        className="mt-2 rounded bg-lethela-primary px-3 py-2 text-sm"
+        className="mt-2 rounded bg-lethela-primary px-3 py-2 text-sm text-white"
       >
         Run automations now
       </button>
       {out ? (
-        <pre className="mt-2 whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-2 text-xs">
+        <pre className="mt-2 whitespace-pre-wrap rounded border border-slate-200 bg-white p-2 text-xs">
           {out}
         </pre>
       ) : null}

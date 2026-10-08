@@ -45,15 +45,15 @@ function durableStorageReady() {
 
 function ChecklistItem({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="font-semibold">{label}</h2>
-          <p className="mt-1 text-sm text-white/65">{detail}</p>
+          <p className="mt-1 text-sm text-slate-600">{detail}</p>
         </div>
         <span
           className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${
-            ok ? "border-emerald-300/40 text-emerald-100" : "border-amber-300/40 text-amber-100"
+            ok ? "border-emerald-200 text-emerald-800" : "border-amber-200 text-amber-800"
           }`}
         >
           {ok ? "Ready" : "Action"}
@@ -175,7 +175,7 @@ export default async function LaunchChecklistPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-lethela-secondary text-white">
+    <main className="min-h-screen bg-[#f4f6fb] text-slate-900">
       <section className="container py-10">
         <Link href="/admin" className="text-sm underline">
           Back to admin
@@ -184,7 +184,7 @@ export default async function LaunchChecklistPage() {
           Owner operating checklist
         </p>
         <h1 className="mt-3 text-3xl font-bold">Operating readiness</h1>
-        <p className="mt-3 max-w-2xl text-sm text-white/70">
+        <p className="mt-3 max-w-2xl text-sm text-slate-600">
           This owner-only checklist separates code readiness from external configuration, real
           vendor supply, approved rider capacity and paid-order proof.
         </p>
