@@ -52,14 +52,14 @@ export async function POST(req: NextRequest) {
     select: { id: true, email: true, passwordHash: true },
   });
 
-  if (!user?.passwordHash || !emailAddressesMatch(user.email, payload.email)) {
+  if (!user || !emailAddressesMatch(user.email, payload.email)) {
     return NextResponse.json(
       { ok: false, error: "Reset link is invalid or expired." },
       { status: 400 },
     );
   }
 
-  if (passwordResetFingerprint(user.passwordHash) !== payload.pw) {
+  if (passwordResetFingerprint(user.passwordHash ?? "") !== payload.pw) {
     return NextResponse.json(
       { ok: false, error: "Reset link is invalid or expired." },
       { status: 400 },

@@ -84,7 +84,9 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.upsert({
       where: { email: parsed.data.email },
-      update: parsed.data.name ? { name: parsed.data.name } : {},
+      // Never edit an existing account from a vendor's team screen; only new invitees
+      // get the name the vendor typed.
+      update: {},
       create: {
         email: parsed.data.email,
         name: parsed.data.name || null,

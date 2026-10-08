@@ -34,12 +34,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Enter a valid email address." }, { status: 400 });
   }
 
+  // Answer the same way for every email when email isn't set up, so the response
+  // never reveals which addresses have accounts.
+  if (!passwordResetEmailConfigured() && process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "Password reset by email is temporarily unavailable. Please contact Lethela support on WhatsApp.",
+      },
+      { status: 503 },
+    );
+  }
+
   const user = await prisma.user.findUnique({
     where: { email: parsed.data.email },
     select: { id: true, email: true, name: true, passwordHash: true },
   });
 
-  if (!user?.passwordHash) {
+  // Invited vendor staff start without a password; the emailed link lets them set one.
+  if (!user) {
     return NextResponse.json({
       ok: true,
       message: "If an account exists for that email, a reset link has been sent.",
@@ -49,7 +63,7 @@ export async function POST(req: NextRequest) {
   const token = createPasswordResetToken({
     userId: user.id,
     email: user.email,
-    passwordHash: user.passwordHash,
+    passwordHash: user.passwordHash ?? "",
   });
 
   const baseUrl = resolveAppBaseUrl(req.nextUrl.origin);
@@ -71,11 +85,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await sendPasswordResetEmail({
-    to: user.email,
-    name: user.name,
-    resetUrl,
-  });
+  try {
+    await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      resetUrl,
+    });
+  } catch (error) {
+    console.error("[forgot-password] reset email failed", error);
+  }
 
   return NextResponse.json({
     ok: true,
