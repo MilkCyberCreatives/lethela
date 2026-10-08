@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashCard from "./DashCard";
+import FormField from "./FormField";
 import { STORE_TYPES } from "@/lib/vendor-readiness";
 
 type VendorProfile = {
@@ -302,56 +303,58 @@ export default function ProfileManager() {
     <DashCard title="Store Profile">
       {loading || !form ? (
         <div className="grid animate-pulse gap-4 md:grid-cols-[0.95fr,1.05fr]">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="aspect-[16/10] rounded-xl bg-white/10" />
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="aspect-[16/10] rounded-xl bg-slate-100" />
             <div className="mt-4 flex gap-2">
-              <div className="h-7 w-20 rounded-full bg-white/10" />
-              <div className="h-7 w-28 rounded-full bg-white/10" />
+              <div className="h-7 w-20 rounded-full bg-slate-100" />
+              <div className="h-7 w-28 rounded-full bg-slate-100" />
             </div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="h-4 w-40 rounded bg-white/10" />
-            <div className="mt-4 h-3 rounded bg-white/10" />
-            <div className="mt-3 h-3 w-2/3 rounded bg-white/10" />
-            <div className="mt-5 h-10 rounded bg-white/10" />
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="h-4 w-40 rounded bg-slate-100" />
+            <div className="mt-4 h-3 rounded bg-slate-100" />
+            <div className="mt-3 h-3 w-2/3 rounded bg-slate-100" />
+            <div className="mt-5 h-10 rounded bg-slate-100" />
           </div>
         </div>
       ) : (
         <>
           <div className="mb-4 grid gap-3 md:grid-cols-[0.95fr,1.05fr]">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="aspect-[16/10] overflow-hidden rounded-xl border border-white/10 bg-black/20">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="aspect-[16/10] overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                 {form.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={form.image} alt={form.name} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-white/45">
+                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
                     No store logo yet
                   </div>
                 )}
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded-full border border-white/15 px-3 py-1">
+                <span className="rounded-full border border-slate-300 bg-white px-3 py-1">
                   {vendor?.isActive ? "Active" : "Pending"}
                 </span>
-                <span className="rounded-full border border-white/15 px-3 py-1">
+                <span className="rounded-full border border-slate-300 bg-white px-3 py-1">
                   Status: {vendor?.status || "UNKNOWN"}
                 </span>
                 {vendor?.halaal ? (
-                  <span className="rounded-full border border-white/15 px-3 py-1">Halaal</span>
+                  <span className="rounded-full border border-slate-300 bg-white px-3 py-1">
+                    Halaal
+                  </span>
                 ) : null}
-                <span className="rounded-full border border-white/15 px-3 py-1">
+                <span className="rounded-full border border-slate-300 bg-white px-3 py-1">
                   {form.temporaryClosed ? "Temporarily closed" : "Accepting orders when approved"}
                 </span>
               </div>
 
               <div className="mt-4">
-                <div className="flex items-center justify-between text-xs text-white/65">
+                <div className="flex items-center justify-between text-xs text-slate-600">
                   <span>Profile completeness</span>
                   <span>{progressPct}%</span>
                 </div>
-                <div className="mt-2 h-2 rounded bg-white/10">
+                <div className="mt-2 h-2 rounded bg-slate-100">
                   <div
                     className="h-2 rounded bg-lethela-primary"
                     style={{ width: `${progressPct}%` }}
@@ -361,233 +364,269 @@ export default function ProfileManager() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Business name"
-                value={form.name}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, name: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Phone / WhatsApp"
-                value={form.phone}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, phone: event.target.value } : current,
-                  )
-                }
-              />
-              <textarea
-                className="rounded bg-white px-3 py-2 text-black md:col-span-2"
-                placeholder="Short store description"
-                rows={3}
-                value={form.description}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, description: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black md:col-span-2"
-                placeholder="Store cover image URL"
-                value={form.coverImage}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, coverImage: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black md:col-span-2"
-                placeholder="Street address"
-                value={form.address}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, address: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Suburb"
-                value={form.suburb}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, suburb: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="City"
-                value={form.city}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, city: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Province"
-                value={form.province}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, province: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Municipality"
-                value={form.municipality}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, municipality: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Township"
-                value={form.township}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current
-                      ? { ...current, township: event.target.value, suburb: event.target.value }
-                      : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Section / area"
-                value={form.sectionArea}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, sectionArea: event.target.value } : current,
-                  )
-                }
-              />
-              <textarea
-                className="rounded bg-white px-3 py-2 text-black md:col-span-2"
-                placeholder="Pickup instructions for assigned riders"
-                rows={2}
-                value={form.pickupInstructions}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, pickupInstructions: event.target.value } : current,
-                  )
-                }
-              />
-              <select
-                className="rounded bg-white px-3 py-2 text-black"
-                value={form.storeType}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, storeType: event.target.value } : current,
-                  )
-                }
-              >
-                <option value="">Store type</option>
-                {STORE_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Product categories (kota, groceries, bread...)"
-                value={form.cuisineInput}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, cuisineInput: event.target.value } : current,
-                  )
-                }
-              />
-              <div className="rounded border border-white/15 px-3 py-2 text-sm text-white/70">
+              <h3 className="md:col-span-2 text-sm font-semibold text-slate-900">Store details</h3>
+              <FormField label="Business name">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, name: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Phone or WhatsApp number">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.phone}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, phone: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Store description" className="md:col-span-2">
+                <textarea
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  rows={3}
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, description: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Cover image URL" className="md:col-span-2">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.coverImage}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, coverImage: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <h3 className="md:col-span-2 mt-2 border-t border-slate-200 pt-4 text-sm font-semibold text-slate-900">
+                Trading address
+              </h3>
+              <FormField label="Street address" className="md:col-span-2">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.address}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, address: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Suburb">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.suburb}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, suburb: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="City">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.city}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, city: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Province">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.province}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, province: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Municipality">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.municipality}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, municipality: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Township">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.township}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current
+                        ? { ...current, township: event.target.value, suburb: event.target.value }
+                        : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Section or area">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.sectionArea}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, sectionArea: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Pickup instructions for riders" className="md:col-span-2">
+                <textarea
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  placeholder="Where riders should collect orders"
+                  rows={2}
+                  value={form.pickupInstructions}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, pickupInstructions: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <h3 className="md:col-span-2 mt-2 border-t border-slate-200 pt-4 text-sm font-semibold text-slate-900">
+                Category and preparation
+              </h3>
+              <FormField label="Store type">
+                <select
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.storeType}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, storeType: event.target.value } : current,
+                    )
+                  }
+                >
+                  <option value="">Store type</option>
+                  {STORE_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Product categories">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  placeholder="Kota, groceries, bread..."
+                  value={form.cuisineInput}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, cuisineInput: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <div className="self-end rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600">
                 Delivery is calculated by Lethela at R10/km with a R10 minimum.
               </div>
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                type="number"
-                min={10}
-                max={120}
-                placeholder="Average ETA (minutes)"
-                value={form.etaMins}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, etaMins: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                type="number"
-                min={5}
-                max={180}
-                placeholder="Preparation time (minutes)"
-                value={form.preparationMinutes}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, preparationMinutes: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                type="number"
-                min={1}
-                max={500}
-                placeholder="Maximum active order capacity"
-                value={form.orderCapacity}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, orderCapacity: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                type="number"
-                step="0.000001"
-                placeholder="Latitude"
-                value={form.latitude}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, latitude: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                type="number"
-                step="0.000001"
-                placeholder="Longitude"
-                value={form.longitude}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, longitude: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Store logo URL"
-                value={form.image}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, image: event.target.value } : current,
-                  )
-                }
-              />
-              <label className="grid gap-2 rounded border border-white/15 p-3 text-sm text-white/80">
+              <FormField label="Average ETA (minutes)">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  type="number"
+                  min={10}
+                  max={120}
+                  value={form.etaMins}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, etaMins: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Preparation time (minutes)">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  type="number"
+                  min={5}
+                  max={180}
+                  value={form.preparationMinutes}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, preparationMinutes: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Maximum active orders">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={form.orderCapacity}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, orderCapacity: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <h3 className="md:col-span-2 mt-2 border-t border-slate-200 pt-4 text-sm font-semibold text-slate-900">
+                Map location
+              </h3>
+              <FormField label="Latitude">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  type="number"
+                  step="0.000001"
+                  value={form.latitude}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, latitude: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Longitude">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  type="number"
+                  step="0.000001"
+                  value={form.longitude}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, longitude: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <h3 className="md:col-span-2 mt-2 border-t border-slate-200 pt-4 text-sm font-semibold text-slate-900">
+                Logo and owner documents
+              </h3>
+              <FormField label="Store logo URL">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.image}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, image: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <label className="grid gap-2 rounded border border-slate-300 bg-white p-3 text-sm text-slate-700">
                 <span>
                   {form.kycIdUrl ? "Identity document uploaded" : "Upload identity document"}
                 </span>
@@ -607,7 +646,7 @@ export default function ProfileManager() {
                   }}
                 />
               </label>
-              <label className="grid gap-2 rounded border border-white/15 p-3 text-sm text-white/80">
+              <label className="grid gap-2 rounded border border-slate-300 bg-white p-3 text-sm text-slate-700">
                 <span>
                   {form.kycProofUrl ? "Address document uploaded" : "Upload proof of address"}
                 </span>
@@ -627,75 +666,86 @@ export default function ProfileManager() {
                   }}
                 />
               </label>
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Bank name"
-                value={form.bankName}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, bankName: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Account holder name"
-                value={form.bankAccountName}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, bankAccountName: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder={
-                  vendor?.bankAccountLast4
-                    ? `New account number (current ends ${vendor.bankAccountLast4})`
-                    : "Account number"
-                }
-                value={form.bankAccountNumber}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, bankAccountNumber: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Branch code"
-                value={form.bankBranchCode}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, bankBranchCode: event.target.value } : current,
-                  )
-                }
-              />
-              <select
-                className="rounded bg-white px-3 py-2 text-black"
-                aria-label="Bank account type"
-                value={form.bankAccountType}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, bankAccountType: event.target.value } : current,
-                  )
-                }
-              >
-                <option value="">Account type</option>
-                <option value="CHEQUE">Cheque/current</option>
-                <option value="SAVINGS">Savings</option>
-                <option value="TRANSMISSION">Transmission</option>
-              </select>
-              <div className="rounded border border-white/15 px-3 py-2 text-sm text-white/70">
+              <h3 className="md:col-span-2 mt-2 border-t border-slate-200 pt-4 text-sm font-semibold text-slate-900">
+                Banking details
+              </h3>
+              <FormField label="Bank name">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.bankName}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, bankName: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Account holder name">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.bankAccountName}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, bankAccountName: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Account number">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  placeholder={
+                    vendor?.bankAccountLast4
+                      ? `New account number (current ends ${vendor.bankAccountLast4})`
+                      : "Account number"
+                  }
+                  value={form.bankAccountNumber}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, bankAccountNumber: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Branch code">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.bankBranchCode}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, bankBranchCode: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Account type">
+                <select
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.bankAccountType}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, bankAccountType: event.target.value } : current,
+                    )
+                  }
+                >
+                  <option value="">Account type</option>
+                  <option value="CHEQUE">Cheque/current</option>
+                  <option value="SAVINGS">Savings</option>
+                  <option value="TRANSMISSION">Transmission</option>
+                </select>
+              </FormField>
+              <div className="self-end rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600">
                 Bank verification: {vendor?.bankVerificationStatus || "UNVERIFIED"}
               </div>
-              <div className="md:col-span-2 mt-2 border-t border-white/10 pt-4">
-                <h3 className="font-semibold">Liquor permission (only if applicable)</h3>
-                <p className="mt-1 text-xs text-white/60">
+              <div className="md:col-span-2 mt-2 border-t border-slate-200 pt-4">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Liquor permission (only if applicable)
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
                   Liquor products remain hidden until Lethela verifies a current licence.
                 </p>
               </div>
-              <label className="grid gap-2 rounded border border-white/15 p-3 text-sm text-white/80">
+              <label className="grid gap-2 rounded border border-slate-300 bg-white p-3 text-sm text-slate-700">
                 <span>
                   {form.liquorLicenceUrl ? "Liquor licence uploaded" : "Upload liquor licence"}
                 </span>
@@ -717,66 +767,71 @@ export default function ProfileManager() {
                   }}
                 />
               </label>
-              <div className="rounded border border-white/15 px-3 py-2 text-sm text-white/70">
+              <div className="self-end rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600">
                 Licence verification: {vendor?.liquorVerificationStatus || "NOT_APPLICABLE"}
                 {vendor?.liquorReviewReason ? (
-                  <span className="mt-1 block text-amber-100">{vendor.liquorReviewReason}</span>
+                  <span className="mt-1 block text-amber-800">{vendor.liquorReviewReason}</span>
                 ) : null}
               </div>
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Licence number"
-                value={form.liquorLicenceNumber}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, liquorLicenceNumber: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Licence holder"
-                value={form.liquorLicenceHolder}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, liquorLicenceHolder: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Licensed premises"
-                value={form.liquorLicencePremises}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, liquorLicencePremises: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Licence province"
-                value={form.liquorLicenceProvince}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, liquorLicenceProvince: event.target.value } : current,
-                  )
-                }
-              />
-              <input
-                className="rounded bg-white px-3 py-2 text-black"
-                placeholder="Licence type"
-                value={form.liquorLicenceType}
-                onChange={(event) =>
-                  setForm((current) =>
-                    current ? { ...current, liquorLicenceType: event.target.value } : current,
-                  )
-                }
-              />
-              <label className="grid gap-1 text-sm text-white/75">
+              <FormField label="Licence number">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.liquorLicenceNumber}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, liquorLicenceNumber: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Licence holder">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.liquorLicenceHolder}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, liquorLicenceHolder: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Licensed premises">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.liquorLicencePremises}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, liquorLicencePremises: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Licence province">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.liquorLicenceProvince}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, liquorLicenceProvince: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <FormField label="Licence type">
+                <input
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+                  value={form.liquorLicenceType}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, liquorLicenceType: event.target.value } : current,
+                    )
+                  }
+                />
+              </FormField>
+              <label className="grid gap-1 text-sm text-slate-600">
                 <span>Licence expiry or renewal date</span>
                 <input
-                  className="rounded bg-white px-3 py-2 text-black"
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
                   type="date"
                   value={form.liquorLicenceExpiry}
                   onChange={(event) =>
@@ -786,7 +841,7 @@ export default function ProfileManager() {
                   }
                 />
               </label>
-              <label className="inline-flex items-center gap-2 text-sm text-white/85">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                 <input
                   type="checkbox"
                   checked={form.halaal}
@@ -798,7 +853,7 @@ export default function ProfileManager() {
                 />
                 Halaal friendly menu
               </label>
-              <label className="inline-flex items-center gap-2 text-sm text-white/85">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                 <input
                   type="checkbox"
                   checked={form.temporaryClosed}
@@ -835,7 +890,7 @@ export default function ProfileManager() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
             >
               Upload store logo
             </button>
@@ -850,14 +905,14 @@ export default function ProfileManager() {
             <button
               type="button"
               onClick={() => void load()}
-              className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
             >
               Refresh
             </button>
             {vendor ? (
               <a
                 href={`/vendors/${vendor.slug}`}
-                className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+                className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
               >
                 View public profile
               </a>
@@ -869,7 +924,7 @@ export default function ProfileManager() {
                 router.push("/signin");
                 router.refresh();
               }}
-              className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
             >
               Sign out
             </button>
@@ -877,7 +932,7 @@ export default function ProfileManager() {
         </>
       )}
 
-      {status ? <p className="mt-3 text-xs text-white/75">{status}</p> : null}
+      {status ? <p className="mt-3 text-xs text-slate-600">{status}</p> : null}
     </DashCard>
   );
 }

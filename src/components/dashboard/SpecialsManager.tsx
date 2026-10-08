@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import DashCard from "./DashCard";
+import FormField from "./FormField";
 
 type ProductOption = { id: string; name: string };
 
@@ -186,20 +187,20 @@ export default function SpecialsManager() {
   return (
     <DashCard title={editingId ? "Edit Special" : "Specials / Promotions"}>
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-          <div className="text-xs uppercase tracking-[0.12em] text-white/60">Live</div>
+        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+          <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Live</div>
           <div className="mt-2 text-xl font-semibold">{summary.live}</div>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-          <div className="text-xs uppercase tracking-[0.12em] text-white/60">Upcoming</div>
+        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+          <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Upcoming</div>
           <div className="mt-2 text-xl font-semibold">{summary.upcoming}</div>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-          <div className="text-xs uppercase tracking-[0.12em] text-white/60">Expired</div>
+        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+          <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Expired</div>
           <div className="mt-2 text-xl font-semibold">{summary.expired}</div>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-          <div className="text-xs uppercase tracking-[0.12em] text-white/60">Drafts</div>
+        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+          <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Drafts</div>
           <div className="mt-2 text-xl font-semibold">{summary.drafts}</div>
         </div>
       </div>
@@ -211,7 +212,7 @@ export default function SpecialsManager() {
             const quickWindow = makeQuickWindow(1, 3);
             setForm((current) => ({ ...current, ...quickWindow }));
           }}
-          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
         >
           Quick: start in 1 hour
         </button>
@@ -221,7 +222,7 @@ export default function SpecialsManager() {
             const quickWindow = makeQuickWindow(24, 6);
             setForm((current) => ({ ...current, ...quickWindow }));
           }}
-          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
         >
           Quick: tomorrow promo
         </button>
@@ -237,7 +238,7 @@ export default function SpecialsManager() {
               ...quickWindow,
             }));
           }}
-          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
         >
           Quick: lunch rush
         </button>
@@ -253,75 +254,84 @@ export default function SpecialsManager() {
               ...quickWindow,
             }));
           }}
-          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
         >
           Quick: weekend feature
         </button>
         <button
           type="button"
           onClick={() => void load()}
-          className="rounded border border-white/20 px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
         >
           Refresh
         </button>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <input
-          className="rounded bg-white px-3 py-2 text-black"
-          placeholder="Title*"
-          value={form.title}
-          onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-        />
-        <input
-          className="rounded bg-white px-3 py-2 text-black"
-          placeholder="Discount %*"
-          type="number"
-          min={1}
-          max={90}
-          value={form.discountPct}
-          onChange={(event) =>
-            setForm((current) => ({ ...current, discountPct: Number(event.target.value) }))
-          }
-        />
-        <select
-          className="rounded bg-white px-3 py-2 text-black"
-          value={form.productId}
-          onChange={(event) =>
-            setForm((current) => ({ ...current, productId: event.target.value }))
-          }
-        >
-          <option value="">Applies to all products</option>
-          {products.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.name}
-            </option>
-          ))}
-        </select>
-        <input
-          className="rounded bg-white px-3 py-2 text-black"
-          placeholder="Starts at"
-          type="datetime-local"
-          value={form.startsAt}
-          onChange={(event) => setForm((current) => ({ ...current, startsAt: event.target.value }))}
-        />
-        <input
-          className="rounded bg-white px-3 py-2 text-black"
-          placeholder="Ends at"
-          type="datetime-local"
-          value={form.endsAt}
-          onChange={(event) => setForm((current) => ({ ...current, endsAt: event.target.value }))}
-        />
-        <textarea
-          className="rounded bg-white px-3 py-2 text-black md:col-span-2"
-          placeholder="Description"
-          rows={2}
-          value={form.description}
-          onChange={(event) =>
-            setForm((current) => ({ ...current, description: event.target.value }))
-          }
-        />
-        <label className="inline-flex items-center gap-2 text-sm text-white/85 md:col-span-2">
+        <FormField label="Title (required)">
+          <input
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+            value={form.title}
+            onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+          />
+        </FormField>
+        <FormField label="Discount % (required)">
+          <input
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+            type="number"
+            min={1}
+            max={90}
+            value={form.discountPct}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, discountPct: Number(event.target.value) }))
+            }
+          />
+        </FormField>
+        <FormField label="Applies to" className="md:col-span-2">
+          <select
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+            value={form.productId}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, productId: event.target.value }))
+            }
+          >
+            <option value="">Applies to all products</option>
+            {products.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
+        <FormField label="Starts">
+          <input
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+            type="datetime-local"
+            value={form.startsAt}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, startsAt: event.target.value }))
+            }
+          />
+        </FormField>
+        <FormField label="Ends">
+          <input
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+            type="datetime-local"
+            value={form.endsAt}
+            onChange={(event) => setForm((current) => ({ ...current, endsAt: event.target.value }))}
+          />
+        </FormField>
+        <FormField label="Description" className="md:col-span-2">
+          <textarea
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
+            rows={2}
+            value={form.description}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, description: event.target.value }))
+            }
+          />
+        </FormField>
+        <label className="inline-flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
           <input
             type="checkbox"
             checked={form.draft}
@@ -349,7 +359,7 @@ export default function SpecialsManager() {
               setEditingId(null);
               setForm(emptyForm);
             }}
-            className="rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
+            className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
           >
             Cancel edit
           </button>
@@ -358,22 +368,24 @@ export default function SpecialsManager() {
 
       <div className="mt-4 grid gap-2">
         {specials.length === 0 ? (
-          <div className="text-sm text-white/70">No specials scheduled yet.</div>
+          <div className="text-sm text-slate-600">No specials scheduled yet.</div>
         ) : null}
         {specials.map((special) => {
           const phase = getSpecialPhase(special);
           return (
-            <div key={special.id} className="rounded border border-white/10 bg-white/5 p-3 text-sm">
+            <div key={special.id} className="rounded border border-slate-200 bg-white p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="font-semibold">
                   {special.title}{" "}
-                  <span className="text-white/70">({special.discountPct}% off)</span>
+                  <span className="text-slate-600">({special.discountPct}% off)</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs">
-                  <span className="rounded-full border border-white/20 px-2 py-1">
+                  <span className="rounded-full border border-slate-300 bg-white px-2 py-1">
                     {special.draft ? "Draft" : "Published"}
                   </span>
-                  <span className="rounded-full border border-white/20 px-2 py-1">{phase}</span>
+                  <span className="rounded-full border border-slate-300 bg-white px-2 py-1">
+                    {phase}
+                  </span>
                   <button
                     type="button"
                     onClick={() => {
@@ -388,13 +400,13 @@ export default function SpecialsManager() {
                   <button
                     type="button"
                     onClick={() => remove(special.id)}
-                    className="underline-offset-2 hover:text-red-200 hover:underline"
+                    className="underline-offset-2 hover:text-red-900 hover:underline"
                   >
                     Delete
                   </button>
                 </div>
               </div>
-              <div className="mt-1 text-xs text-white/70">
+              <div className="mt-1 text-xs text-slate-600">
                 {new Date(special.startsAt).toLocaleString()} to{" "}
                 {new Date(special.endsAt).toLocaleString()}
               </div>
@@ -409,7 +421,7 @@ export default function SpecialsManager() {
         })}
       </div>
 
-      {status ? <p className="mt-3 text-xs text-white/75">{status}</p> : null}
+      {status ? <p className="mt-3 text-xs text-slate-600">{status}</p> : null}
     </DashCard>
   );
 }

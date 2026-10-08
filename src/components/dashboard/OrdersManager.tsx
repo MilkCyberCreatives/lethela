@@ -333,21 +333,21 @@ export default function OrdersManager() {
             </p>
             {priorityOrder ? (
               <>
-                <p className="mt-1 text-sm font-semibold text-white">
+                <p className="mt-1 text-sm font-semibold text-slate-900">
                   {ACTION_STATUSES.includes(priorityOrder.status)
                     ? `${workflowCounts.ACTION} order${workflowCounts.ACTION === 1 ? "" : "s"} need vendor action`
                     : `${workflowCounts.DELIVERY} order${workflowCounts.DELIVERY === 1 ? "" : "s"} in delivery`}
                 </p>
-                <p className="mt-1 text-xs text-white/60">
+                <p className="mt-1 text-xs text-slate-600">
                   {workflowGuidance(priorityOrder.status).title}: {priorityOrder.publicId}
                 </p>
               </>
             ) : (
               <>
-                <p className="mt-1 text-sm font-semibold text-white">
+                <p className="mt-1 text-sm font-semibold text-slate-900">
                   No active orders need action
                 </p>
-                <p className="mt-1 text-xs text-white/60">
+                <p className="mt-1 text-xs text-slate-600">
                   New paid orders will move to the front of this workspace automatically.
                 </p>
               </>
@@ -380,8 +380,8 @@ export default function OrdersManager() {
               onClick={() => setFilter(item.value)}
               className={`min-h-10 rounded-full border px-3 py-2 transition-colors ${
                 filter === item.value
-                  ? "border-lethela-primary bg-lethela-primary/10 text-white"
-                  : "border-white/15 text-white/70 hover:border-white/35 hover:text-white"
+                  ? "border-lethela-primary bg-lethela-primary/10 text-slate-900"
+                  : "border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-900"
               }`}
             >
               {item.label} ({workflowCounts[item.value]})
@@ -394,13 +394,13 @@ export default function OrdersManager() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search order, customer or item"
-            className="min-h-11 rounded border border-white/15 bg-white px-3 py-2 text-sm text-black"
+            className="min-h-11 rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
           />
           <button
             type="button"
             onClick={() => load(false)}
             disabled={refreshing}
-            className="min-h-11 rounded border border-white/20 px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
+            className="min-h-11 rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
           >
             {refreshing ? "Refreshing..." : "Refresh"}
           </button>
@@ -409,12 +409,12 @@ export default function OrdersManager() {
 
       {loading ? (
         <div className="mt-4 grid animate-pulse gap-3">
-          <div className="h-20 rounded-lg bg-white/10" />
-          <div className="h-20 rounded-lg bg-white/10" />
-          <div className="h-20 rounded-lg bg-white/10" />
+          <div className="h-20 rounded-lg bg-slate-100" />
+          <div className="h-20 rounded-lg bg-slate-100" />
+          <div className="h-20 rounded-lg bg-slate-100" />
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.03] p-4 text-sm text-white/70">
+        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
           No orders match this workflow view. Choose another view or clear the search.
         </div>
       ) : (
@@ -432,32 +432,32 @@ export default function OrdersManager() {
                   onClick={() => setSelectedId(order.publicId)}
                   className={`w-full rounded-lg border p-3 text-left transition-colors ${
                     isSelected
-                      ? "border-lethela-primary bg-white/10"
-                      : "border-white/10 bg-white/5 hover:border-white/25"
+                      ? "border-lethela-primary bg-slate-100"
+                      : "border-slate-200 bg-white hover:border-slate-400"
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="font-semibold">{order.publicId}</div>
-                      <div className="mt-1 text-xs text-white/70">
+                      <div className="mt-1 text-xs text-slate-600">
                         {new Date(order.createdAt).toLocaleString()}
                       </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded border border-white/20 px-2 py-1">
+                      <span className="rounded border border-slate-300 bg-white px-2 py-1">
                         {order.status.replaceAll("_", " ")}
                       </span>
-                      <span className="rounded border border-white/20 px-2 py-1">
+                      <span className="rounded border border-slate-300 bg-white px-2 py-1">
                         Payment: {order.paymentStatus}
                       </span>
-                      <span className="rounded border border-white/20 px-2 py-1 font-semibold">
+                      <span className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold">
                         R{(order.totalCents / 100).toFixed(2)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-2 text-sm text-white/85">
+                  <div className="mt-2 text-sm text-slate-700">
                     {order.items.map((item, index) => (
                       <span key={item.id}>
                         {item.product?.name ?? "Item"} x {item.qty}
@@ -466,11 +466,11 @@ export default function OrdersManager() {
                     ))}
                   </div>
                   <p className="mt-2 text-xs text-lethela-primary/90">
-                    {guidance.title} · <span className="text-white/55">{guidance.note}</span>
+                    {guidance.title} · <span className="text-slate-500">{guidance.note}</span>
                   </p>
 
                   {driver ? (
-                    <div className="mt-3 h-2 rounded bg-white/10">
+                    <div className="mt-3 h-2 rounded bg-slate-100">
                       <div
                         className="h-2 rounded bg-lethela-primary"
                         style={{ width: `${Math.round(driver.progress * 100)}%` }}
@@ -483,7 +483,7 @@ export default function OrdersManager() {
           </div>
 
           {selectedOrder ? (
-            <div className="space-y-3 rounded-lg border border-white/10 bg-white/5 p-4">
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
               <div className="rounded-lg border border-lethela-primary/20 bg-lethela-primary/[0.06] p-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-lethela-primary">
                   Next step
@@ -491,14 +491,14 @@ export default function OrdersManager() {
                 <p className="mt-1 text-sm font-semibold">
                   {workflowGuidance(selectedOrder.status).title}
                 </p>
-                <p className="mt-1 text-xs text-white/60">
+                <p className="mt-1 text-xs text-slate-500">
                   {workflowGuidance(selectedOrder.status).note}
                 </p>
               </div>
 
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.12em] text-white/60">
+                  <div className="text-xs uppercase tracking-[0.12em] text-slate-500">
                     Selected order
                   </div>
                   <div className="mt-1 text-lg font-semibold">{selectedOrder.publicId}</div>
@@ -512,10 +512,10 @@ export default function OrdersManager() {
                       onClick={() => void updateStatus(selectedOrder.publicId, status)}
                       className={`min-h-10 rounded border px-3 py-2 text-xs font-semibold transition-colors ${
                         status === "CANCELLED"
-                          ? "border-red-300/40 text-red-100 hover:bg-red-300/10"
+                          ? "border-red-200 text-red-800 hover:bg-red-100"
                           : index === 0
                             ? "border-lethela-primary bg-lethela-primary text-white hover:opacity-90"
-                            : "border-white/20 hover:border-lethela-primary"
+                            : "border-slate-300 hover:border-lethela-primary"
                       }`}
                     >
                       {actionLabel(status)}
@@ -525,26 +525,26 @@ export default function OrdersManager() {
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
-                  <div className="text-xs text-white/60">Subtotal</div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <div className="text-xs text-slate-500">Subtotal</div>
                   <div className="mt-1 font-semibold">
                     R{(selectedOrder.subtotalCents / 100).toFixed(2)}
                   </div>
                 </div>
-                <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
-                  <div className="text-xs text-white/60">Rider delivery fee</div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <div className="text-xs text-slate-500">Rider delivery fee</div>
                   <div className="mt-1 font-semibold">
                     R{(selectedOrder.deliveryFeeCents / 100).toFixed(2)}
                   </div>
                 </div>
-                <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
-                  <div className="text-xs text-white/60">Rider tip</div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <div className="text-xs text-slate-500">Rider tip</div>
                   <div className="mt-1 font-semibold">
                     R{((selectedOrder.deliveryDetails?.riderTipCents || 0) / 100).toFixed(2)}
                   </div>
                 </div>
-                <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
-                  <div className="text-xs text-white/60">Rider payout</div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <div className="text-xs text-slate-500">Rider payout</div>
                   <div className="mt-1 font-semibold">
                     R
                     {(
@@ -553,21 +553,21 @@ export default function OrdersManager() {
                     ).toFixed(2)}
                   </div>
                 </div>
-                <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
-                  <div className="text-xs text-white/60">Total paid</div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <div className="text-xs text-slate-500">Total paid</div>
                   <div className="mt-1 font-semibold">
                     R{(selectedOrder.totalCents / 100).toFixed(2)}
                   </div>
                 </div>
-                <div className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm">
-                  <div className="text-xs text-white/60">Payment</div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <div className="text-xs text-slate-500">Payment</div>
                   <div className="mt-1 font-semibold">{selectedOrder.paymentStatus}</div>
                 </div>
               </div>
 
-              <div className="rounded border border-white/10 bg-black/20 p-3 text-sm">
-                <div className="text-xs uppercase tracking-[0.12em] text-white/60">Items</div>
-                <ul className="mt-2 space-y-1 text-white/85">
+              <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+                <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Items</div>
+                <ul className="mt-2 space-y-1 text-slate-700">
                   {selectedOrder.items.map((item) => (
                     <li key={item.id}>
                       {item.product?.name ?? "Item"} x {item.qty}
@@ -576,12 +576,12 @@ export default function OrdersManager() {
                 </ul>
               </div>
 
-              <div className="rounded border border-white/10 bg-black/20 p-3 text-sm">
-                <div className="text-xs uppercase tracking-[0.12em] text-white/60">
+              <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+                <div className="text-xs uppercase tracking-[0.12em] text-slate-500">
                   Delivery details
                 </div>
                 {selectedOrder.deliveryDetails ? (
-                  <div className="mt-2 space-y-1 text-white/85">
+                  <div className="mt-2 space-y-1 text-slate-700">
                     <div>Name: {selectedOrder.deliveryDetails.customerName || "Not supplied"}</div>
                     <div>
                       Phone:{" "}
@@ -612,11 +612,11 @@ export default function OrdersManager() {
                       </div>
                     ) : null}
                     {selectedOrder.deliveryDetails.containsAlcohol ? (
-                      <div className="text-amber-100">Liquor order — ID check required.</div>
+                      <div className="text-amber-800">Liquor order — ID check required.</div>
                     ) : null}
                   </div>
                 ) : (
-                  <div className="mt-2 text-white/65">No delivery notes were captured.</div>
+                  <div className="mt-2 text-slate-600">No delivery notes were captured.</div>
                 )}
               </div>
 
@@ -638,7 +638,7 @@ export default function OrdersManager() {
                   }}
                 />
               ) : (
-                <div className="rounded border border-white/10 bg-black/20 p-3 text-sm text-white/70">
+                <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
                   No delivery coordinates available for this order yet.
                 </div>
               )}
@@ -647,7 +647,7 @@ export default function OrdersManager() {
         </div>
       )}
 
-      {error ? <p className="mt-3 text-xs text-red-200">{error}</p> : null}
+      {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
     </DashCard>
   );
 }

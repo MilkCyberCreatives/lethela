@@ -52,7 +52,7 @@ export default function RiderDashboardShell({
   children: ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-lethela-secondary text-white">
+    <main className="min-h-screen bg-[#f4f6fb] text-slate-900">
       <MainHeader />
       <section className="dashboard-shell">
         <aside className="dashboard-sidebar">
@@ -83,7 +83,7 @@ export default function RiderDashboardShell({
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   <span className="min-w-0">
                     <span className="block truncate">{item.label}</span>
-                    <span className="dashboard-side-link-hint mt-0.5 block truncate text-[11px] font-normal text-white/45">
+                    <span className="dashboard-side-link-hint mt-0.5 block truncate text-[11px] font-normal text-white/60">
                       {item.hint}
                     </span>
                   </span>
