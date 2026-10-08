@@ -1,6 +1,6 @@
 type StoreHour = { day: number; openMin: number; closeMin: number; closed: boolean };
 
-function johannesburgClock(date: Date) {
+export function johannesburgClock(date: Date) {
   const parts = new Intl.DateTimeFormat("en-ZA", {
     timeZone: "Africa/Johannesburg",
     weekday: "short",
