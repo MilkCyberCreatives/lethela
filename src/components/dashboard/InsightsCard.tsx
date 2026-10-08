@@ -32,7 +32,7 @@ export default function InsightsCard() {
 
   return (
     <DashCard title="AI Insights">
-      <div className="whitespace-pre-wrap text-sm text-white/90">{text}</div>
+      <div className="whitespace-pre-wrap text-sm text-slate-700">{text}</div>
     </DashCard>
   );
 }

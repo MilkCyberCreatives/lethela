@@ -99,16 +99,16 @@ export default function RiderOperationsPanel() {
 
   return (
     <section className="grid gap-4 lg:grid-cols-[0.8fr,1.2fr]">
-      <article className="rounded-xl border border-white/10 bg-[#0C1132] p-5 text-white">
+      <article className="rounded-xl border border-slate-200 bg-white p-5 text-slate-900">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               Shift status
             </p>
             <h3 className="mt-2 text-lg font-semibold">
               {availability?.availableNow ? "Online for delivery" : "Offline"}
             </h3>
-            <p className="mt-2 text-sm leading-6 text-white/62">
+            <p className="mt-2 text-sm leading-6 text-slate-500">
               {availability?.approved
                 ? `Dispatch area: ${availability.area || "complete your area in the profile"}.`
                 : "Lethela approval is required before a rider can go online."}
@@ -117,8 +117,8 @@ export default function RiderOperationsPanel() {
           <span
             className={`grid h-11 w-11 place-items-center rounded-xl ${
               availability?.availableNow
-                ? "bg-emerald-300/15 text-emerald-200"
-                : "bg-white/8 text-white/55"
+                ? "bg-emerald-50 text-emerald-800"
+                : "bg-white text-slate-500"
             }`}
           >
             <Power className="h-5 w-5" />
@@ -130,7 +130,7 @@ export default function RiderOperationsPanel() {
           onClick={() => void toggleAvailability()}
           className={`mt-5 w-full rounded-lg px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${
             availability?.availableNow
-              ? "border border-white/20 bg-transparent text-white hover:border-red-300/60"
+              ? "border border-slate-300 bg-transparent text-slate-900 hover:border-red-300"
               : "bg-lethela-primary text-white hover:opacity-90"
           }`}
         >
@@ -140,32 +140,32 @@ export default function RiderOperationsPanel() {
               ? "Go offline"
               : "Go online for deliveries"}
         </button>
-        {error ? <p className="mt-3 text-xs text-red-200">{error}</p> : null}
+        {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
       </article>
 
-      <article className="rounded-xl border border-white/10 bg-[#0C1132] p-5 text-white">
+      <article className="rounded-xl border border-slate-200 bg-white p-5 text-slate-900">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Completed earnings
           </p>
           <h3 className="mt-2 text-lg font-semibold">Delivery fee and tip summary</h3>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {periods.map(([label, period, Icon]) => (
-            <div key={label} className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+            <div key={label} className="rounded-lg border border-slate-200 bg-white p-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-xs text-white/55">{label}</span>
+                <span className="text-xs text-slate-500">{label}</span>
                 <Icon className="h-4 w-4 text-lethela-primary" />
               </div>
               <p className="mt-2 text-xl font-bold">{money(period?.totalCents || 0)}</p>
-              <p className="mt-1 text-[11px] text-white/50">
+              <p className="mt-1 text-[11px] text-slate-500">
                 {period?.deliveries || 0} {period?.deliveries === 1 ? "delivery" : "deliveries"} ·
                 Tips {money(period?.tipCents || 0)}
               </p>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-xs leading-5 text-white/52">
+        <p className="mt-4 text-xs leading-5 text-slate-500">
           {earnings?.settlementNote ||
             "Completed earnings appear here after delivered, paid orders are reconciled."}
         </p>
