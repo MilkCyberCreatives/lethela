@@ -31,7 +31,7 @@ function ensureSecurityEventTable() {
 export async function recordAuthSecurityEvent(input: {
   userId?: string | null;
   email: string;
-  eventType: "LOGIN" | "LOGOUT" | "PASSWORD_RESET" | "ACCOUNT_LOCKED";
+  eventType: "LOGIN" | "LOGOUT" | "PASSWORD_RESET" | "PASSWORD_CHANGE" | "ACCOUNT_LOCKED";
   outcome: "SUCCESS" | "FAILED" | "BLOCKED";
 }) {
   try {

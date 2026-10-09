@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bell, Heart, LifeBuoy, PackageSearch, ShieldCheck, UserRound } from "lucide-react";
+import {
+  Bell,
+  Heart,
+  KeyRound,
+  LifeBuoy,
+  PackageSearch,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import UserProfileForm from "@/components/profile/UserProfileForm";
+import ChangePasswordForm from "@/components/profile/ChangePasswordForm";
 import OrderHistoryPanel from "@/components/profile/OrderHistoryPanel";
 import ProfileExperiencePanel from "@/components/profile/ProfileExperiencePanel";
 import { auth } from "@/auth";
@@ -21,6 +30,7 @@ const accountLinks = [
   { href: "#order-history", label: "Order history", icon: PackageSearch },
   { href: "#saved-activity", label: "Saved activity", icon: Heart },
   { href: "#notifications", label: "Notifications", icon: Bell },
+  { href: "#password", label: "Password", icon: KeyRound },
 ];
 
 export default async function ProfilePage({
@@ -118,6 +128,9 @@ export default async function ProfilePage({
             </section>
             <section id="saved-activity" className="min-w-0 scroll-mt-28">
               <ProfileExperiencePanel />
+            </section>
+            <section id="password" className="min-w-0 scroll-mt-28">
+              <ChangePasswordForm />
             </section>
           </div>
         </div>

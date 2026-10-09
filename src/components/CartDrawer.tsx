@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ShoppingBag, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,8 @@ import { trackWhatsAppClick } from "@/lib/visitor";
 import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
 
 export default function CartDrawer() {
+  // Checkout already shows the order, so the floating cart bar would only cover the form.
+  const onCheckout = usePathname().startsWith("/checkout");
   const open = useUIStore((state) => state.cartOpen);
   const openCart = useUIStore((state) => state.openCart);
   const closeCart = useUIStore((state) => state.closeCart);
@@ -148,8 +151,8 @@ export default function CartDrawer() {
 
   return (
     <>
-      {mounted && hasItems && !open ? (
-        <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[70] rounded-2xl border border-white/10 bg-slate-950/95 p-3 text-white shadow-2xl backdrop-blur md:hidden">
+      {mounted && hasItems && !open && !onCheckout ? (
+        <div className="mobile-cart-bar fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[70] rounded-2xl border border-white/10 bg-slate-950/95 p-3 text-white shadow-2xl backdrop-blur md:hidden">
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
