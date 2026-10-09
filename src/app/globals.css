@@ -375,3 +375,23 @@
     radial-gradient(ellipse at 68% 82%, rgba(181, 0, 27, 0.16), transparent 52%),
     radial-gradient(ellipse at 8% 90%, rgba(24, 18, 54, 0.55), transparent 60%);
 }
+
+/* Phone bottom navigation (MobileBottomNav sets data-mobile-nav on body).
+   Keep page content, the floating cart bar and the back-to-top button clear of it. */
+@media (max-width: 767px) {
+  body[data-mobile-nav] {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  body[data-mobile-nav] .mobile-cart-bar {
+    bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+
+  body[data-mobile-nav] .scroll-to-top {
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  body[data-mobile-nav]:has(.mobile-cart-bar) .scroll-to-top {
+    bottom: calc(10rem + env(safe-area-inset-bottom));
+  }
+}

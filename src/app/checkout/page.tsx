@@ -19,6 +19,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { persistPreferredLocation, readPreferredLocation } from "@/lib/location-preference";
 import { pushEcommerceEvent, trackWhatsAppClick } from "@/lib/visitor";
 import { Navigation } from "lucide-react";
+import { useSession } from "next-auth/react";
+import {
+  clearCheckoutDetails,
+  readCheckoutDetails,
+  saveCheckoutDetails,
+} from "@/lib/checkout-details";
 
 const isOzowSandbox = process.env.NEXT_PUBLIC_OZOW_IS_TEST === "true";
 
@@ -43,6 +49,9 @@ export default function CheckoutPage() {
   const [landmark, setLandmark] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [riderTipCents, setRiderTipCents] = useState(0);
+  const [rememberDetails, setRememberDetails] = useState(true);
+  const [usingSavedDetails, setUsingSavedDetails] = useState(false);
+  const sessionStatus = useSession()?.status ?? "unauthenticated";
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [destinationPoint, setDestinationPoint] = useState<{ lat: number; lng: number } | null>(
     () => {
@@ -61,6 +70,67 @@ export default function CheckoutPage() {
   });
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
+
+  // Returning customers: fill the form from the last order on this device.
+  useEffect(() => {
+    const saved = readCheckoutDetails();
+    if (!saved) return;
+    setCustomerName(saved.customerName);
+    setCustomerPhone(saved.customerPhone);
+    setWhatsappNumber(saved.whatsappNumber);
+    setStandNumber(saved.standNumber);
+    setStreetSection(saved.streetSection);
+    setLandmark(saved.landmark);
+    setDeliveryNotes(saved.deliveryNotes);
+    setUsingSavedDetails(true);
+  }, []);
+
+  // Signed-in customers: use the name and phone from their profile when the form has none.
+  useEffect(() => {
+    if (sessionStatus !== "authenticated") return;
+    let cancelled = false;
+    fetch("/api/me", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((json) => {
+        if (cancelled || !json?.ok || !json.user) return;
+        const profileName = typeof json.user.name === "string" ? json.user.name.trim() : "";
+        const profilePhone = typeof json.user.phone === "string" ? json.user.phone.trim() : "";
+        if (profileName) setCustomerName((current) => current || profileName);
+        if (profilePhone) setCustomerPhone((current) => current || profilePhone);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionStatus]);
+
+  function rememberCheckoutDetails() {
+    if (!rememberDetails) {
+      clearCheckoutDetails();
+      return;
+    }
+    saveCheckoutDetails({
+      customerName,
+      customerPhone,
+      whatsappNumber,
+      standNumber,
+      streetSection,
+      landmark,
+      deliveryNotes,
+    });
+  }
+
+  function forgetSavedDetails() {
+    clearCheckoutDetails();
+    setCustomerName("");
+    setCustomerPhone("");
+    setWhatsappNumber("");
+    setStandNumber("");
+    setStreetSection("");
+    setLandmark("");
+    setDeliveryNotes("");
+    setUsingSavedDetails(false);
+  }
 
   useEffect(() => {
     const vendorId = items[0]?.vendorId;
@@ -235,6 +305,7 @@ export default function CheckoutPage() {
     setError(null);
     try {
       checkoutKeyRef.current ||= crypto.randomUUID();
+      rememberCheckoutDetails();
       persistPreferredLocation({
         label: destination,
         suburb: destination,
@@ -371,6 +442,18 @@ export default function CheckoutPage() {
               You can order as a guest. We only need your name, phone number and delivery details.
               You can create an account after the order is placed.
             </div>
+            {usingSavedDetails ? (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/15 px-4 py-3 text-sm text-white/80">
+                <span>We filled in your details from your last order on this device.</span>
+                <button
+                  type="button"
+                  onClick={forgetSavedDetails}
+                  className="font-semibold text-white underline underline-offset-4"
+                >
+                  Clear details
+                </button>
+              </div>
+            ) : null}
             <div className="mt-6 space-y-2 rounded-lg border border-white/10 p-4">
               {items.map((i) => (
                 <div key={i.itemId} className="flex items-center justify-between text-sm">
@@ -453,7 +536,9 @@ export default function CheckoutPage() {
 
               <details className="rounded-lg border border-white/15 p-3">
                 <summary className="cursor-pointer font-semibold text-white/80">
-                  Add delivery details (optional)
+                  {standNumber || streetSection || landmark || deliveryNotes
+                    ? "Delivery details and notes"
+                    : "Add delivery details and notes (optional)"}
                 </summary>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <input
@@ -492,11 +577,21 @@ export default function CheckoutPage() {
                     className="min-h-20 rounded bg-white px-3 py-2 text-sm text-black md:col-span-2"
                     value={deliveryNotes}
                     onChange={(event) => setDeliveryNotes(event.target.value)}
-                    placeholder="Gate colour, directions or arrival instructions"
+                    placeholder="Gate colour, directions, or requests for the shop (e.g. no onions)"
                     rows={2}
                   />
                 </div>
               </details>
+
+              <label className="flex items-start gap-2 text-xs text-white/70">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={rememberDetails}
+                  onChange={(event) => setRememberDetails(event.target.checked)}
+                />
+                Remember my name, phone and delivery details on this device for my next order.
+              </label>
 
               <div className="flex justify-between">
                 <span>Subtotal</span>
@@ -610,12 +705,13 @@ export default function CheckoutPage() {
                     href={whatsappLink}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() =>
+                    onClick={() => {
+                      rememberCheckoutDetails();
                       trackWhatsAppClick("checkout", {
                         item_count: items.length,
                         total_cents: total,
-                      })
-                    }
+                      });
+                    }}
                   >
                     Order via WhatsApp
                   </a>

@@ -10,6 +10,7 @@ import CartDrawer from "@/components/CartDrawer";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { usePathname } from "next/navigation";
 import CartVendorNotice from "@/components/CartVendorNotice";
+import MobileBottomNav from "@/components/MobileBottomNav";
 
 export default function MainHeader() {
   const pathname = usePathname();
@@ -106,141 +107,144 @@ export default function MainHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 surface-header">
-      <div className="container flex h-16 items-center justify-between text-sm text-black sm:h-20">
-        <Link href="/" className="flex min-w-0 items-center gap-3">
-          <Image
-            src="/lethelalogo.svg"
-            alt="Lethela - Siyashesha"
-            width={914}
-            height={266}
-            preload
-            className="h-8 w-auto sm:h-10"
-          />
-        </Link>
+    <>
+      <header className="sticky top-0 z-50 surface-header">
+        <div className="container flex h-16 items-center justify-between text-sm text-black sm:h-20">
+          <Link href="/" className="flex min-w-0 items-center gap-3">
+            <Image
+              src="/lethelalogo.svg"
+              alt="Lethela - Siyashesha"
+              width={914}
+              height={266}
+              preload
+              className="h-8 w-auto sm:h-10"
+            />
+          </Link>
 
-        <nav className="hidden items-center gap-5 md:flex">
-          <Link href="/categories" className="nav-link-soft">
-            Browse
-          </Link>
-          <Link href="/how-it-works" className="nav-link-soft">
-            How it works
-          </Link>
-          <Link href="/vendors/register" className="nav-link-soft">
-            Sell on Lethela
-          </Link>
-          <Link href="/rider" className="nav-link-soft">
-            Deliver
-          </Link>
-          {!hideCart ? <CartButton /> : null}
-          {status === "authenticated" && user ? (
-            <div className="flex items-center gap-3">
-              {["OWNER", "ADMIN"].includes(user.role) ? (
-                <Link href="/admin" className="font-semibold text-lethela-primary">
-                  Admin
-                </Link>
-              ) : null}
-              <Link
-                href="/profile"
-                className="flex items-center gap-2 rounded-full border border-black/10 px-3 py-2 hover:border-lethela-primary"
-              >
-                <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-lethela-primary/10 text-xs font-semibold text-lethela-primary">
-                  {userImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={userImage}
-                      alt={user.name || user.email || "Profile"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    initials
-                  )}
-                </span>
-                <span className="font-medium">{user.name || "Profile"}</span>
-              </Link>
-              <Button
-                variant="outline"
-                className="min-h-11 border-black/20 bg-white text-black hover:border-black/30 hover:bg-black/5"
-                onClick={() => void handleSignOut()}
-              >
-                Sign Out
-              </Button>
-            </div>
-          ) : (
-            <Link href="/signin">
-              <Button className="min-h-11 bg-lethela-primary text-white hover:opacity-90">
-                Sign In
-              </Button>
+          <nav className="hidden items-center gap-5 md:flex">
+            <Link href="/categories" className="nav-link-soft">
+              Browse
             </Link>
-          )}
-        </nav>
-
-        <div className="flex items-center gap-2 md:hidden">
-          {!hideCart ? <CartButton /> : null}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                aria-label="Open navigation menu"
-                title="Open navigation menu"
-                className="h-11 w-11 border-black/20 bg-white px-0 text-black hover:border-black/30 hover:bg-black/5"
-              >
-                <Menu className="h-5 w-5" aria-hidden="true" />
-              </Button>
-            </SheetTrigger>
-
-            <SheetContent
-              side="right"
-              className="w-[min(88vw,320px)] bg-lethela-secondary pt-12 text-white"
-            >
-              <nav className="mobile-site-nav flex flex-col gap-2 text-base sm:text-lg">
-                <Link href="/" className="hover:underline">
-                  Home
-                </Link>
-                <Link href="/categories" className="hover:underline">
-                  Browse everything
-                </Link>
-                <Link href="/how-it-works" className="hover:underline">
-                  How it works
-                </Link>
-                <Link href="/vendors/register" className="hover:underline">
-                  Sell on Lethela
-                </Link>
-                <Link href="/rider" className="hover:underline">
-                  Deliver with us
-                </Link>
-                {status === "authenticated" && user ? (
-                  <>
-                    {["OWNER", "ADMIN"].includes(user.role) ? (
-                      <Link href="/admin" className="hover:underline">
-                        Admin dashboard
-                      </Link>
-                    ) : null}
-                    <Link href="/profile" className="hover:underline">
-                      Profile
-                    </Link>
-                    <Button
-                      className="mt-4 min-h-11 w-full bg-lethela-primary hover:opacity-90"
-                      onClick={() => void handleSignOut()}
-                    >
-                      Sign Out
-                    </Button>
-                  </>
-                ) : (
-                  <Link href="/signin">
-                    <Button className="mt-4 min-h-11 w-full bg-lethela-primary hover:opacity-90">
-                      Sign In
-                    </Button>
+            <Link href="/how-it-works" className="nav-link-soft">
+              How it works
+            </Link>
+            <Link href="/vendors/register" className="nav-link-soft">
+              Sell on Lethela
+            </Link>
+            <Link href="/rider" className="nav-link-soft">
+              Deliver
+            </Link>
+            {!hideCart ? <CartButton /> : null}
+            {status === "authenticated" && user ? (
+              <div className="flex items-center gap-3">
+                {["OWNER", "ADMIN"].includes(user.role) ? (
+                  <Link href="/admin" className="font-semibold text-lethela-primary">
+                    Admin
                   </Link>
-                )}
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
+                ) : null}
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 rounded-full border border-black/10 px-3 py-2 hover:border-lethela-primary"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-lethela-primary/10 text-xs font-semibold text-lethela-primary">
+                    {userImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={userImage}
+                        alt={user.name || user.email || "Profile"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      initials
+                    )}
+                  </span>
+                  <span className="font-medium">{user.name || "Profile"}</span>
+                </Link>
+                <Button
+                  variant="outline"
+                  className="min-h-11 border-black/20 bg-white text-black hover:border-black/30 hover:bg-black/5"
+                  onClick={() => void handleSignOut()}
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link href="/signin">
+                <Button className="min-h-11 bg-lethela-primary text-white hover:opacity-90">
+                  Sign In
+                </Button>
+              </Link>
+            )}
+          </nav>
 
-      {!hideCart ? <CartDrawer /> : null}
-      {!hideCart ? <CartVendorNotice /> : null}
-    </header>
+          <div className="flex items-center gap-2 md:hidden">
+            {!hideCart ? <CartButton /> : null}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  aria-label="Open navigation menu"
+                  title="Open navigation menu"
+                  className="h-11 w-11 border-black/20 bg-white px-0 text-black hover:border-black/30 hover:bg-black/5"
+                >
+                  <Menu className="h-5 w-5" aria-hidden="true" />
+                </Button>
+              </SheetTrigger>
+
+              <SheetContent
+                side="right"
+                className="w-[min(88vw,320px)] bg-lethela-secondary pt-12 text-white"
+              >
+                <nav className="mobile-site-nav flex flex-col gap-2 text-base sm:text-lg">
+                  <Link href="/" className="hover:underline">
+                    Home
+                  </Link>
+                  <Link href="/categories" className="hover:underline">
+                    Browse everything
+                  </Link>
+                  <Link href="/how-it-works" className="hover:underline">
+                    How it works
+                  </Link>
+                  <Link href="/vendors/register" className="hover:underline">
+                    Sell on Lethela
+                  </Link>
+                  <Link href="/rider" className="hover:underline">
+                    Deliver with us
+                  </Link>
+                  {status === "authenticated" && user ? (
+                    <>
+                      {["OWNER", "ADMIN"].includes(user.role) ? (
+                        <Link href="/admin" className="hover:underline">
+                          Admin dashboard
+                        </Link>
+                      ) : null}
+                      <Link href="/profile" className="hover:underline">
+                        Profile
+                      </Link>
+                      <Button
+                        className="mt-4 min-h-11 w-full bg-lethela-primary hover:opacity-90"
+                        onClick={() => void handleSignOut()}
+                      >
+                        Sign Out
+                      </Button>
+                    </>
+                  ) : (
+                    <Link href="/signin">
+                      <Button className="mt-4 min-h-11 w-full bg-lethela-primary hover:opacity-90">
+                        Sign In
+                      </Button>
+                    </Link>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+
+        {!hideCart ? <CartDrawer /> : null}
+        {!hideCart ? <CartVendorNotice /> : null}
+      </header>
+      <MobileBottomNav cartDrawerAvailable={!hideCart} />
+    </>
   );
 }
