@@ -131,6 +131,11 @@ test("signed-in dashboards keep mobile navigation compact and controls touch fri
     assert.match(page, /<DashboardShell/);
     assert.match(page, /phoneTabs=\{\[/);
   }
+  // The site's floating back-to-top button would sit over the dashboards' save bars.
+  assert.match(
+    styles,
+    /body:has\([\s\S]*?\[data-lethela-dashboard="rider"\]\s*\)\s*\.scroll-to-top/,
+  );
   assert.match(shell, /min-h-\[3\.5rem\]/);
   assert.match(shell, /env\(safe-area-inset-bottom\)/);
   assert.match(shell, /id="dashboard-more-sheet"/);

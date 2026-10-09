@@ -16,6 +16,17 @@
   color: var(--dashboard-text);
 }
 
+/* The admin, vendor and rider dashboards have their own menus and save bars, so the site's
+   back-to-top button stays out of the way there. */
+body:has(
+    [data-lethela-dashboard="admin"],
+    [data-lethela-dashboard="vendor"],
+    [data-lethela-dashboard="rider"]
+  )
+  .scroll-to-top {
+  display: none;
+}
+
 [data-lethela-dashboard] ::selection {
   background: rgba(181, 0, 27, 0.18);
   color: inherit;
