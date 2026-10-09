@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { getVendorReadiness, NEW_VENDOR_PLACEHOLDER_NAME } from "../src/lib/vendor-readiness";
 import { getRiderReadiness } from "../src/lib/rider-readiness";
 
@@ -113,4 +114,28 @@ test("rider approval only needs contact details, delivery method, area and the a
   assert.equal(getRiderReadiness({ ...minimal, township: "" }).canSubmit, false);
   assert.equal(getRiderReadiness({ ...minimal, phone: "071" }).canSubmit, false);
   assert.equal(getRiderReadiness({ ...minimal, conductAccepted: false }).canSubmit, false);
+});
+
+test("an older rider profile keeps its delivery method and area when the rider saves", async () => {
+  // Seeded and older profiles can say "Scooter" and keep the area in suburb and city.
+  assert.equal(
+    getRiderReadiness({ vehicleType: "Scooter" }).checks.find(
+      (check) => check.key === "delivery-method",
+    )?.complete,
+    true,
+  );
+  const source = (path: string) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+  const [form, route] = await Promise.all([
+    source("src/components/rider/RiderProfileForm.tsx"),
+    source("src/app/api/riders/profile/route.ts"),
+  ]);
+  assert.match(
+    form,
+    /const savedMethod = String\(profile\.vehicleType \?\? ""\)\.toUpperCase\(\);/,
+  );
+  assert.match(form, /if \(!next\.township && typeof profile\.suburb === "string"\)/);
+  assert.match(form, /if \(!next\.municipality && typeof profile\.city === "string"\)/);
+  // Saving the same method in capitals is not a change, so an approved rider stays approved.
+  assert.match(route, /const vehicleType = data\.vehicleType \|\| current\.vehicleType;/);
+  assert.match(route, /replacesExisting\(savedMethod, vehicleType\.toUpperCase\(\)\)/);
 });

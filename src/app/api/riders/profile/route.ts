@@ -183,13 +183,17 @@ export async function PATCH(req: Request) {
   }
   const data = parsed.data;
   const current = state.profile;
+  // Older profiles can hold "Scooter" rather than "SCOOTER". Treat that as the same method, and
+  // keep a saved method the form could not show rather than wiping it.
+  const savedMethod = current.vehicleType.trim().toUpperCase();
+  const vehicleType = data.vehicleType || current.vehicleType;
   // Adding a detail for the first time never takes an approved rider offline. Changing who the
   // rider is, how they deliver or where payouts go does, until Lethela checks it again.
   const approvalSensitiveChanged =
     replacesExisting(current.fullName, data.fullName) ||
     replacesExisting(current.idNumberLast4, data.idNumberLast4) ||
     replacesExisting(current.idDocumentUrl, data.idDocumentUrl) ||
-    replacesExisting(current.vehicleType, data.vehicleType) ||
+    replacesExisting(savedMethod, vehicleType.toUpperCase()) ||
     replacesExisting(current.vehicleRegistration, data.vehicleRegistration) ||
     replacesExisting(current.licenseCode, data.licenseCode) ||
     replacesExisting(current.licenceDocumentUrl, data.licenceDocumentUrl) ||
@@ -215,7 +219,7 @@ export async function PATCH(req: Request) {
       idNumberLast4: data.idNumberLast4,
       idDocumentUrl: data.idDocumentUrl || null,
       profilePhotoUrl: data.profilePhotoUrl || null,
-      vehicleType: data.vehicleType,
+      vehicleType,
       vehicleRegistration: data.vehicleRegistration || null,
       vehicleMakeModel: data.vehicleMakeModel || null,
       licenseCode: data.licenseCode,

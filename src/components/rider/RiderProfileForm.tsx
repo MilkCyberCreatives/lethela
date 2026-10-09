@@ -139,9 +139,13 @@ function formFromProfile(profile: Record<string, unknown>): FormState {
       (next as Record<string, unknown>)[key] = String(value);
     }
   }
-  next.vehicleType = METHODS.some((method) => method.value === profile.vehicleType)
-    ? (profile.vehicleType as DeliveryMethod)
+  // Older profiles can hold "Scooter" rather than "SCOOTER", and only a suburb and city.
+  const savedMethod = String(profile.vehicleType ?? "").toUpperCase();
+  next.vehicleType = METHODS.some((method) => method.value === savedMethod)
+    ? (savedMethod as DeliveryMethod)
     : "";
+  if (!next.township && typeof profile.suburb === "string") next.township = profile.suburb;
+  if (!next.municipality && typeof profile.city === "string") next.municipality = profile.city;
   next.bankAccountNumber = "";
   next.preferredZones = Array.isArray(profile.preferredZones)
     ? profile.preferredZones.join(", ")
