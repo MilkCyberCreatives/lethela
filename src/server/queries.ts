@@ -21,13 +21,6 @@ export async function getVendorBySlug(slug: string) {
       address: { not: null },
       city: { not: null },
       province: { not: null },
-      storeType: { not: null },
-      etaMins: { gte: 10 },
-      kycIdUrl: { not: null },
-      kycProofUrl: { not: null },
-      bankName: { not: null },
-      bankAccountName: { not: null },
-      bankAccountNumber: { not: null },
       hours: { some: { closed: false } },
       OR: [
         { products: { some: { inStock: true, isAlcohol: false, status: "APPROVED" } } },
@@ -61,6 +54,8 @@ export async function getVendorBySlug(slug: string) {
       image: true,
       isActive: true,
       status: true,
+      liquorVerificationStatus: true,
+      liquorLicenceExpiry: true,
       products: {
         where: { inStock: true, isAlcohol: false, status: "APPROVED" },
         orderBy: { updatedAt: "desc" },
@@ -124,10 +119,18 @@ export async function getVendorBySlug(slug: string) {
     }),
   );
 
+  // Liquor on the menu only shows while the store's liquor licence is approved and current;
+  // checkout refuses liquor from any other store.
+  const liquorLicensed =
+    vendor.liquorVerificationStatus === "APPROVED" &&
+    Boolean(vendor.liquorLicenceExpiry) &&
+    new Date(vendor.liquorLicenceExpiry as Date).getTime() > Date.now();
+
   const sections = (vendor.sections as unknown as CatalogSection[])
     .map((section) => ({
       ...section,
       items: section.items
+        .filter((item) => liquorLicensed || !item.isAlcohol)
         .filter((item) =>
           isPublicCatalogProduct({
             id: item.id,

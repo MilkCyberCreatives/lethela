@@ -2,8 +2,28 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import {
+  Archive,
+  CalendarClock,
+  EyeOff,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Tag,
+  Trash2,
+  Zap,
+} from "lucide-react";
 import DashCard from "./DashCard";
 import FormField from "./FormField";
+import {
+  EmptyState,
+  Notice,
+  StatTile,
+  StatusBadge,
+  dashButton,
+  dashField,
+} from "@/components/dashboard/kit/ui";
+import { cn } from "@/lib/utils";
 
 type ProductOption = { id: string; name: string };
 
@@ -38,6 +58,8 @@ const emptyForm: SpecialFormState = {
   draft: false,
 };
 
+const QUICK_TIMES_MESSAGE = "Start and end times are filled in for you.";
+
 function specialToForm(special: Special): SpecialFormState {
   return {
     title: special.title,
@@ -67,6 +89,19 @@ function makeQuickWindow(hoursFromNow: number, durationHours: number) {
     startsAt: start.toISOString().slice(0, 16),
     endsAt: end.toISOString().slice(0, 16),
   };
+}
+
+function formatWhen(value: string) {
+  return new Date(value).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" });
+}
+
+// How a status message reads: finished actions in green, hints in grey, problems in red.
+function statusTone(message: string) {
+  if (["Special updated.", "Special created.", "Special deleted."].includes(message)) {
+    return "success";
+  }
+  if (message === QUICK_TIMES_MESSAGE || message.startsWith("Editing ")) return "neutral";
+  return "danger";
 }
 
 export default function SpecialsManager() {
@@ -118,7 +153,7 @@ export default function SpecialsManager() {
       startsAt: current.startsAt || quickWindow.startsAt,
       endsAt: current.endsAt || quickWindow.endsAt,
     }));
-    setStatus("Create a special below. Quick start times have been filled in for you.");
+    setStatus(QUICK_TIMES_MESSAGE);
   }, [editingId, searchParams]);
 
   async function save() {
@@ -184,244 +219,267 @@ export default function SpecialsManager() {
     };
   }, [specials]);
 
+  const quickButton = cn(dashButton.secondary, "px-3");
+
   return (
-    <DashCard title={editingId ? "Edit Special" : "Specials / Promotions"}>
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-          <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Live</div>
-          <div className="mt-2 text-xl font-semibold">{summary.live}</div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-          <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Upcoming</div>
-          <div className="mt-2 text-xl font-semibold">{summary.upcoming}</div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-          <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Expired</div>
-          <div className="mt-2 text-xl font-semibold">{summary.expired}</div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-          <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Drafts</div>
-          <div className="mt-2 text-xl font-semibold">{summary.drafts}</div>
-        </div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile label="Live now" value={summary.live} icon={<Zap />} />
+        <StatTile label="Upcoming" value={summary.upcoming} icon={<CalendarClock />} />
+        <StatTile label="Ended" value={summary.expired} icon={<Archive />} />
+        <StatTile label="Drafts" value={summary.drafts} icon={<EyeOff />} />
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            const quickWindow = makeQuickWindow(1, 3);
-            setForm((current) => ({ ...current, ...quickWindow }));
-          }}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
-        >
-          Quick: start in 1 hour
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const quickWindow = makeQuickWindow(24, 6);
-            setForm((current) => ({ ...current, ...quickWindow }));
-          }}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
-        >
-          Quick: tomorrow promo
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const quickWindow = makeQuickWindow(2, 2);
-            setForm((current) => ({
-              ...current,
-              title: current.title || "Lunch rush special",
-              description: current.description || "Boost midday orders with a limited-time deal.",
-              discountPct: current.discountPct || 10,
-              ...quickWindow,
-            }));
-          }}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
-        >
-          Quick: lunch rush
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const quickWindow = makeQuickWindow(48, 8);
-            setForm((current) => ({
-              ...current,
-              title: current.title || "Weekend feature",
-              description: current.description || "Highlight one strong seller over the weekend.",
-              discountPct: current.discountPct || 15,
-              ...quickWindow,
-            }));
-          }}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
-        >
-          Quick: weekend feature
-        </button>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
-        >
-          Refresh
-        </button>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <FormField label="Title (required)">
-          <input
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
-            value={form.title}
-            onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-          />
-        </FormField>
-        <FormField label="Discount % (required)">
-          <input
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
-            type="number"
-            min={1}
-            max={90}
-            value={form.discountPct}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, discountPct: Number(event.target.value) }))
-            }
-          />
-        </FormField>
-        <FormField label="Applies to" className="md:col-span-2">
-          <select
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
-            value={form.productId}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, productId: event.target.value }))
-            }
-          >
-            <option value="">Applies to all products</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
-              </option>
-            ))}
-          </select>
-        </FormField>
-        <FormField label="Starts">
-          <input
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
-            type="datetime-local"
-            value={form.startsAt}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, startsAt: event.target.value }))
-            }
-          />
-        </FormField>
-        <FormField label="Ends">
-          <input
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
-            type="datetime-local"
-            value={form.endsAt}
-            onChange={(event) => setForm((current) => ({ ...current, endsAt: event.target.value }))}
-          />
-        </FormField>
-        <FormField label="Description" className="md:col-span-2">
-          <textarea
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-black"
-            rows={2}
-            value={form.description}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, description: event.target.value }))
-            }
-          />
-        </FormField>
-        <label className="inline-flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
-          <input
-            type="checkbox"
-            checked={form.draft}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, draft: event.target.checked }))
-            }
-          />
-          Save as draft until I am ready to publish it
-        </label>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={save}
-          disabled={busy}
-          className="rounded bg-lethela-primary px-3 py-2 text-sm text-white disabled:opacity-60"
-        >
-          {busy ? "Saving..." : editingId ? "Save special" : "Create special"}
-        </button>
-        {editingId ? (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingId(null);
-              setForm(emptyForm);
-            }}
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary"
-          >
-            Cancel edit
-          </button>
-        ) : null}
-      </div>
-
-      <div className="mt-4 grid gap-2">
-        {specials.length === 0 ? (
-          <div className="text-sm text-slate-600">No specials scheduled yet.</div>
-        ) : null}
-        {specials.map((special) => {
-          const phase = getSpecialPhase(special);
-          return (
-            <div key={special.id} className="rounded border border-slate-200 bg-white p-3 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="font-semibold">
-                  {special.title}{" "}
-                  <span className="text-slate-600">({special.discountPct}% off)</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="rounded-full border border-slate-300 bg-white px-2 py-1">
-                    {special.draft ? "Draft" : "Published"}
-                  </span>
-                  <span className="rounded-full border border-slate-300 bg-white px-2 py-1">
-                    {phase}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingId(special.id);
-                      setForm(specialToForm(special));
-                      setStatus(`Editing "${special.title}".`);
-                    }}
-                    className="underline-offset-2 hover:text-lethela-primary hover:underline"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => remove(special.id)}
-                    className="underline-offset-2 hover:text-red-900 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] xl:items-start">
+        <DashCard title={editingId ? "Edit special" : "Create a special"}>
+          <div className="space-y-4">
+            <div>
+              <p className={dashField.label}>Quick start</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const quickWindow = makeQuickWindow(1, 3);
+                    setForm((current) => ({ ...current, ...quickWindow }));
+                  }}
+                  className={quickButton}
+                >
+                  In 1 hour
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const quickWindow = makeQuickWindow(24, 6);
+                    setForm((current) => ({ ...current, ...quickWindow }));
+                  }}
+                  className={quickButton}
+                >
+                  Tomorrow
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const quickWindow = makeQuickWindow(2, 2);
+                    setForm((current) => ({
+                      ...current,
+                      title: current.title || "Lunch rush special",
+                      description:
+                        current.description || "Boost midday orders with a limited-time deal.",
+                      discountPct: current.discountPct || 10,
+                      ...quickWindow,
+                    }));
+                  }}
+                  className={quickButton}
+                >
+                  Lunch rush
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const quickWindow = makeQuickWindow(48, 8);
+                    setForm((current) => ({
+                      ...current,
+                      title: current.title || "Weekend feature",
+                      description:
+                        current.description || "Highlight one strong seller over the weekend.",
+                      discountPct: current.discountPct || 15,
+                      ...quickWindow,
+                    }));
+                  }}
+                  className={quickButton}
+                >
+                  Weekend
+                </button>
               </div>
-              <div className="mt-1 text-xs text-slate-600">
-                {new Date(special.startsAt).toLocaleString()} to{" "}
-                {new Date(special.endsAt).toLocaleString()}
-              </div>
-              {special.product ? (
-                <div className="mt-1 text-xs">Product: {special.product.name}</div>
-              ) : null}
-              {special.description ? (
-                <div className="mt-1 text-xs">{special.description}</div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Title">
+                <input
+                  className={dashField.input}
+                  placeholder="e.g. Friday kota deal"
+                  value={form.title}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, title: event.target.value }))
+                  }
+                />
+              </FormField>
+              <FormField label="Discount (%)">
+                <input
+                  className={dashField.input}
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={form.discountPct}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, discountPct: Number(event.target.value) }))
+                  }
+                />
+              </FormField>
+              <FormField label="Applies to" className="sm:col-span-2">
+                <select
+                  className={dashField.input}
+                  value={form.productId}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, productId: event.target.value }))
+                  }
+                >
+                  <option value="">All products</option>
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Starts" className="xl:col-span-2">
+                <input
+                  className={cn(dashField.input, "min-w-0")}
+                  type="datetime-local"
+                  value={form.startsAt}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, startsAt: event.target.value }))
+                  }
+                />
+              </FormField>
+              <FormField label="Ends" className="xl:col-span-2">
+                <input
+                  className={cn(dashField.input, "min-w-0")}
+                  type="datetime-local"
+                  value={form.endsAt}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, endsAt: event.target.value }))
+                  }
+                />
+              </FormField>
+              <FormField label="Description (optional)" className="sm:col-span-2">
+                <textarea
+                  className={dashField.input}
+                  rows={2}
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, description: event.target.value }))
+                  }
+                />
+              </FormField>
+              <label className="flex items-start gap-3 text-sm text-slate-700 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-lethela-primary"
+                  checked={form.draft}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, draft: event.target.checked }))
+                  }
+                />
+                <span>Save as draft (customers will not see it yet)</span>
+              </label>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={save}
+                disabled={busy}
+                className={cn(dashButton.primary, "flex-1 sm:flex-none")}
+              >
+                {editingId ? null : <Plus aria-hidden="true" />}
+                {busy ? "Saving..." : editingId ? "Save special" : "Create special"}
+              </button>
+              {editingId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm(emptyForm);
+                  }}
+                  className={dashButton.secondary}
+                >
+                  Cancel edit
+                </button>
               ) : null}
             </div>
-          );
-        })}
-      </div>
 
-      {status ? <p className="mt-3 text-xs text-slate-600">{status}</p> : null}
-    </DashCard>
+            {status ? <Notice tone={statusTone(status)}>{status}</Notice> : null}
+          </div>
+        </DashCard>
+
+        <DashCard
+          title="Your specials"
+          description={`${specials.length} special${specials.length === 1 ? "" : "s"}`}
+          actions={
+            <button type="button" onClick={() => void load()} className={dashButton.quiet}>
+              <RefreshCw aria-hidden="true" />
+              Refresh
+            </button>
+          }
+        >
+          {specials.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<Tag />}
+              title="No specials yet"
+              text="Create a special to bring in more orders on quiet days."
+            />
+          ) : (
+            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+              {specials.map((special) => {
+                const phase = getSpecialPhase(special);
+                return (
+                  <li key={special.id} className="px-3 py-3 sm:px-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words font-semibold text-slate-900">{special.title}</p>
+                        <p className="mt-0.5 text-sm text-slate-600">
+                          {special.discountPct}% off ·{" "}
+                          {special.product ? special.product.name : "All products"}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                        <StatusBadge
+                          tone={
+                            phase === "Live" ? "success" : phase === "Upcoming" ? "info" : "neutral"
+                          }
+                        >
+                          {phase === "Expired" ? "Ended" : phase}
+                        </StatusBadge>
+                        {special.draft ? <StatusBadge tone="warning">Draft</StatusBadge> : null}
+                      </div>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {formatWhen(special.startsAt)} to {formatWhen(special.endsAt)}
+                    </p>
+                    {special.description ? (
+                      <p className="mt-1 text-sm text-slate-600">{special.description}</p>
+                    ) : null}
+                    <div className="-ml-3 mt-1 flex flex-wrap gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(special.id);
+                          setForm(specialToForm(special));
+                          setStatus(`Editing "${special.title}".`);
+                        }}
+                        className={dashButton.quiet}
+                      >
+                        <Pencil aria-hidden="true" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(special.id)}
+                        className={cn(dashButton.quiet, "text-red-700 hover:bg-red-50")}
+                      >
+                        <Trash2 aria-hidden="true" />
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </DashCard>
+      </div>
+    </div>
   );
 }

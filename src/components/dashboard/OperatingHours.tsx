@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Copy, RefreshCw, RotateCcw } from "lucide-react";
 import DashCard from "./DashCard";
+import { Notice, dashButton, dashField } from "@/components/dashboard/kit/ui";
+import { cn } from "@/lib/utils";
 
 type Hour = { day: number; openMin: number; closeMin: number; closed: boolean };
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+// Shown Monday first; the saved list keeps its Sunday-first order.
+const DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const defaultHour = { openMin: 540, closeMin: 1260, closed: false };
+
+const SAVED_MESSAGE = "Trading hours saved.";
+const COPIED_MESSAGE = "Monday's hours copied to Tuesday to Friday. Tap Save hours to keep them.";
+const RESET_MESSAGE = "All days set to 09:00–21:00. Tap Save hours to keep them.";
 
 function toTime(min: number) {
   const hours = String(Math.floor(min / 60)).padStart(2, "0");
@@ -79,7 +89,7 @@ export default function OperatingHours() {
         throw new Error(json.error || "Failed to save hours.");
       }
 
-      setStatus("Operating hours saved.");
+      setStatus(SAVED_MESSAGE);
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "Failed to save hours.");
     } finally {
@@ -96,18 +106,18 @@ export default function OperatingHours() {
           : hour,
       );
     });
-    setStatus("Applied Monday settings to weekdays.");
+    setStatus(COPIED_MESSAGE);
   }
 
   function applyEverydayTemplate() {
     setHours((current) => current.map((hour) => ({ ...hour, ...defaultHour })));
-    setStatus("Reset all days to the default 09:00 - 21:00 schedule.");
+    setStatus(RESET_MESSAGE);
   }
 
   if (loading) {
     return (
-      <DashCard title="Operating Hours">
-        <div className="grid gap-3">
+      <DashCard title="Weekly hours" className="max-w-3xl">
+        <div className="grid gap-3" aria-hidden="true">
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="h-12 animate-pulse rounded-lg bg-slate-100" />
           ))}
@@ -116,100 +126,126 @@ export default function OperatingHours() {
     );
   }
 
+  const statusTone =
+    status === SAVED_MESSAGE
+      ? "success"
+      : status === COPIED_MESSAGE || status === RESET_MESSAGE
+        ? "info"
+        : "danger";
+
+  const openDays = hours.filter((hour) => !hour.closed).length;
+  const openSummary =
+    openDays === 7
+      ? "Open every day"
+      : openDays === 0
+        ? "Closed every day"
+        : `Open ${openDays} day${openDays === 1 ? "" : "s"} a week`;
+
   return (
-    <DashCard title="Operating Hours">
-      <div className="mb-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={applyWeekdayTemplate}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
-        >
-          Copy Monday to weekdays
-        </button>
-        <button
-          type="button"
-          onClick={applyEverydayTemplate}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
-        >
-          Reset default hours
-        </button>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary"
-        >
+    <DashCard
+      title="Weekly hours"
+      description={openSummary}
+      className="max-w-3xl"
+      actions={
+        <button type="button" onClick={() => void load()} className={dashButton.quiet}>
+          <RefreshCw aria-hidden="true" />
           Refresh
         </button>
+      }
+    >
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={applyWeekdayTemplate} className={dashButton.secondary}>
+          <Copy aria-hidden="true" />
+          Copy Monday to weekdays
+        </button>
+        <button type="button" onClick={applyEverydayTemplate} className={dashButton.quiet}>
+          <RotateCcw aria-hidden="true" />
+          Reset all days to 09:00–21:00
+        </button>
       </div>
 
-      <div className="grid gap-2">
-        {hours.map((hour, index) => (
-          <div
-            key={hour.day}
-            className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3"
-          >
-            <div className="w-10 text-sm font-medium">{DAYS[hour.day]}</div>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={hour.closed}
-                onChange={(event) =>
-                  setHours((current) =>
-                    current.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, closed: event.target.checked } : item,
-                    ),
-                  )
-                }
-              />
-              <span className="text-sm">Closed</span>
-            </label>
-            {!hour.closed ? (
-              <>
+      <ul className="mt-4 divide-y divide-slate-100 border-y border-slate-100">
+        {DISPLAY_ORDER.map((day) => {
+          const index = hours.findIndex((item) => item.day === day);
+          const hour = hours[index];
+          if (!hour) return null;
+
+          return (
+            <li
+              key={hour.day}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 py-3 sm:grid-cols-[7rem_7rem_minmax(0,1fr)]"
+            >
+              <span className="text-sm font-semibold text-slate-900">{DAY_NAMES[hour.day]}</span>
+              <label className="inline-flex min-h-10 items-center gap-2 justify-self-end text-sm text-slate-700 sm:justify-self-start">
                 <input
-                  className="rounded border border-slate-300 bg-white px-2 py-1 text-sm text-black"
-                  value={toTime(hour.openMin)}
+                  type="checkbox"
+                  className="h-4 w-4 accent-lethela-primary"
+                  checked={hour.closed}
                   onChange={(event) =>
                     setHours((current) =>
                       current.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, openMin: parseTime(event.target.value) }
-                          : item,
+                        itemIndex === index ? { ...item, closed: event.target.checked } : item,
                       ),
                     )
                   }
                 />
-                <span className="text-sm">to</span>
-                <input
-                  className="rounded border border-slate-300 bg-white px-2 py-1 text-sm text-black"
-                  value={toTime(hour.closeMin)}
-                  onChange={(event) =>
-                    setHours((current) =>
-                      current.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, closeMin: parseTime(event.target.value) }
-                          : item,
-                      ),
-                    )
-                  }
-                />
-              </>
-            ) : (
-              <span className="text-xs text-slate-500">No trading hours set for this day.</span>
-            )}
-          </div>
-        ))}
+                Closed
+              </label>
+              <div className="col-span-2 sm:col-span-1">
+                {!hour.closed ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="time"
+                      aria-label={`${DAY_NAMES[hour.day]} opening time`}
+                      className={cn(dashField.input, "min-w-0 flex-1 tabular-nums sm:max-w-36")}
+                      value={toTime(hour.openMin)}
+                      onChange={(event) =>
+                        setHours((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, openMin: parseTime(event.target.value) }
+                              : item,
+                          ),
+                        )
+                      }
+                    />
+                    <span className="shrink-0 text-sm text-slate-500">to</span>
+                    <input
+                      type="time"
+                      aria-label={`${DAY_NAMES[hour.day]} closing time`}
+                      className={cn(dashField.input, "min-w-0 flex-1 tabular-nums sm:max-w-36")}
+                      value={toTime(hour.closeMin)}
+                      onChange={(event) =>
+                        setHours((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, closeMin: parseTime(event.target.value) }
+                              : item,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">Closed all day</p>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="mt-4 space-y-3">
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className={cn(dashButton.primary, "w-full sm:w-auto")}
+        >
+          {saving ? "Saving..." : "Save hours"}
+        </button>
+        {status ? <Notice tone={statusTone}>{status}</Notice> : null}
       </div>
-
-      <button
-        type="button"
-        onClick={save}
-        disabled={saving}
-        className="mt-3 rounded bg-lethela-primary px-3 py-2 text-sm text-white disabled:opacity-60"
-      >
-        {saving ? "Saving..." : "Save hours"}
-      </button>
-
-      {status ? <p className="mt-3 text-xs text-slate-600">{status}</p> : null}
     </DashCard>
   );
 }

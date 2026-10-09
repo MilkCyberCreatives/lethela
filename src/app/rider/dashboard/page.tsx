@@ -31,17 +31,15 @@ export default async function RiderDashboardPage() {
     );
   }
 
-  const userLabel = session.user.email || session.user.name || "Secure rider session";
-
   return (
     <RiderDashboardShell
       activeView="overview"
-      userLabel={userLabel}
-      eyebrow="Operations dashboard"
-      title="Rider command centre"
-      description="Manage your shift, assigned deliveries, messages and completed earnings."
+      riderName={session.user.name || "Your rider account"}
+      riderEmail={session.user.email}
+      title="Deliveries"
+      description="Go online when you are ready to deliver. Deliveries assigned to you show here."
     >
-      <div className="space-y-5">
+      <div className="space-y-4">
         <RiderOperationsPanel />
         <RiderDashboardClient />
       </div>

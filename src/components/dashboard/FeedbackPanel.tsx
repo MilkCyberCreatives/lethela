@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DashCard from "./DashCard";
+import {
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  RefreshCw,
+  Star,
+  TriangleAlert,
+  UtensilsCrossed,
+} from "lucide-react";
+import { EmptyState, Notice, Panel, StatTile, dashButton } from "@/components/dashboard/kit/ui";
+import { cn } from "@/lib/utils";
 
 type ExperiencePayload = {
   rating: number;
@@ -42,94 +52,138 @@ export default function FeedbackPanel() {
     void load();
   }, []);
 
+  // The first load shows placeholders; a refresh keeps the last numbers on screen.
+  const firstLoad = loading && !experience;
+  const show = (value: string) => (firstLoad ? "…" : value);
+  const orders = experience?.orderCount30 ?? 0;
+
   return (
-    <div className="grid gap-4">
-      <DashCard title="Customer Experience">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">
-            Ratings and feedback signals based on live store performance and customer-facing
-            readiness.
-          </p>
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-        {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <StatCard
-            label="Store rating"
-            value={loading ? "..." : `${experience?.rating.toFixed(1) ?? "0.0"} / 5`}
-          />
-          <StatCard
-            label="Orders (30d)"
-            value={loading ? "..." : String(experience?.orderCount30 ?? 0)}
-          />
-          <StatCard
-            label="On-time signal"
-            value={loading ? "..." : `${experience?.onTimeRate ?? 0}%`}
-          />
-          <StatCard
-            label="Payment success"
-            value={loading ? "..." : `${experience?.paymentSuccessRate ?? 0}%`}
-          />
-          <StatCard
-            label="Menu readiness"
-            value={loading ? "..." : `${experience?.menuReadinessPct ?? 0}%`}
-          />
-        </div>
-      </DashCard>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <DashCard title="What is going well">
-          <div className="space-y-3">
-            {(experience?.highlights || []).map((item) => (
-              <div
-                key={item}
-                className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-              >
-                {item}
-              </div>
-            ))}
-            {!loading && experience && experience.highlights.length === 0 ? (
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
-                Customer positives will appear here as the store builds operating history.
-              </div>
-            ) : null}
-          </div>
-        </DashCard>
-
-        <DashCard title="Needs attention">
-          <div className="space-y-3">
-            {(experience?.concerns || []).map((item) => (
-              <div
-                key={item}
-                className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-              >
-                {item}
-              </div>
-            ))}
-            {!loading && experience && experience.concerns.length === 0 ? (
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
-                No customer-experience concerns are being flagged right now.
-              </div>
-            ) : null}
-          </div>
-        </DashCard>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">Last 30 days</p>
+        <button type="button" onClick={load} disabled={loading} className={dashButton.secondary}>
+          <RefreshCw aria-hidden="true" className={loading ? "animate-spin" : undefined} />
+          {loading ? "Refreshing…" : "Refresh"}
+        </button>
       </div>
+
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+
+      {experience || loading ? (
+        <>
+          <div
+            className={cn(
+              "grid grid-cols-2 gap-3 transition-opacity lg:grid-cols-4 lg:gap-4",
+              loading && !firstLoad ? "opacity-60" : "",
+            )}
+            aria-busy={loading}
+          >
+            <StatTile
+              label="Rating"
+              value={show(experience?.rating.toFixed(1) ?? "0.0")}
+              hint="Out of 5 stars"
+              icon={<Star />}
+            />
+            <StatTile
+              label="On time"
+              value={show(`${experience?.onTimeRate ?? 0}%`)}
+              hint={
+                orders === 0 ? "No orders yet" : `Of ${orders} ${orders === 1 ? "order" : "orders"}`
+              }
+              icon={<Clock />}
+            />
+            <StatTile
+              label="Payments"
+              value={show(`${experience?.paymentSuccessRate ?? 0}%`)}
+              hint="Went through"
+              icon={<CreditCard />}
+            />
+            <StatTile
+              label="Store set-up"
+              value={show(`${experience?.menuReadinessPct ?? 0}%`)}
+              hint="Menu, hours and address"
+              icon={<UtensilsCrossed />}
+            />
+          </div>
+        </>
+      ) : null}
+
+      {experience || loading ? (
+        <div
+          className={cn(
+            "grid items-start gap-4 transition-opacity lg:grid-cols-2",
+            loading && !firstLoad ? "opacity-60" : "",
+          )}
+        >
+          <FeedbackList
+            title="Needs attention"
+            items={experience?.concerns ?? []}
+            loading={firstLoad}
+            tone="warning"
+            emptyTitle="Nothing to fix"
+            emptyText="No problems are showing right now."
+          />
+          <FeedbackList
+            title="Going well"
+            items={experience?.highlights ?? []}
+            loading={firstLoad}
+            tone="success"
+            emptyTitle="Nothing yet"
+            emptyText="Good news shows here as you get more orders."
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function FeedbackList({
+  title,
+  items,
+  loading,
+  tone,
+  emptyTitle,
+  emptyText,
+}: {
+  title: string;
+  items: string[];
+  loading: boolean;
+  tone: "success" | "warning";
+  emptyTitle: string;
+  emptyText: string;
+}) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-      <div className="text-xs uppercase tracking-[0.12em] text-slate-500">{label}</div>
-      <div className="mt-2 text-xl font-semibold text-slate-900">{value}</div>
-    </div>
+    <Panel title={title} padded={loading || items.length === 0}>
+      {loading ? (
+        <div className="grid animate-pulse gap-2" aria-hidden="true">
+          <div className="h-5 rounded bg-slate-100" />
+          <div className="h-5 rounded bg-slate-100" />
+        </div>
+      ) : items.length > 0 ? (
+        <ul className="divide-y divide-slate-100">
+          {items.map((item) => (
+            <li
+              key={item}
+              className="flex items-start gap-3 px-4 py-3 text-sm leading-6 text-slate-700 sm:px-5"
+            >
+              {tone === "success" ? (
+                <CheckCircle2
+                  className="mt-1 h-4 w-4 shrink-0 text-emerald-600"
+                  aria-hidden="true"
+                />
+              ) : (
+                <TriangleAlert
+                  className="mt-1 h-4 w-4 shrink-0 text-amber-600"
+                  aria-hidden="true"
+                />
+              )}
+              <span className="min-w-0">{item}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState compact title={emptyTitle} text={emptyText} />
+      )}
+    </Panel>
   );
 }

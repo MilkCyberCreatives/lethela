@@ -98,12 +98,6 @@ export async function getSqliteCatalogProducts({
            AND v.address IS NOT NULL
            AND v.city IS NOT NULL
            AND v.province IS NOT NULL
-           AND v.storeType IS NOT NULL
-           AND v.kycIdUrl IS NOT NULL
-           AND v.kycProofUrl IS NOT NULL
-           AND v.bankName IS NOT NULL
-           AND v.bankAccountName IS NOT NULL
-           AND v.bankAccountNumber IS NOT NULL
            AND EXISTS (SELECT 1 FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0)${clauses.sql}
          ORDER BY p.updatedAt DESC
          LIMIT ?`,
@@ -198,12 +192,6 @@ export async function getSqliteCatalogVendors({
            v.sectionArea,
            v.storeType,
            v.deliveryFee,
-           v.kycIdUrl,
-           v.kycProofUrl,
-           v.bankName,
-           v.bankAccountName,
-           v.bankAccountNumber,
-           v.bankBranchCode,
            COUNT(DISTINCT p.id) AS productCount,
            (SELECT COUNT(*) FROM Item i WHERE i.vendorId = v.id AND i.draft = 0) AS menuItemCount,
            (SELECT COUNT(*) FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0) AS operatingHoursCount,
@@ -219,12 +207,6 @@ export async function getSqliteCatalogVendors({
            AND v.address IS NOT NULL
            AND v.city IS NOT NULL
            AND v.province IS NOT NULL
-           AND v.storeType IS NOT NULL
-           AND v.kycIdUrl IS NOT NULL
-           AND v.kycProofUrl IS NOT NULL
-           AND v.bankName IS NOT NULL
-           AND v.bankAccountName IS NOT NULL
-           AND v.bankAccountNumber IS NOT NULL
            AND EXISTS (SELECT 1 FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0)
            AND EXISTS (SELECT 1 FROM Product vp WHERE vp.vendorId = v.id AND vp.inStock = 1 AND vp.isAlcohol = 0 AND vp.status = 'APPROVED')${clauses.sql}
          GROUP BY v.id
@@ -252,12 +234,6 @@ export async function getSqliteCatalogVendors({
       sectionArea: string | null;
       storeType: string | null;
       deliveryFee: number | null;
-      kycIdUrl: string | null;
-      kycProofUrl: string | null;
-      bankName: string | null;
-      bankAccountName: string | null;
-      bankAccountNumber: string | null;
-      bankBranchCode: string | null;
       productCount: number;
       menuItemCount: number;
       operatingHoursCount: number;

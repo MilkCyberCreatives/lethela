@@ -349,9 +349,9 @@ await scenario("vendor sign-in and dashboard access", async (page) => {
   if (!page.url().includes("/vendors/dashboard")) {
     throw new Error(`Vendor reached unexpected path: ${page.url()}`);
   }
+  // The dashboard shell's phone tab bar only renders once the vendor workspace has loaded.
   await page
-    .getByText("Dashboard", { exact: true })
-    .first()
+    .getByRole("navigation", { name: "Vendor quick sections" })
     .waitFor({ timeout: 15000 })
     .catch(() => {
       throw new Error("Vendor dashboard did not render.");
@@ -365,8 +365,7 @@ await scenario("rider sign-in and dashboard access", async (page) => {
     throw new Error(`Rider reached unexpected path: ${page.url()}`);
   }
   await page
-    .getByText(/Rider/)
-    .first()
+    .getByRole("navigation", { name: "Rider quick sections" })
     .waitFor({ timeout: 15000 })
     .catch(() => {
       throw new Error("Rider dashboard did not render.");
@@ -384,25 +383,29 @@ await scenario("admin completes owner verification and reaches vendor approvals"
     timeout: 30000,
     waitUntil: "domcontentloaded",
   });
+  // The cookie banner sits over the phone tab bar until the person chooses.
+  await dismissCookieBanner(page);
   // A cold /admin compile can leave the page painted but not yet hydrated, so
-  // the first "Menu" tap is dropped. Open the drawer, then confirm it actually
-  // opened before continuing, retrying the tap once if hydration lagged.
-  const menuButton = page.getByRole("button", { name: "Menu", exact: true });
-  const mobileNav = page.locator("#admin-mobile-navigation");
-  await menuButton.click();
+  // the first tap on the phone tab bar can be dropped. Tap "Vendors", confirm the
+  // page switched, and retry the tap once if hydration lagged.
+  const vendorsTab = page
+    .getByRole("navigation", { name: "Admin quick sections" })
+    .getByRole("button", { name: "Vendors" });
+  const vendorsHeading = page.getByRole("heading", { level: 1, name: "Vendors" });
+  await vendorsTab.click();
   try {
-    await mobileNav.waitFor({ state: "visible", timeout: 8000 });
+    await vendorsHeading.waitFor({ state: "visible", timeout: 8000 });
   } catch {
-    await menuButton.click();
-    await mobileNav.waitFor({ state: "visible", timeout: 20000 });
+    await vendorsTab.click();
+    await vendorsHeading.waitFor({ state: "visible", timeout: 20000 }).catch(() => {
+      throw new Error("Admin vendor approvals did not render after sign-in.");
+    });
   }
-  await mobileNav.getByRole("button", { name: "Vendor approvals", exact: true }).click();
   await page
-    .getByText("Vendor approvals", { exact: true })
-    .last()
+    .getByRole("tablist", { name: "Vendor status" })
     .waitFor({ state: "visible", timeout: 30000 })
     .catch(() => {
-      throw new Error("Admin vendor approvals did not render after sign-in.");
+      throw new Error("Admin vendor approval filters did not render.");
     });
 });
 
