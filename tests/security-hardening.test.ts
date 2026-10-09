@@ -6,6 +6,7 @@ import {
   encryptBankAccountNumber,
   isEncryptedBankAccountNumber,
 } from "../src/lib/bank-data";
+import { safePostLoginPath } from "../src/lib/auth-roles";
 import { emailAddressesMatch, normalizeEmailAddress } from "../src/lib/identity";
 import { AccountPasswordSchema } from "../src/lib/registration-schema";
 
@@ -64,4 +65,19 @@ test("tampered bank ciphertext is rejected", () => {
   tag[0] ^= 1;
   parts[4] = tag.toString("base64url");
   assert.throws(() => decryptBankAccountNumber(parts.join(":")));
+});
+
+test("after sign-in people only go to a page on Lethela itself", () => {
+  assert.equal(safePostLoginPath("CUSTOMER", "/checkout"), "/checkout");
+  for (const unsafe of [
+    "//evil.example",
+    "/\\evil.example",
+    "/\t/evil.example",
+    "https://evil.example",
+  ]) {
+    assert.equal(safePostLoginPath("CUSTOMER", unsafe), "/", unsafe);
+  }
+  assert.equal(safePostLoginPath("RIDER", "/rider/dashboard/profile"), "/rider/dashboard/profile");
+  assert.equal(safePostLoginPath("RIDER", "/admin"), "/rider/dashboard");
+  assert.equal(safePostLoginPath("VENDOR", "/checkout"), "/vendors/dashboard");
 });

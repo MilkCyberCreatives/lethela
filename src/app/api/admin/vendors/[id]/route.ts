@@ -193,8 +193,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       bankAccountName: true,
       bankAccountNumber: true,
       bankBranchCode: true,
-      owner: { select: { passwordHash: true } },
-      _count: { select: { products: true, items: true, hours: true } },
+      owner: {
+        select: { passwordHash: true, accounts: { select: { provider: true }, take: 1 } },
+      },
+      _count: {
+        select: { products: true, items: true, hours: { where: { closed: false } } },
+      },
     },
   });
   if (!reviewCandidate) {
@@ -208,16 +212,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       operatingHoursCount: reviewCandidate._count.hours,
     });
     if (!readiness.canSubmit) {
+      const missing = readiness.checks
+        .filter((check) => check.required && !check.complete)
+        .map((check) => check.label.toLowerCase());
       return NextResponse.json(
         {
           ok: false,
-          error: "This vendor profile is incomplete and cannot be approved.",
+          error: `This store still needs: ${missing.join(", ")}.`,
           readiness,
         },
         { status: 409 },
       );
     }
-    if (!reviewCandidate.owner?.passwordHash) {
+    // The owner must be able to sign in: a password, or a Google sign-in linked to the account.
+    if (!reviewCandidate.owner?.passwordHash && !reviewCandidate.owner?.accounts.length) {
       return NextResponse.json(
         { ok: false, error: "Link a securely registered owner account before approval." },
         { status: 409 },

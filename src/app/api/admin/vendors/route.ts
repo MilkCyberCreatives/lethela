@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
+import { getVendorReadiness } from "@/lib/vendor-readiness";
 
 const STATUS_VALUES = new Set([
   "DRAFT",
@@ -24,6 +25,13 @@ function normalizeStatusFilter(value: string) {
   return value;
 }
 
+// Older records use other names for the same stage, so each tab matches all of them.
+const STATUS_GROUPS: Record<string, string[]> = {
+  DRAFT: ["DRAFT", "DRAFT_PROFILE"],
+  SUBMITTED: ["SUBMITTED", "SUBMITTED_FOR_APPROVAL", "UNDER_REVIEW"],
+  APPROVED: ["APPROVED", "ACTIVE"],
+};
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminRequest(req);
   if (!guard.ok) {
@@ -40,11 +48,11 @@ export async function GET(req: NextRequest) {
     statusFilter === "ALL"
       ? {}
       : {
-          status: statusFilter,
+          status: { in: STATUS_GROUPS[statusFilter] ?? [statusFilter] },
         };
 
   const [
-    items,
+    rows,
     draftCount,
     submittedCount,
     changesRequestedCount,
@@ -58,6 +66,18 @@ export async function GET(req: NextRequest) {
       where,
       orderBy: [{ updatedAt: "desc" }],
       select: {
+        township: true,
+        storeType: true,
+        etaMins: true,
+        bankName: true,
+        bankAccountName: true,
+        bankAccountNumber: true,
+        owner: {
+          select: { passwordHash: true, accounts: { select: { provider: true }, take: 1 } },
+        },
+        _count: {
+          select: { products: true, items: true, hours: { where: { closed: false } } },
+        },
         id: true,
         name: true,
         slug: true,
@@ -86,12 +106,10 @@ export async function GET(req: NextRequest) {
       },
       take: 200,
     }),
-    prisma.vendor.count({ where: { status: { in: ["DRAFT", "DRAFT_PROFILE"] } } }),
-    prisma.vendor.count({
-      where: { status: { in: ["SUBMITTED", "SUBMITTED_FOR_APPROVAL", "UNDER_REVIEW"] } },
-    }),
+    prisma.vendor.count({ where: { status: { in: STATUS_GROUPS.DRAFT } } }),
+    prisma.vendor.count({ where: { status: { in: STATUS_GROUPS.SUBMITTED } } }),
     prisma.vendor.count({ where: { status: "CHANGES_REQUESTED" } }),
-    prisma.vendor.count({ where: { status: "APPROVED" } }),
+    prisma.vendor.count({ where: { status: { in: STATUS_GROUPS.APPROVED } } }),
     prisma.vendor.count({
       where: { status: { in: ["APPROVED", "ACTIVE"] }, isActive: true },
     }),
@@ -100,6 +118,50 @@ export async function GET(req: NextRequest) {
     prisma.vendor.count(),
   ]);
   const pendingCount = submittedCount + changesRequestedCount;
+
+  const pendingProducts = rows.length
+    ? await prisma.product.groupBy({
+        by: ["vendorId"],
+        where: { vendorId: { in: rows.map((row) => row.id) }, status: "SUBMITTED" },
+        _count: { _all: true },
+      })
+    : [];
+  const pendingProductsByVendor = new Map(
+    pendingProducts.map((row) => [row.vendorId, row._count._all]),
+  );
+
+  // Readiness is worked out here so the list never sends banking details or password data.
+  const items = rows.map(
+    ({ bankName, bankAccountName, bankAccountNumber, owner, _count, ...vendor }) => {
+      const readiness = getVendorReadiness({
+        ...vendor,
+        bankName,
+        bankAccountName,
+        bankAccountNumber,
+        productCount: _count.products,
+        menuItemCount: _count.items,
+        operatingHoursCount: _count.hours,
+      });
+      return {
+        ...vendor,
+        hasBankAccount: Boolean(bankAccountNumber),
+        productCount: _count.products,
+        menuItemCount: _count.items,
+        pendingProductCount: pendingProductsByVendor.get(vendor.id) ?? 0,
+        openDays: _count.hours,
+        ownerCanSignIn: Boolean(owner?.passwordHash) || Boolean(owner?.accounts.length),
+        readiness: {
+          canApprove: readiness.canSubmit,
+          missing: readiness.checks
+            .filter((check) => check.required && !check.complete)
+            .map((check) => check.label),
+          later: readiness.checks
+            .filter((check) => !check.required && !check.complete)
+            .map((check) => check.label),
+        },
+      };
+    },
+  );
 
   return NextResponse.json({
     ok: true,

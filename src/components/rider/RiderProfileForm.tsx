@@ -1,11 +1,36 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  useEffect,
+  useState,
+  type FormEvent,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
+import { Bike, Car, ChevronRight, Footprints, Send } from "lucide-react";
+import FormField from "@/components/dashboard/FormField";
+import {
+  ChecklistItem,
+  dashButton,
+  dashField,
+  Notice,
+  Panel,
+  StatusBadge,
+} from "@/components/dashboard/kit/ui";
+import { DEFAULT_PROVINCE, SA_PROVINCES } from "@/lib/provinces";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DOCUMENT_TYPES = "image/jpeg,image/png,image/webp,application/pdf";
+
+type DeliveryMethod = "WALKING" | "BICYCLE" | "SCOOTER" | "MOTORCYCLE" | "CAR";
+
+const METHODS: Array<{ value: DeliveryMethod; label: string; icon: ReactNode }> = [
+  { value: "WALKING", label: "On foot", icon: <Footprints /> },
+  { value: "BICYCLE", label: "Bicycle", icon: <Bike /> },
+  { value: "SCOOTER", label: "Scooter", icon: <Bike /> },
+  { value: "MOTORCYCLE", label: "Motorbike", icon: <Bike /> },
+  { value: "CAR", label: "Car", icon: <Car /> },
+];
 
 type FormState = {
   fullName: string;
@@ -13,7 +38,7 @@ type FormState = {
   idNumberLast4: string;
   idDocumentUrl: string;
   profilePhotoUrl: string;
-  vehicleType: "WALKING" | "BICYCLE" | "SCOOTER" | "MOTORCYCLE" | "CAR";
+  vehicleType: DeliveryMethod | "";
   vehicleRegistration: string;
   vehicleMakeModel: string;
   licenseCode: string;
@@ -25,10 +50,11 @@ type FormState = {
   township: string;
   sectionArea: string;
   preferredZones: string;
-  availableNow: boolean;
   workingDays: string[];
   startTime: string;
   endTime: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
   bankAccountName: string;
   bankName: string;
   bankAccountNumber: string;
@@ -40,33 +66,38 @@ type FormState = {
   liquorIdCheckAccepted: boolean;
 };
 
+type TextKey = {
+  [K in keyof FormState]: FormState[K] extends string ? K : never;
+}[keyof FormState];
+
 const INITIAL: FormState = {
   fullName: "",
   phone: "",
   idNumberLast4: "",
   idDocumentUrl: "",
   profilePhotoUrl: "",
-  vehicleType: "WALKING",
+  vehicleType: "",
   vehicleRegistration: "",
   vehicleMakeModel: "",
   licenseCode: "",
   licenceDocumentUrl: "",
   licenceExpiry: "",
   vehicleDocumentUrl: "",
-  province: "Gauteng",
+  province: DEFAULT_PROVINCE,
   municipality: "",
   township: "",
   sectionArea: "",
   preferredZones: "",
-  availableNow: false,
   workingDays: [],
-  startTime: "08:00",
-  endTime: "17:00",
+  startTime: "",
+  endTime: "",
+  emergencyContactName: "",
+  emergencyContactPhone: "",
   bankAccountName: "",
   bankName: "",
   bankAccountNumber: "",
   bankBranchCode: "",
-  bankAccountType: "Savings",
+  bankAccountType: "",
   hasSmartphone: false,
   lawfulWorkDeclared: false,
   conductAccepted: false,
@@ -77,8 +108,138 @@ type Readiness = {
   percent: number;
   canSubmit: boolean;
   missing: string[];
-  checks: Array<{ key: string; label: string; complete: boolean }>;
+  later?: string[];
+  checks: Array<{ key: string; label: string; complete: boolean; required?: boolean }>;
 };
+
+const STATUS: Record<
+  string,
+  { label: string; tone: "success" | "warning" | "danger" | "neutral" }
+> = {
+  DRAFT: { label: "Not sent yet", tone: "neutral" },
+  SUBMITTED: { label: "Waiting for approval", tone: "warning" },
+  UNDER_REVIEW: { label: "Waiting for approval", tone: "warning" },
+  CHANGES_REQUESTED: { label: "Changes needed", tone: "warning" },
+  APPROVED: { label: "Approved", tone: "success" },
+  REJECTED: { label: "Not approved", tone: "danger" },
+  SUSPENDED: { label: "Paused by Lethela", tone: "danger" },
+};
+
+const CAN_SEND = ["DRAFT", "CHANGES_REQUESTED", "REJECTED"];
+
+/** Copies saved values over the defaults, skipping empty ones so defaults such as the province stay. */
+function formFromProfile(profile: Record<string, unknown>): FormState {
+  const next: FormState = { ...INITIAL };
+  for (const key of Object.keys(INITIAL) as Array<keyof FormState>) {
+    const value = profile[key];
+    if (value === null || value === undefined || value === "") continue;
+    if (typeof INITIAL[key] === "boolean") {
+      (next as Record<string, unknown>)[key] = Boolean(value);
+    } else if (typeof INITIAL[key] === "string") {
+      (next as Record<string, unknown>)[key] = String(value);
+    }
+  }
+  next.vehicleType = METHODS.some((method) => method.value === profile.vehicleType)
+    ? (profile.vehicleType as DeliveryMethod)
+    : "";
+  next.bankAccountNumber = "";
+  next.preferredZones = Array.isArray(profile.preferredZones)
+    ? profile.preferredZones.join(", ")
+    : "";
+  next.workingDays = Array.isArray(profile.workingDays)
+    ? profile.workingDays.filter((day): day is string => typeof day === "string")
+    : [];
+  next.licenceExpiry = profile.licenceExpiry ? String(profile.licenceExpiry).slice(0, 10) : "";
+  return next;
+}
+
+function LaterSection({
+  title,
+  description,
+  done,
+  children,
+}: {
+  title: string;
+  description: string;
+  done: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details className="rounded-xl border border-slate-200 bg-white">
+      <summary className="flex items-center gap-3 rounded-xl px-4 py-3.5 transition-colors hover:bg-slate-50 sm:px-5">
+        <ChevronRight
+          className="dash-summary-chevron h-4 w-4 shrink-0 text-slate-400"
+          aria-hidden="true"
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold text-slate-900">{title}</span>
+          <span className="mt-0.5 block text-sm leading-5 text-slate-500">{description}</span>
+        </span>
+        {done ? (
+          <StatusBadge tone="success">Added</StatusBadge>
+        ) : (
+          <StatusBadge tone="neutral" dot={false}>
+            Optional
+          </StatusBadge>
+        )}
+      </summary>
+      <div className="grid gap-4 border-t border-slate-100 p-4 sm:grid-cols-2 sm:p-5">
+        {children}
+      </div>
+    </details>
+  );
+}
+
+function UploadField({
+  label,
+  uploaded,
+  accept,
+  onFile,
+}: {
+  label: string;
+  uploaded: boolean;
+  accept: string;
+  onFile: (file: File) => void;
+}) {
+  return (
+    <label className="grid content-start gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm">
+      <span className="flex items-center justify-between gap-2 font-medium text-slate-800">
+        {label}
+        {uploaded ? <StatusBadge tone="success">Uploaded</StatusBadge> : null}
+      </span>
+      <input
+        type="file"
+        accept={accept}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) onFile(file);
+        }}
+      />
+    </label>
+  );
+}
+
+function Agreement({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex items-start gap-3 rounded-lg px-1 py-1.5 text-sm text-slate-800">
+      <input
+        className="mt-0.5 h-4 w-4 shrink-0 accent-lethela-primary"
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      <span>{label}</span>
+    </label>
+  );
+}
 
 export default function RiderProfileForm() {
   const [form, setForm] = useState(INITIAL);
@@ -88,13 +249,10 @@ export default function RiderProfileForm() {
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const requiresVehicle = useMemo(
-    () => ["SCOOTER", "MOTORCYCLE", "CAR"].includes(form.vehicleType),
-    [form.vehicleType],
-  );
+  const requiresVehicle = ["SCOOTER", "MOTORCYCLE", "CAR"].includes(form.vehicleType);
 
   useEffect(() => {
     void (async () => {
@@ -103,23 +261,16 @@ export default function RiderProfileForm() {
         const data = await response.json();
         if (!response.ok || !data.ok)
           throw new Error(data.error || "Could not load rider profile.");
-        const profile = data.profile;
-        setForm((current) => ({
-          ...current,
-          ...profile,
-          bankAccountNumber: "",
-          preferredZones: Array.isArray(profile.preferredZones)
-            ? profile.preferredZones.join(", ")
-            : "",
-          workingDays: Array.isArray(profile.workingDays) ? profile.workingDays : [],
-          licenceExpiry: profile.licenceExpiry ? String(profile.licenceExpiry).slice(0, 10) : "",
-        }));
-        setStatus(profile.status || "DRAFT");
-        setReviewReason(profile.reviewReason || "");
-        setBankLast4(profile.bankAccountLast4 || "");
+        setForm(formFromProfile(data.profile || {}));
+        setStatus(data.profile?.status || "DRAFT");
+        setReviewReason(data.profile?.reviewReason || "");
+        setBankLast4(data.profile?.bankAccountLast4 || "");
         setReadiness(data.readiness);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Could not load rider profile.");
+        setMessage({
+          tone: "error",
+          text: loadError instanceof Error ? loadError.message : "Could not load rider profile.",
+        });
       } finally {
         setLoading(false);
       }
@@ -128,30 +279,39 @@ export default function RiderProfileForm() {
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
   }
 
   async function upload(
-    field: keyof Pick<
-      FormState,
-      "idDocumentUrl" | "profilePhotoUrl" | "licenceDocumentUrl" | "vehicleDocumentUrl"
-    >,
+    field: "idDocumentUrl" | "profilePhotoUrl" | "licenceDocumentUrl" | "vehicleDocumentUrl",
     file: File,
   ) {
-    setMessage(`Uploading ${file.name}...`);
-    const payload = new FormData();
-    payload.set("file", file);
-    payload.set("kind", field === "profilePhotoUrl" ? "profile" : "document");
-    const response = await fetch("/api/upload", { method: "POST", body: payload });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.ok) throw new Error(data.error || "Upload failed.");
-    update(field, data.url || data.path);
-    setMessage("Secure upload complete. Save your profile to keep it.");
+    setMessage({ tone: "success", text: `Uploading ${file.name}…` });
+    try {
+      const payload = new FormData();
+      payload.set("file", file);
+      payload.set("kind", field === "profilePhotoUrl" ? "profile" : "document");
+      const response = await fetch("/api/upload", { method: "POST", body: payload });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) throw new Error(data.error || "Upload failed.");
+      update(field, data.url || data.path);
+      setMessage({ tone: "success", text: "Uploaded. Save your profile to keep it." });
+    } catch (uploadError) {
+      setMessage({
+        tone: "error",
+        text: uploadError instanceof Error ? uploadError.message : "Upload failed.",
+      });
+    }
   }
 
   async function save(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
     setSaving(true);
-    setError(null);
     setMessage(null);
     try {
       const response = await fetch("/api/riders/profile", {
@@ -166,421 +326,456 @@ export default function RiderProfileForm() {
           licenceExpiry: form.licenceExpiry
             ? new Date(`${form.licenceExpiry}T00:00:00.000Z`).toISOString()
             : null,
-          vehicleRegistration: requiresVehicle ? form.vehicleRegistration : null,
-          vehicleMakeModel: requiresVehicle ? form.vehicleMakeModel : null,
-          licenseCode: requiresVehicle ? form.licenseCode : null,
-          licenceDocumentUrl: requiresVehicle ? form.licenceDocumentUrl : null,
-          vehicleDocumentUrl: requiresVehicle ? form.vehicleDocumentUrl : null,
+          vehicleRegistration: requiresVehicle ? form.vehicleRegistration : "",
+          vehicleMakeModel: requiresVehicle ? form.vehicleMakeModel : "",
+          licenseCode: requiresVehicle ? form.licenseCode : "",
+          licenceDocumentUrl: requiresVehicle ? form.licenceDocumentUrl : "",
+          vehicleDocumentUrl: requiresVehicle ? form.vehicleDocumentUrl : "",
         }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.ok) throw new Error(data.error || "Could not save rider profile.");
+      if (!response.ok || !data.ok) {
+        const errors: Record<string, string> = {};
+        for (const [key, value] of Object.entries(data.fieldErrors || {})) {
+          if (Array.isArray(value) && value[0]) errors[key] = String(value[0]);
+        }
+        setFieldErrors(errors);
+        throw new Error(data.error || "Could not save your profile.");
+      }
       setReadiness(data.readiness);
       setStatus(data.profile.status);
+      setReviewReason(data.profile.reviewReason || "");
       setBankLast4(data.profile.bankAccountLast4 || bankLast4);
       update("bankAccountNumber", "");
-      setMessage("Rider profile saved.");
+      setFieldErrors({});
+      setMessage({ tone: "success", text: "Your profile is saved." });
+      return data.readiness as Readiness;
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Could not save rider profile.");
+      setMessage({
+        tone: "error",
+        text: saveError instanceof Error ? saveError.message : "Could not save your profile.",
+      });
+      return null;
     } finally {
       setSaving(false);
     }
   }
 
-  async function submitForApproval() {
-    await save();
+  async function sendForApproval() {
+    const saved = await save();
+    if (!saved) return;
+    if (!saved.canSubmit) {
+      setMessage({
+        tone: "error",
+        text: `Add these first: ${saved.missing.join(", ").toLowerCase()}.`,
+      });
+      return;
+    }
     setSaving(true);
-    setError(null);
     try {
       const response = await fetch("/api/riders/profile", { method: "POST" });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.ok)
-        throw new Error(data.error || "Could not submit rider profile.");
+      if (!response.ok || !data.ok) throw new Error(data.error || "Could not send your profile.");
       setStatus(data.profile.status);
-      setMessage(data.message);
+      setReviewReason("");
+      setMessage({
+        tone: "success",
+        text: "Sent to Lethela. We will let you know as soon as you are approved.",
+      });
     } catch (submitError) {
-      setError(
-        submitError instanceof Error ? submitError.message : "Could not submit rider profile.",
-      );
+      setMessage({
+        tone: "error",
+        text: submitError instanceof Error ? submitError.message : "Could not send your profile.",
+      });
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        Loading rider profile...
+      <div className="space-y-4" aria-busy="true">
+        {[0, 1].map((key) => (
+          <div key={key} className="animate-pulse rounded-xl border border-slate-200 bg-white p-5">
+            <div className="h-4 w-48 rounded bg-slate-100" />
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="h-11 rounded-lg bg-slate-100" />
+              <div className="h-11 rounded-lg bg-slate-100" />
+            </div>
+          </div>
+        ))}
       </div>
     );
+  }
+
+  const text = (key: TextKey, props: InputHTMLAttributes<HTMLInputElement> = {}) => (
+    <input
+      className={dashField.input}
+      value={form[key]}
+      aria-invalid={fieldErrors[key] ? true : undefined}
+      onChange={(event) => update(key, event.target.value)}
+      {...props}
+    />
+  );
+  const statusInfo = STATUS[status] || STATUS.DRAFT;
+  const canSend = CAN_SEND.includes(status);
+  const requiredChecks = (readiness?.checks || []).filter((check) => check.required !== false);
+  const agreementsDone =
+    form.hasSmartphone &&
+    form.lawfulWorkDeclared &&
+    form.conductAccepted &&
+    form.liquorIdCheckAccepted;
 
   return (
-    <form className="space-y-5" onSubmit={save}>
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-5">
-        <div>
-          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Profile setup</p>
-          <h1 className="mt-1 text-2xl font-semibold">Rider profile</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Status: {status.replaceAll("_", " ")} · {readiness?.percent || 0}% complete
+    <form className="space-y-4" onSubmit={(event) => void save(event)}>
+      {reviewReason && status !== "APPROVED" ? (
+        <Notice tone="warning" title="Message from Lethela">
+          {reviewReason}
+        </Notice>
+      ) : null}
+
+      <Panel
+        title={canSend ? "Get approved to deliver" : statusInfo.label}
+        description={
+          canSend
+            ? "Fill in the four steps below and send your profile. Everything else can wait."
+            : status === "APPROVED"
+              ? "You can go online from the deliveries page."
+              : "Lethela is checking your profile. You can still update it."
+        }
+        action={<StatusBadge tone={statusInfo.tone}>{statusInfo.label}</StatusBadge>}
+      >
+        <div className="divide-y divide-slate-100">
+          {requiredChecks.map((check) => (
+            <ChecklistItem key={check.key} done={check.complete} label={check.label} />
+          ))}
+        </div>
+      </Panel>
+
+      <Panel title="1. Your name and phone number">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Full name" required error={fieldErrors.fullName}>
+            {text("fullName", { autoComplete: "name" })}
+          </FormField>
+          <FormField
+            label="Phone or WhatsApp number"
+            required
+            error={fieldErrors.phone}
+            hint="Lethela uses this number to reach you about deliveries."
+          >
+            {text("phone", { type: "tel", inputMode: "tel", autoComplete: "tel" })}
+          </FormField>
+        </div>
+      </Panel>
+
+      <Panel title="2. How you deliver">
+        <fieldset>
+          <legend className="sr-only">How you deliver</legend>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {METHODS.map((method) => {
+              const selected = form.vehicleType === method.value;
+              return (
+                <label
+                  key={method.value}
+                  className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors [&_svg]:h-4 [&_svg]:w-4 ${
+                    selected
+                      ? "border-lethela-primary bg-lethela-primary/[0.06] text-lethela-primary"
+                      : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="vehicleType"
+                    value={method.value}
+                    checked={selected}
+                    onChange={() => update("vehicleType", method.value)}
+                    className="sr-only"
+                  />
+                  {method.icon}
+                  {method.label}
+                </label>
+              );
+            })}
+          </div>
+          {fieldErrors.vehicleType ? (
+            <p className="mt-2 text-xs font-medium text-red-700">Choose how you deliver.</p>
+          ) : null}
+        </fieldset>
+      </Panel>
+
+      <Panel title="3. Area you deliver in">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FormField label="Township or area" required error={fieldErrors.township}>
+            {text("township", { placeholder: "For example Klipfontein View" })}
+          </FormField>
+          <FormField label="City or town" hint="Optional." error={fieldErrors.municipality}>
+            {text("municipality", { placeholder: "For example Midrand" })}
+          </FormField>
+          <FormField label="Province" required error={fieldErrors.province}>
+            <select
+              className={dashField.input}
+              value={form.province}
+              onChange={(event) => update("province", event.target.value)}
+            >
+              {SA_PROVINCES.includes(form.province as (typeof SA_PROVINCES)[number]) ? null : (
+                <option value={form.province}>{form.province}</option>
+              )}
+              {SA_PROVINCES.map((province) => (
+                <option key={province} value={province}>
+                  {province}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </div>
+      </Panel>
+
+      <Panel title="4. Rider agreement">
+        <div className="grid gap-1">
+          <Agreement
+            label="I have a smartphone and mobile data."
+            checked={form.hasSmartphone}
+            onChange={(value) => update("hasSmartphone", value)}
+          />
+          <Agreement
+            label="I declare that I may lawfully work in South Africa."
+            checked={form.lawfulWorkDeclared}
+            onChange={(value) => update("lawfulWorkDeclared", value)}
+          />
+          <Agreement
+            label="I accept the delivery conduct agreement."
+            checked={form.conductAccepted}
+            onChange={(value) => update("conductAccepted", value)}
+          />
+          <Agreement
+            label="I will verify ID and refuse liquor handover when required."
+            checked={form.liquorIdCheckAccepted}
+            onChange={(value) => update("liquorIdCheckAccepted", value)}
+          />
+        </div>
+        {!agreementsDone ? (
+          <p className="mt-2 text-xs text-slate-500">Tick all four to send your profile.</p>
+        ) : null}
+      </Panel>
+
+      <div className="space-y-3">
+        <div className="px-1">
+          <h2 className="text-[15px] font-semibold text-slate-900">Add later</h2>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Not needed for approval. You can add them any time.
           </p>
         </div>
-        <Button
-          asChild
-          variant="outline"
-          className="border-slate-300 bg-white text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
+
+        <LaterSection
+          title="ID, photo and emergency contact"
+          description="Helps Lethela and customers know who is delivering."
+          done={Boolean(
+            form.idNumberLast4.length === 4 && form.idDocumentUrl && form.profilePhotoUrl,
+          )}
         >
-          <Link href="/rider/dashboard">Back to dashboard</Link>
-        </Button>
-      </div>
+          <FormField label="Last 4 digits of your ID number" error={fieldErrors.idNumberLast4}>
+            <input
+              className={dashField.input}
+              inputMode="numeric"
+              value={form.idNumberLast4}
+              onChange={(event) =>
+                update("idNumberLast4", event.target.value.replace(/\D/g, "").slice(0, 4))
+              }
+            />
+          </FormField>
+          <div className="hidden sm:block" />
+          <UploadField
+            label="ID document"
+            uploaded={Boolean(form.idDocumentUrl)}
+            accept={DOCUMENT_TYPES}
+            onFile={(file) => void upload("idDocumentUrl", file)}
+          />
+          <UploadField
+            label="Photo of you"
+            uploaded={Boolean(form.profilePhotoUrl)}
+            accept="image/jpeg,image/png,image/webp"
+            onFile={(file) => void upload("profilePhotoUrl", file)}
+          />
+          <FormField label="Emergency contact name">{text("emergencyContactName")}</FormField>
+          <FormField label="Emergency contact phone">
+            {text("emergencyContactPhone", { type: "tel", inputMode: "tel" })}
+          </FormField>
+        </LaterSection>
 
-      {reviewReason ? (
-        <div
-          role="alert"
-          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+        {requiresVehicle ? (
+          <LaterSection
+            title="Vehicle and licence"
+            description="Your registration, licence and vehicle papers."
+            done={Boolean(
+              form.vehicleRegistration &&
+                form.vehicleMakeModel &&
+                form.licenseCode &&
+                form.licenceDocumentUrl &&
+                form.licenceExpiry &&
+                form.vehicleDocumentUrl,
+            )}
+          >
+            <FormField label="Registration number">{text("vehicleRegistration")}</FormField>
+            <FormField label="Make and model">{text("vehicleMakeModel")}</FormField>
+            <FormField label="Driver's licence code">{text("licenseCode")}</FormField>
+            <FormField label="Licence expiry date">
+              {text("licenceExpiry", { type: "date" })}
+            </FormField>
+            <UploadField
+              label="Driver's licence"
+              uploaded={Boolean(form.licenceDocumentUrl)}
+              accept={DOCUMENT_TYPES}
+              onFile={(file) => void upload("licenceDocumentUrl", file)}
+            />
+            <UploadField
+              label="Vehicle papers"
+              uploaded={Boolean(form.vehicleDocumentUrl)}
+              accept={DOCUMENT_TYPES}
+              onFile={(file) => void upload("vehicleDocumentUrl", file)}
+            />
+          </LaterSection>
+        ) : null}
+
+        <LaterSection
+          title="When you can work"
+          description="Days, times and the areas you prefer."
+          done={Boolean(form.workingDays.length && form.startTime && form.endTime)}
         >
-          <strong>Changes requested:</strong> {reviewReason}
-        </div>
-      ) : null}
-      {readiness?.missing?.length ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-          Still required: {readiness.missing.join(", ")}
-        </div>
-      ) : null}
+          <div className="sm:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Days</span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {DAYS.map((day) => {
+                const selected = form.workingDays.includes(day);
+                return (
+                  <label
+                    key={day}
+                    className={`flex min-h-10 cursor-pointer items-center rounded-lg border px-3 text-sm font-medium transition-colors ${
+                      selected
+                        ? "border-lethela-primary bg-lethela-primary/[0.06] text-lethela-primary"
+                        : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={selected}
+                      onChange={(event) =>
+                        update(
+                          "workingDays",
+                          event.target.checked
+                            ? [...form.workingDays, day]
+                            : form.workingDays.filter((item) => item !== day),
+                        )
+                      }
+                    />
+                    {day.slice(0, 3)}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          <FormField label="From" error={fieldErrors.startTime}>
+            {text("startTime", { type: "time" })}
+          </FormField>
+          <FormField label="Until" error={fieldErrors.endTime}>
+            {text("endTime", { type: "time" })}
+          </FormField>
+          <FormField label="Section or extension">{text("sectionArea")}</FormField>
+          <FormField label="Areas you prefer" hint="Separate with commas.">
+            {text("preferredZones")}
+          </FormField>
+        </LaterSection>
 
-      <Section title="1. Personal details">
-        <InputField
-          label="Full name"
-          value={form.fullName}
-          onChange={(value) => update("fullName", value)}
-        />
-        <InputField
-          label="Mobile number"
-          value={form.phone}
-          onChange={(value) => update("phone", value)}
-          type="tel"
-        />
-        <InputField
-          label="Identity number (last 4 digits only)"
-          value={form.idNumberLast4}
-          onChange={(value) => update("idNumberLast4", value.replace(/\D/g, "").slice(0, 4))}
-        />
-        <UploadField
-          label="ID document"
-          value={form.idDocumentUrl}
-          accept="image/jpeg,image/png,image/webp,application/pdf"
-          onFile={(file) => upload("idDocumentUrl", file)}
-        />
-        <UploadField
-          label="Profile photo"
-          value={form.profilePhotoUrl}
-          accept="image/jpeg,image/png,image/webp"
-          onFile={(file) => upload("profilePhotoUrl", file)}
-        />
-      </Section>
-
-      <Section title="2. Delivery method">
-        <label className="grid gap-1.5 text-sm">
-          <span>Delivery method</span>
-          <select
-            className="h-10 rounded-md border border-slate-300 bg-white px-3"
-            value={form.vehicleType}
-            onChange={(event) =>
-              update("vehicleType", event.target.value as FormState["vehicleType"])
+        <LaterSection
+          title="Bank account for payouts"
+          description="Where Lethela pays your delivery fees and tips."
+          done={Boolean(
+            form.bankName && form.bankAccountName && (form.bankAccountNumber || bankLast4),
+          )}
+        >
+          <FormField label="Account holder">
+            {text("bankAccountName", { autoComplete: "off" })}
+          </FormField>
+          <FormField label="Bank">{text("bankName", { autoComplete: "off" })}</FormField>
+          <FormField
+            label="Account number"
+            error={fieldErrors.bankAccountNumber}
+            hint={
+              bankLast4
+                ? `Saved account ends in ${bankLast4}. Type a new number only to change it.`
+                : undefined
             }
           >
-            <option value="WALKING">Walking</option>
-            <option value="BICYCLE">Bicycle</option>
-            <option value="SCOOTER">Scooter</option>
-            <option value="MOTORCYCLE">Motorcycle</option>
-            <option value="CAR">Car</option>
-          </select>
-        </label>
-      </Section>
+            <input
+              className={dashField.input}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder={bankLast4 ? "Leave empty to keep it" : undefined}
+              value={form.bankAccountNumber}
+              onChange={(event) =>
+                update("bankAccountNumber", event.target.value.replace(/\s/g, ""))
+              }
+            />
+          </FormField>
+          <FormField label="Branch code">
+            {text("bankBranchCode", { inputMode: "numeric", autoComplete: "off" })}
+          </FormField>
+          <FormField label="Account type">
+            <select
+              className={dashField.input}
+              value={form.bankAccountType}
+              onChange={(event) => update("bankAccountType", event.target.value)}
+            >
+              <option value="">Choose account type</option>
+              {["Savings", "Cheque", "Transmission"].includes(form.bankAccountType) ||
+              !form.bankAccountType ? null : (
+                <option value={form.bankAccountType}>{form.bankAccountType}</option>
+              )}
+              <option value="Savings">Savings</option>
+              <option value="Cheque">Cheque or current</option>
+              <option value="Transmission">Transmission</option>
+            </select>
+          </FormField>
+        </LaterSection>
+      </div>
 
-      {requiresVehicle ? (
-        <Section title="3. Vehicle details">
-          <InputField
-            label="Registration number"
-            value={form.vehicleRegistration}
-            onChange={(value) => update("vehicleRegistration", value)}
-          />
-          <InputField
-            label="Vehicle make and model"
-            value={form.vehicleMakeModel}
-            onChange={(value) => update("vehicleMakeModel", value)}
-          />
-          <InputField
-            label="Driver's licence code"
-            value={form.licenseCode}
-            onChange={(value) => update("licenseCode", value)}
-          />
-          <InputField
-            label="Licence expiry"
-            type="date"
-            value={form.licenceExpiry}
-            onChange={(value) => update("licenceExpiry", value)}
-          />
-          <UploadField
-            label="Driver's licence"
-            value={form.licenceDocumentUrl}
-            accept="image/jpeg,image/png,image/webp,application/pdf"
-            onFile={(file) => upload("licenceDocumentUrl", file)}
-          />
-          <UploadField
-            label="Vehicle documentation"
-            value={form.vehicleDocumentUrl}
-            accept="image/jpeg,image/png,image/webp,application/pdf"
-            onFile={(file) => upload("vehicleDocumentUrl", file)}
-          />
-        </Section>
-      ) : null}
-
-      <Section title="4. Service area">
-        <InputField
-          label="Province"
-          value={form.province}
-          onChange={(value) => update("province", value)}
-        />
-        <InputField
-          label="Municipality or city"
-          value={form.municipality}
-          onChange={(value) => update("municipality", value)}
-        />
-        <InputField
-          label="Township"
-          value={form.township}
-          onChange={(value) => update("township", value)}
-        />
-        <InputField
-          label="Section or area"
-          value={form.sectionArea}
-          onChange={(value) => update("sectionArea", value)}
-        />
-        <InputField
-          label="Preferred delivery zones (comma separated)"
-          value={form.preferredZones}
-          onChange={(value) => update("preferredZones", value)}
-        />
-      </Section>
-
-      <Section title="5. Availability">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={form.availableNow}
-            onChange={(event) => update("availableNow", event.target.checked)}
-          />{" "}
-          Available now
-        </label>
-        <div className="sm:col-span-2">
-          <span className="text-sm">Working days</span>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {DAYS.map((day) => (
-              <label
-                key={day}
-                className="flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+      <div className="sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-10 lg:bottom-4">
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p
+            className={`min-h-5 text-sm ${
+              message?.tone === "error"
+                ? "font-medium text-red-700"
+                : message
+                  ? "text-emerald-700"
+                  : "text-slate-500"
+            }`}
+            role={message?.tone === "error" ? "alert" : "status"}
+          >
+            {message?.text ||
+              (canSend
+                ? readiness?.canSubmit
+                  ? "Ready to send to Lethela."
+                  : "Save as you go. Send when the four steps are done."
+                : "Save after making changes.")}
+          </p>
+          <div className="flex gap-2">
+            <button type="submit" disabled={saving} className={`${dashButton.secondary} flex-1`}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+            {canSend ? (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void sendForApproval()}
+                className={`${dashButton.primary} flex-1 whitespace-nowrap`}
               >
-                <input
-                  type="checkbox"
-                  checked={form.workingDays.includes(day)}
-                  onChange={(event) =>
-                    update(
-                      "workingDays",
-                      event.target.checked
-                        ? [...form.workingDays, day]
-                        : form.workingDays.filter((item) => item !== day),
-                    )
-                  }
-                />
-                {day}
-              </label>
-            ))}
+                <Send aria-hidden="true" />
+                Send to Lethela
+              </button>
+            ) : null}
           </div>
         </div>
-        <InputField
-          label="Start time"
-          type="time"
-          value={form.startTime}
-          onChange={(value) => update("startTime", value)}
-        />
-        <InputField
-          label="End time"
-          type="time"
-          value={form.endTime}
-          onChange={(value) => update("endTime", value)}
-        />
-      </Section>
-
-      <Section title="6. Banking and payouts">
-        <InputField
-          label="Account holder"
-          value={form.bankAccountName}
-          onChange={(value) => update("bankAccountName", value)}
-        />
-        <InputField
-          label="Bank"
-          value={form.bankName}
-          onChange={(value) => update("bankName", value)}
-        />
-        <InputField
-          label={bankLast4 ? `New account number (current ends ${bankLast4})` : "Account number"}
-          value={form.bankAccountNumber}
-          onChange={(value) => update("bankAccountNumber", value.replace(/\s/g, ""))}
-        />
-        <InputField
-          label="Branch code"
-          value={form.bankBranchCode}
-          onChange={(value) => update("bankBranchCode", value)}
-        />
-        <InputField
-          label="Account type"
-          value={form.bankAccountType}
-          onChange={(value) => update("bankAccountType", value)}
-        />
-      </Section>
-
-      <Section title="7. Safety and declarations">
-        <Check
-          label="I have a smartphone and mobile data"
-          checked={form.hasSmartphone}
-          onChange={(value) => update("hasSmartphone", value)}
-        />
-        <Check
-          label="I declare that I may lawfully work in South Africa"
-          checked={form.lawfulWorkDeclared}
-          onChange={(value) => update("lawfulWorkDeclared", value)}
-        />
-        <Check
-          label="I accept the delivery conduct agreement"
-          checked={form.conductAccepted}
-          onChange={(value) => update("conductAccepted", value)}
-        />
-        <Check
-          label="I will verify ID and refuse liquor handover when required"
-          checked={form.liquorIdCheckAccepted}
-          onChange={(value) => update("liquorIdCheckAccepted", value)}
-        />
-      </Section>
-
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
-          {error}
-        </p>
-      ) : null}
-      {message ? (
-        <p
-          role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
-        >
-          {message}
-        </p>
-      ) : null}
-      <div className="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-4">
-        <Button
-          type="submit"
-          className="border border-slate-300 bg-white text-black"
-          disabled={saving}
-        >
-          {saving ? "Saving..." : "Save profile"}
-        </Button>
-        <Button
-          type="button"
-          className="bg-lethela-primary text-white"
-          disabled={
-            saving ||
-            !readiness?.canSubmit ||
-            !["DRAFT", "CHANGES_REQUESTED", "REJECTED"].includes(status)
-          }
-          onClick={() => void submitForApproval()}
-        >
-          Submit for approval
-        </Button>
       </div>
     </form>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">{children}</div>
-    </section>
-  );
-}
-function InputField({
-  label,
-  value,
-  onChange,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: string;
-}) {
-  return (
-    <label className="grid gap-1.5 text-sm">
-      <span>{label}</span>
-      <Input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="border-slate-300 bg-white text-slate-900"
-      />
-    </label>
-  );
-}
-function UploadField({
-  label,
-  value,
-  accept,
-  onFile,
-}: {
-  label: string;
-  value: string;
-  accept: string;
-  onFile: (file: File) => Promise<void>;
-}) {
-  return (
-    <label className="grid gap-1.5 text-sm">
-      <span>{label}</span>
-      <input
-        type="file"
-        accept={accept}
-        className="rounded border border-slate-300 bg-white p-2"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) void onFile(file);
-        }}
-      />
-      <span className="text-xs text-slate-500">
-        {value ? "Uploaded securely" : "Required before submission"}
-      </span>
-    </label>
-  );
-}
-function Check({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return (
-    <label className="flex items-start gap-2 text-sm">
-      <input
-        className="mt-1"
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-      />
-      <span>{label}</span>
-    </label>
   );
 }

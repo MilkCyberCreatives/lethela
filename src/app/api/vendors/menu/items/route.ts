@@ -2,6 +2,21 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireVendorAccount } from "@/lib/authz";
+import {
+  LIQUOR_LICENCE_REQUIRED,
+  catalogInputErrorMessage,
+  hasCurrentLiquorLicence,
+} from "@/lib/catalog-input";
+import { vendorApiErrorStatus } from "@/lib/vendor-api-error";
+
+class MenuInputError extends Error {
+  constructor(
+    message: string,
+    readonly status = 400,
+  ) {
+    super(message);
+  }
+}
 
 const ItemInputSchema = z.object({
   sectionId: z.string().trim().min(1),
@@ -21,7 +36,7 @@ async function ensureSectionOwner(vendorId: string, sectionId: string) {
   });
 
   if (!section) {
-    throw new Error("Selected section does not belong to this vendor.");
+    throw new MenuInputError("Choose one of your own menu sections.");
   }
 }
 
@@ -45,7 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Invalid menu item payload.",
+          error: catalogInputErrorMessage(parsed.error),
           fieldErrors: parsed.error.flatten().fieldErrors,
         },
         { status: 400 },
@@ -53,6 +68,11 @@ export async function POST(req: Request) {
     }
 
     await ensureSectionOwner(vendorId, parsed.data.sectionId);
+
+    // Liquor may be saved as a draft, but only shows to customers with a current licence.
+    if (parsed.data.isAlcohol && !parsed.data.draft && !(await hasCurrentLiquorLicence(vendorId))) {
+      return NextResponse.json({ ok: false, error: LIQUOR_LICENCE_REQUIRED }, { status: 403 });
+    }
 
     const item = await prisma.item.create({
       data: {
@@ -77,6 +97,7 @@ export async function POST(req: Request) {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to create menu item.";
-    return NextResponse.json({ ok: false, error: message }, { status: 401 });
+    const status = error instanceof MenuInputError ? error.status : vendorApiErrorStatus(error);
+    return NextResponse.json({ ok: false, error: message }, { status });
   }
 }

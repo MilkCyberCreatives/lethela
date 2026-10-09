@@ -61,7 +61,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const reviewCandidate = await prisma.riderApplication.findUnique({
     where: { id: String(id || "").trim() },
-    include: { user: { select: { passwordHash: true } } },
+    include: {
+      user: { select: { passwordHash: true, accounts: { select: { provider: true }, take: 1 } } },
+    },
   });
   if (!reviewCandidate) {
     return NextResponse.json({ ok: false, error: "Rider application not found." }, { status: 404 });
@@ -70,11 +72,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const readiness = getRiderReadiness(reviewCandidate);
     if (!readiness.canSubmit) {
       return NextResponse.json(
-        { ok: false, error: "This rider profile is incomplete and cannot be approved.", readiness },
+        {
+          ok: false,
+          error: `This rider still needs: ${readiness.missing.join(", ").toLowerCase()}.`,
+          readiness,
+        },
         { status: 409 },
       );
     }
-    if (!reviewCandidate.user?.passwordHash) {
+    // The rider must be able to sign in: a password, or a Google sign-in linked to the account.
+    if (!reviewCandidate.user?.passwordHash && !reviewCandidate.user?.accounts.length) {
       return NextResponse.json(
         { ok: false, error: "Link a securely registered rider account before approval." },
         { status: 409 },

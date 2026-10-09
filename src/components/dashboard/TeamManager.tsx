@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { RefreshCw, UserPlus, UsersRound } from "lucide-react";
 import DashCard from "./DashCard";
 import FormField from "./FormField";
+import {
+  EmptyState,
+  Notice,
+  Panel,
+  StatusBadge,
+  dashButton,
+  dashField,
+} from "@/components/dashboard/kit/ui";
+import { cn } from "@/lib/utils";
 
 type TeamMember = {
   id: string;
@@ -110,42 +120,46 @@ export default function TeamManager() {
     }
   }
 
+  const firstLoad = loading && members.length === 0;
+
   return (
-    <div className="grid gap-4">
-      <DashCard title="Team and Permissions">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">
-            Add managers and staff so store operations are not dependent on one login.
-          </p>
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-        {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
-        <div className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr,180px,120px]">
-          <FormField label="Staff email">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">
+          {firstLoad
+            ? "Loading your team…"
+            : members.length === 0
+              ? "Your team"
+              : `${members.length} ${members.length === 1 ? "person" : "people"} with access`}
+        </p>
+        <button type="button" onClick={load} disabled={loading} className={dashButton.secondary}>
+          <RefreshCw aria-hidden="true" className={loading ? "animate-spin" : undefined} />
+          {loading ? "Refreshing…" : "Refresh"}
+        </button>
+      </div>
+
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+
+      <DashCard title="Add a person">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem_auto] lg:items-end">
+          <FormField label="Email address">
             <input
-              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+              className={dashField.input}
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
           </FormField>
-          <FormField label="Display name (optional)">
+          <FormField label="Name (optional)">
             <input
-              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+              className={dashField.input}
               value={name}
               onChange={(event) => setName(event.target.value)}
             />
           </FormField>
           <FormField label="Role">
             <select
-              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
+              className={dashField.input}
               value={role}
               onChange={(event) => setRole(event.target.value as "MANAGER" | "STAFF")}
             >
@@ -157,90 +171,103 @@ export default function TeamManager() {
             type="button"
             onClick={addMember}
             disabled={saving || !email}
-            className="self-end rounded bg-lethela-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            className={cn(dashButton.primary, "min-h-11 self-end")}
           >
-            {saving ? "Adding..." : "Add member"}
+            <UserPlus aria-hidden="true" />
+            {saving ? "Adding…" : "Add person"}
           </button>
         </div>
       </DashCard>
 
-      <DashCard title="Current Access">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
-              <tr>
-                <th className="pb-3 pr-4 font-medium">Name</th>
-                <th className="pb-3 pr-4 font-medium">Email</th>
-                <th className="pb-3 pr-4 font-medium">Role</th>
-                <th className="pb-3 pr-4 font-medium">Joined</th>
-                <th className="pb-3 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr className="border-t border-slate-200">
-                  <td colSpan={5} className="py-4">
-                    <div className="grid animate-pulse gap-2">
-                      <div className="h-5 rounded bg-slate-100" />
-                      <div className="h-5 rounded bg-slate-100" />
-                      <div className="h-5 rounded bg-slate-100" />
+      <Panel title="People with access" padded={!firstLoad && members.length === 0}>
+        {firstLoad ? (
+          <div className="divide-y divide-slate-100" aria-hidden="true">
+            {[0, 1].map((row) => (
+              <div key={row} className="flex animate-pulse items-center gap-3 px-4 py-3.5 sm:px-5">
+                <div className="h-9 w-9 shrink-0 rounded-full bg-slate-100" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-1/3 rounded bg-slate-100" />
+                  <div className="h-3 w-1/2 rounded bg-slate-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : members.length > 0 ? (
+          <ul
+            className={cn(
+              "divide-y divide-slate-100 transition-opacity",
+              loading ? "opacity-60" : "",
+            )}
+          >
+            {members.map((member) => {
+              const displayName = member.name || (member.isOwner ? "Store owner" : "Team member");
+              return (
+                <li
+                  key={member.id}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 sm:px-5"
+                >
+                  <div className="flex min-w-[12rem] flex-1 items-center gap-3">
+                    <span
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-semibold uppercase text-slate-600"
+                      aria-hidden="true"
+                    >
+                      {(member.name || member.email).trim().charAt(0) || "?"}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+                      <p className="truncate text-xs text-slate-500">{member.email}</p>
+                      <p className="text-xs text-slate-500">
+                        Joined{" "}
+                        {new Date(member.joinedAt).toLocaleDateString(undefined, {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
                     </div>
-                  </td>
-                </tr>
-              ) : members.length > 0 ? (
-                members.map((member) => (
-                  <tr key={member.id} className="border-t border-slate-200">
-                    <td className="py-3 pr-4 font-medium text-slate-700">
-                      {member.name || (member.isOwner ? "Store owner" : "Team member")}
-                    </td>
-                    <td className="py-3 pr-4 text-slate-600">{member.email}</td>
-                    <td className="py-3 pr-4">
-                      {member.isOwner ? (
-                        <span className="inline-flex rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700">
-                          OWNER
-                        </span>
-                      ) : (
+                  </div>
+                  <div className="flex w-full items-center gap-2 pl-12 sm:w-auto sm:pl-0">
+                    {member.isOwner ? (
+                      <>
+                        <StatusBadge tone="neutral">Owner</StatusBadge>
+                        <span className="text-xs text-slate-500">Can&apos;t be removed</span>
+                      </>
+                    ) : (
+                      <>
                         <select
-                          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs text-black"
+                          className={cn(dashField.input, "min-h-10 w-auto flex-1 sm:flex-none")}
                           value={member.role}
+                          aria-label={`Role for ${displayName}`}
                           onChange={(event) =>
                             void updateRole(member.id, event.target.value as "MANAGER" | "STAFF")
                           }
                         >
-                          <option value="STAFF">STAFF</option>
-                          <option value="MANAGER">MANAGER</option>
+                          <option value="STAFF">Staff</option>
+                          <option value="MANAGER">Manager</option>
                         </select>
-                      )}
-                    </td>
-                    <td className="py-3 pr-4 text-slate-600">
-                      {new Date(member.joinedAt).toLocaleDateString()}
-                    </td>
-                    <td className="py-3">
-                      {member.isOwner ? (
-                        <span className="text-xs text-slate-500">Protected</span>
-                      ) : (
                         <button
                           type="button"
                           onClick={() => void removeMember(member.id)}
-                          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-red-300 hover:text-red-900"
+                          className={dashButton.danger}
                         >
                           Remove
                         </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr className="border-t border-slate-200">
-                  <td colSpan={5} className="py-6 text-center text-slate-500">
-                    No extra team members yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </DashCard>
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <EmptyState
+            compact
+            icon={<UsersRound />}
+            title="No one else yet"
+            text="People you add show here."
+          />
+        )}
+      </Panel>
     </div>
   );
 }

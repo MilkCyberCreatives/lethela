@@ -23,8 +23,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
   const parsed = ReviewSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
+    const reasonProblem = parsed.error.issues.some((issue) => issue.path[0] === "reason");
     return NextResponse.json(
-      { ok: false, error: "Invalid product review payload." },
+      {
+        ok: false,
+        error: reasonProblem
+          ? "Write a reason of at least 5 characters so the vendor knows what to fix."
+          : "Invalid product review payload.",
+      },
       { status: 400 },
     );
   }

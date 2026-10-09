@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getRiderReadiness } from "@/lib/rider-readiness";
 
 export type RiderApplicationStatus =
   | "DRAFT"
@@ -33,6 +34,16 @@ export type RiderApplicationRecord = {
   status: RiderApplicationStatus;
   createdAt: string;
   updatedAt: string;
+  province: string;
+  township: string;
+  municipality: string;
+  reviewReason: string | null;
+  hasIdDocument: boolean;
+  hasPhoto: boolean;
+  hasLicenceDocument: boolean;
+  /** Whether the rider can sign in (password or Google). Only set by list queries. */
+  accountCanSignIn?: boolean;
+  readiness: { canApprove: boolean; missing: string[]; later: string[] };
 };
 
 type RiderApplicationModel = Awaited<ReturnType<typeof prisma.riderApplication.findFirst>>;
@@ -59,7 +70,16 @@ function normalizeStatus(value: string | null | undefined): RiderApplicationStat
   return "DRAFT";
 }
 
-function normalizeRow(row: NonNullable<RiderApplicationModel>): RiderApplicationRecord {
+type RiderUserAccess = {
+  passwordHash: string | null;
+  accounts: Array<{ provider: string }>;
+} | null;
+
+function normalizeRow(
+  row: NonNullable<RiderApplicationModel>,
+  user?: RiderUserAccess,
+): RiderApplicationRecord {
+  const readiness = getRiderReadiness(row);
   return {
     id: row.id,
     fullName: row.fullName,
@@ -81,6 +101,22 @@ function normalizeRow(row: NonNullable<RiderApplicationModel>): RiderApplication
     status: normalizeStatus(row.status),
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
+    province: row.province,
+    township: row.township,
+    municipality: row.municipality,
+    reviewReason: row.reviewReason,
+    hasIdDocument: Boolean(row.idDocumentUrl),
+    hasPhoto: Boolean(row.profilePhotoUrl),
+    hasLicenceDocument: Boolean(row.licenceDocumentUrl),
+    accountCanSignIn:
+      user === undefined
+        ? undefined
+        : Boolean(user?.passwordHash) || Boolean(user?.accounts.length),
+    readiness: {
+      canApprove: readiness.canSubmit,
+      missing: readiness.missing,
+      later: readiness.later,
+    },
   };
 }
 
@@ -132,8 +168,11 @@ export async function listRiderApplications(status: RiderApplicationStatus | "AL
     where: status === "ALL" ? undefined : { status },
     orderBy: { updatedAt: "desc" },
     take,
+    include: {
+      user: { select: { passwordHash: true, accounts: { select: { provider: true }, take: 1 } } },
+    },
   });
-  return rows.map(normalizeRow);
+  return rows.map(({ user, ...row }) => normalizeRow(row, user));
 }
 
 export async function countRiderApplications(status?: RiderApplicationStatus) {

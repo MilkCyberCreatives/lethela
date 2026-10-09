@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getVendorReadiness } from "../src/lib/vendor-readiness";
+import { getVendorReadiness, NEW_VENDOR_PLACEHOLDER_NAME } from "../src/lib/vendor-readiness";
 import { getRiderReadiness } from "../src/lib/rider-readiness";
 
 test("vendor approval readiness rejects incomplete profiles", () => {
@@ -24,8 +24,43 @@ test("vendor approval readiness rejects incomplete profiles", () => {
     kycProofUrl: "/api/files?path=private%2Fproof.pdf",
   };
   assert.equal(getVendorReadiness(base).canSubmit, true);
-  assert.equal(getVendorReadiness({ ...base, kycIdUrl: null }).canSubmit, false);
   assert.equal(getVendorReadiness({ ...base, productCount: 0 }).canSubmit, false);
+  assert.equal(getVendorReadiness({ ...base, phone: "" }).canSubmit, false);
+  assert.equal(getVendorReadiness({ ...base, address: null }).canSubmit, false);
+  assert.equal(getVendorReadiness({ ...base, operatingHoursCount: 0 }).canSubmit, false);
+});
+
+test("vendor approval only needs what an order needs", () => {
+  const minimal = getVendorReadiness({
+    name: "Mama's Kota Corner",
+    phone: "0712345678",
+    province: "Gauteng",
+    city: "Midrand",
+    township: "Klipfontein View",
+    address: "12 Main Road",
+    operatingHoursCount: 1,
+    menuItemCount: 1,
+  });
+  assert.equal(minimal.canSubmit, true);
+  assert.equal(minimal.percent, 100);
+
+  const optional = minimal.checks.filter((check) => !check.required).map((check) => check.key);
+  assert.deepEqual(optional.sort(), ["banking", "category", "owner-documents", "preparation-time"]);
+});
+
+test("vendor readiness does not accept the sign-up placeholder store name", () => {
+  const readiness = getVendorReadiness({
+    name: NEW_VENDOR_PLACEHOLDER_NAME,
+    phone: "0712345678",
+    province: "Gauteng",
+    city: "Midrand",
+    township: "Klipfontein View",
+    address: "12 Main Road",
+    operatingHoursCount: 1,
+    productCount: 1,
+  });
+  assert.equal(readiness.canSubmit, false);
+  assert.equal(readiness.checks.find((check) => check.key === "store-details")?.complete, false);
 });
 
 test("walking rider readiness does not require vehicle documents", () => {
@@ -54,4 +89,28 @@ test("walking rider readiness does not require vehicle documents", () => {
     liquorIdCheckAccepted: true,
   });
   assert.equal(ready.canSubmit, true);
+});
+
+test("rider approval only needs contact details, delivery method, area and the agreement", () => {
+  const minimal = {
+    fullName: "Rider Example",
+    phone: "0712345678",
+    vehicleType: "MOTORCYCLE",
+    province: "Gauteng",
+    township: "Klipfontein View",
+    hasSmartphone: true,
+    lawfulWorkDeclared: true,
+    conductAccepted: true,
+    liquorIdCheckAccepted: true,
+  };
+  const ready = getRiderReadiness(minimal);
+  assert.equal(ready.canSubmit, true);
+  assert.deepEqual(ready.missing, []);
+  assert.ok(ready.later?.includes("Vehicle and licence"));
+  assert.ok(ready.later?.includes("Bank account for payouts"));
+
+  assert.equal(getRiderReadiness({ ...minimal, vehicleType: "" }).canSubmit, false);
+  assert.equal(getRiderReadiness({ ...minimal, township: "" }).canSubmit, false);
+  assert.equal(getRiderReadiness({ ...minimal, phone: "071" }).canSubmit, false);
+  assert.equal(getRiderReadiness({ ...minimal, conductAccepted: false }).canSubmit, false);
 });

@@ -3,7 +3,17 @@ import { getVendorSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { notifyAdminsOfVendorApplication } from "@/lib/admin-notifications";
 import { notifyApplicant } from "@/lib/application-notifications";
-import { getVendorReadiness, VENDOR_STATUS } from "@/lib/vendor-readiness";
+import { getVendorReadiness, normalizeVendorStatus, VENDOR_STATUS } from "@/lib/vendor-readiness";
+
+// The dashboard posts a plain HTML form here, so every outcome redirects back to it.
+function backToDashboard(params: Record<string, string>) {
+  const url = new URL(
+    "/vendors/dashboard",
+    process.env.NEXTAUTH_URL || "https://www.lethela.co.za",
+  );
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  return NextResponse.redirect(url, 303);
+}
 
 export async function POST() {
   let session: Awaited<ReturnType<typeof getVendorSession>>;
@@ -44,7 +54,10 @@ export async function POST() {
       bankAccountName: true,
       bankAccountNumber: true,
       bankBranchCode: true,
-      _count: { select: { products: true, items: true, hours: true } },
+      status: true,
+      _count: {
+        select: { products: true, items: true, hours: { where: { closed: false } } },
+      },
     },
   });
 
@@ -60,14 +73,21 @@ export async function POST() {
   });
 
   if (!readiness.canSubmit) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "Complete every required profile section before submitting for approval.",
-        readiness,
-      },
-      { status: 422 },
-    );
+    const missing = readiness.checks
+      .filter((check) => check.required && !check.complete)
+      .map((check) => check.label.toLowerCase());
+    return backToDashboard({ submitError: `Add these first: ${missing.join(", ")}.` });
+  }
+
+  // Sending an approved or suspended store for approval would take it off the marketplace.
+  const currentStatus = normalizeVendorStatus(vendor.status);
+  if (currentStatus === VENDOR_STATUS.APPROVED) {
+    return backToDashboard({ submitError: "Your store is already approved." });
+  }
+  if (currentStatus === VENDOR_STATUS.SUSPENDED) {
+    return backToDashboard({
+      submitError: "Your store is paused by Lethela. Contact Lethela support.",
+    });
   }
 
   const updated = await prisma.vendor.update({
@@ -109,10 +129,5 @@ export async function POST() {
     }),
   ]);
 
-  return NextResponse.redirect(
-    new URL(
-      "/vendors/dashboard?submitted=1",
-      process.env.NEXTAUTH_URL || "https://www.lethela.co.za",
-    ),
-  );
+  return backToDashboard({ submitted: "1" });
 }

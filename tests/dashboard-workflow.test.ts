@@ -36,13 +36,15 @@ test("vendor order workflow keeps the existing authenticated mutation path", asy
 test("rider dashboard puts the next operational step before secondary information", async () => {
   const rider = await source("src/components/rider/RiderDashboardClient.tsx");
 
-  assert.match(rider, /Next step/);
-  assert.match(rider, /Continue delivery/);
-  assert.match(rider, /Ready for work/);
-  assert.match(rider, /Use Shift status above to go online/);
-  assert.match(rider, /Open rider console/);
-  assert.match(rider, /Open profile & documents/);
+  assert.match(rider, /title="Current deliveries"/);
+  assert.match(rider, /Open delivery/);
+  assert.match(rider, /title="Getting ready"/);
+  assert.match(rider, /href="\/rider\/dashboard\/profile"/);
   assert.match(rider, /riderOrderPriority/);
+  assert.ok(
+    rider.indexOf('title="Current deliveries"') < rider.indexOf('title="Getting ready"'),
+    "deliveries come before setup information",
+  );
 });
 
 test("rider workflow does not add customer delivery identity fields", async () => {
@@ -60,6 +62,7 @@ test("owner dashboard retains action-first operational queues", async () => {
 
   assert.match(admin, /title="Immediate operations"/);
   assert.match(admin, /NeedsAttentionQueue/);
-  assert.match(admin, /Pending vendor approvals/);
+  assert.match(admin, /label="Stores waiting"/);
+  assert.match(admin, /label="Riders waiting"/);
   assert.match(admin, /Orders needing action/);
 });

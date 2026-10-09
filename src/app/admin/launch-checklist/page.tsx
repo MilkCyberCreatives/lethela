@@ -74,10 +74,18 @@ export default async function LaunchChecklistPage() {
   }
 
   const [activeVendors, activeProducts, approvedRiders, paidOrders] = await Promise.all([
-    withQueryTimeout(prisma.vendor.count({ where: { isActive: true, status: "ACTIVE" } }), 0),
+    // Approving a store sets it to APPROVED; older stores may still say ACTIVE.
+    withQueryTimeout(
+      prisma.vendor.count({ where: { isActive: true, status: { in: ["ACTIVE", "APPROVED"] } } }),
+      0,
+    ),
     withQueryTimeout(
       prisma.product.count({
-        where: { inStock: true, vendor: { isActive: true, status: "ACTIVE" } },
+        where: {
+          inStock: true,
+          status: "APPROVED",
+          vendor: { isActive: true, status: { in: ["ACTIVE", "APPROVED"] } },
+        },
       }),
       0,
     ),

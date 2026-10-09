@@ -44,7 +44,14 @@ export function isAdminRole(value: unknown) {
 
 export function safePostLoginPath(role: AppRole, requestedPath?: string | null) {
   const requested = String(requestedPath || "").trim();
-  const safeRequested = requested.startsWith("/") && !requested.startsWith("//") ? requested : "";
+  // Browsers read "/\evil.example" and "/<tab>/evil.example" as another website, so only plain
+  // same-site paths are kept.
+  const safeRequested =
+    requested.startsWith("/") &&
+    !requested.startsWith("//") &&
+    !/[\\\s\u0000-\u001f]/.test(requested)
+      ? requested
+      : "";
 
   if (STAFF_ROLES.has(role)) {
     return safeRequested.startsWith("/admin") ? safeRequested : "/owner-access";

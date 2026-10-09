@@ -137,7 +137,11 @@ export async function getSqliteVendorDashboardData(vendorId: string, since: Date
           products: count(db, "SELECT COUNT(*) AS n FROM Product WHERE vendorId = ?", vendorId),
           orders: count(db, 'SELECT COUNT(*) AS n FROM "Order" WHERE vendorId = ?', vendorId),
           specials: count(db, "SELECT COUNT(*) AS n FROM Special WHERE vendorId = ?", vendorId),
-          hours: count(db, "SELECT COUNT(*) AS n FROM OperatingHour WHERE vendorId = ?", vendorId),
+          hours: count(
+            db,
+            "SELECT COUNT(*) AS n FROM OperatingHour WHERE vendorId = ? AND closed = 0",
+            vendorId,
+          ),
           sections: count(db, "SELECT COUNT(*) AS n FROM MenuSection WHERE vendorId = ?", vendorId),
           items: count(db, "SELECT COUNT(*) AS n FROM Item WHERE vendorId = ?", vendorId),
         },

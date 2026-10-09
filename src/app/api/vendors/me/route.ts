@@ -12,21 +12,44 @@ const ProtectedFileSchema = z
     message: "Upload documents through the protected file control.",
   });
 
+const FIELD_NAMES: Record<string, string> = {
+  name: "store name",
+  phone: "phone number",
+  address: "street address",
+  suburb: "township or suburb",
+  city: "city or town",
+  province: "province",
+  storeType: "store type",
+  cuisine: "categories",
+  etaMins: "delivery time",
+  preparationMinutes: "preparation time",
+  orderCapacity: "maximum active orders",
+  bankAccountNumber: "account number",
+};
+
+/** True when a value that was already set is being replaced (not added for the first time). */
+function replacesExisting(current: string | null | undefined, next: string | null | undefined) {
+  const before = String(current ?? "").trim();
+  return Boolean(before) && before !== String(next ?? "").trim();
+}
+
+// Only the details needed to take and deliver an order are required. Store type, categories,
+// banking and documents can be saved empty and added later.
 const VendorProfileSchema = z.object({
-  name: z.string().trim().min(2).max(120),
+  name: z.string().trim().min(2, "Add your store name.").max(120),
   description: z.string().trim().max(1200).nullable().optional(),
   coverImage: z.string().trim().max(1000).nullable().optional(),
-  phone: z.string().trim().min(8).max(40),
-  address: z.string().trim().min(6).max(240),
-  suburb: z.string().trim().min(2).max(120),
-  city: z.string().trim().min(2).max(120),
-  province: z.string().trim().min(2).max(120),
+  phone: z.string().trim().min(8, "Add a phone number with at least 8 digits.").max(40),
+  address: z.string().trim().min(6, "Add your street address.").max(240),
+  suburb: z.string().trim().min(2, "Add your township or suburb.").max(120),
+  city: z.string().trim().min(2, "Add your city or town.").max(120),
+  province: z.string().trim().min(2, "Choose your province.").max(120),
   municipality: z.string().trim().max(120).nullable().optional(),
   township: z.string().trim().max(120).nullable().optional(),
   sectionArea: z.string().trim().max(120).nullable().optional(),
   pickupInstructions: z.string().trim().max(500).nullable().optional(),
-  storeType: z.enum(STORE_TYPES),
-  cuisine: z.array(z.string().trim().min(2).max(40)).min(1).max(8),
+  storeType: z.enum(STORE_TYPES).or(z.literal("")),
+  cuisine: z.array(z.string().trim().min(2).max(40)).max(8),
   etaMins: z.number().int().min(10).max(120),
   preparationMinutes: z.number().int().min(5).max(180),
   orderCapacity: z.number().int().min(1).max(500),
@@ -34,8 +57,8 @@ const VendorProfileSchema = z.object({
   image: z.string().trim().max(1000).nullable().optional(),
   kycIdUrl: ProtectedFileSchema.nullable().optional(),
   kycProofUrl: ProtectedFileSchema.nullable().optional(),
-  bankName: z.string().trim().min(2).max(120),
-  bankAccountName: z.string().trim().min(2).max(160),
+  bankName: z.string().trim().max(120),
+  bankAccountName: z.string().trim().max(160),
   bankAccountNumber: z.string().trim().max(40),
   bankBranchCode: z.string().trim().max(20).nullable().optional(),
   bankAccountType: z.string().trim().max(40).nullable().optional(),
@@ -155,11 +178,17 @@ export async function PATCH(req: Request) {
 
     const parsed = VendorProfileSchema.safeParse(normalizedBody);
     if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      const fields = Object.keys(fieldErrors).map((key) => FIELD_NAMES[key] || key);
+      const firstMessage = Object.values(fieldErrors).flat()[0];
       return NextResponse.json(
         {
           ok: false,
-          error: "Invalid profile payload.",
-          fieldErrors: parsed.error.flatten().fieldErrors,
+          error:
+            fields.length === 1 && firstMessage
+              ? firstMessage
+              : `Check these details: ${fields.join(", ")}.`,
+          fieldErrors,
         },
         { status: 400 },
       );
@@ -190,8 +219,8 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ ok: false, error: "Vendor not found." }, { status: 404 });
     }
     const bankingChanged =
-      currentVendor.bankName !== parsed.data.bankName ||
-      currentVendor.bankAccountName !== parsed.data.bankAccountName ||
+      (currentVendor.bankName || "") !== parsed.data.bankName ||
+      (currentVendor.bankAccountName || "") !== parsed.data.bankAccountName ||
       Boolean(parsed.data.bankAccountNumber) ||
       currentVendor.bankBranchCode !== (parsed.data.bankBranchCode || null);
     const liquorChanged =
@@ -199,15 +228,17 @@ export async function PATCH(req: Request) {
       currentVendor.liquorLicenceNumber !== (parsed.data.liquorLicenceNumber || null) ||
       (currentVendor.liquorLicenceExpiry?.toISOString() || null) !==
         (parsed.data.liquorLicenceExpiry || null);
+    // An approved store only goes back for approval when it moves: its address changes or an
+    // existing map pin is moved. Adding a pin, documents or banking later keeps it listed.
     const approvalSensitiveChanged =
-      currentVendor.address !== parsed.data.address ||
-      currentVendor.city !== parsed.data.city ||
-      currentVendor.province !== parsed.data.province ||
-      currentVendor.township !== (parsed.data.township || parsed.data.suburb) ||
-      currentVendor.latitude !== (parsed.data.latitude ?? null) ||
-      currentVendor.longitude !== (parsed.data.longitude ?? null) ||
-      currentVendor.kycIdUrl !== (parsed.data.kycIdUrl || null) ||
-      currentVendor.kycProofUrl !== (parsed.data.kycProofUrl || null);
+      replacesExisting(currentVendor.address, parsed.data.address) ||
+      replacesExisting(currentVendor.city, parsed.data.city) ||
+      replacesExisting(currentVendor.province, parsed.data.province) ||
+      replacesExisting(currentVendor.township, parsed.data.township || parsed.data.suburb) ||
+      (currentVendor.latitude != null &&
+        currentVendor.latitude !== (parsed.data.latitude ?? null)) ||
+      (currentVendor.longitude != null &&
+        currentVendor.longitude !== (parsed.data.longitude ?? null));
 
     const vendor = await prisma.vendor.update({
       where: { id: vendorId },
@@ -224,7 +255,7 @@ export async function PATCH(req: Request) {
         township: parsed.data.township || parsed.data.suburb,
         sectionArea: parsed.data.sectionArea || null,
         pickupInstructions: parsed.data.pickupInstructions || null,
-        storeType: parsed.data.storeType,
+        storeType: parsed.data.storeType || null,
         cuisine: JSON.stringify(parsed.data.cuisine),
         etaMins: parsed.data.etaMins,
         preparationMinutes: parsed.data.preparationMinutes,
@@ -233,8 +264,8 @@ export async function PATCH(req: Request) {
         image: parsed.data.image || null,
         kycIdUrl: parsed.data.kycIdUrl || null,
         kycProofUrl: parsed.data.kycProofUrl || null,
-        bankName: parsed.data.bankName,
-        bankAccountName: parsed.data.bankAccountName,
+        bankName: parsed.data.bankName || null,
+        bankAccountName: parsed.data.bankAccountName || null,
         bankAccountNumber: parsed.data.bankAccountNumber || undefined,
         bankBranchCode: parsed.data.bankBranchCode || null,
         bankAccountType: parsed.data.bankAccountType || null,
@@ -254,7 +285,8 @@ export async function PATCH(req: Request) {
           ? {
               status: "DRAFT",
               isActive: false,
-              reviewReason: "Store identity or location changes require approval before relisting.",
+              reviewReason:
+                "Your store address changed. Send your store for approval again to show it to customers.",
             }
           : {}),
         ...(bankingChanged ? { bankVerificationStatus: "UNVERIFIED" } : {}),

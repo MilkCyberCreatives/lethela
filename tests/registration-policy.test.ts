@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { MinimalRegistrationSchema } from "../src/lib/registration-schema";
 import {
@@ -45,4 +46,27 @@ test("registration rejects passwords that exceed the bcrypt byte boundary", () =
     }).success,
     false,
   );
+});
+
+test("a sign-up tapped before the page loads never puts the password in the address bar", async () => {
+  const form = await readFile(
+    new URL("../src/components/auth/MinimalSignupForm.tsx", import.meta.url),
+    "utf8",
+  );
+  // The inputs are named for password managers, so a plain GET would copy them into the URL.
+  assert.match(form, /name="password"/);
+  assert.match(form, /<form className="grid gap-4" method="post" onSubmit=\{submit\}>/);
+});
+
+test("after sign-up or sign-in the dashboard opens with a full page load", async () => {
+  const forms = await Promise.all(
+    ["MinimalSignupForm", "SignInForm", "VendorSignInForm"].map((name) =>
+      readFile(new URL(`../src/components/auth/${name}.tsx`, import.meta.url), "utf8"),
+    ),
+  );
+  for (const form of forms) {
+    // router.refresh() right after a navigation can finish last and undo it.
+    assert.doesNotMatch(form, /router\.refresh\(\)/);
+    assert.match(form, /window\.location\.replace\(/);
+  }
 });

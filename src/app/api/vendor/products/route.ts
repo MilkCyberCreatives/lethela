@@ -3,6 +3,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { aiModerateProduct } from "@/lib/ai";
 import { requireVendorAccount } from "@/lib/authz";
+import {
+  LIQUOR_LICENCE_REQUIRED,
+  catalogInputErrorMessage,
+  hasCurrentLiquorLicence,
+} from "@/lib/catalog-input";
 
 const ProductInputSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -60,33 +65,24 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       const fieldErrors = parsed.error.flatten().fieldErrors;
       return NextResponse.json(
-        { ok: false, error: "Invalid payload", fieldErrors },
+        { ok: false, error: catalogInputErrorMessage(parsed.error), fieldErrors },
         { status: 400 },
       );
     }
 
     const body = parsed.data;
-    if (body.isAlcohol) {
-      const licensed = await prisma.vendor.findFirst({
-        where: {
-          id: vendorId,
-          liquorVerificationStatus: "APPROVED",
-          liquorLicenceExpiry: { gt: new Date() },
-        },
-        select: { id: true },
-      });
-      if (!licensed) {
-        return NextResponse.json(
-          { ok: false, error: "A verified, current liquor licence is required." },
-          { status: 403 },
-        );
-      }
+    if (body.isAlcohol && !(await hasCurrentLiquorLicence(vendorId))) {
+      return NextResponse.json({ ok: false, error: LIQUOR_LICENCE_REQUIRED }, { status: 403 });
     }
 
     const moderation = await aiModerateProduct(body.name, body.description ?? "");
     if (!moderation.allowed) {
       return NextResponse.json(
-        { ok: false, error: "Content not allowed", reasons: moderation.reasons ?? [] },
+        {
+          ok: false,
+          error: "This name or description is not allowed. Please change it.",
+          reasons: moderation.reasons ?? [],
+        },
         { status: 400 },
       );
     }
@@ -97,7 +93,7 @@ export async function POST(req: Request) {
     });
     if (existing) {
       return NextResponse.json(
-        { ok: false, error: "Slug already exists for this vendor" },
+        { ok: false, error: "You already have a product with this link. Change the link." },
         { status: 409 },
       );
     }

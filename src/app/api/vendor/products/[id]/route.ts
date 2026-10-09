@@ -3,6 +3,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { aiModerateProduct } from "@/lib/ai";
 import { requireVendorAccount } from "@/lib/authz";
+import {
+  LIQUOR_LICENCE_REQUIRED,
+  catalogInputErrorMessage,
+  hasCurrentLiquorLicence,
+} from "@/lib/catalog-input";
 
 const ProductPatchSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
@@ -24,7 +29,17 @@ const ProductPatchSchema = z.object({
 async function assertOwnership(vendorId: string, id: string) {
   const product = await prisma.product.findFirst({
     where: { id, vendorId },
-    select: { id: true, name: true, status: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      priceCents: true,
+      image: true,
+      isAlcohol: true,
+      abv: true,
+      status: true,
+    },
   });
   if (!product) throw new Error("Product not found");
   return product;
@@ -58,34 +73,33 @@ export async function PATCH(req: Request, { params }: Params) {
     if (!parsed.success) {
       const fieldErrors = parsed.error.flatten().fieldErrors;
       return NextResponse.json(
-        { ok: false, error: "Invalid payload", fieldErrors },
+        { ok: false, error: catalogInputErrorMessage(parsed.error), fieldErrors },
         { status: 400 },
       );
     }
 
     const data = parsed.data;
-    if (data.isAlcohol) {
-      const licensed = await prisma.vendor.findFirst({
-        where: {
-          id: vendorId,
-          liquorVerificationStatus: "APPROVED",
-          liquorLicenceExpiry: { gt: new Date() },
-        },
-        select: { id: true },
-      });
-      if (!licensed) {
-        return NextResponse.json(
-          { ok: false, error: "A verified, current liquor licence is required." },
-          { status: 403 },
-        );
-      }
+    // The edit form sends every field, so compare with what is saved: only a real change counts.
+    // An empty text box and a missing value mean the same thing.
+    const blankToNull = (value: unknown) => (value === "" ? null : (value ?? null));
+    const changed = <K extends keyof typeof ownedProduct>(key: K, next: unknown) =>
+      next !== undefined && blankToNull(next) !== blankToNull(ownedProduct[key]);
+
+    // Turning liquor on needs a current licence. Saving an existing liquor item (for example to
+    // mark it out of stock) does not, so a lapsed licence never locks the vendor out.
+    if (data.isAlcohol && !ownedProduct.isAlcohol && !(await hasCurrentLiquorLicence(vendorId))) {
+      return NextResponse.json({ ok: false, error: LIQUOR_LICENCE_REQUIRED }, { status: 403 });
     }
 
-    if (data.name || data.description) {
+    if (changed("name", data.name) || changed("description", data.description)) {
       const moderation = await aiModerateProduct(data.name ?? "", data.description ?? "");
       if (!moderation.allowed) {
         return NextResponse.json(
-          { ok: false, error: "Content not allowed", reasons: moderation.reasons ?? [] },
+          {
+            ok: false,
+            error: "This name or description is not allowed. Please change it.",
+            reasons: moderation.reasons ?? [],
+          },
           { status: 400 },
         );
       }
@@ -98,20 +112,20 @@ export async function PATCH(req: Request, { params }: Params) {
       });
       if (existing && existing.id !== id) {
         return NextResponse.json(
-          { ok: false, error: "Slug already exists for this vendor" },
+          { ok: false, error: "You already have a product with this link. Change the link." },
           { status: 409 },
         );
       }
     }
 
     const approvalSensitiveChange =
-      data.name !== undefined ||
-      data.slug !== undefined ||
-      data.description !== undefined ||
-      data.priceCents !== undefined ||
-      data.image !== undefined ||
-      data.isAlcohol !== undefined ||
-      data.abv !== undefined;
+      changed("name", data.name) ||
+      changed("slug", data.slug) ||
+      changed("description", data.description) ||
+      changed("priceCents", data.priceCents) ||
+      changed("image", data.image) ||
+      changed("isAlcohol", data.isAlcohol) ||
+      changed("abv", data.abv);
     const product = await prisma.product.update({
       where: { id },
       data: {
