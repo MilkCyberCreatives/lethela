@@ -25,3 +25,14 @@ test("South African local numbers get the +27 code for WhatsApp", async () => {
   assert.equal(normalizeWhatsAppRecipient("27723908919"), "whatsapp:+27723908919");
   assert.equal(normalizeWhatsAppRecipient("whatsapp:+27723908919"), "whatsapp:+27723908919");
 });
+
+test("admins are alerted, with the reason, when a paid order is cancelled", async () => {
+  const file = await source("src/lib/order-notifications.ts");
+  assert.match(file, /status === "CANCELLED"[\s\S]*notifyAdminsOfOrder\(orderId, "cancelled"\)/);
+  assert.match(
+    file,
+    /cancelled: \{ title: "Order cancelled", action: "Refund the customer and let them know\." \}/,
+  );
+  assert.match(file, /statusReason: true/);
+  assert.match(file, /\.\.\.\(reason \? \[`Reason: \$\{reason\}`\] : \[\]\)/);
+});

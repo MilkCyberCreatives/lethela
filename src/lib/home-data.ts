@@ -18,6 +18,7 @@ import {
   getSqliteCatalogProducts,
   getSqliteCatalogVendors,
 } from "@/lib/sqlite-catalog";
+import type { StoreHour } from "@/lib/store-availability";
 import type { Vendor } from "@/types";
 
 type VendorWithAlcohol = {
@@ -43,6 +44,8 @@ type VendorWithAlcohol = {
   sectionArea?: string | null;
   storeType?: string | null;
   deliveryFee?: number | null;
+  temporaryClosed?: boolean | null;
+  hours?: StoreHour[];
   _count?: { products?: number; items?: number; hours?: number };
 };
 
@@ -273,6 +276,8 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
           sectionArea: true,
           storeType: true,
           deliveryFee: true,
+          temporaryClosed: true,
+          hours: { select: { day: true, openMin: true, closeMin: true, closed: true } },
           products: {
             select: { isAlcohol: true },
             where: { isAlcohol: false, inStock: true, status: "APPROVED" },
@@ -311,6 +316,8 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
         products: vendor.products,
         reviews: vendor.reviews,
         baseEtaMin: vendor.etaMins ?? 15,
+        hours: vendor.hours,
+        temporaryClosed: vendor.temporaryClosed,
       }),
     );
 

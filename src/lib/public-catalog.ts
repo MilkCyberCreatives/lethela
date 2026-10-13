@@ -1,5 +1,6 @@
 import type { Vendor } from "@/types";
 import { isPublicReadyVendor } from "@/lib/vendor-readiness";
+import { isStoreOpenNow, type StoreHour } from "@/lib/store-availability";
 
 type PublicVendorSource = {
   id: string;
@@ -32,6 +33,7 @@ type PublicVendorSource = {
   hasBanking?: boolean | null;
   hasKycDocuments?: boolean | null;
   temporaryClosed?: boolean | null;
+  hours?: StoreHour[] | null;
   liquorLicenceUrl?: string | null;
   liquorLicenceExpiry?: Date | string | null;
   liquorVerificationStatus?: string | null;
@@ -181,7 +183,16 @@ export function buildPublicVendorCard(
     cuisines,
     area: source.township || source.suburb || source.city || null,
     storeType: source.storeType || null,
-    isOpen: true,
+    // With trading hours the card can say Closed. Callers without them keep showing Open.
+    ...(source.hours
+      ? {
+          hours: source.hours,
+          temporaryClosed: Boolean(source.temporaryClosed),
+          isOpen: isStoreOpenNow(source.hours, {
+            temporaryClosed: Boolean(source.temporaryClosed),
+          }),
+        }
+      : { isOpen: true }),
     eta: getPublicVendorEta(baseEtaMin),
     distanceKm: source.distanceKm ?? undefined,
     baseEtaMin: baseEtaMin ?? undefined,

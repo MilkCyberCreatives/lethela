@@ -1,12 +1,15 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Vendor } from "@/types";
+import { isStoreOpenNow } from "@/lib/store-availability";
 import { recordVendorClick } from "@/lib/tracking";
 
 export default function VendorCard({ v }: { v: Vendor }) {
   const hasRating = v.rating != null && (v.reviewCount ?? 0) > 0;
+  const isOpen = useOpenNow(v);
 
   return (
     <Link
@@ -56,8 +59,14 @@ export default function VendorCard({ v }: { v: Vendor }) {
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/80">
-          <span className="rounded-md bg-emerald-400/15 px-2 py-1 text-emerald-100">
-            {v.isOpen === false ? "Closed" : "Open"}
+          <span
+            className={
+              isOpen
+                ? "rounded-md bg-emerald-400/15 px-2 py-1 text-emerald-100"
+                : "rounded-md bg-white/10 px-2 py-1 text-white/70"
+            }
+          >
+            {isOpen ? "Open" : "Closed"}
           </span>
           <span className="rounded-md bg-white/10 px-2 py-1">{v.eta}</span>
           <span className="rounded-md bg-white/10 px-2 py-1">Delivery by Lethela</span>
@@ -68,6 +77,22 @@ export default function VendorCard({ v }: { v: Vendor }) {
         <div className="mt-3 text-sm text-white/80">View menu {"->"}</div>
       </div>
     </Link>
+  );
+}
+
+function subscribeToClock(onChange: () => void) {
+  const timer = window.setInterval(onChange, 60_000);
+  return () => window.clearInterval(timer);
+}
+
+// The homepage is cached for a few minutes, so the browser checks the trading hours again
+// (in South African time) and keeps checking each minute. The first paint uses the server's answer.
+function useOpenNow(v: Vendor) {
+  const serverValue = v.isOpen !== false;
+  return useSyncExternalStore(
+    subscribeToClock,
+    () => (v.hours ? isStoreOpenNow(v.hours, { temporaryClosed: v.temporaryClosed }) : serverValue),
+    () => serverValue,
   );
 }
 

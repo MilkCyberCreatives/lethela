@@ -8,6 +8,7 @@ import {
   isPublicCatalogVendor,
   isPublicMarketplaceVendor,
 } from "@/lib/public-catalog";
+import type { StoreHour } from "@/lib/store-availability";
 import type { ProductLite } from "@/components/ProductCard";
 import type { Vendor } from "@/types";
 
@@ -53,6 +54,22 @@ function normalizeCuisine(value: unknown): string[] {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function parseHours(value: unknown): StoreHour[] {
+  if (typeof value !== "string" || !value) return [];
+  try {
+    const rows = JSON.parse(value);
+    if (!Array.isArray(rows)) return [];
+    return rows.map((row) => ({
+      day: Number(row.day),
+      openMin: Number(row.openMin),
+      closeMin: Number(row.closeMin),
+      closed: Boolean(row.closed),
+    }));
+  } catch {
+    return [];
+  }
 }
 
 function suburbClause(suburb?: string | null) {
@@ -192,6 +209,9 @@ export async function getSqliteCatalogVendors({
            v.sectionArea,
            v.storeType,
            v.deliveryFee,
+           v.temporaryClosed,
+           (SELECT json_group_array(json_object('day', h.day, 'openMin', h.openMin, 'closeMin', h.closeMin, 'closed', h.closed))
+              FROM OperatingHour h WHERE h.vendorId = v.id) AS hoursJson,
            COUNT(DISTINCT p.id) AS productCount,
            (SELECT COUNT(*) FROM Item i WHERE i.vendorId = v.id AND i.draft = 0) AS menuItemCount,
            (SELECT COUNT(*) FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0) AS operatingHoursCount,
@@ -237,6 +257,8 @@ export async function getSqliteCatalogVendors({
       sectionArea: string | null;
       storeType: string | null;
       deliveryFee: number | null;
+      temporaryClosed: 0 | 1 | null;
+      hoursJson: string | null;
       productCount: number;
       menuItemCount: number;
       operatingHoursCount: number;
@@ -253,6 +275,7 @@ export async function getSqliteCatalogVendors({
             ...row,
             isActive: Boolean(row.isActive),
             halaal: Boolean(row.halaal),
+            temporaryClosed: Boolean(row.temporaryClosed),
             _count: {
               products: Number(row.productCount || 0),
               items: Number(row.menuItemCount || 0),
@@ -278,6 +301,8 @@ export async function getSqliteCatalogVendors({
                 }))
               : [],
           baseEtaMin: row.etaMins ?? 15,
+          hours: parseHours(row.hoursJson),
+          temporaryClosed: Boolean(row.temporaryClosed),
         }),
       );
   } finally {
