@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { BarChart3, CalendarDays, Receipt, RefreshCw, ShoppingBag } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -13,6 +14,17 @@ import {
   YAxis,
 } from "recharts";
 import DashCard from "./DashCard";
+import {
+  EmptyState,
+  Notice,
+  Panel,
+  StatTile,
+  StatusBadge,
+  dashButton,
+  statusText,
+  toneForStatus,
+} from "@/components/dashboard/kit/ui";
+import { cn } from "@/lib/utils";
 
 type Point = {
   date: string;
@@ -58,6 +70,23 @@ type AnalyticsPayload = {
   paymentSummary: PaymentSummary;
 };
 
+// Chart colours: Lethela red for the main series, slate for the secondary series and chrome.
+const BRAND_RED = "#B5001B";
+const SECONDARY_SLATE = "#64748b";
+const GRID_COLOUR = "#f1f5f9";
+const AXIS_TICK = { fill: "#64748b", fontSize: 12 };
+const CHART_HEIGHT = "h-52 sm:h-60";
+
+const WEEKDAY_NAMES: Record<string, string> = {
+  Sun: "Sunday",
+  Mon: "Monday",
+  Tue: "Tuesday",
+  Wed: "Wednesday",
+  Thu: "Thursday",
+  Fri: "Friday",
+  Sat: "Saturday",
+};
+
 function formatShortDate(value: string) {
   return new Date(value).toLocaleDateString(undefined, {
     month: "short",
@@ -69,15 +98,73 @@ function money(cents: number) {
   return `R${(cents / 100).toFixed(2)}`;
 }
 
-function statusTone(value: string) {
-  const upper = String(value || "").toUpperCase();
-  if (upper === "PAID" || upper === "SUCCESS" || upper === "DELIVERED") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  }
-  if (upper === "FAILED" || upper === "CANCELLED") {
-    return "border-red-200 bg-red-50 text-red-800";
-  }
-  return "border-amber-200 bg-amber-50 text-amber-800";
+// Chart values are in rand, not cents.
+function rand(value: number) {
+  return `R${value.toFixed(2)}`;
+}
+
+function randTick(value: number) {
+  return Math.abs(value) >= 1000 ? `R${parseFloat((value / 1000).toFixed(2))}k` : `R${value}`;
+}
+
+function plural(count: number, word: string) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
+}
+
+function paymentText(status: string) {
+  const value = String(status || "").toUpperCase();
+  if (value === "PAID" || value === "SUCCESS") return "Paid";
+  if (["PENDING", "AWAITING_PAYMENT", "PENDING_PAYMENT"].includes(value)) return "Not paid yet";
+  return `Payment ${statusText(value).toLowerCase()}`;
+}
+
+type TooltipRow = { name?: string | number; value?: unknown; color?: string; dataKey?: unknown };
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  format,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<TooltipRow>;
+  label?: string | number;
+  format: (value: number) => string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs">
+      <p className="font-medium text-slate-500">{label}</p>
+      <ul className="mt-1 space-y-0.5">
+        {payload.map((row) => (
+          <li key={String(row.dataKey ?? row.name)} className="flex items-center gap-2">
+            <span
+              className="h-0.5 w-3 shrink-0 rounded-full"
+              style={{ backgroundColor: row.color }}
+              aria-hidden="true"
+            />
+            <span className="font-semibold tabular-nums text-slate-900">
+              {format(Number(row.value) || 0)}
+            </span>
+            <span className="text-slate-500">{row.name}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function LegendKey({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className="h-2.5 w-2.5 rounded-sm"
+        style={{ backgroundColor: color }}
+        aria-hidden="true"
+      />
+      {label}
+    </span>
+  );
 }
 
 export default function SalesCharts() {
@@ -182,273 +269,374 @@ export default function SalesCharts() {
     [data.weekdaySeries],
   );
 
+  // The first load shows placeholders; a refresh keeps the last numbers on screen.
+  const hasLoaded = data.series.length > 0;
+  const firstLoad = loading && !hasLoaded;
+  const noOrders = hasLoaded && metrics.totalOrders === 0;
+  const hasBestDay = Boolean(metrics.bestDay && metrics.bestDay.revenueCents > 0);
+  const show = (value: string) => (firstLoad ? "…" : value);
+
   return (
-    <div className="grid gap-4">
-      <DashCard title="Financial Snapshot">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="grid flex-1 basis-72 gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-              <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Orders</div>
-              <div className="mt-2 text-xl font-semibold text-slate-900">
-                {loading ? "..." : metrics.totalOrders}
-              </div>
-            </div>
-            <div className="rounded-xl border border-lethela-primary/20 bg-lethela-primary/10 px-3 py-3">
-              <div className="text-xs uppercase tracking-[0.12em] text-red-800">Gross sales</div>
-              <div className="mt-2 text-xl font-semibold text-slate-900">
-                {loading ? "..." : money(metrics.totalRevenueCents)}
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-              <div className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                Food subtotal
-              </div>
-              <div className="mt-2 text-xl font-semibold text-slate-900">
-                {loading ? "..." : money(metrics.totalSubtotalCents)}
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-              <div className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                Delivery fees
-              </div>
-              <div className="mt-2 text-xl font-semibold text-slate-900">
-                {loading ? "..." : money(metrics.totalDeliveryFeeCents)}
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-              <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Avg order</div>
-              <div className="mt-2 text-xl font-semibold text-slate-900">
-                {loading ? "..." : money(metrics.avgOrderValueCents)}
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-              <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Best day</div>
-              <div className="mt-2 text-xl font-semibold text-slate-900">
-                {loading
-                  ? "..."
-                  : metrics.bestDay
-                    ? formatShortDate(metrics.bestDay.date)
-                    : "No sales"}
-              </div>
-            </div>
-          </div>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">Last 30 days</p>
+        <button type="button" onClick={load} disabled={loading} className={dashButton.secondary}>
+          <RefreshCw aria-hidden="true" className={loading ? "animate-spin" : undefined} />
+          {loading ? "Refreshing…" : "Refresh"}
+        </button>
+      </div>
 
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
-          >
-            {loading ? "Refreshing..." : "Refresh analytics"}
-          </button>
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+
+      {hasLoaded || loading ? (
+        <div
+          className={cn(
+            "grid grid-cols-2 gap-3 transition-opacity lg:grid-cols-4 lg:gap-4",
+            loading && !firstLoad ? "opacity-60" : "",
+          )}
+          aria-busy={loading}
+        >
+          <StatTile
+            label="Sales"
+            value={show(money(metrics.totalRevenueCents))}
+            hint={
+              firstLoad ? undefined : (
+                <>
+                  Food {money(metrics.totalSubtotalCents)}
+                  <br />
+                  Delivery {money(metrics.totalDeliveryFeeCents)}
+                </>
+              )
+            }
+            icon={<BarChart3 />}
+          />
+          <StatTile
+            label="Orders"
+            value={show(String(metrics.totalOrders))}
+            hint={firstLoad ? undefined : `${data.paymentSummary.paidOrders} paid`}
+            icon={<ShoppingBag />}
+          />
+          <StatTile
+            label="Average order"
+            value={show(money(metrics.avgOrderValueCents))}
+            hint={firstLoad ? undefined : "Per order"}
+            icon={<Receipt />}
+          />
+          <StatTile
+            label="Best day"
+            value={show(
+              hasBestDay && metrics.bestDay ? formatShortDate(metrics.bestDay.date) : "—",
+            )}
+            hint={
+              firstLoad
+                ? undefined
+                : !hasBestDay
+                  ? "No sales yet"
+                  : metrics.weakestDay
+                    ? `Quietest: ${formatShortDate(metrics.weakestDay.date)}`
+                    : undefined
+            }
+            icon={<CalendarDays />}
+          />
         </div>
+      ) : null}
 
-        {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
-      </DashCard>
+      {firstLoad ? (
+        <div className="grid gap-4 lg:grid-cols-2" aria-hidden="true">
+          <div className="h-72 animate-pulse rounded-xl border border-slate-200 bg-white" />
+          <div className="hidden h-72 animate-pulse rounded-xl border border-slate-200 bg-white lg:block" />
+        </div>
+      ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[1.1fr,0.9fr]">
-        <DashCard title="Gross Revenue (last 30 days)">
-          <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
-            <span>Track the sales line for the last 30 days.</span>
-            <span>{loading ? "..." : money(metrics.totalRevenueCents)}</span>
-          </div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <CartesianGrid vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="shortDate" hide />
-                <YAxis stroke="#64748b" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 12,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#B5001B"
-                  fill="rgba(181,0,27,0.22)"
-                  strokeWidth={2.5}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </DashCard>
+      {noOrders ? (
+        <EmptyState
+          icon={<BarChart3 />}
+          title="No orders in the last 30 days"
+          text="Your sales charts show here once customers start ordering."
+        />
+      ) : null}
 
-        <DashCard title="Orders Volume">
-          <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
-            <span>Daily order count across the last 30 days.</span>
-            <span>{loading ? "..." : `${metrics.totalOrders} total`}</span>
-          </div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="shortDate" hide />
-                <YAxis allowDecimals={false} stroke="#64748b" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 12,
-                  }}
-                />
-                <Bar dataKey="orders" fill="#080B27" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </DashCard>
-      </div>
+      {hasLoaded && !noOrders ? (
+        <div
+          className={cn("space-y-4 transition-opacity sm:space-y-6", loading ? "opacity-60" : "")}
+          aria-busy={loading}
+        >
+          <div className="grid gap-4 lg:grid-cols-2">
+            <DashCard title="Sales per day" description="Including delivery fees">
+              <div className={CHART_HEIGHT}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                    <CartesianGrid vertical={false} stroke={GRID_COLOUR} />
+                    <XAxis
+                      dataKey="shortDate"
+                      tick={AXIS_TICK}
+                      tickLine={false}
+                      axisLine={false}
+                      minTickGap={28}
+                      tickMargin={8}
+                    />
+                    <YAxis
+                      tick={AXIS_TICK}
+                      tickLine={false}
+                      axisLine={false}
+                      width={44}
+                      tickFormatter={randTick}
+                    />
+                    <Tooltip
+                      cursor={{ stroke: "#cbd5e1" }}
+                      content={(props) => (
+                        <ChartTooltip
+                          active={props.active}
+                          payload={props.payload}
+                          label={props.label}
+                          format={rand}
+                        />
+                      )}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      name="Sales"
+                      stroke={BRAND_RED}
+                      strokeWidth={2}
+                      fill={BRAND_RED}
+                      fillOpacity={0.1}
+                      activeDot={{ r: 4, fill: BRAND_RED, stroke: "#ffffff", strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </DashCard>
 
-      <div className="grid gap-4 xl:grid-cols-[1.15fr,0.85fr]">
-        <DashCard title="Sales Mix">
-          <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
-            <span>Food subtotal versus delivery revenue.</span>
-            <span>
-              {loading
-                ? "..."
-                : metrics.weakestDay
-                  ? `Softest day ${formatShortDate(metrics.weakestDay.date)}`
-                  : "Awaiting sales"}
-            </span>
+            <DashCard title="Orders per day" description="All orders, paid or not">
+              <div className={CHART_HEIGHT}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                    <CartesianGrid vertical={false} stroke={GRID_COLOUR} />
+                    <XAxis
+                      dataKey="shortDate"
+                      tick={AXIS_TICK}
+                      tickLine={false}
+                      axisLine={false}
+                      minTickGap={28}
+                      tickMargin={8}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={AXIS_TICK}
+                      tickLine={false}
+                      axisLine={false}
+                      width={32}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "#f8fafc" }}
+                      content={(props) => (
+                        <ChartTooltip
+                          active={props.active}
+                          payload={props.payload}
+                          label={props.label}
+                          format={(value) => String(value)}
+                        />
+                      )}
+                    />
+                    <Bar
+                      dataKey="orders"
+                      name="Orders"
+                      fill={BRAND_RED}
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={24}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </DashCard>
           </div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData.slice(-14)}>
-                <CartesianGrid vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="shortDate" hide />
-                <YAxis stroke="#64748b" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 12,
-                  }}
-                />
-                <Bar dataKey="subtotal" stackId="sales" fill="#080B27" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="deliveryFees" stackId="sales" fill="#B5001B" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </DashCard>
 
-        <DashCard title="Collections Status">
-          <div className="space-y-3">
-            <FinanceRow
-              label="Paid / successful"
-              count={data.paymentSummary.paidOrders}
-              amount={data.paymentSummary.paidRevenueCents}
-              tone="border-emerald-200 bg-emerald-50 text-emerald-800"
-            />
-            <FinanceRow
-              label="Pending settlement"
-              count={data.paymentSummary.pendingOrders}
-              amount={data.paymentSummary.pendingRevenueCents}
-              tone="border-amber-200 bg-amber-50 text-amber-800"
-            />
-            <FinanceRow
-              label="Failed / cancelled"
-              count={data.paymentSummary.failedOrders}
-              amount={data.paymentSummary.failedRevenueCents}
-              tone="border-red-200 bg-red-50 text-red-800"
-            />
-          </div>
-        </DashCard>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[0.95fr,1.05fr]">
-        <DashCard title="Best Trading Days">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                <tr>
-                  <th className="pb-3 pr-4 font-medium">Day</th>
-                  <th className="pb-3 pr-4 font-medium">Orders</th>
-                  <th className="pb-3 pr-4 font-medium">Revenue</th>
-                  <th className="pb-3 font-medium">Avg order</th>
-                </tr>
-              </thead>
-              <tbody>
-                {weekdayData
-                  .sort((left, right) => right.revenueCents - left.revenueCents)
-                  .map((point) => (
-                    <tr key={point.weekday} className="border-t border-slate-200">
-                      <td className="py-3 pr-4 font-medium text-slate-700">{point.weekday}</td>
-                      <td className="py-3 pr-4 text-slate-600">{point.orders}</td>
-                      <td className="py-3 pr-4 text-slate-700">{money(point.revenueCents)}</td>
-                      <td className="py-3 text-slate-600">{money(point.avgOrderCents)}</td>
-                    </tr>
+          <div className="grid items-start gap-4 lg:grid-cols-2">
+            <Panel title="Recent orders" padded={data.recentOrders.length === 0}>
+              {data.recentOrders.length > 0 ? (
+                <ul className="divide-y divide-slate-100">
+                  {data.recentOrders.map((order) => (
+                    <li key={order.publicId} className="px-4 py-3 sm:px-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="min-w-0 truncate text-sm font-semibold text-slate-900">
+                          {order.publicId}
+                        </p>
+                        <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
+                          {money(order.totalCents)}
+                        </p>
+                      </div>
+                      <div className="mt-1 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                        <p className="text-xs text-slate-500">
+                          {new Date(order.createdAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}{" "}
+                          · {plural(order.itemsCount, "item")}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          <StatusBadge tone={toneForStatus(order.status)}>
+                            {statusText(order.status)}
+                          </StatusBadge>
+                          <StatusBadge tone={toneForStatus(order.paymentStatus)}>
+                            {paymentText(order.paymentStatus)}
+                          </StatusBadge>
+                        </div>
+                      </div>
+                    </li>
                   ))}
-              </tbody>
-            </table>
-          </div>
-        </DashCard>
+                </ul>
+              ) : (
+                <EmptyState compact title="No recent orders" />
+              )}
+            </Panel>
 
-        <DashCard title="Recent Transactions">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                <tr>
-                  <th className="pb-3 pr-4 font-medium">Order</th>
-                  <th className="pb-3 pr-4 font-medium">Time</th>
-                  <th className="pb-3 pr-4 font-medium">Items</th>
-                  <th className="pb-3 pr-4 font-medium">Status</th>
-                  <th className="pb-3 pr-4 font-medium">Payment</th>
-                  <th className="pb-3 font-medium">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.recentOrders.length > 0 ? (
-                  data.recentOrders.map((order) => (
-                    <tr key={order.publicId} className="border-t border-slate-200">
-                      <td className="py-3 pr-4 font-medium text-slate-700">{order.publicId}</td>
-                      <td className="py-3 pr-4 text-slate-600">
-                        {new Date(order.createdAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-600">{order.itemsCount}</td>
-                      <td className="py-3 pr-4">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${statusTone(order.status)}`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${statusTone(order.paymentStatus)}`}
-                        >
-                          {order.paymentStatus}
-                        </span>
-                      </td>
-                      <td className="py-3 font-semibold text-slate-900">
-                        {money(order.totalCents)}
-                      </td>
-                    </tr>
-                  ))
+            <div className="grid gap-4">
+              <Panel title="Customer payments" padded={false}>
+                <ul className="divide-y divide-slate-100">
+                  <PaymentRow
+                    label="Paid"
+                    count={data.paymentSummary.paidOrders}
+                    amount={data.paymentSummary.paidRevenueCents}
+                    tone="success"
+                  />
+                  <PaymentRow
+                    label="Not paid yet"
+                    count={data.paymentSummary.pendingOrders}
+                    amount={data.paymentSummary.pendingRevenueCents}
+                    tone="warning"
+                  />
+                  <PaymentRow
+                    label="Failed or cancelled"
+                    count={data.paymentSummary.failedOrders}
+                    amount={data.paymentSummary.failedRevenueCents}
+                    tone="danger"
+                  />
+                </ul>
+              </Panel>
+
+              <Panel
+                title="Busiest days"
+                description="Sales by day of the week"
+                padded={weekdayData.length === 0}
+                className="overflow-hidden"
+              >
+                {weekdayData.length > 0 ? (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th scope="col" className="px-4 py-2.5 sm:px-5">
+                          Day
+                        </th>
+                        <th scope="col" className="px-3 py-2.5">
+                          <span className="block text-right">Orders</span>
+                        </th>
+                        <th scope="col" className="px-3 py-2.5">
+                          <span className="block text-right">Sales</span>
+                        </th>
+                        <th scope="col" className="px-4 py-2.5 sm:px-5">
+                          <span className="block text-right">Average</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {weekdayData
+                        .sort((left, right) => right.revenueCents - left.revenueCents)
+                        .map((point) => (
+                          <tr key={point.weekday}>
+                            <td className="px-4 py-2.5 font-medium sm:px-5">
+                              {WEEKDAY_NAMES[point.weekday] ?? point.weekday}
+                            </td>
+                            <td className="px-3 py-2.5 text-right tabular-nums">
+                              <span className="text-slate-600">{point.orders}</span>
+                            </td>
+                            <td className="px-3 py-2.5 text-right tabular-nums">
+                              {money(point.revenueCents)}
+                            </td>
+                            <td className="px-4 py-2.5 text-right tabular-nums sm:px-5">
+                              <span className="text-slate-600">{money(point.avgOrderCents)}</span>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
                 ) : (
-                  <tr className="border-t border-slate-200">
-                    <td colSpan={6} className="py-6 text-center text-slate-500">
-                      No recent transactions yet.
-                    </td>
-                  </tr>
+                  <EmptyState compact title="No sales yet" />
                 )}
-              </tbody>
-            </table>
+              </Panel>
+            </div>
           </div>
-        </DashCard>
-      </div>
+
+          <DashCard title="Food and delivery fees" description="Per day, last 14 days">
+            <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+              <LegendKey color={BRAND_RED} label="Food" />
+              <LegendKey color={SECONDARY_SLATE} label="Delivery fees" />
+            </div>
+            <div className={CHART_HEIGHT}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData.slice(-14)}
+                  margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+                >
+                  <CartesianGrid vertical={false} stroke={GRID_COLOUR} />
+                  <XAxis
+                    dataKey="shortDate"
+                    tick={AXIS_TICK}
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={28}
+                    tickMargin={8}
+                  />
+                  <YAxis
+                    tick={AXIS_TICK}
+                    tickLine={false}
+                    axisLine={false}
+                    width={44}
+                    tickFormatter={randTick}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "#f8fafc" }}
+                    content={(props) => (
+                      <ChartTooltip
+                        active={props.active}
+                        payload={props.payload}
+                        label={props.label}
+                        format={rand}
+                      />
+                    )}
+                  />
+                  <Bar
+                    dataKey="subtotal"
+                    name="Food"
+                    stackId="sales"
+                    fill={BRAND_RED}
+                    stroke="#ffffff"
+                    strokeWidth={1}
+                    maxBarSize={24}
+                  />
+                  <Bar
+                    dataKey="deliveryFees"
+                    name="Delivery fees"
+                    stackId="sales"
+                    fill={SECONDARY_SLATE}
+                    stroke="#ffffff"
+                    strokeWidth={1}
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={24}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </DashCard>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function FinanceRow({
+function PaymentRow({
   label,
   count,
   amount,
@@ -457,17 +645,17 @@ function FinanceRow({
   label: string;
   count: number;
   amount: number;
-  tone: string;
+  tone: "success" | "warning" | "danger";
 }) {
   return (
-    <div className={`rounded-xl border px-4 py-3 ${tone}`}>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-xs uppercase tracking-[0.14em]">{label}</div>
-          <div className="mt-1 text-sm font-medium">{count} order(s)</div>
-        </div>
-        <div className="text-right text-lg font-semibold">{money(amount)}</div>
+    <li className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+        <StatusBadge tone={tone}>{label}</StatusBadge>
+        <span className="text-xs text-slate-500">{plural(count, "order")}</span>
       </div>
-    </div>
+      <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
+        {money(amount)}
+      </span>
+    </li>
   );
 }

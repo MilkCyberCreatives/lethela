@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowRight, LifeBuoy, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ import { Input } from "@/components/ui/input";
 
 export default function VendorSignInForm() {
   const whatsappHref = `https://wa.me/${getOrderWhatsAppPhone()}`;
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [slug, setSlug] = useState("");
@@ -21,6 +19,7 @@ export default function VendorSignInForm() {
     event?.preventDefault();
     setSubmitting(true);
     setError(null);
+    let leaving = false;
 
     try {
       const response = await fetch("/api/vendor/login", {
@@ -37,12 +36,13 @@ export default function VendorSignInForm() {
         throw new Error(json.error || "Vendor sign-in failed.");
       }
 
-      router.push("/vendors/dashboard");
-      router.refresh();
+      // A full page load so the dashboard always opens signed in.
+      leaving = true;
+      window.location.replace("/vendors/dashboard");
     } catch (submitError: unknown) {
       setError(submitError instanceof Error ? submitError.message : "Vendor sign-in failed.");
     } finally {
-      setSubmitting(false);
+      if (!leaving) setSubmitting(false);
     }
   }
 

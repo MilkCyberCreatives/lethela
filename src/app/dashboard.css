@@ -1,39 +1,35 @@
-/* Dashboard shells (admin, vendor, rider).
-   Flat design: solid surfaces separated by 1px borders and small background
-   steps. No shadows, no gradients, no blur. */
+/* Dashboards (admin, vendor, rider) and the customer account page.
+   Flat design: white surfaces on a light grey canvas, separated by 1px borders.
+   No shadows, no gradients, no blur. The admin, vendor and rider layouts come from
+   src/components/dashboard/kit; these rules only keep shared pieces consistent. */
 
 [data-lethela-dashboard] {
-  --dashboard-canvas: #f4f6fb;
+  --dashboard-canvas: #f5f6f8;
   --dashboard-surface: #ffffff;
-  --dashboard-surface-muted: #f6f8fc;
+  --dashboard-surface-muted: #f8fafc;
   --dashboard-border: #e2e8f0;
   --dashboard-border-strong: #cbd5e1;
   --dashboard-text: #0f172a;
   --dashboard-muted: #64748b;
-  --dashboard-sidebar: #0b1020;
-  --dashboard-sidebar-soft: #161d3d;
   --dashboard-accent: #b5001b;
   background: var(--dashboard-canvas);
   color: var(--dashboard-text);
 }
 
-[data-lethela-dashboard] main {
-  min-height: 100dvh;
-  background: var(--dashboard-canvas) !important;
-  color: var(--dashboard-text) !important;
-}
-
-[data-lethela-dashboard] main > header {
-  border-bottom: 1px solid var(--dashboard-border) !important;
-}
-
-[data-lethela-dashboard] main > section {
-  width: min(100%, 1640px);
-  margin-inline: auto;
+/* The admin, vendor and rider dashboards have their own menus and save bars, so the site's
+   back-to-top button stays out of the way there. */
+body:has(
+    [data-lethela-dashboard="admin"],
+    [data-lethela-dashboard="vendor"],
+    [data-lethela-dashboard="rider"]
+  )
+  .scroll-to-top {
+  display: none;
 }
 
 [data-lethela-dashboard] ::selection {
   background: rgba(181, 0, 27, 0.18);
+  color: inherit;
 }
 
 [data-lethela-dashboard] :focus-visible {
@@ -41,374 +37,140 @@
   outline-offset: 2px;
 }
 
-[data-lethela-dashboard]
-  main
-  :is(button, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
-  min-height: 44px;
+/* Customer account page keeps its own page canvas. */
+[data-lethela-dashboard="customer"] main {
+  min-height: 100dvh;
+  background: var(--dashboard-canvas) !important;
+  color: var(--dashboard-text) !important;
 }
 
-/* Admin and vendor app shells: dark sidebar rail. */
-[data-lethela-dashboard="admin"] main > section > div > aside,
-[data-lethela-dashboard="vendor"] main > section > div > aside,
-.dashboard-sidebar {
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 16px !important;
-  background: var(--dashboard-sidebar) !important;
-  color: #fff !important;
+[data-lethela-dashboard="customer"] main > header {
+  border-bottom: 1px solid var(--dashboard-border) !important;
 }
 
-[data-lethela-dashboard="admin"] main > section > div > aside a,
-[data-lethela-dashboard="admin"] main > section > div > aside button,
-[data-lethela-dashboard="admin"] main > section > div > aside p,
-[data-lethela-dashboard="admin"] main > section > div > aside h1,
-[data-lethela-dashboard="vendor"] main > section > div > aside a,
-[data-lethela-dashboard="vendor"] main > section > div > aside p,
-[data-lethela-dashboard="vendor"] main > section > div > aside h2,
-.dashboard-sidebar,
-.dashboard-sidebar a,
-.dashboard-sidebar p,
-.dashboard-sidebar h1,
-.dashboard-sidebar h2,
-.dashboard-sidebar h3 {
-  color: #fff;
+[data-lethela-dashboard="customer"] main > section {
+  width: min(100%, 1640px);
+  margin-inline: auto;
 }
 
-[data-lethela-dashboard="admin"] main > section > div > aside nav button,
-[data-lethela-dashboard="vendor"] main > section > div > aside nav a,
-.dashboard-side-link {
-  min-height: 44px;
-  border-radius: 10px !important;
-  transition:
-    border-color 140ms ease,
-    background-color 140ms ease,
-    color 140ms ease;
-}
-
-/* Workspace surfaces. Components carry their own light colour classes; these rules keep the
-   shared pieces (form fields, tables) consistent across the admin, vendor and rider
-   workspaces. */
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child {
-  border: 0 !important;
-  background: transparent !important;
-}
-
-[data-lethela-dashboard="admin"] main > section > div > div:last-child,
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child,
-.dashboard-workspace {
-  color: var(--dashboard-text);
-}
-
-[data-lethela-dashboard="admin"] main > section > div > div:last-child :is(h1, h2, h3, h4),
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child :is(h1, h2, h3, h4),
-.dashboard-workspace :is(h1, h2, h3, h4) {
-  letter-spacing: -0.02em;
+/* Comfortable touch targets on phones and tablets. */
+@media (max-width: 1023px) {
+  [data-lethela-dashboard]
+    main
+    :is(button, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-height: 44px;
+  }
 }
 
 /* Grid columns follow the screen width instead of stretching to their widest table or chart,
    so dashboards never scroll sideways on phones. Zero specificity, so min-w-* classes still win. */
-:where([data-lethela-dashboard] .grid, .dashboard-workspace .grid) > * {
+:where([data-lethela-dashboard] .grid) > * {
   min-width: 0;
 }
 
-[data-lethela-dashboard="admin"] main > section > div > div:last-child input,
-[data-lethela-dashboard="admin"] main > section > div > div:last-child select,
-[data-lethela-dashboard="admin"] main > section > div > div:last-child textarea,
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child input,
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child select,
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child textarea,
-.dashboard-workspace input,
-.dashboard-workspace select,
-.dashboard-workspace textarea {
-  border-color: var(--dashboard-border-strong) !important;
-  background: #fff !important;
-  color: #0f172a !important;
+/* Form fields inside the dashboards share one light style. Zero specificity (:where), so a
+   class on the field itself (for example a disabled or error style) still wins. */
+:where(
+    .lethela-dash
+      main
+      :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea)
+  ) {
+  border-color: var(--dashboard-border-strong);
+  background-color: #fff;
+  color: var(--dashboard-text);
 }
 
-[data-lethela-dashboard="admin"] main > section > div > div:last-child table,
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child table,
-.dashboard-workspace table {
+/* A field the server rejected (aria-invalid) gets a red outline next to its message. */
+.lethela-dash main :is(input, select, textarea)[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.lethela-dash main :is(input, select, textarea)::placeholder {
+  color: #94a3b8;
+}
+
+.lethela-dash main :is(input, select, textarea):focus {
+  border-color: var(--dashboard-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(181, 0, 27, 0.12);
+}
+
+.lethela-dash main input[type="file"] {
+  max-width: 100%;
+  font-size: 0.875rem;
+  color: var(--dashboard-muted);
+}
+
+.lethela-dash main input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  border: 1px solid var(--dashboard-border-strong);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.5rem 0.875rem;
+  color: var(--dashboard-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Tables: a light default that Tailwind classes on a cell can still override (zero specificity
+   from :where), so text alignment and colours set in the markup win. */
+:where(.lethela-dash main) table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  overflow: hidden;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 12px;
-  background: #fff;
 }
 
-[data-lethela-dashboard="admin"] main > section > div > div:last-child th,
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child th,
-.dashboard-workspace th {
+/* Column headings only: row headings inside tbody keep their own classes. */
+:where(.lethela-dash main) thead th {
+  border-bottom: 1px solid var(--dashboard-border);
   background: var(--dashboard-surface-muted);
-  color: #475569 !important;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
 }
 
-[data-lethela-dashboard="admin"] main > section > div > div:last-child tbody tr,
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child tbody tr,
-.dashboard-workspace tbody tr {
-  background: var(--dashboard-surface) !important;
-  color: var(--dashboard-text) !important;
+:where(.lethela-dash main) tbody :is(td, th) {
+  border-bottom: 1px solid #f1f5f9;
 }
 
-[data-lethela-dashboard="admin"] main > section > div > div:last-child td,
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child td,
-.dashboard-workspace td {
-  border-color: var(--dashboard-border) !important;
-  background: var(--dashboard-surface) !important;
-  color: var(--dashboard-text) !important;
+:where(.lethela-dash main) td {
+  color: var(--dashboard-text);
 }
 
-[data-lethela-dashboard="admin"] main > section > div > div:last-child tr:hover td,
-[data-lethela-dashboard="vendor"] main > section > div > div:last-child tr:hover td,
-.dashboard-workspace tr:hover td {
+:where(.lethela-dash main) tbody tr:last-child :is(td, th) {
+  border-bottom: 0;
+}
+
+:where(.lethela-dash main) tbody tr:hover :is(td, th) {
   background: var(--dashboard-surface-muted);
+}
+
+/* Collapsible sections (details/summary) used for optional form parts and playbooks. */
+.lethela-dash details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.lethela-dash details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.lethela-dash details > summary .dash-summary-chevron {
+  transition: transform 150ms ease;
+}
+
+.lethela-dash details[open] > summary .dash-summary-chevron {
+  transform: rotate(90deg);
 }
 
 /* Interactive controls: colour feedback only, no lift. */
-[data-lethela-dashboard] main button:not(:disabled),
-[data-lethela-dashboard] main a[class*="rounded"] {
-  transition:
-    border-color 140ms ease,
-    background-color 140ms ease,
-    color 140ms ease;
+.lethela-dash :is(button, a) {
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Admin overview card hierarchy. Solid accent rules create emphasis without
-   shadows, gradients, or floating-card effects. */
-.admin-priority-card {
-  position: relative;
-  min-height: 176px;
-  overflow: hidden;
-}
-
-.admin-priority-card::before {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 3px;
-  background: var(--dashboard-accent);
-  content: "";
-}
-
-.admin-priority-card > p:last-child {
-  margin-top: auto;
-  padding-top: 18px;
-}
-
-.admin-metric-card {
-  min-height: 138px;
-}
-
-.admin-priority-card,
-.admin-metric-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.admin-metric-card > p:last-child {
-  margin-top: auto;
-  padding-top: 12px;
-}
-
+/* Customer account page navigation on phones. */
 @media (max-width: 640px) {
-  .admin-priority-card,
-  .admin-metric-card {
-    min-height: 0;
-  }
-}
-
-/* Shared rider dashboard shell */
-.dashboard-shell {
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 24px;
-  padding: 24px;
-}
-
-.dashboard-sidebar {
-  position: sticky;
-  top: 104px;
-  align-self: start;
-  min-height: calc(100dvh - 128px);
-  padding: 18px;
-}
-
-.dashboard-side-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 12px 14px;
-  color: rgba(255, 255, 255, 0.78) !important;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.dashboard-side-link:hover {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff !important;
-}
-
-.dashboard-side-link[data-active="true"] {
-  border-color: var(--dashboard-accent);
-  background: var(--dashboard-accent);
-  color: #fff !important;
-}
-
-.dashboard-side-link[data-active="true"] .dashboard-side-link-hint {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-.dashboard-workspace {
-  min-width: 0;
-}
-
-.dashboard-workspace-header {
-  margin-bottom: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 14px;
-  background: var(--dashboard-surface);
-  padding: 18px 20px;
-}
-
-.dashboard-security-note {
-  margin-top: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 12px;
-  color: rgba(255, 255, 255, 0.62) !important;
-  font-size: 0.75rem;
-  line-height: 1.55;
-}
-
-@media (max-width: 1023px) {
-  [data-lethela-dashboard="admin"] main > section > div,
-  [data-lethela-dashboard="vendor"] main > section > div,
-  .dashboard-shell {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  [data-lethela-dashboard="admin"] main > section > div > aside,
-  [data-lethela-dashboard="vendor"] main > section > div > aside,
-  .dashboard-sidebar {
-    position: relative !important;
-    top: auto !important;
-    min-height: auto !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  [data-lethela-dashboard="admin"] main > section > div > aside nav {
-    display: flex !important;
-    gap: 12px !important;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    scroll-snap-type: x proximity;
-  }
-
-  [data-lethela-dashboard="admin"] main > section > div > aside nav > div {
-    min-width: 220px;
-    scroll-snap-align: start;
-  }
-
-  [data-lethela-dashboard="vendor"] main > section > div > aside nav {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(190px, 1fr);
-    overflow-x: auto;
-    padding-bottom: 6px;
-    scroll-snap-type: x proximity;
-  }
-
-  [data-lethela-dashboard="vendor"] main > section > div > aside nav > a {
-    scroll-snap-align: start;
-  }
-
-  .dashboard-shell {
-    padding: 18px;
-  }
-
-  .dashboard-sidebar-nav {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(170px, 1fr);
-    overflow-x: auto;
-    padding-bottom: 6px;
-    scroll-snap-type: x proximity;
-  }
-
-  .dashboard-sidebar-nav > a {
-    scroll-snap-align: start;
-  }
-}
-
-@media (max-width: 640px) {
-  [data-lethela-dashboard] main > section,
-  .dashboard-shell {
-    padding-inline: 12px !important;
-  }
-
-  [data-lethela-dashboard="vendor"] main > section {
-    padding-block: 12px !important;
-  }
-
-  [data-lethela-dashboard="vendor"] main > section > div {
-    gap: 12px !important;
-  }
-
-  [data-lethela-dashboard="admin"] main > section > div > aside,
-  [data-lethela-dashboard="vendor"] main > section > div > aside,
-  .dashboard-sidebar,
-  .dashboard-workspace-header {
-    border-radius: 14px !important;
-  }
-
-  .dashboard-workspace-header {
-    padding: 16px;
-  }
-
-  .dashboard-shell {
-    gap: 12px;
-    padding-block: 12px;
-  }
-
-  .dashboard-sidebar,
-  .vendor-dashboard-sidebar {
-    padding: 14px !important;
-  }
-
-  .dashboard-sidebar-intro,
-  .vendor-dashboard-intro {
-    padding-bottom: 10px !important;
-  }
-
-  .dashboard-sidebar-description,
-  .dashboard-side-link-hint,
-  .vendor-dashboard-nav-hint,
-  .dashboard-sidebar-security {
-    display: none !important;
-  }
-
-  .dashboard-sidebar-nav,
-  .vendor-dashboard-nav {
-    margin-top: 10px !important;
-    grid-auto-columns: minmax(144px, 1fr) !important;
-  }
-
-  .dashboard-side-link {
-    min-height: 48px;
-    padding-block: 10px;
-  }
-
   .account-dashboard-nav {
     min-width: 0;
     width: 100%;
@@ -433,26 +195,4 @@
   .account-dashboard-privacy {
     display: none;
   }
-}
-
-.vendor-quick-action {
-  border-color: var(--dashboard-border-strong) !important;
-  background: #fff !important;
-  color: #334155 !important;
-}
-
-.vendor-quick-action:hover {
-  border-color: var(--dashboard-accent) !important;
-  color: var(--dashboard-accent) !important;
-}
-
-.vendor-quick-action-primary {
-  border-color: var(--dashboard-accent) !important;
-  background: var(--dashboard-accent) !important;
-  color: #fff !important;
-}
-
-.vendor-quick-action-primary:hover {
-  color: #fff !important;
-  opacity: 0.9;
 }

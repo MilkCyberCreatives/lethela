@@ -96,13 +96,6 @@ export default async function CategoryPage({ params }: PageProps) {
                 address: { not: null },
                 city: { not: null },
                 province: { not: null },
-                storeType: { not: null },
-                etaMins: { gte: 10 },
-                kycIdUrl: { not: null },
-                kycProofUrl: { not: null },
-                bankName: { not: null },
-                bankAccountName: { not: null },
-                bankAccountNumber: { not: null },
                 hours: { some: { closed: false } },
                 ...(isLiquorCategory
                   ? {

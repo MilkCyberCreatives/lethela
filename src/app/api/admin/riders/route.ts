@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
     approvedCount,
     rejectedCount,
     suspendedCount,
+    draftCount,
     totalCount,
   ] = await Promise.all([
     listRiderApplications(rawStatus, take),
@@ -48,6 +49,7 @@ export async function GET(req: NextRequest) {
     countRiderApplications("APPROVED"),
     countRiderApplications("REJECTED"),
     countRiderApplications("SUSPENDED"),
+    countRiderApplications("DRAFT"),
     countRiderApplications(),
   ]);
 
@@ -62,6 +64,7 @@ export async function GET(req: NextRequest) {
       approved: approvedCount,
       rejected: rejectedCount,
       suspended: suspendedCount,
+      draft: draftCount,
       total: totalCount,
     },
     items,

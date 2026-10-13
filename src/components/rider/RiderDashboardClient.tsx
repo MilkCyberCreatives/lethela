@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Lock, MapPin, Navigation, PackageCheck, RefreshCw, ShieldCheck } from "lucide-react";
 import {
-  Bike,
-  CalendarDays,
-  CheckCircle2,
-  Lock,
-  MapPin,
-  Navigation,
-  PackageCheck,
-  ShieldCheck,
-  WalletCards,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+  ChecklistItem,
+  DetailRow,
+  EmptyState,
+  Notice,
+  Panel,
+  StatusBadge,
+  dashButton,
+  statusText,
+  toneForStatus,
+} from "@/components/dashboard/kit/ui";
 
 type RiderMeResponse = {
   ok: boolean;
@@ -80,13 +80,6 @@ function money(cents: number) {
   return `R ${(Number(cents || 0) / 100).toFixed(2)}`;
 }
 
-function statusClass(status?: string) {
-  if (status === "APPROVED") return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  if (status === "REJECTED") return "border-red-200 bg-red-50 text-red-800";
-  if (status === "UNDER_REVIEW") return "border-amber-200 bg-amber-50 text-amber-800";
-  return "border-slate-300 bg-white text-slate-600";
-}
-
 function riderOrderPriority(status: string) {
   const priority: Record<string, number> = {
     ON_THE_WAY: 0,
@@ -138,13 +131,13 @@ export default function RiderDashboardClient() {
   const checklist = useMemo(() => {
     const application = data?.application;
     return [
-      { label: "Rider account signed in", complete: Boolean(data?.user) },
-      { label: "Rider application submitted", complete: Boolean(application) },
-      { label: "Ops approval complete", complete: Boolean(data?.readiness?.approved) },
-      { label: "Smartphone confirmed", complete: Boolean(application?.hasSmartphone) },
-      { label: "Bank account confirmed", complete: Boolean(application?.hasBankAccount) },
+      { label: "Rider account created", complete: Boolean(data?.user) },
+      { label: "Application sent", complete: Boolean(application) },
+      { label: "Approved by Lethela", complete: Boolean(data?.readiness?.approved) },
+      { label: "Smartphone ready", complete: Boolean(application?.hasSmartphone) },
+      { label: "Bank account for payouts", complete: Boolean(application?.hasBankAccount) },
       {
-        label: "Secure dispatch links configured",
+        label: "Delivery links switched on by Lethela",
         complete: Boolean(data?.readiness?.canReceiveDispatch),
       },
     ];
@@ -152,14 +145,12 @@ export default function RiderDashboardClient() {
 
   if (loading) {
     return (
-      <div className="grid animate-pulse gap-4 rounded-lg border border-slate-200 bg-white p-5">
-        <div className="h-5 w-40 rounded bg-slate-100" />
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="h-24 rounded-lg bg-slate-100" />
-          <div className="h-24 rounded-lg bg-slate-100" />
-          <div className="h-24 rounded-lg bg-slate-100" />
+      <div className="grid animate-pulse gap-4" aria-hidden="true">
+        <div className="h-32 rounded-xl border border-slate-200 bg-white" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="h-48 rounded-xl border border-slate-200 bg-white" />
+          <div className="h-48 rounded-xl border border-slate-200 bg-white" />
         </div>
-        <div className="h-32 rounded-lg bg-slate-100" />
       </div>
     );
   }
@@ -167,31 +158,21 @@ export default function RiderDashboardClient() {
   if (!data?.ok) {
     const signInHref = `/signin?callbackUrl=${encodeURIComponent("/rider/dashboard")}`;
     return (
-      <section className="rounded-lg border border-slate-200 bg-white p-5">
-        <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
-            <Lock className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-bold">Rider sign-in required</h1>
-            <p className="mt-1 text-sm text-slate-600">
-              {data?.error || "Sign in with a rider account to view this dashboard."}
-            </p>
+      <EmptyState
+        icon={<Lock />}
+        title="Sign in with your rider account"
+        text={data?.error || "Sign in with a rider account to see your deliveries."}
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <Link href={signInHref} className={dashButton.primary}>
+              Sign in
+            </Link>
+            <Link href="/rider" className={dashButton.secondary}>
+              Become a rider
+            </Link>
           </div>
-        </div>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
-            <Link href={signInHref}>Sign in as rider</Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-          >
-            <Link href="/rider">Create rider account</Link>
-          </Button>
-        </div>
-      </section>
+        }
+      />
     );
   }
 
@@ -201,359 +182,197 @@ export default function RiderDashboardClient() {
     if (priorityDifference !== 0) return priorityDifference;
     return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
   });
-  const priorityOrder = orders[0] || null;
+  const approved = Boolean(data.readiness?.approved);
+  const setupDone = checklist.every((item) => item.complete);
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-lg border border-lethela-primary/25 bg-lethela-primary/[0.07] p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary">
-              Next step
-            </p>
-            {priorityOrder ? (
-              <>
-                <h2 className="mt-2 text-xl font-bold">Continue delivery {priorityOrder.ref}</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                  {priorityOrder.status.replaceAll("_", " ")} · {priorityOrder.vendor} · pickup in{" "}
-                  {priorityOrder.pickupArea}. Keep this assignment moving before waiting for another
-                  delivery.
-                </p>
-              </>
-            ) : !application ? (
-              <>
-                <h2 className="mt-2 text-xl font-bold">Submit your rider application</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                  Use the same email as this account so Lethela can connect your application to this
-                  dashboard.
-                </p>
-              </>
-            ) : !data.readiness?.approved ? (
-              <>
-                <h2 className="mt-2 text-xl font-bold">Finish onboarding and approval</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                  Complete any missing profile or document requirements. Dispatch unlocks only after
-                  Lethela approval.
-                </p>
-              </>
-            ) : !data.readiness?.canReceiveDispatch ? (
-              <>
-                <h2 className="mt-2 text-xl font-bold">Finish dispatch setup</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                  Your account is approved, but dispatch readiness still needs attention in Profile
-                  & documents.
-                </p>
-              </>
-            ) : (
-              <>
-                <h2 className="mt-2 text-xl font-bold">Ready for work</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                  No active delivery is assigned. Use Shift status above to go online and receive
-                  available work.
-                </p>
-              </>
-            )}
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            {priorityOrder?.consoleUrl ? (
-              <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
-                <Link href={priorityOrder.consoleUrl}>Open rider console</Link>
-              </Button>
-            ) : !application ? (
-              <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
-                <Link href="/rider">Start rider application</Link>
-              </Button>
-            ) : !data.readiness?.canReceiveDispatch ? (
-              <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
-                <Link href="/rider/dashboard/profile">Open profile & documents</Link>
-              </Button>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
-              Rider workspace
-            </p>
-            <h1 className="mt-2 text-2xl font-bold md:text-3xl">Delivery dashboard</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-              {application
-                ? `Welcome ${application.fullName}. Your dashboard is connected to your Lethela rider application.`
-                : "Your rider account is active, but no rider application is linked to this email address yet."}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button className="bg-lethela-primary text-white hover:opacity-90" onClick={load}>
-              Refresh
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-            >
-              <Link href="/rider/dashboard/profile">Complete profile</Link>
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <Metric
-            label="Status"
-            value={application?.status?.replaceAll("_", " ") || "No application"}
-            note="Ops onboarding state"
-            icon={ShieldCheck}
-          />
-          <Metric
-            label="Area"
-            value={data.readiness?.area || "Not set"}
-            note="Primary dispatch zone"
-            icon={MapPin}
-          />
-          <Metric
-            label="Assigned deliveries"
-            value={orders.length}
-            note="Active paid orders assigned to you"
-            icon={PackageCheck}
-          />
-          <Metric
-            label="Assigned earnings"
-            value={money(orders.reduce((sum, order) => sum + order.riderPayoutCents, 0))}
-            note="Delivery fees and tips on active assignments"
-            icon={WalletCards}
-          />
-        </div>
-      </section>
-
-      <div className="grid gap-5 xl:grid-cols-[1.1fr,0.9fr]">
-        <section className="rounded-lg border border-slate-200 bg-white p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Dispatch</p>
-              <h2 className="mt-1 text-lg font-semibold">Active delivery lane</h2>
-            </div>
-            <Navigation className="h-5 w-5 text-lethela-primary" />
-          </div>
-          <div className="mt-4 grid gap-3">
-            {!data.readiness?.approved ? (
-              <EmptyPanel
-                title="Approval required"
-                text="Riders can see dispatch orders after ops approves the application."
-              />
-            ) : orders.length === 0 ? (
-              <EmptyPanel
-                title="No active paid orders"
-                text="Paid orders in preparing or delivery states will appear here."
-              />
-            ) : (
-              orders.map((order) => (
-                <article
-                  key={order.ref}
-                  className="rounded-lg border border-slate-200 bg-white p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold">{order.ref}</p>
-                      <p className="mt-1 text-xs text-slate-500">{order.vendor}</p>
-                    </div>
-                    <span className="rounded-full border border-lethela-primary/35 bg-lethela-primary/10 px-3 py-1 text-xs text-red-800">
-                      {order.status.replaceAll("_", " ")}
-                    </span>
-                  </div>
-                  <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin className="h-4 w-4 text-lethela-primary" />
-                    {order.pickupArea}
-                  </div>
-                  {order.pickupInstructions ? (
-                    <p className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                      Pickup: {order.pickupInstructions}
-                    </p>
-                  ) : null}
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
-                    {order.consoleUrl ? (
-                      <Button asChild className="bg-lethela-primary text-white hover:opacity-90">
-                        <Link href={order.consoleUrl}>Open rider console</Link>
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-amber-800">
-                        Rider console secret is not configured.
-                      </span>
-                    )}
-                    <span className="text-xs text-slate-500">
-                      Delivery fee: {money(order.deliveryFeeCents)}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      Tip: {money(order.riderTipCents)}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-900">
-                      Rider total: {money(order.riderPayoutCents)}
-                    </span>
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
-          <Button asChild className="mt-4 bg-lethela-primary text-white">
-            <Link href="/rider/dashboard/profile">Open profile setup</Link>
-          </Button>
-        </section>
-
-        <section className="rounded-lg border border-slate-200 bg-white p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                Operating readiness
-              </p>
-              <h2 className="mt-1 text-lg font-semibold">Rider checklist</h2>
-            </div>
-            <Bike className="h-5 w-5 text-lethela-primary" />
-          </div>
-          <div className="mt-4 grid gap-3">
-            {checklist.map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3"
-              >
-                <CheckCircle2
-                  className={`h-4 w-4 ${item.complete ? "text-lethela-primary" : "text-slate-400"}`}
-                />
-                <span className="text-sm text-slate-600">{item.label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusBadge tone={application ? toneForStatus(application.status) : "neutral"}>
+          {application ? statusText(application.status) : "No application yet"}
+        </StatusBadge>
+        {data.readiness?.area ? (
+          <StatusBadge tone="neutral" dot={false}>
+            <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+            {data.readiness.area}
+          </StatusBadge>
+        ) : null}
+        <button type="button" onClick={load} className={`${dashButton.quiet} ml-auto`}>
+          <RefreshCw aria-hidden="true" />
+          Refresh
+        </button>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="h-5 w-5 text-lethela-primary" />
-              <h2 className="text-lg font-semibold">Messages from Lethela</h2>
-            </div>
-            <Button
-              variant="outline"
-              className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-              onClick={load}
-            >
-              Refresh messages
-            </Button>
-          </div>
-          <div className="mt-4 grid gap-3">
-            {messages.length === 0 ? (
-              <EmptyPanel
-                title="No owner messages yet"
-                text="Important rider updates from Lethela management will appear here."
-              />
-            ) : (
-              messages.map((message) => (
-                <article
-                  key={message.id}
-                  className="rounded-lg border border-slate-200 bg-white p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold">{message.subject}</h3>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {new Date(message.createdAt).toLocaleString()} ·{" "}
-                        {message.channel.replaceAll("_", " ")}
-                      </p>
-                    </div>
+      {!application ? (
+        <Notice
+          tone="warning"
+          title="Send your rider application"
+          action={
+            <Link href="/rider" className={dashButton.primary}>
+              Start application
+            </Link>
+          }
+        >
+          Use the same email as this account so we can link it to you.
+        </Notice>
+      ) : null}
+
+      <Panel
+        title="Current deliveries"
+        description={
+          orders.length > 0
+            ? `${orders.length} assigned to you`
+            : "Deliveries assigned to you show here."
+        }
+        padded={orders.length === 0}
+      >
+        {!approved ? (
+          <EmptyState
+            compact
+            icon={<ShieldCheck />}
+            title="Waiting for approval"
+            text="You will see deliveries once Lethela approves your application."
+          />
+        ) : orders.length === 0 ? (
+          <EmptyState
+            compact
+            icon={<PackageCheck />}
+            title="No deliveries right now"
+            text="Go online and stay close to your phone. New deliveries show here."
+          />
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {orders.map((order) => (
+              <li key={order.ref} className="px-4 py-4 sm:px-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900">{order.ref}</p>
+                    <p className="mt-0.5 text-sm text-slate-500">{order.vendor}</p>
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-                    {message.body}
-                  </p>
-                </article>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-slate-200 bg-white p-5">
-          <div className="flex items-center gap-3">
-            <CalendarDays className="h-5 w-5 text-lethela-primary" />
-            <h2 className="text-lg font-semibold">Availability</h2>
-          </div>
-          <p className="mt-3 text-sm text-slate-600">
-            {application?.availableHours ||
-              "Availability will appear after your rider application is submitted."}
-          </p>
-        </section>
-
-        <section className="rounded-lg border border-slate-200 bg-white p-5">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-lethela-primary" />
-            <h2 className="text-lg font-semibold">Application profile</h2>
-          </div>
-          {application ? (
-            <div className="mt-3 space-y-2 text-sm text-slate-600">
-              <p>
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs ${statusClass(application.status)}`}
-                >
-                  {application.status.replaceAll("_", " ")}
-                </span>
-              </p>
-              <p>
-                Vehicle: {application.vehicleType}
-                {application.vehicleRegistration ? ` (${application.vehicleRegistration})` : ""}
-              </p>
-              <p>Licence: {application.licenseCode}</p>
-              <p>
-                Emergency: {application.emergencyContactName} ({application.emergencyContactPhone})
-              </p>
-              {application.aiSummary ? (
-                <p className="rounded-lg border border-slate-200 bg-white p-3">
-                  {application.aiSummary}
+                  <StatusBadge tone={toneForStatus(order.status)}>
+                    {statusText(order.status)}
+                  </StatusBadge>
+                </div>
+                <p className="mt-2 flex items-center gap-2 text-sm text-slate-700">
+                  <MapPin className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+                  Collect from {order.pickupArea}
                 </p>
-              ) : null}
+                {order.pickupInstructions ? (
+                  <p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                    {order.pickupInstructions}
+                  </p>
+                ) : null}
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm text-slate-600">
+                    You earn{" "}
+                    <span className="font-semibold text-slate-900">
+                      {money(order.riderPayoutCents)}
+                    </span>
+                    <span className="text-slate-400">
+                      {" "}
+                      (fee {money(order.deliveryFeeCents)}, tip {money(order.riderTipCents)})
+                    </span>
+                  </p>
+                  {order.consoleUrl ? (
+                    <Link href={order.consoleUrl} className={dashButton.primary}>
+                      <Navigation aria-hidden="true" />
+                      Open delivery
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-amber-800">
+                      Delivery link not switched on yet. Contact Lethela.
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {!setupDone ? (
+          <Panel
+            title="Getting ready"
+            description="What is left before you can take deliveries"
+            action={
+              <Link href="/rider/dashboard/profile" className={dashButton.link}>
+                Open profile
+              </Link>
+            }
+          >
+            <div className="divide-y divide-slate-100">
+              {checklist.map((item) => (
+                <ChecklistItem key={item.label} done={item.complete} label={item.label} />
+              ))}
+            </div>
+          </Panel>
+        ) : null}
+
+        <Panel
+          title="Your details"
+          action={
+            <Link href="/rider/dashboard/profile" className={dashButton.link}>
+              Edit
+            </Link>
+          }
+        >
+          {application ? (
+            <div className="divide-y divide-slate-100">
+              <DetailRow
+                label="Vehicle"
+                value={`${application.vehicleType}${application.vehicleRegistration ? ` (${application.vehicleRegistration})` : ""}`}
+              />
+              <DetailRow label="Licence" value={application.licenseCode || "Not added"} />
+              <DetailRow
+                label="Emergency contact"
+                value={
+                  application.emergencyContactName
+                    ? `${application.emergencyContactName} (${application.emergencyContactPhone})`
+                    : "Not added"
+                }
+              />
+              <DetailRow
+                label="When you can work"
+                value={application.availableHours || "Not added"}
+              />
             </div>
           ) : (
-            <p className="mt-3 text-sm text-slate-600">
-              Submit the rider application with the same email as your account to link this
-              dashboard.
+            <p className="text-sm text-slate-600">
+              Your details show here once your rider application is linked to this account.
             </p>
           )}
-        </section>
-      </div>
-    </div>
-  );
-}
+        </Panel>
 
-function Metric({
-  label,
-  value,
-  note,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  note: string;
-  icon: typeof Bike;
-}) {
-  return (
-    <article className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">{label}</p>
-          <p className="mt-2 text-xl font-bold">{value}</p>
-        </div>
-        <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
-          <Icon className="h-5 w-5" />
-        </span>
+        <Panel
+          title="Messages from Lethela"
+          className={setupDone ? "" : "lg:col-span-2"}
+          padded={messages.length === 0}
+        >
+          {messages.length === 0 ? (
+            <EmptyState compact title="No messages yet" text="Updates from Lethela show here." />
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {messages.map((message) => (
+                <li key={message.id} className="px-4 py-4 sm:px-5">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-slate-900">{message.subject}</h3>
+                    <span className="text-xs text-slate-400">
+                      {new Date(message.createdAt).toLocaleString("en-ZA", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                    {message.body}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       </div>
-      <p className="mt-3 text-xs text-slate-500">{note}</p>
-    </article>
-  );
-}
-
-function EmptyPanel({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <p className="text-sm font-semibold">{title}</p>
-      <p className="mt-1 text-sm text-slate-500">{text}</p>
     </div>
   );
 }

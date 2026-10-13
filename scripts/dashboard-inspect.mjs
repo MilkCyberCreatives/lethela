@@ -168,16 +168,21 @@ for (const dashboard of dashboards) {
       await page.waitForURL((url) => url.searchParams.get("tab") === "orders");
       await page.getByRole("heading", { name: "Orders", exact: true }).waitFor();
     } else if (dashboard.role === "rider") {
-      await page.getByRole("link", { name: /Profile & documents/ }).click();
+      await page
+        .getByRole("navigation", { name: "Rider quick sections" })
+        .getByRole("link", { name: "Profile" })
+        .click();
       await page.waitForURL((url) => url.pathname === "/rider/dashboard/profile");
       await page
-        .getByRole("heading", { name: /Profile/ })
+        .getByRole("heading", { level: 1, name: /profile/i })
         .first()
         .waitFor();
     } else if (dashboard.role === "admin") {
-      await page.getByRole("button", { name: "Menu", exact: true }).click();
-      await page.getByRole("button", { name: "Vendor approvals", exact: true }).click();
-      await page.getByText("Vendor approvals", { exact: true }).last().waitFor();
+      await page
+        .getByRole("navigation", { name: "Admin quick sections" })
+        .getByRole("button", { name: "Vendors" })
+        .click();
+      await page.getByRole("heading", { level: 1, name: "Vendors" }).waitFor();
     }
     if (runtimeErrors.length) throw new Error(runtimeErrors.join("\n"));
   } catch (error) {

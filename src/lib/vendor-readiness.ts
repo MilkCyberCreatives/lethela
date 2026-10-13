@@ -74,6 +74,16 @@ function hasText(value: string | null | undefined) {
   return Boolean(value && value.trim().length > 1);
 }
 
+/** Name a store gets at sign-up until the owner types the real one. */
+export const NEW_VENDOR_PLACEHOLDER_NAME = "New vendor";
+
+export function hasRealStoreName(value: string | null | undefined) {
+  return (
+    hasText(value) &&
+    String(value).trim().toLowerCase() !== NEW_VENDOR_PLACEHOLDER_NAME.toLowerCase()
+  );
+}
+
 export function parseStoreCategories(value: unknown) {
   if (Array.isArray(value)) {
     return value.map((item) => String(item).trim()).filter(Boolean);
@@ -90,6 +100,11 @@ export function parseStoreCategories(value: unknown) {
   }
 }
 
+/**
+ * What a store must have before Lethela can approve and list it. Only the details needed to
+ * take, prepare and deliver an order are required; the rest can be added later in the profile.
+ * `operatingHoursCount` should count open days only.
+ */
 export function getVendorReadiness(input: VendorReadinessInput) {
   const categories = parseStoreCategories(input.cuisine);
   const productCount = Number(input.productCount || 0);
@@ -97,17 +112,13 @@ export function getVendorReadiness(input: VendorReadinessInput) {
   const checks = [
     {
       key: "store-details",
-      label: "Store details",
+      label: "Store name and phone number",
       required: true,
-      complete:
-        hasText(input.name) &&
-        hasText(input.email) &&
-        hasText(input.phone) &&
-        hasText(input.storeType),
+      complete: hasRealStoreName(input.name) && hasText(input.phone),
     },
     {
       key: "trading-address",
-      label: "Trading address",
+      label: "Store address",
       required: true,
       complete:
         hasText(input.province) &&
@@ -116,22 +127,10 @@ export function getVendorReadiness(input: VendorReadinessInput) {
         hasText(input.address),
     },
     {
-      key: "category",
-      label: "Category and store type",
-      required: true,
-      complete: categories.length > 0,
-    },
-    {
       key: "operating-hours",
-      label: "Operating hours",
+      label: "Opening hours",
       required: true,
       complete: Number(input.operatingHoursCount || 0) > 0,
-    },
-    {
-      key: "preparation-time",
-      label: "Preparation time",
-      required: true,
-      complete: Number(input.etaMins || 0) >= 10,
     },
     {
       key: "products-menu",
@@ -140,9 +139,21 @@ export function getVendorReadiness(input: VendorReadinessInput) {
       complete: productCount > 0 || menuItemCount > 0,
     },
     {
+      key: "category",
+      label: "Store type and categories",
+      required: false,
+      complete: hasText(input.storeType) && categories.length > 0,
+    },
+    {
+      key: "preparation-time",
+      label: "Preparation time",
+      required: false,
+      complete: Number(input.etaMins || 0) >= 10,
+    },
+    {
       key: "banking",
       label: "Banking details",
-      required: true,
+      required: false,
       complete:
         Boolean(input.hasBanking) ||
         (hasText(input.bankName) &&
@@ -152,7 +163,7 @@ export function getVendorReadiness(input: VendorReadinessInput) {
     {
       key: "owner-documents",
       label: "Owner documents",
-      required: true,
+      required: false,
       complete:
         Boolean(input.hasKycDocuments) || (hasText(input.kycIdUrl) && hasText(input.kycProofUrl)),
     },

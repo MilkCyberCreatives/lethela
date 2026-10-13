@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { getSession, signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Bike, ShoppingBag, Store } from "lucide-react";
 import {
@@ -38,7 +37,6 @@ const verificationMessages: Record<Exclude<VerificationState, "">, string> = {
 };
 
 export default function SignInForm({ googleEnabled = false }: { googleEnabled?: boolean }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [requestedPath, setRequestedPath] = useState("");
@@ -61,6 +59,7 @@ export default function SignInForm({ googleEnabled = false }: { googleEnabled?: 
     event.preventDefault();
     setError(null);
     setSubmitting(true);
+    let leaving = false;
     try {
       const result = await signIn("credentials", { redirect: false, email, password });
       if (!result?.ok) {
@@ -70,8 +69,9 @@ export default function SignInForm({ googleEnabled = false }: { googleEnabled?: 
       }
       const session = await getSession();
       const role = (session?.user?.role || "CUSTOMER") as AppRole;
-      router.replace(safePostLoginPath(role, requestedPath));
-      router.refresh();
+      // A full page load so the dashboard always opens signed in (see MinimalSignupForm).
+      leaving = true;
+      window.location.replace(safePostLoginPath(role, requestedPath));
     } catch (signInError) {
       setError(
         signInError instanceof Error
@@ -79,7 +79,7 @@ export default function SignInForm({ googleEnabled = false }: { googleEnabled?: 
           : "We could not sign you in. Check your details or try again later.",
       );
     } finally {
-      setSubmitting(false);
+      if (!leaving) setSubmitting(false);
     }
   }
 

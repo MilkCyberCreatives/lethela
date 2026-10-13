@@ -43,12 +43,6 @@ export async function getSqliteReadinessCounts(): Promise<SqliteCounts | null> {
            AND v.address IS NOT NULL
            AND v.city IS NOT NULL
            AND v.province IS NOT NULL
-           AND v.storeType IS NOT NULL
-           AND v.kycIdUrl IS NOT NULL
-           AND v.kycProofUrl IS NOT NULL
-           AND v.bankName IS NOT NULL
-           AND v.bankAccountName IS NOT NULL
-           AND v.bankAccountNumber IS NOT NULL
            AND EXISTS (SELECT 1 FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0)
            AND EXISTS (SELECT 1 FROM Product p WHERE p.vendorId = v.id AND p.inStock = 1 AND p.isAlcohol = 0)`,
       ),
@@ -65,12 +59,6 @@ export async function getSqliteReadinessCounts(): Promise<SqliteCounts | null> {
            AND v.address IS NOT NULL
            AND v.city IS NOT NULL
            AND v.province IS NOT NULL
-           AND v.storeType IS NOT NULL
-           AND v.kycIdUrl IS NOT NULL
-           AND v.kycProofUrl IS NOT NULL
-           AND v.bankName IS NOT NULL
-           AND v.bankAccountName IS NOT NULL
-           AND v.bankAccountNumber IS NOT NULL
            AND EXISTS (SELECT 1 FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0)`,
       ),
       pendingVendors: count(

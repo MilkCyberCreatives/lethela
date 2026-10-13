@@ -1,8 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ChevronRight, RefreshCw, Search, ShoppingBag } from "lucide-react";
 import OrderMap from "@/components/OrderMap";
-import DashCard from "./DashCard";
+import {
+  DetailRow,
+  EmptyState,
+  FilterTabs,
+  Notice,
+  Panel,
+  ProgressBar,
+  StatusBadge,
+  dashButton,
+  dashField,
+  statusText,
+  toneForStatus,
+} from "@/components/dashboard/kit/ui";
+import { cn } from "@/lib/utils";
 
 type OrderStatus =
   | "PENDING_PAYMENT"
@@ -87,15 +101,15 @@ function actionLabel(action: VendorOrderAction) {
 
 function workflowGuidance(status: OrderStatus) {
   if (status === "NEW") {
-    return { title: "Accept this order", note: "Confirm that the store can fulfil it now." };
+    return { title: "Accept this order", note: "Check that you can make it now, then accept it." };
   }
   if (status === "VENDOR_ACCEPTED") {
-    return { title: "Start preparing", note: "Move the order into preparation when work begins." };
+    return { title: "Start preparing", note: "Tap Start preparing when you begin making it." };
   }
   if (status === "PREPARING") {
     return {
       title: "Finish and call the rider",
-      note: "Mark it ready only when pickup can happen.",
+      note: "Mark it ready only when it is packed for collection.",
     };
   }
   if (status === "READY_FOR_PICKUP") {
@@ -104,19 +118,19 @@ function workflowGuidance(status: OrderStatus) {
   if (["RIDER_ASSIGNED", "PICKED_UP", "ON_THE_WAY"].includes(status)) {
     return {
       title: "Delivery in progress",
-      note: "Use live tracking below if a rider position is available.",
+      note: "The map shows the rider when live tracking is available.",
     };
   }
   if (status === "DELIVERED") {
-    return { title: "Order complete", note: "No vendor action is required." };
+    return { title: "Order complete", note: "Nothing more to do." };
   }
   if (EXCEPTION_STATUSES.includes(status)) {
     return {
-      title: "Review exception",
-      note: "Keep the order reference ready if support is needed.",
+      title: "Check this order",
+      note: "Keep the order number handy if you contact support.",
     };
   }
-  return { title: "Monitor payment", note: "Wait for the order to become payable and actionable." };
+  return { title: "Waiting for payment", note: "You can act on it once payment is confirmed." };
 }
 
 function workflowMatch(order: Order, filter: WorkflowFilter) {
@@ -145,6 +159,24 @@ function workflowPriority(status: OrderStatus) {
     DELIVERED: 13,
   };
   return priorities[status] ?? 99;
+}
+
+function rands(cents: number) {
+  return `R${(cents / 100).toFixed(2)}`;
+}
+
+function formatWhen(value: string) {
+  return new Date(value).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" });
+}
+
+/** Label and value for delivery details; long values wrap instead of being cut off. */
+function InfoRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 py-2.5">
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="break-words font-medium text-slate-900">{value}</dd>
+    </div>
+  );
 }
 
 export default function OrdersManager() {
@@ -323,331 +355,406 @@ export default function OrdersManager() {
     );
   }
 
+  const priorityNeedsAction = priorityOrder
+    ? ACTION_STATUSES.includes(priorityOrder.status)
+    : false;
+  // The open order's details (and any error from its buttons) show inside its row.
+  const detailsShown =
+    !loading &&
+    selectedOrder !== null &&
+    filteredOrders.some((order) => order.publicId === selectedOrder.publicId);
+
+  const refreshButton = (
+    <button
+      type="button"
+      onClick={() => load(false)}
+      disabled={refreshing}
+      className={cn(dashButton.secondary, "shrink-0")}
+    >
+      <RefreshCw className={refreshing ? "animate-spin" : undefined} aria-hidden="true" />
+      {refreshing ? "Refreshing..." : "Refresh"}
+    </button>
+  );
+
   return (
-    <DashCard title="Orders">
-      <div className="rounded-xl border border-lethela-primary/20 bg-lethela-primary/[0.07] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
+    <div className="space-y-4">
+      {!loading && priorityOrder ? (
+        <section
+          className={cn(
+            "flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5",
+            priorityNeedsAction
+              ? "border-lethela-primary/30 bg-lethela-primary/[0.04]"
+              : "border-slate-200 bg-white",
+          )}
+        >
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "text-sm font-medium",
+                priorityNeedsAction ? "text-lethela-primary" : "text-slate-500",
+              )}
+            >
               Next action
             </p>
-            {priorityOrder ? (
-              <>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
-                  {ACTION_STATUSES.includes(priorityOrder.status)
-                    ? `${workflowCounts.ACTION} order${workflowCounts.ACTION === 1 ? "" : "s"} need vendor action`
-                    : `${workflowCounts.DELIVERY} order${workflowCounts.DELIVERY === 1 ? "" : "s"} in delivery`}
-                </p>
-                <p className="mt-1 text-xs text-slate-600">
-                  {workflowGuidance(priorityOrder.status).title}: {priorityOrder.publicId}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
-                  No active orders need action
-                </p>
-                <p className="mt-1 text-xs text-slate-600">
-                  New paid orders will move to the front of this workspace automatically.
-                </p>
-              </>
-            )}
+            <p className="mt-1 text-[15px] font-semibold text-slate-900">
+              {priorityNeedsAction
+                ? `${workflowCounts.ACTION} order${workflowCounts.ACTION === 1 ? " needs" : "s need"} your action`
+                : `${workflowCounts.DELIVERY} order${workflowCounts.DELIVERY === 1 ? "" : "s"} in delivery`}
+            </p>
+            <p className="mt-0.5 text-sm text-slate-600">
+              {workflowGuidance(priorityOrder.status).title}:{" "}
+              <span className="font-semibold text-slate-900">{priorityOrder.publicId}</span>
+            </p>
           </div>
-          {priorityOrder ? (
-            <button
-              type="button"
-              onClick={() => {
-                const nextFilter = ACTION_STATUSES.includes(priorityOrder.status)
-                  ? "ACTION"
-                  : "DELIVERY";
-                setFilter(nextFilter);
-                setSelectedId(priorityOrder.publicId);
-              }}
-              className="inline-flex min-h-11 items-center rounded-lg bg-lethela-primary px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
-            >
-              Open priority order
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2 text-xs" aria-label="Order workflow filters">
-          {WORKFLOW_FILTERS.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setFilter(item.value)}
-              className={`min-h-10 rounded-full border px-3 py-2 transition-colors ${
-                filter === item.value
-                  ? "border-lethela-primary bg-lethela-primary/10 text-slate-900"
-                  : "border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-900"
-              }`}
-            >
-              {item.label} ({workflowCounts[item.value]})
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search order, customer or item"
-            className="min-h-11 rounded border border-slate-300 bg-white px-3 py-2 text-sm text-black"
-          />
           <button
             type="button"
-            onClick={() => load(false)}
-            disabled={refreshing}
-            className="min-h-11 rounded border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
+            onClick={() => {
+              const nextFilter = ACTION_STATUSES.includes(priorityOrder.status)
+                ? "ACTION"
+                : "DELIVERY";
+              setFilter(nextFilter);
+              setSelectedId(priorityOrder.publicId);
+            }}
+            className={cn(
+              priorityNeedsAction ? dashButton.primary : dashButton.secondary,
+              "w-full sm:w-auto",
+            )}
           >
-            {refreshing ? "Refreshing..." : "Refresh"}
+            Open priority order
           </button>
-        </div>
-      </div>
+        </section>
+      ) : !loading && orders.length > 0 ? (
+        <Notice title="No orders need your action right now">
+          New orders move to the top of the list.
+        </Notice>
+      ) : null}
 
-      {loading ? (
-        <div className="mt-4 grid animate-pulse gap-3">
-          <div className="h-20 rounded-lg bg-slate-100" />
-          <div className="h-20 rounded-lg bg-slate-100" />
-          <div className="h-20 rounded-lg bg-slate-100" />
-        </div>
-      ) : filteredOrders.length === 0 ? (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
-          No orders match this workflow view. Choose another view or clear the search.
-        </div>
-      ) : (
-        <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr,0.85fr]">
-          <div className="space-y-3">
-            {filteredOrders.map((order) => {
-              const driver = tracking[order.publicId];
-              const isSelected = selectedId === order.publicId;
-              const guidance = workflowGuidance(order.status);
+      {error && !detailsShown ? <Notice tone="danger">{error}</Notice> : null}
 
-              return (
-                <button
-                  key={order.publicId}
-                  type="button"
-                  onClick={() => setSelectedId(order.publicId)}
-                  className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                    isSelected
-                      ? "border-lethela-primary bg-slate-100"
-                      : "border-slate-200 bg-white hover:border-slate-400"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="font-semibold">{order.publicId}</div>
-                      <div className="mt-1 text-xs text-slate-600">
-                        {new Date(order.createdAt).toLocaleString()}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded border border-slate-300 bg-white px-2 py-1">
-                        {order.status.replaceAll("_", " ")}
-                      </span>
-                      <span className="rounded border border-slate-300 bg-white px-2 py-1">
-                        Payment: {order.paymentStatus}
-                      </span>
-                      <span className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold">
-                        R{(order.totalCents / 100).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 text-sm text-slate-700">
-                    {order.items.map((item, index) => (
-                      <span key={item.id}>
-                        {item.product?.name ?? "Item"} x {item.qty}
-                        {index < order.items.length - 1 ? ", " : ""}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="mt-2 text-xs text-lethela-primary/90">
-                    {guidance.title} · <span className="text-slate-500">{guidance.note}</span>
-                  </p>
-
-                  {driver ? (
-                    <div className="mt-3 h-2 rounded bg-slate-100">
-                      <div
-                        className="h-2 rounded bg-lethela-primary"
-                        style={{ width: `${Math.round(driver.progress * 100)}%` }}
-                      />
-                    </div>
-                  ) : null}
-                </button>
-              );
-            })}
+      <Panel padded={false}>
+        {loading ? (
+          <div className="grid animate-pulse gap-3 p-4 sm:p-5" aria-hidden="true">
+            <div className="h-20 rounded-lg bg-slate-100" />
+            <div className="h-20 rounded-lg bg-slate-100" />
+            <div className="h-20 rounded-lg bg-slate-100" />
           </div>
-
-          {selectedOrder ? (
-            <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-              <div className="rounded-lg border border-lethela-primary/20 bg-lethela-primary/[0.06] p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-lethela-primary">
-                  Next step
-                </p>
-                <p className="mt-1 text-sm font-semibold">
-                  {workflowGuidance(selectedOrder.status).title}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {workflowGuidance(selectedOrder.status).note}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                    Selected order
-                  </div>
-                  <div className="mt-1 text-lg font-semibold">{selectedOrder.publicId}</div>
-                </div>
-
-                <div className="flex flex-wrap justify-end gap-2">
-                  {vendorActions(selectedOrder.status).map((status, index) => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => void updateStatus(selectedOrder.publicId, status)}
-                      className={`min-h-10 rounded border px-3 py-2 text-xs font-semibold transition-colors ${
-                        status === "CANCELLED"
-                          ? "border-red-200 text-red-800 hover:bg-red-100"
-                          : index === 0
-                            ? "border-lethela-primary bg-lethela-primary text-white hover:opacity-90"
-                            : "border-slate-300 hover:border-lethela-primary"
-                      }`}
-                    >
-                      {actionLabel(status)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                  <div className="text-xs text-slate-500">Subtotal</div>
-                  <div className="mt-1 font-semibold">
-                    R{(selectedOrder.subtotalCents / 100).toFixed(2)}
-                  </div>
-                </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                  <div className="text-xs text-slate-500">Rider delivery fee</div>
-                  <div className="mt-1 font-semibold">
-                    R{(selectedOrder.deliveryFeeCents / 100).toFixed(2)}
-                  </div>
-                </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                  <div className="text-xs text-slate-500">Rider tip</div>
-                  <div className="mt-1 font-semibold">
-                    R{((selectedOrder.deliveryDetails?.riderTipCents || 0) / 100).toFixed(2)}
-                  </div>
-                </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                  <div className="text-xs text-slate-500">Rider payout</div>
-                  <div className="mt-1 font-semibold">
-                    R
-                    {(
-                      (selectedOrder.deliveryDetails?.riderPayoutCents ||
-                        selectedOrder.deliveryFeeCents) / 100
-                    ).toFixed(2)}
-                  </div>
-                </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                  <div className="text-xs text-slate-500">Total paid</div>
-                  <div className="mt-1 font-semibold">
-                    R{(selectedOrder.totalCents / 100).toFixed(2)}
-                  </div>
-                </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                  <div className="text-xs text-slate-500">Payment</div>
-                  <div className="mt-1 font-semibold">{selectedOrder.paymentStatus}</div>
-                </div>
-              </div>
-
-              <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
-                <div className="text-xs uppercase tracking-[0.12em] text-slate-500">Items</div>
-                <ul className="mt-2 space-y-1 text-slate-700">
-                  {selectedOrder.items.map((item) => (
-                    <li key={item.id}>
-                      {item.product?.name ?? "Item"} x {item.qty}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
-                <div className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                  Delivery details
-                </div>
-                {selectedOrder.deliveryDetails ? (
-                  <div className="mt-2 space-y-1 text-slate-700">
-                    <div>Name: {selectedOrder.deliveryDetails.customerName || "Not supplied"}</div>
-                    <div>
-                      Phone:{" "}
-                      {selectedOrder.deliveryDetails.customerPhone ||
-                        selectedOrder.deliveryDetails.whatsappNumber ||
-                        "Not supplied"}
-                    </div>
-                    <div>
-                      Address:{" "}
-                      {[
-                        selectedOrder.deliveryDetails.standNumber,
-                        selectedOrder.deliveryDetails.streetSection,
-                        selectedOrder.deliveryDetails.destinationSuburb,
-                      ]
-                        .filter(Boolean)
-                        .join(", ") || "Not supplied"}
-                    </div>
-                    {selectedOrder.deliveryDetails.landmark ? (
-                      <div>Landmark: {selectedOrder.deliveryDetails.landmark}</div>
-                    ) : null}
-                    {selectedOrder.deliveryDetails.deliveryNotes ? (
-                      <div>Notes: {selectedOrder.deliveryDetails.deliveryNotes}</div>
-                    ) : null}
-                    {selectedOrder.deliveryDetails.deliveryDistanceKm != null ? (
-                      <div>
-                        Distance:{" "}
-                        {Number(selectedOrder.deliveryDetails.deliveryDistanceKm).toFixed(2)} km
-                      </div>
-                    ) : null}
-                    {selectedOrder.deliveryDetails.containsAlcohol ? (
-                      <div className="text-amber-800">Liquor order — ID check required.</div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className="mt-2 text-slate-600">No delivery notes were captured.</div>
-                )}
-              </div>
-
-              {selectedOrder.customerLat != null && selectedOrder.customerLng != null ? (
-                <OrderMap
-                  rider={tracking[selectedOrder.publicId] || null}
-                  vendor={
-                    selectedOrder.vendor?.latitude != null &&
-                    selectedOrder.vendor?.longitude != null
-                      ? {
-                          lat: selectedOrder.vendor.latitude,
-                          lng: selectedOrder.vendor.longitude,
-                        }
-                      : null
-                  }
-                  dest={{
-                    lat: selectedOrder.customerLat,
-                    lng: selectedOrder.customerLng,
-                  }}
+        ) : orders.length === 0 ? (
+          <EmptyState
+            compact
+            icon={<ShoppingBag />}
+            title={error ? "Orders could not load" : "No orders yet"}
+            text="When a customer orders from you, the order shows here."
+            action={refreshButton}
+          />
+        ) : (
+          <>
+            <div className="flex flex-col gap-3 border-b border-slate-100 p-3 sm:p-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="min-w-0">
+                <FilterTabs
+                  label="Order workflow filters"
+                  options={WORKFLOW_FILTERS.map((item) => ({
+                    value: item.value,
+                    label: item.label,
+                    count: workflowCounts[item.value],
+                  }))}
+                  value={filter}
+                  onChange={setFilter}
                 />
-              ) : (
-                <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                  No delivery coordinates available for this order yet.
+              </div>
+              <div className="flex min-w-0 items-center gap-2 xl:w-80 xl:shrink-0">
+                <div className="relative min-w-0 flex-1">
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                    aria-hidden="true"
+                  />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Order, name or item"
+                    aria-label="Search orders"
+                    className={cn(dashField.input, "pl-9")}
+                  />
                 </div>
-              )}
+                {refreshButton}
+              </div>
             </div>
-          ) : null}
-        </div>
-      )}
 
-      {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
-    </DashCard>
+            {filteredOrders.length === 0 ? (
+              <EmptyState
+                compact
+                title="No orders here"
+                text="Choose another view or clear the search."
+              />
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {filteredOrders.map((order) => {
+                  const driver = tracking[order.publicId];
+                  const isSelected = selectedId === order.publicId;
+                  const isNew = order.status === "NEW";
+                  const needsAction = ACTION_STATUSES.includes(order.status);
+                  const guidance = workflowGuidance(order.status);
+
+                  return (
+                    <li key={order.publicId} className="relative">
+                      {isSelected ? (
+                        <span
+                          className="absolute inset-y-0 left-0 w-1 bg-lethela-primary"
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(order.publicId)}
+                        aria-current={isSelected ? "true" : undefined}
+                        className={cn(
+                          "block w-full px-4 py-4 text-left transition-colors sm:px-5",
+                          isNew && !isSelected
+                            ? "bg-lethela-primary/[0.04] hover:bg-lethela-primary/[0.07]"
+                            : "hover:bg-slate-50",
+                        )}
+                      >
+                        <span className="flex items-start justify-between gap-3">
+                          <span className="min-w-0">
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="text-[15px] font-semibold text-slate-900">
+                                {order.publicId}
+                              </span>
+                              <StatusBadge tone={isNew ? "brand" : toneForStatus(order.status)}>
+                                {statusText(order.status)}
+                              </StatusBadge>
+                            </span>
+                            <span className="mt-1 block text-sm text-slate-700">
+                              {order.items.map((item, index) => (
+                                <span key={item.id}>
+                                  {item.qty} × {item.product?.name ?? "Item"}
+                                  {index < order.items.length - 1 ? ", " : ""}
+                                </span>
+                              ))}
+                            </span>
+                            <span className="mt-1 block text-xs text-slate-500">
+                              {formatWhen(order.createdAt)} · Payment:{" "}
+                              {statusText(order.paymentStatus)}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-[15px] font-semibold tabular-nums text-slate-900">
+                            {rands(order.totalCents)}
+                          </span>
+                        </span>
+
+                        {!isSelected ? (
+                          <span
+                            className={cn(
+                              "mt-2 flex items-center gap-1 text-sm font-medium",
+                              needsAction ? "text-lethela-primary" : "text-slate-600",
+                            )}
+                          >
+                            {guidance.title}
+                            <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+                          </span>
+                        ) : null}
+
+                        {driver ? (
+                          <span className="mt-3 block">
+                            <ProgressBar
+                              value={driver.progress * 100}
+                              label={`Delivery progress for ${order.publicId}`}
+                            />
+                          </span>
+                        ) : null}
+                      </button>
+
+                      {isSelected && selectedOrder ? (
+                        <div className="space-y-4 px-4 pb-5 sm:px-5">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="text-[15px] font-semibold text-slate-900">
+                                {workflowGuidance(selectedOrder.status).title}
+                              </p>
+                              <p className="mt-0.5 text-sm text-slate-500">
+                                {workflowGuidance(selectedOrder.status).note}
+                              </p>
+                            </div>
+                            {vendorActions(selectedOrder.status).length > 0 ? (
+                              <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+                                {vendorActions(selectedOrder.status).map((status, index) => (
+                                  <button
+                                    key={status}
+                                    type="button"
+                                    onClick={() =>
+                                      void updateStatus(selectedOrder.publicId, status)
+                                    }
+                                    className={
+                                      status === "CANCELLED"
+                                        ? dashButton.danger
+                                        : index === 0
+                                          ? dashButton.primary
+                                          : dashButton.secondary
+                                    }
+                                  >
+                                    {status === "CANCELLED" && selectedOrder.status === "NEW"
+                                      ? "Decline"
+                                      : actionLabel(status)}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+
+                          {error ? <Notice tone="danger">{error}</Notice> : null}
+
+                          {selectedOrder.deliveryDetails?.containsAlcohol ? (
+                            <Notice tone="warning">Liquor order — ID check required.</Notice>
+                          ) : null}
+
+                          <div className="grid gap-4 lg:grid-cols-2">
+                            <div className="space-y-4">
+                              <section>
+                                <h3 className="text-sm font-semibold text-slate-900">Items</h3>
+                                <ul className="mt-2 divide-y divide-slate-200/70 rounded-lg bg-slate-50 px-3 text-sm">
+                                  {selectedOrder.items.map((item) => (
+                                    <li key={item.id} className="flex gap-3 py-2.5">
+                                      <span className="w-8 shrink-0 font-semibold tabular-nums text-slate-900">
+                                        {item.qty}×
+                                      </span>
+                                      <span className="min-w-0 text-slate-700">
+                                        {item.product?.name ?? "Item"}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </section>
+
+                              <section>
+                                <h3 className="text-sm font-semibold text-slate-900">Money</h3>
+                                <div className="mt-2 divide-y divide-slate-200/70 rounded-lg bg-slate-50 px-3">
+                                  <DetailRow
+                                    label="Subtotal"
+                                    value={rands(selectedOrder.subtotalCents)}
+                                  />
+                                  <DetailRow
+                                    label="Rider delivery fee"
+                                    value={rands(selectedOrder.deliveryFeeCents)}
+                                  />
+                                  <DetailRow
+                                    label="Rider tip"
+                                    value={rands(selectedOrder.deliveryDetails?.riderTipCents || 0)}
+                                  />
+                                  <DetailRow
+                                    label="Rider payout"
+                                    value={rands(
+                                      selectedOrder.deliveryDetails?.riderPayoutCents ||
+                                        selectedOrder.deliveryFeeCents,
+                                    )}
+                                  />
+                                  <DetailRow
+                                    label="Total paid"
+                                    value={rands(selectedOrder.totalCents)}
+                                  />
+                                  <DetailRow
+                                    label="Payment"
+                                    value={statusText(selectedOrder.paymentStatus)}
+                                  />
+                                </div>
+                              </section>
+                            </div>
+
+                            <div className="space-y-4">
+                              <section>
+                                <h3 className="text-sm font-semibold text-slate-900">Delivery</h3>
+                                {selectedOrder.deliveryDetails ? (
+                                  <dl className="mt-2 divide-y divide-slate-200/70 rounded-lg bg-slate-50 px-3 text-sm">
+                                    <InfoRow
+                                      label="Name"
+                                      value={
+                                        selectedOrder.deliveryDetails.customerName || "Not supplied"
+                                      }
+                                    />
+                                    <InfoRow
+                                      label="Phone"
+                                      value={
+                                        selectedOrder.deliveryDetails.customerPhone ||
+                                        selectedOrder.deliveryDetails.whatsappNumber ||
+                                        "Not supplied"
+                                      }
+                                    />
+                                    <InfoRow
+                                      label="Address"
+                                      value={
+                                        [
+                                          selectedOrder.deliveryDetails.standNumber,
+                                          selectedOrder.deliveryDetails.streetSection,
+                                          selectedOrder.deliveryDetails.destinationSuburb,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(", ") || "Not supplied"
+                                      }
+                                    />
+                                    {selectedOrder.deliveryDetails.landmark ? (
+                                      <InfoRow
+                                        label="Landmark"
+                                        value={selectedOrder.deliveryDetails.landmark}
+                                      />
+                                    ) : null}
+                                    {selectedOrder.deliveryDetails.deliveryNotes ? (
+                                      <InfoRow
+                                        label="Notes"
+                                        value={selectedOrder.deliveryDetails.deliveryNotes}
+                                      />
+                                    ) : null}
+                                    {selectedOrder.deliveryDetails.deliveryDistanceKm != null ? (
+                                      <InfoRow
+                                        label="Distance"
+                                        value={`${Number(selectedOrder.deliveryDetails.deliveryDistanceKm).toFixed(2)} km`}
+                                      />
+                                    ) : null}
+                                  </dl>
+                                ) : (
+                                  <p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                                    No delivery notes were captured.
+                                  </p>
+                                )}
+                              </section>
+
+                              {selectedOrder.customerLat != null &&
+                              selectedOrder.customerLng != null ? (
+                                // Navy frame: the map's legend uses light text.
+                                <div className="overflow-hidden rounded-lg bg-lethela-secondary text-white">
+                                  <OrderMap
+                                    compact
+                                    rider={tracking[selectedOrder.publicId] || null}
+                                    vendor={
+                                      selectedOrder.vendor?.latitude != null &&
+                                      selectedOrder.vendor?.longitude != null
+                                        ? {
+                                            lat: selectedOrder.vendor.latitude,
+                                            lng: selectedOrder.vendor.longitude,
+                                          }
+                                        : null
+                                    }
+                                    dest={{
+                                      lat: selectedOrder.customerLat,
+                                      lng: selectedOrder.customerLng,
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                                  No map for this order yet. It shows once the delivery location is
+                                  known.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
+        )}
+      </Panel>
+    </div>
   );
 }

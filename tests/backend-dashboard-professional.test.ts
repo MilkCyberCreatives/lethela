@@ -61,16 +61,19 @@ test("admin header controls are functional rather than decorative", async () => 
   const admin = await source("src/app/admin/page.tsx");
   assert.match(admin, /onSubmit=\{\(event\) =>/);
   assert.match(admin, /onOpenOperations=\{onNotifications\}/);
-  assert.match(admin, /href="\/contact"/);
   assert.match(admin, /handleGlobalSearch/);
+  // Signing out of the owner dashboard also clears the admin access cookie.
+  assert.match(admin, /fetch\("\/api\/admin\/access", \{ method: "DELETE" \}\)/);
 });
 
 test("vendor dashboard reports paid revenue and remains scrollable", async () => {
   const vendor = await source("src/app/vendors/dashboard/page.tsx");
   assert.match(vendor, /\["PAID", "SUCCESS"\]\.includes\(payment\)/);
   assert.match(vendor, /filter\(\(order\) => countsTowardRevenue/);
-  assert.match(vendor, /lg:overflow-y-auto lg:pr-3/);
-  assert.doesNotMatch(vendor, /lg:overflow-hidden"\s*:\s*"lg:h/);
+  // The shared dashboard shell lets the page scroll normally instead of locking its height.
+  assert.match(vendor, /<DashboardShell/);
+  const shell = await source("src/components/dashboard/kit/DashboardShell.tsx");
+  assert.doesNotMatch(shell, /(?<![\w-])(overflow-hidden|h-dvh|h-screen)(?![\w-])/);
   assert.match(vendor, /label: "Notifications"/);
   assert.match(vendor, /formatWhatsAppPhone/);
 });
@@ -105,13 +108,14 @@ test("rider overview and profile use one dashboard shell with accurate labels", 
   assert.match(overview, /RiderDashboardShell/);
   assert.match(profile, /RiderDashboardShell/);
   assert.match(client, /href="\/rider"/);
-  assert.match(client, /label="Assigned deliveries"/);
+  assert.match(client, /title="Current deliveries"/);
   assert.match(client, /order\.riderPayoutCents/);
 });
 
 test("signed-in dashboards keep mobile navigation compact and controls touch friendly", async () => {
-  const [styles, vendor, rider, profile, admin, header] = await Promise.all([
+  const [styles, shell, vendor, rider, profile, admin, header] = await Promise.all([
     source("src/app/dashboard.css"),
+    source("src/components/dashboard/kit/DashboardShell.tsx"),
     source("src/app/vendors/dashboard/page.tsx"),
     source("src/components/rider/RiderDashboardShell.tsx"),
     source("src/app/profile/page.tsx"),
@@ -120,14 +124,23 @@ test("signed-in dashboards keep mobile navigation compact and controls touch fri
   ]);
 
   assert.match(styles, /min-height: 44px/);
-  assert.match(styles, /dashboard-sidebar-nav[\s\S]*grid-auto-flow: column/);
   assert.match(styles, /account-dashboard-nav-links[\s\S]*overflow-x: auto/);
-  assert.match(vendor, /vendor-dashboard-nav/);
-  assert.match(vendor, /vendor-quick-action[\s\S]*min-h-11/);
-  assert.match(rider, /dashboard-side-link-hint/);
+  // Admin, vendor and rider dashboards share one shell: a phone tab bar with large targets
+  // and a "More" sheet for the remaining sections.
+  for (const page of [vendor, rider, admin]) {
+    assert.match(page, /<DashboardShell/);
+    assert.match(page, /phoneTabs=\{\[/);
+  }
+  // The site's floating back-to-top button would sit over the dashboards' save bars.
+  assert.match(
+    styles,
+    /body:has\([\s\S]*?\[data-lethela-dashboard="rider"\]\s*\)\s*\.scroll-to-top/,
+  );
+  assert.match(shell, /min-h-\[3\.5rem\]/);
+  assert.match(shell, /env\(safe-area-inset-bottom\)/);
+  assert.match(shell, /id="dashboard-more-sheet"/);
   assert.match(profile, /grid grid-cols-2 gap-2/);
-  assert.match(admin, /h-11 w-11/);
-  assert.match(admin, /src="\/lethelalogo\.svg"[\s\S]*preload/);
+  assert.match(shell, /src="\/lethelalogo\.svg"[\s\S]*preload/);
   assert.match(header, /src="\/lethelalogo\.svg"[\s\S]*preload/);
 });
 

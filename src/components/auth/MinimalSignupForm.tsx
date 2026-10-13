@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, MailCheck } from "lucide-react";
 import {
@@ -90,7 +89,6 @@ export default function MinimalSignupForm({
   accountType: AccountType;
   googleEnabled?: boolean;
 }) {
-  const router = useRouter();
   const config = ACCOUNT_CONFIG[accountType];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -115,6 +113,7 @@ export default function MinimalSignupForm({
     setLoading(true);
     setError(null);
     setNotice(null);
+    let leaving = false;
     try {
       const response = await fetch(config.endpoint, {
         method: "POST",
@@ -154,14 +153,16 @@ export default function MinimalSignupForm({
         accountType === "customer"
           ? safePostLoginPath("CUSTOMER", requestedPath || data.redirectTo || config.dashboard)
           : data.redirectTo || config.dashboard;
-      router.replace(destination);
-      router.refresh();
+      // A full page load (not router.replace plus refresh) so the new dashboard always opens
+      // signed in. The refresh could finish last and put the person back on this form.
+      leaving = true;
+      window.location.replace(destination);
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : "We could not create your account.",
       );
     } finally {
-      setLoading(false);
+      if (!leaving) setLoading(false);
     }
   }
 
@@ -258,7 +259,9 @@ export default function MinimalSignupForm({
         </>
       ) : null}
 
-      <form className="grid gap-4" onSubmit={submit}>
+      {/* POST keeps the email and password out of the address bar and server logs if someone
+          taps the button before the page has finished loading. */}
+      <form className="grid gap-4" method="post" onSubmit={submit}>
         <AuthField label="Email address" htmlFor="signup-email">
           <Input
             id="signup-email"

@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Activity,
   Bike,
@@ -11,12 +10,11 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  ExternalLink,
+  ImageOff,
   LayoutDashboard,
   LineChart,
-  LifeBuoy,
-  LogOut,
   Mail,
-  Menu,
   MessageSquare,
   PackageCheck,
   RefreshCw,
@@ -25,12 +23,24 @@ import {
   ShoppingBag,
   Store,
   Truck,
-  UserCircle,
   Users,
   WalletCards,
-  X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import DashboardShell, { type DashboardNavItem } from "@/components/dashboard/kit/DashboardShell";
+import {
+  dashButton,
+  dashField,
+  DetailRow,
+  EmptyState as DashEmptyState,
+  FilterTabs,
+  Notice,
+  PageHeader,
+  Panel,
+  StatTile,
+  StatusBadge,
+  statusText,
+  toneForStatus,
+} from "@/components/dashboard/kit/ui";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 
 type DashboardView =
@@ -99,6 +109,14 @@ type ProductReview = {
   vendor: { id: string; name: string; status: string; isActive: boolean };
 };
 
+type ProductCounts = {
+  submitted: number;
+  changesRequested: number;
+  approved: number;
+  rejected: number;
+  total: number;
+};
+
 type VendorApplication = {
   id: string;
   name: string;
@@ -124,7 +142,18 @@ type VendorApplication = {
   liquorLicenceExpiry: string | null;
   liquorVerificationStatus: string;
   liquorReviewReason: string | null;
+  township?: string | null;
+  storeType?: string | null;
+  hasBankAccount?: boolean;
+  productCount?: number;
+  menuItemCount?: number;
+  pendingProductCount?: number;
+  openDays?: number;
+  ownerCanSignIn?: boolean;
+  readiness?: ApprovalReadiness;
 };
+
+type ApprovalReadiness = { canApprove: boolean; missing: string[]; later: string[] };
 
 type VendorCounts = {
   draft?: number;
@@ -159,9 +188,19 @@ type RiderApplication = {
   status: RiderApplicationStatus;
   createdAt: string;
   updatedAt: string;
+  province?: string;
+  township?: string;
+  municipality?: string;
+  reviewReason?: string | null;
+  hasIdDocument?: boolean;
+  hasPhoto?: boolean;
+  hasLicenceDocument?: boolean;
+  accountCanSignIn?: boolean;
+  readiness?: ApprovalReadiness;
 };
 
 type RiderCounts = {
+  draft?: number;
   submitted?: number;
   changesRequested?: number;
   pending: number;
@@ -380,67 +419,123 @@ const PRODUCT_STATUS_OPTIONS: ProductStatusFilter[] = [
 
 const ADMIN_NAV_GROUPS: Array<{
   title: string;
-  items: Array<{ id: DashboardView; label: string; icon: typeof LayoutDashboard }>;
+  items: Array<{
+    id: DashboardView;
+    label: string;
+    shortLabel?: string;
+    icon: typeof LayoutDashboard;
+  }>;
 }> = [
   {
     title: "Overview",
-    items: [{ id: "overview", label: "Overview", icon: LayoutDashboard }],
+    items: [{ id: "overview", label: "Overview", shortLabel: "Home", icon: LayoutDashboard }],
   },
   {
-    title: "Operations",
+    title: "Daily work",
     items: [
-      { id: "operations", label: "Operations & support", icon: Activity },
-      { id: "orders", label: "Order monitoring", icon: ShoppingBag },
+      { id: "operations", label: "Operations", shortLabel: "Dispatch", icon: Activity },
+      { id: "orders", label: "Orders", icon: ShoppingBag },
     ],
   },
   {
-    title: "Marketplace",
+    title: "Approvals",
     items: [
-      { id: "vendors", label: "Vendor approvals", icon: Store },
-      { id: "products", label: "Product reviews", icon: PackageCheck },
+      { id: "vendors", label: "Vendors", icon: Store },
+      { id: "products", label: "Products", icon: PackageCheck },
+      { id: "riders", label: "Riders", icon: Bike },
     ],
   },
   {
-    title: "People",
+    title: "People and money",
     items: [
-      { id: "riders", label: "Rider applications", icon: Bike },
       { id: "users", label: "Customers", icon: Users },
-    ],
-  },
-  {
-    title: "Support & finance",
-    items: [
       { id: "messages", label: "Messages", icon: MessageSquare },
       { id: "finance", label: "Finance", icon: WalletCards },
+      { id: "activity", label: "Activity log", icon: Clock },
     ],
-  },
-  {
-    title: "System",
-    items: [{ id: "activity", label: "Activity log", icon: Clock }],
   },
 ];
 
+const VIEW_COPY: Record<DashboardView, { title: string; description: string }> = {
+  overview: {
+    title: "Overview",
+    description: "What needs you today and how Lethela is doing.",
+  },
+  operations: {
+    title: "Operations",
+    description: "Assign riders, update orders, handle refunds and keep support notes.",
+  },
+  orders: {
+    title: "Orders",
+    description: "Every order, its payment and where it is now.",
+  },
+  vendors: {
+    title: "Vendors",
+    description:
+      "A store can be approved once it has a name, phone number, address, opening hours and at least one item.",
+  },
+  riders: {
+    title: "Riders",
+    description:
+      "A rider can be approved once they have a name, phone number, delivery method, area and the rider agreement.",
+  },
+  products: {
+    title: "Products",
+    description:
+      "New and changed items wait here until you approve them. Approve the store first, then its items.",
+  },
+  users: {
+    title: "Customers",
+    description: "Registered customer accounts. Contact details are for support only.",
+  },
+  messages: {
+    title: "Messages",
+    description: "Send updates to vendors and riders, and see what was sent.",
+  },
+  finance: {
+    title: "Finance",
+    description: "Money in, Lethela's commission and what is owed to vendors and riders.",
+  },
+  activity: {
+    title: "Activity log",
+    description: "Every admin action: who did it, what changed and when.",
+  },
+};
+
+// The order statuses an admin may set. Must match ADMIN_OPERATIONAL_STATUSES in
+// src/app/api/admin/operations/route.ts, which rejects anything else.
+const ADMIN_ORDER_STATUSES = [
+  "NEW",
+  "VENDOR_ACCEPTED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "PICKED_UP",
+  "ON_THE_WAY",
+  "DELIVERED",
+  "CANCELLED",
+  "FAILED",
+] as const;
+
 const DAILY_OPERATING_PLAYBOOK = [
-  "Check new vendor submissions and approve only complete profiles with products, hours, address, banking and documents.",
-  "Check rider applications and approve only riders with valid contact, vehicle, banking and emergency details.",
-  "Keep WhatsApp support open during operating hours and log every complaint, refund request or failed delivery.",
-  "Before accepting public traffic, run at least one low-value paid Ozow order from cart to vendor alert, rider handover and completion.",
-  "Keep liquor restricted to approved licensed vendors with age verification, rider ID checks, refusal handling and refund rules.",
+  "Approve only vendors and riders you know. A store needs a name, phone number, address, opening hours and at least one item. A rider needs a name, phone number, how they deliver, their area and the rider agreement.",
+  "Banking details, documents and photos can come later. Check a vendor has added banking before their first payout.",
+  "Approve each store's items after the store. Use Approve all on the Products page for a store you trust.",
+  "Keep WhatsApp support open while stores are open, and note every complaint, refund and failed delivery here.",
+  "Liquor only from stores with an approved, current licence. Riders check ID and may refuse handover.",
 ];
 
 const ORDER_EXCEPTION_PLAYBOOK = [
-  "Vendor unavailable: call the vendor, pause the store if needed, and offer customer replacement, credit or refund.",
-  "Missing or incorrect item: request photos where useful, contact the vendor, then record correction, partial refund or full refund.",
-  "Rider delay: contact rider first, notify customer with a realistic ETA, then reassign if the rider cannot continue.",
-  "Payment mismatch: match Ozow reference to the order before fulfilment or refund action.",
-  "Complaint escalation: keep the order reference, customer phone, vendor name, rider name and resolution note together.",
+  "Store cannot fill the order: call the store, pause it if needed, and offer the customer a swap, credit or refund.",
+  "Missing or wrong item: ask for a photo if useful, speak to the store, then record the fix or open a refund case.",
+  "Rider running late: call the rider first, tell the customer a realistic time, and give the order to another rider if needed.",
+  "Payment does not match: match the Ozow reference to the order before you deliver or refund.",
+  "Complaint: keep the order reference, customer phone, store, rider and what you did together in the order note.",
 ];
 
 const SCALE_READINESS_PLAYBOOK = [
-  "Controlled pilot: minimum 1 approved vendor, 5 approved products, 1 approved rider and 1 successful paid proof order.",
-  "Public marketing: minimum 3 approved vendors, 20 approved products, 2 approved riders and 5 successful paid proof orders.",
-  "Monitoring: add Sentry for runtime errors and Pusher for realtime order/rider updates before larger customer traffic.",
-  "Media: replace placeholder-looking store and product images with real vendor photos before promotion.",
+  "Small start: at least 1 approved store, 5 approved items, 1 approved rider and 1 real paid order delivered.",
+  "Before advertising widely: at least 3 stores, 20 items, 2 riders and 5 real paid orders delivered.",
+  "Use real photos of each store and its food before promoting it.",
 ];
 
 function formatDate(value: string) {
@@ -476,14 +571,6 @@ function matchesSearch(query: string, values: Array<string | null | undefined>) 
   );
 }
 
-function statusClass(status: string) {
-  if (["ACTIVE", "APPROVED"].includes(status))
-    return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  if (["REJECTED"].includes(status)) return "border-red-200 bg-red-50 text-red-800";
-  if (["UNDER_REVIEW"].includes(status)) return "border-amber-200 bg-amber-50 text-amber-800";
-  return "border-slate-300 bg-white text-slate-700";
-}
-
 function MetricCard({
   label,
   value,
@@ -497,222 +584,120 @@ function MetricCard({
   icon: typeof LayoutDashboard;
   onClick?: () => void;
 }) {
-  const content = (
-    <>
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">{label}</p>
-          <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
-        </div>
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
-          <Icon className="h-4 w-4" />
-        </span>
-      </div>
-      <p className="mt-2 flex items-center justify-between gap-2 text-xs leading-5 text-slate-500">
-        <span>{note}</span>
-        {onClick ? (
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
-        ) : null}
-      </p>
-    </>
-  );
-
-  if (onClick) {
-    return (
-      <button
-        className="admin-metric-card rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-lethela-primary/60 hover:bg-lethela-primary/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
-        type="button"
-        onClick={onClick}
-        aria-label={`${label}: ${value}. ${note}`}
-      >
-        {content}
-      </button>
-    );
-  }
-
-  return (
-    <article className="admin-metric-card rounded-lg border border-slate-200 bg-white p-4">
-      {content}
-    </article>
-  );
+  return <StatTile label={label} value={value} hint={note} icon={<Icon />} onClick={onClick} />;
 }
 
 function AdminSectionHeader({
-  eyebrow,
   title,
   description,
+  action,
 }: {
-  eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
+  action?: ReactNode;
 }) {
   return (
-    <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-lethela-primary">
-          {eyebrow}
-        </p>
-        <h3 className="mt-1 text-lg font-semibold text-slate-900">{title}</h3>
+    <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+      <div className="min-w-0">
+        <h2 className="text-[15px] font-semibold text-slate-900">{title}</h2>
+        {description ? <p className="mt-0.5 text-sm text-slate-500">{description}</p> : null}
       </div>
-      <p className="max-w-xl text-sm leading-6 text-slate-600 sm:text-right">{description}</p>
+      {action}
     </div>
   );
 }
 
-function EmptyState({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="rounded-lg border border-slate-300 bg-white p-5 text-sm text-slate-600">
-      <p className="font-semibold text-slate-900">{title}</p>
-      <p className="mt-1 text-slate-500">{text}</p>
-    </div>
-  );
-}
-
-function AdminTopBar({
-  searchValue,
-  onSearchChange,
-  onSearch,
-  onNotifications,
-  searchGroups,
-  searchLoading,
-  onSelectResult,
-  notificationCount,
+function EmptyState({
+  title,
+  text,
+  compact = false,
 }: {
-  searchValue: string;
-  onSearchChange: (value: string) => void;
-  onSearch: () => void;
-  onNotifications: () => void;
-  searchGroups: GlobalSearchGroups | null;
-  searchLoading: boolean;
-  onSelectResult: (result: GlobalSearchResult) => void;
-  notificationCount: number;
+  title: string;
+  text: string;
+  compact?: boolean;
 }) {
-  const router = useRouter();
-  const resultCount = Object.values(searchGroups ?? {}).reduce(
+  return <DashEmptyState title={title} text={text} compact={compact} />;
+}
+
+function AdminSearch({
+  value,
+  onChange,
+  onSearch,
+  groups,
+  loading,
+  onSelectResult,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSearch: () => void;
+  groups: GlobalSearchGroups | null;
+  loading: boolean;
+  onSelectResult: (result: GlobalSearchResult) => void;
+}) {
+  const resultCount = Object.values(groups ?? {}).reduce(
     (total, items) => total + (items?.length ?? 0),
     0,
   );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#05071D]">
-      <div className="mx-auto flex min-h-[72px] w-full max-w-[1440px] flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap md:px-6 lg:px-8">
-        <Link href="/admin" className="flex shrink-0 items-center gap-3">
-          <span className="rounded bg-white px-2">
-            <Image
-              src="/lethelalogo.svg"
-              alt="Lethela"
-              width={914}
-              height={266}
-              className="h-8 w-auto"
-              preload
-            />
-          </span>
-          <span className="hidden sm:block">
-            <span className="block text-sm font-semibold text-white">Admin</span>
-            <span className="block text-[11px] uppercase tracking-[0.14em] text-white/60">
-              Command centre
-            </span>
-          </span>
-        </Link>
-
-        <form
-          className="relative order-last flex min-h-11 min-w-0 basis-full items-center rounded-lg border border-white/10 bg-white/[0.05] px-2 sm:order-none sm:basis-auto sm:flex-1 sm:px-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSearch();
-          }}
-        >
-          <Search className="h-4 w-4 text-white/40" />
-          <input
-            className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/35"
-            placeholder="Search orders, people or products..."
-            value={searchValue}
-            onChange={(event) => onSearchChange(event.target.value)}
-            aria-label="Search dashboard records"
-          />
-          <button
-            type="submit"
-            className="inline-flex min-h-11 items-center rounded-md px-2 py-1 text-xs font-semibold text-white/65 hover:text-white"
-          >
-            {searchLoading ? "Searching" : "Search"}
-          </button>
-          {searchGroups ? (
-            <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-white/15 bg-[#090D2C] p-2">
-              {resultCount === 0 ? (
-                <p className="px-3 py-4 text-sm text-white/60">No matching records found.</p>
-              ) : (
-                Object.entries(searchGroups).map(([group, items]) =>
-                  items && items.length > 0 ? (
-                    <div key={group} className="py-1">
-                      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">
-                        {group}
-                      </p>
-                      {items.map((item) => (
-                        <button
-                          key={`${group}-${item.id}`}
-                          type="button"
-                          onClick={() => onSelectResult(item)}
-                          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-lethela-primary"
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-white">
-                              {item.title}
-                            </span>
-                            <span className="block truncate text-xs text-white/55">
-                              {item.subtitle}
-                            </span>
-                          </span>
-                          <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
-                        </button>
-                      ))}
-                    </div>
-                  ) : null,
-                )
-              )}
-            </div>
-          ) : null}
-        </form>
-
-        <div className="ml-auto flex items-center gap-2">
-          <NotificationBell
-            operationsCount={notificationCount}
-            onOpenOperations={onNotifications}
-          />
-          <Link
-            href="/contact"
-            className="hidden h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white sm:grid"
-            aria-label="Open Lethela support"
-          >
-            <LifeBuoy className="h-4 w-4" />
-          </Link>
-          <span className="hidden h-11 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white/70 sm:inline-flex">
-            <UserCircle className="h-4 w-4" />
-            Owner
-          </span>
-          <Link
-            href="/"
-            className="hidden min-h-11 items-center rounded-lg border border-white/20 px-3 py-2 text-sm text-white/72 transition hover:border-lethela-primary hover:text-lethela-primary lg:inline-flex"
-          >
-            View Marketplace
-          </Link>
-          <button
-            type="button"
-            className="grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
-            aria-label="Sign out"
-            onClick={() => {
-              void fetch("/api/admin/access", { method: "DELETE" })
-                .catch(() => {})
-                .finally(() => {
-                  router.push("/owner-access");
-                  router.refresh();
-                });
-            }}
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+    <form
+      role="search"
+      className="relative flex min-h-10 w-full items-center rounded-lg border border-slate-200 bg-slate-50 px-3 focus-within:border-lethela-primary focus-within:bg-white"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSearch();
+      }}
+    >
+      <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+      <input
+        className="h-10 min-w-0 flex-1 bg-transparent px-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+        placeholder="Search orders, stores, riders or products"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label="Search dashboard records"
+      />
+      <button
+        type="submit"
+        className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 hover:text-slate-900"
+      >
+        {loading ? "Searching…" : "Search"}
+      </button>
+      {groups ? (
+        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[70vh] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
+          {resultCount === 0 ? (
+            <p className="px-3 py-4 text-sm text-slate-500">Nothing matches that search.</p>
+          ) : (
+            Object.entries(groups).map(([group, items]) =>
+              items && items.length > 0 ? (
+                <div key={group} className="py-1">
+                  <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    {group}
+                  </p>
+                  {items.map((item) => (
+                    <button
+                      key={`${group}-${item.id}`}
+                      type="button"
+                      onClick={() => onSelectResult(item)}
+                      className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-slate-50"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-slate-900">
+                          {item.title}
+                        </span>
+                        <span className="block truncate text-xs text-slate-500">
+                          {item.subtitle}
+                        </span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                    </button>
+                  ))}
+                </div>
+              ) : null,
+            )
+          )}
         </div>
-      </div>
-    </header>
+      ) : null}
+    </form>
   );
 }
 
@@ -722,36 +707,24 @@ function PriorityCard({
   note,
   icon: Icon,
   onClick,
+  attention = false,
 }: {
   label: string;
   value: string | number;
   note: string;
   icon: typeof LayoutDashboard;
   onClick: () => void;
+  attention?: boolean;
 }) {
   return (
-    <button
-      type="button"
+    <StatTile
+      label={label}
+      value={value}
+      hint={note}
+      icon={<Icon />}
       onClick={onClick}
-      aria-label={`${label}: ${value}. ${note}`}
-      className="admin-priority-card rounded-xl border border-slate-200 bg-white p-5 text-left transition-colors hover:border-lethela-primary/60 hover:bg-lethela-primary/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
-            {label}
-          </p>
-          <p className="mt-3 text-3xl font-bold">{value}</p>
-        </div>
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
-          <Icon className="h-5 w-5" />
-        </span>
-      </div>
-      <p className="mt-4 flex items-center justify-between gap-2 text-sm leading-6 text-slate-600">
-        <span>{note}</span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-      </p>
-    </button>
+      tone={attention ? "attention" : "default"}
+    />
   );
 }
 
@@ -766,10 +739,10 @@ type AttentionRow = {
   target: DashboardView;
 };
 
-function priorityPillClass(priority: AttentionRow["priority"]) {
-  if (priority === "High") return "border-red-200 bg-red-50 text-red-800";
-  if (priority === "Medium") return "border-amber-200 bg-amber-50 text-amber-800";
-  return "border-slate-300 bg-white text-slate-600";
+function priorityTone(priority: AttentionRow["priority"]) {
+  if (priority === "High") return "danger" as const;
+  if (priority === "Medium") return "warning" as const;
+  return "neutral" as const;
 }
 
 function NeedsAttentionQueue({
@@ -787,78 +760,74 @@ function NeedsAttentionQueue({
   const visibleRows = activeRows.slice(0, limit);
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Operations queue
-          </p>
-          <h3 className="mt-1 text-xl font-semibold">Needs attention</h3>
-        </div>
-        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500">
-          {activeRows.length} active issue{activeRows.length === 1 ? "" : "s"}
-        </span>
-      </div>
-
+    <Panel
+      title="Needs attention"
+      description="Approvals, refunds and orders waiting on you."
+      padded={activeRows.length === 0}
+      action={
+        <StatusBadge tone={activeRows.length ? "warning" : "success"}>
+          {activeRows.length ? `${activeRows.length} open` : "All clear"}
+        </StatusBadge>
+      }
+    >
       {activeRows.length === 0 ? (
-        <div className="mt-4">
-          <EmptyState
-            title="Nothing needs attention right now."
-            text="New operational alerts appear here automatically."
-          />
-        </div>
+        <DashEmptyState
+          compact
+          title="Nothing needs attention right now"
+          text="New approvals, refunds and late orders show up here."
+        />
       ) : (
         <>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="divide-y divide-slate-100">
             {visibleRows.map((row) => (
-              <div
-                key={`${row.type}-${row.issue}`}
-                className="flex flex-col rounded-lg border border-slate-200 bg-white p-4"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-                    {row.type}
-                  </span>
-                  <span
-                    className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${priorityPillClass(row.priority)}`}
-                  >
-                    {row.priority}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm font-medium leading-snug text-slate-900">{row.issue}</p>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
-                  <span>{row.area}</span>
-                  <span>Owner: {row.assignedTo}</span>
-                  <span>{row.status}</span>
-                </div>
+              <li key={`${row.type}-${row.issue}`}>
                 <button
                   type="button"
                   onClick={() => onNavigate(row.target)}
-                  className="mt-3 inline-flex w-fit items-center gap-1 rounded-md border border-lethela-primary bg-lethela-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 sm:px-5"
                 >
-                  {row.action}
-                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    {row.type}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-slate-900">
+                      {row.issue}
+                    </span>
+                    <span className="block truncate text-xs text-slate-500">
+                      {row.area} · {row.status}
+                    </span>
+                  </span>
+                  <StatusBadge tone={priorityTone(row.priority)} className="hidden sm:inline-flex">
+                    {row.priority}
+                  </StatusBadge>
+                  <span className="hidden text-sm font-semibold text-lethela-primary md:inline">
+                    {row.action}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
                 </button>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
           {activeRows.length > visibleRows.length ? (
-            <button
-              type="button"
-              onClick={() => onNavigate("operations")}
-              className="mt-4 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-lethela-primary hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lethela-primary"
-            >
-              View all {activeRows.length} in Operations
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
+            <div className="border-t border-slate-100 px-4 py-3 sm:px-5">
+              <button
+                type="button"
+                onClick={() => onNavigate("operations")}
+                className={dashButton.link}
+              >
+                See all {activeRows.length} in Operations
+                <ChevronRight aria-hidden="true" />
+              </button>
+            </div>
           ) : null}
         </>
       )}
-    </section>
+    </Panel>
   );
 }
 
 export default function AdminPage() {
+  const router = useRouter();
   const [adminKey, setAdminKey] = useState("");
   const [view, setView] = useState<DashboardView>("vendors");
   const [vendorStatus, setVendorStatus] = useState<VendorStatusOption>("SUBMITTED");
@@ -870,7 +839,6 @@ export default function AdminPage() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [globalSearchGroups, setGlobalSearchGroups] = useState<GlobalSearchGroups | null>(null);
   const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
-  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [orderSearch, setOrderSearch] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
   const [orderPaymentFilter, setOrderPaymentFilter] = useState("ALL");
@@ -879,6 +847,7 @@ export default function AdminPage() {
   const [orderPage, setOrderPage] = useState(1);
   const [vendors, setVendors] = useState<VendorApplication[]>([]);
   const [products, setProducts] = useState<ProductReview[]>([]);
+  const [productCounts, setProductCounts] = useState<ProductCounts | null>(null);
   const [vendorCounts, setVendorCounts] = useState<VendorCounts>({
     pending: 0,
     active: 0,
@@ -907,6 +876,12 @@ export default function AdminPage() {
     null,
   );
   const [messages, setMessages] = useState<PlatformMessage[]>([]);
+  // Every vendor and rider for the "One vendor" / "One rider" pickers. The approval lists only
+  // hold the status that is currently filtered, so these load separately when first needed.
+  const [recipientOptions, setRecipientOptions] = useState<{
+    vendors: Array<{ id: string; name: string; status: string }>;
+    riders: Array<{ id: string; fullName: string; status: string }>;
+  } | null>(null);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [operationsOrders, setOperationsOrders] = useState<OperationsOrder[]>([]);
   const [operationsRiders, setOperationsRiders] = useState<OperationsRider[]>([]);
@@ -1114,6 +1089,7 @@ export default function AdminPage() {
         "Failed to load product reviews.",
       );
       setProducts(json.products ?? []);
+      setProductCounts(json.counts ?? null);
     },
     [fetchAdminJson],
   );
@@ -1293,6 +1269,43 @@ export default function AdminPage() {
     return () => window.clearTimeout(handle);
   }, [customerSearchInput]);
 
+  useEffect(() => {
+    if (view !== "messages" || recipientOptions) return;
+    if (!["VENDOR", "RIDER"].includes(messageForm.recipientType)) return;
+    let cancelled = false;
+    void Promise.all([
+      fetchAdminJson("/api/admin/vendors?status=ALL", "Failed to load vendors."),
+      fetchAdminJson("/api/admin/riders?status=ALL&take=200", "Failed to load riders."),
+    ])
+      .then(([vendorJson, riderJson]) => {
+        if (cancelled) return;
+        setRecipientOptions({
+          vendors: ((vendorJson.items ?? []) as VendorApplication[])
+            .map(({ id, name, status }) => ({ id, name, status }))
+            .sort((left, right) => left.name.localeCompare(right.name)),
+          riders: ((riderJson.items ?? []) as RiderApplication[])
+            .map(({ id, fullName, status }) => ({ id, fullName, status }))
+            .sort((left, right) => left.fullName.localeCompare(right.fullName)),
+        });
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(getErrorMessage(err, "Failed to load vendors and riders."));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchAdminJson, messageForm.recipientType, recipientOptions, view]);
+
+  // "Refunds to look at" opens Operations with ?filter=refunds: bring the refund list into view.
+  useEffect(() => {
+    if (view !== "operations") return;
+    if (new URL(window.location.href).searchParams.get("filter") !== "refunds") return;
+    const handle = window.setTimeout(() => {
+      document.getElementById("refund-cases")?.scrollIntoView({ behavior: "smooth" });
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [view]);
+
   // Load customers lazily: only when the Customers tab is open, then on search/page change.
   useEffect(() => {
     if (view !== "users") return;
@@ -1463,6 +1476,51 @@ export default function AdminPage() {
     }
   }
 
+  // Approves every waiting item from one store in one go, so a trusted store does not need one
+  // confirmation per item. Each item still goes through the normal review endpoint.
+  async function approveStoreProducts(vendor: { id: string; name: string }, productIds: string[]) {
+    if (productIds.length === 0) return;
+    if (
+      !window.confirm(
+        `Approve all ${productIds.length} waiting item${productIds.length === 1 ? "" : "s"} from ${vendor.name}?`,
+      )
+    )
+      return;
+    setSavingKey(`products:${vendor.id}`);
+    setError(null);
+    setNotice(null);
+    let approved = 0;
+    let firstError: string | null = null;
+    try {
+      await syncAdminAccess();
+      for (const productId of productIds) {
+        const response = await fetch(`/api/admin/products/${productId}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ status: "APPROVED" }),
+        });
+        const json = await response.json().catch(() => ({}));
+        if (response.ok && json.ok) approved += 1;
+        else firstError ||= json.error || "Product review failed.";
+      }
+      if (approved > 0) {
+        setNotice(`Approved ${approved} item${approved === 1 ? "" : "s"} from ${vendor.name}.`);
+      }
+      if (firstError) {
+        setError(
+          `${productIds.length - approved} item${
+            productIds.length - approved === 1 ? "" : "s"
+          } could not be approved: ${firstError}`,
+        );
+      }
+      await load();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Product review failed."));
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
   async function sendOwnerMessage() {
     setSavingKey("message:send");
     setError(null);
@@ -1570,6 +1628,7 @@ export default function AdminPage() {
           vendor.email,
           vendor.phone,
           vendor.address,
+          vendor.township,
           vendor.suburb,
           vendor.city,
         ]),
@@ -1586,7 +1645,9 @@ export default function AdminPage() {
           rider.phone,
           rider.vehicleType,
           rider.vehicleRegistration,
+          rider.township,
           rider.suburb,
+          rider.municipality,
           rider.city,
           rider.status,
         ]),
@@ -1608,6 +1669,20 @@ export default function AdminPage() {
       ),
     [productSearch, products],
   );
+
+  // Items grouped by store, so a store's whole menu can be reviewed (and approved) together.
+  const productGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      { vendor: ProductReview["vendor"]; products: ProductReview[] }
+    >();
+    for (const product of filteredProducts) {
+      const group = groups.get(product.vendor.id);
+      if (group) group.products.push(product);
+      else groups.set(product.vendor.id, { vendor: product.vendor, products: [product] });
+    }
+    return Array.from(groups.values());
+  }, [filteredProducts]);
 
   const handleGlobalSearch = useCallback(async () => {
     const query = globalSearch.trim();
@@ -1676,11 +1751,11 @@ export default function AdminPage() {
         const failed = order.status === "FAILED" || order.paymentStatus === "FAILED";
         rows.push({
           type: "Order",
-          issue: `${reference}: ${order.status.replaceAll("_", " ")}`,
+          issue: `${reference}: ${statusText(order.status).toLowerCase()}`,
           area: order.vendorName || "Live order",
           assignedTo: order.status === "NEW" ? "Vendor / Admin" : "Operations",
           priority: failed ? "High" : "Medium",
-          status: order.paymentStatus,
+          status: paymentText(order.paymentStatus),
           action: "Open order",
           target: "operations",
         });
@@ -1694,11 +1769,13 @@ export default function AdminPage() {
       .forEach((vendor) => {
         rows.push({
           type: "Vendor",
-          issue: `${vendor.name}: ${vendor.status.replaceAll("_", " ")}`,
-          area: [vendor.suburb, vendor.city].filter(Boolean).join(", ") || "Location incomplete",
+          issue: `${vendor.name}: ${approvalStateText(vendor.status)}`,
+          area:
+            [vendor.township || vendor.suburb, vendor.city].filter(Boolean).join(", ") ||
+            "No address yet",
           assignedTo: vendor.status === "CHANGES_REQUESTED" ? "Vendor" : "Admin",
           priority: vendor.status === "SUBMITTED" ? "Medium" : "Low",
-          status: vendor.status.replaceAll("_", " "),
+          status: statusText(vendor.status),
           action: "Review vendor",
           target: "vendors",
         });
@@ -1710,11 +1787,11 @@ export default function AdminPage() {
       .forEach((product) => {
         rows.push({
           type: "Product",
-          issue: `${product.name}${product.image ? "" : ": image required"}`,
+          issue: `${product.name}${product.image ? "" : " (no photo yet)"}`,
           area: product.vendor.name,
           assignedTo: product.status === "CHANGES_REQUESTED" ? "Vendor" : "Admin",
-          priority: product.image ? "Low" : "Medium",
-          status: product.status.replaceAll("_", " "),
+          priority: "Low",
+          status: statusText(product.status),
           action: "Review product",
           target: "products",
         });
@@ -1726,11 +1803,13 @@ export default function AdminPage() {
       .forEach((rider) => {
         rows.push({
           type: "Rider",
-          issue: `${rider.fullName || rider.email}: ${rider.status.replaceAll("_", " ")}`,
-          area: [rider.suburb, rider.city].filter(Boolean).join(", ") || "Location incomplete",
+          issue: `${rider.fullName || rider.email}: ${approvalStateText(rider.status)}`,
+          area:
+            [rider.township || rider.suburb, rider.city].filter(Boolean).join(", ") ||
+            "No area yet",
           assignedTo: rider.status === "CHANGES_REQUESTED" ? "Rider" : "Admin",
           priority: rider.status === "SUBMITTED" ? "Medium" : "Low",
-          status: rider.status.replaceAll("_", " "),
+          status: statusText(rider.status),
           action: "Review rider",
           target: "riders",
         });
@@ -1749,7 +1828,7 @@ export default function AdminPage() {
           area: "Support",
           assignedTo: "Finance / Support",
           priority: "High",
-          status: refund.status.replaceAll("_", " "),
+          status: statusText(refund.status),
           action: "Review refund",
           target: "operations",
         });
@@ -1757,38 +1836,6 @@ export default function AdminPage() {
 
     return rows;
   }, [operationsOrders, operationsRefunds, products, riders, vendors]);
-
-  const orderMonitoring: Array<{
-    label: string;
-    value: string | number;
-    note: string;
-    icon: typeof LayoutDashboard;
-  }> = [
-    {
-      label: "Pending deliveries",
-      value: stats ? stats.pendingDeliveries : "—",
-      note: "Waiting, preparing or out for delivery.",
-      icon: ShoppingBag,
-    },
-    {
-      label: "Delayed orders",
-      value: stats ? stats.delayedOrders : "—",
-      note: "Past the expected delivery window.",
-      icon: Clock,
-    },
-    {
-      label: "Failed deliveries",
-      value: stats ? stats.failedDeliveries : "—",
-      note: "Delivery could not be completed.",
-      icon: Truck,
-    },
-    {
-      label: "Cancelled orders",
-      value: stats ? stats.cancelledOrders : "—",
-      note: "Cancelled and may need review.",
-      icon: Bell,
-    },
-  ];
 
   const filteredOrders = useMemo(() => {
     const now = new Date();
@@ -1808,8 +1855,11 @@ export default function AdminPage() {
           orderStatusFilter === "ALL" ||
           order.status === orderStatusFilter ||
           (orderStatusFilter === "CANCELLED" && order.status === "CANCELED");
+        // "Paid" covers both words the payment provider uses for a completed payment.
         const paymentMatches =
-          orderPaymentFilter === "ALL" || order.paymentStatus === orderPaymentFilter;
+          orderPaymentFilter === "ALL" ||
+          order.paymentStatus === orderPaymentFilter ||
+          (orderPaymentFilter === "PAID" && order.paymentStatus === "SUCCESS");
         const periodMatches = !periodStart || new Date(order.createdAt) >= periodStart;
         return (
           statusMatches &&
@@ -1847,2090 +1897,2313 @@ export default function AdminPage() {
     setOrderPage(1);
   }, [orderPaymentFilter, orderPeriodFilter, orderSearch, orderSort, orderStatusFilter]);
 
-  const currentViewLabel =
-    ADMIN_NAV_GROUPS.flatMap((group) => group.items).find((item) => item.id === view)?.label ||
-    "Overview";
+  const manageOrder = (order: OperationsOrder) => {
+    setOperationsForm((current) => ({ ...current, orderRef: order.publicId }));
+    navigateView("operations");
+  };
+
+  const messageRecipientLabel = (message: PlatformMessage) => {
+    if (message.recipientType === "ALL") return "all vendors and riders";
+    if (message.recipientType === "ALL_VENDORS") return "all vendors";
+    if (message.recipientType === "ALL_RIDERS") return "all riders";
+    if (message.recipientType === "VENDOR") {
+      const vendor =
+        recipientOptions?.vendors.find((item) => item.id === message.recipientId) ??
+        vendors.find((item) => item.id === message.recipientId);
+      return vendor ? vendor.name : "one vendor";
+    }
+    if (message.recipientType === "RIDER") {
+      const rider =
+        recipientOptions?.riders.find((item) => item.id === message.recipientId) ??
+        riders.find((item) => item.id === message.recipientId);
+      return rider ? rider.fullName : "one rider";
+    }
+    return statusText(message.recipientType).toLowerCase();
+  };
+
+  const openRefundCount = operationsRefunds.filter(
+    (refund) => !["COMPLETED", "PAID", "REJECTED", "CANCELLED", "CLOSED"].includes(refund.status),
+  ).length;
+
+  const selectedOperationsOrder = useMemo(() => {
+    const ref = operationsForm.orderRef.trim();
+    if (!ref) return null;
+    return (
+      operationsOrders.find((order) => order.publicId === ref || order.ozowReference === ref) ??
+      null
+    );
+  }, [operationsForm.orderRef, operationsOrders]);
+
+  const viewCopy = VIEW_COPY[view];
+  const notificationCount = attentionRows.length;
+  const onNotifications = () => navigateView("operations");
+  const adminNav: DashboardNavItem[] = ADMIN_NAV_GROUPS.flatMap((group) =>
+    group.items.map((item) => {
+      const Icon = item.icon;
+      const badge =
+        item.id === "vendors"
+          ? (vendorCounts.submitted ?? vendorCounts.pending)
+          : item.id === "riders"
+            ? (riderCounts.submitted ?? riderCounts.pending)
+            : item.id === "products"
+              ? productCounts?.submitted
+              : item.id === "operations"
+                ? attentionRows.filter((row) => row.priority === "High").length
+                : null;
+      return {
+        id: item.id,
+        label: item.label,
+        shortLabel: item.shortLabel,
+        icon: <Icon />,
+        badge: badge || null,
+        group: group.title,
+      };
+    }),
+  );
 
   return (
-    <main className="min-h-screen bg-[#f4f6fb] text-slate-900">
-      <AdminTopBar
-        searchValue={globalSearch}
-        onSearchChange={setGlobalSearch}
-        onSearch={handleGlobalSearch}
-        onNotifications={() => navigateView("operations")}
-        searchGroups={globalSearchGroups}
-        searchLoading={globalSearchLoading}
-        onSelectResult={selectGlobalSearchResult}
-        notificationCount={attentionRows.length}
+    <DashboardShell
+      area="Admin"
+      workspaceName="Lethela"
+      workspaceDetail="Owner dashboard"
+      homeHref="/admin"
+      nav={adminNav}
+      activeId={view}
+      phoneTabs={["overview", "operations", "vendors", "riders"]}
+      onNavigate={(id) => navigateView(id as DashboardView)}
+      search={
+        <AdminSearch
+          value={globalSearch}
+          onChange={setGlobalSearch}
+          onSearch={handleGlobalSearch}
+          groups={globalSearchGroups}
+          loading={globalSearchLoading}
+          onSelectResult={selectGlobalSearchResult}
+        />
+      }
+      actions={
+        <NotificationBell operationsCount={notificationCount} onOpenOperations={onNotifications} />
+      }
+      onSignOut={() =>
+        fetch("/api/admin/access", { method: "DELETE" })
+          .catch(() => undefined)
+          .then(() => {
+            router.push("/owner-access");
+            router.refresh();
+          })
+      }
+    >
+      <PageHeader
+        title={viewCopy.title}
+        description={viewCopy.description}
+        meta={
+          <StatusBadge tone={lastRefreshedAt && !error ? "success" : "neutral"}>
+            {lastRefreshedAt && !error
+              ? `Up to date ${lastRefreshedAt.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`
+              : loading
+                ? "Loading…"
+                : "Not loaded yet"}
+          </StatusBadge>
+        }
+        actions={
+          <>
+            <button
+              type="button"
+              className={dashButton.secondary}
+              disabled={loading}
+              onClick={load}
+            >
+              <RefreshCw className={loading ? "animate-spin" : undefined} aria-hidden="true" />
+              {loading ? "Refreshing" : "Refresh"}
+            </button>
+            {pushPermission !== "granted" ? (
+              <button type="button" className={dashButton.secondary} onClick={enableBrowserAlerts}>
+                <Bell aria-hidden="true" />
+                Turn on alerts
+              </button>
+            ) : null}
+          </>
+        }
       />
 
-      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3 px-4 pt-4 lg:hidden">
-        <div className="text-xs text-slate-600" aria-label="Breadcrumb">
-          Dashboard <span aria-hidden="true">/</span>{" "}
-          <span className="font-semibold text-slate-900">{currentViewLabel}</span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setMobileNavigationOpen(true)}
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-lethela-primary"
-          aria-expanded={mobileNavigationOpen}
-          aria-controls="admin-mobile-navigation"
-        >
-          <Menu className="h-4 w-4" />
-          Menu
-        </button>
-      </div>
+      {notice ? (
+        <Notice tone="success" className="mb-4">
+          {notice}
+        </Notice>
+      ) : null}
+      {error ? (
+        <Notice tone="danger" className="mb-4">
+          {error}
+        </Notice>
+      ) : null}
 
-      {mobileNavigationOpen ? (
-        <div
-          // Above the cookie-consent banner (z-120) so every drawer item stays
-          // tappable while that banner is still on screen.
-          className="fixed inset-0 z-[130] lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Admin navigation"
-        >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/70"
-            aria-label="Close navigation"
-            onClick={() => setMobileNavigationOpen(false)}
-          />
-          <aside
-            id="admin-mobile-navigation"
-            className="absolute bottom-0 left-0 top-0 w-[min(88vw,340px)] overflow-y-auto border-r border-white/10 bg-[#090D2C] p-4"
-          >
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
-                  Lethela admin
-                </p>
-                <p className="mt-1 font-semibold text-white">Command centre</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMobileNavigationOpen(false)}
-                className="grid h-11 w-11 place-items-center rounded-lg border border-white/15 text-white"
-                aria-label="Close navigation"
-              >
-                <X className="h-5 w-5" />
-              </button>
+      {view === "overview" ? (
+        <div className="space-y-6">
+          <section>
+            <AdminSectionHeader
+              title="Immediate operations"
+              description="Tap a number to open the list behind it."
+            />
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+              <PriorityCard
+                label="Live orders"
+                value={stats ? stats.pendingDeliveries : "—"}
+                note="Waiting, preparing or on the way."
+                icon={ShoppingBag}
+                onClick={() => navigateView("orders")}
+              />
+              <PriorityCard
+                label="Orders needing action"
+                value={stats ? stats.delayedOrders + stats.failedDeliveries : "—"}
+                note="Late or failed deliveries."
+                icon={Bell}
+                attention={Boolean(stats && stats.delayedOrders + stats.failedDeliveries > 0)}
+                onClick={() => navigateView("operations")}
+              />
+              <PriorityCard
+                label="Stores waiting"
+                value={vendorCounts.submitted ?? vendorCounts.pending ?? 0}
+                note="Waiting for your approval."
+                icon={Store}
+                attention={(vendorCounts.submitted ?? vendorCounts.pending ?? 0) > 0}
+                onClick={() => navigateView("vendors", { status: "SUBMITTED" })}
+              />
+              <PriorityCard
+                label="Riders waiting"
+                value={riderCounts.submitted ?? riderCounts.pending}
+                note="Waiting for your approval."
+                icon={Bike}
+                attention={(riderCounts.submitted ?? riderCounts.pending) > 0}
+                onClick={() => navigateView("riders", { status: "SUBMITTED" })}
+              />
             </div>
-            <nav className="mt-4 grid gap-5">
-              {ADMIN_NAV_GROUPS.map((group) => (
-                <div key={`mobile-${group.title}`}>
-                  <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
-                    {group.title}
-                  </p>
-                  <div className="grid gap-1.5">
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <button
-                          key={`mobile-${item.id}`}
-                          type="button"
-                          onClick={() => {
-                            navigateView(item.id);
-                            setMobileNavigationOpen(false);
-                          }}
-                          className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm ${
-                            view === item.id
-                              ? "bg-lethela-primary text-white"
-                              : "border border-white/10 text-white/75"
-                          }`}
-                        >
-                          <Icon className="h-4 w-4" />
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </nav>
-          </aside>
+          </section>
+
+          <section>
+            <AdminSectionHeader
+              title="Today"
+              description="Paid orders only. Rider fees and tips are not Lethela revenue."
+            />
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+              <MetricCard
+                label="Orders today"
+                value={stats ? stats.ordersToday : "—"}
+                note={`${stats?.completedOrdersToday ?? 0} delivered`}
+                icon={PackageCheck}
+                onClick={() => navigateView("orders", { period: "today" })}
+              />
+              <MetricCard
+                label="Riders online now"
+                value={stats ? stats.availableRiders : "—"}
+                note={`${stats?.activeRiders ?? riderCounts.approved} approved in total`}
+                icon={Bike}
+                onClick={() => navigateView("riders", { status: "APPROVED" })}
+              />
+              <MetricCard
+                label="Lethela revenue today"
+                value={stats ? money(stats.revenueTodayCents) : "—"}
+                note="Commission only"
+                icon={WalletCards}
+                onClick={() => navigateView("finance", { period: "today" })}
+              />
+              <MetricCard
+                label="Revenue this month"
+                value={stats ? money(stats.revenueMonthCents) : "—"}
+                note="Commission from paid orders"
+                icon={LineChart}
+                onClick={() => navigateView("finance", { period: "month" })}
+              />
+            </div>
+          </section>
+
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+            <NeedsAttentionQueue rows={attentionRows} onNavigate={navigateView} />
+            <Panel title="Service quality" description="How deliveries are going.">
+              <div className="-my-2.5 divide-y divide-slate-100">
+                <DetailRow
+                  label="Average delivery time"
+                  value={
+                    !stats
+                      ? "—"
+                      : stats.averageDeliveryTimeMins
+                        ? `${stats.averageDeliveryTimeMins} min`
+                        : "No deliveries yet"
+                  }
+                />
+                <DetailRow
+                  label="Customer rating"
+                  value={
+                    !stats
+                      ? "—"
+                      : stats.reviewCount
+                        ? `${stats.customerSatisfactionScore}/5 from ${stats.reviewCount}`
+                        : "No reviews yet"
+                  }
+                />
+                <DetailRow
+                  label="Average order today"
+                  value={stats ? money(stats.averageOrderValueTodayCents) : "—"}
+                />
+                <DetailRow
+                  label="Cancelled orders"
+                  value={
+                    <button
+                      type="button"
+                      className="font-semibold text-lethela-primary hover:underline"
+                      onClick={() => navigateView("orders", { status: "CANCELLED" })}
+                    >
+                      {stats ? stats.cancelledOrders : "—"}
+                    </button>
+                  }
+                />
+                <DetailRow label="Failed deliveries" value={stats ? stats.failedDeliveries : "—"} />
+              </div>
+            </Panel>
+          </div>
         </div>
       ) : null}
 
-      <section className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[280px,minmax(0,1fr)]">
-          <aside className="hidden rounded-xl border border-white/10 bg-[#090D2C]/95 p-4 lg:sticky lg:top-24 lg:block lg:h-[calc(100vh-7rem)] lg:overflow-y-auto">
-            <div className="border-b border-white/10 pb-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
-                Lethela Admin
-              </p>
-              <h1 className="mt-2 text-xl font-bold">Manage</h1>
-              <p className="mt-2 text-xs leading-relaxed text-white/60">
-                Approvals and daily work in one place.
-              </p>
-            </div>
+      {view === "vendors" ? (
+        <section className="space-y-4">
+          <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+            <FilterTabs
+              label="Vendor status"
+              value={vendorStatus}
+              onChange={setVendorStatus}
+              options={[
+                { value: "SUBMITTED", label: "Waiting", count: vendorCounts.submitted ?? null },
+                {
+                  value: "CHANGES_REQUESTED",
+                  label: "Changes asked",
+                  count: vendorCounts.changesRequested ?? null,
+                },
+                { value: "DRAFT", label: "Setting up", count: vendorCounts.draft ?? null },
+                { value: "APPROVED", label: "Approved", count: vendorCounts.approved ?? null },
+                { value: "REJECTED", label: "Not approved", count: vendorCounts.rejected },
+                { value: "SUSPENDED", label: "Paused", count: vendorCounts.suspended ?? null },
+                { value: "ALL", label: "All", count: vendorCounts.total },
+              ]}
+            />
+            <SearchBox
+              label="Search vendors"
+              value={vendorSearch}
+              placeholder="Search by name, email or area"
+              onChange={setVendorSearch}
+            />
+          </div>
 
-            <nav className="mt-4 grid gap-5">
-              {ADMIN_NAV_GROUPS.map((group) => (
-                <div key={group.title}>
-                  <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/38">
-                    {group.title}
+          {vendorStatus === "DRAFT" && filteredVendors.length > 0 ? (
+            <Notice tone="info">
+              These stores have not pressed Send for approval yet. You can still approve a store you
+              know once it has everything it needs.
+            </Notice>
+          ) : null}
+
+          {filteredVendors.map((vendor) => {
+            const saving = savingKey === `vendor:${vendor.id}`;
+            const area = vendor.township || vendor.suburb;
+            const location = [vendor.address, area, vendor.city].filter(Boolean).join(", ");
+            const cuisines = parseCuisine(vendor.cuisine);
+            const readiness = vendor.readiness;
+            const approved = ["APPROVED", "ACTIVE"].includes(vendor.status);
+            const blockedReason = approved
+              ? "Already approved"
+              : readiness && !readiness.canApprove
+                ? `Still needs: ${readiness.missing.join(", ").toLowerCase()}`
+                : vendor.ownerCanSignIn === false
+                  ? "The owner account has no way to sign in yet"
+                  : null;
+
+            return (
+              <article key={vendor.id} className="rounded-xl border border-slate-200 bg-white">
+                <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-slate-900">{vendor.name}</h3>
+                    <p className="mt-0.5 text-sm text-slate-500">{location || "No address yet"}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <StatusBadge tone={toneForStatus(vendor.status)}>
+                      {vendor.status === "SUBMITTED"
+                        ? "Waiting for approval"
+                        : statusText(vendor.status)}
+                    </StatusBadge>
+                    {approved ? (
+                      <StatusBadge tone={vendor.isActive ? "success" : "neutral"}>
+                        {vendor.isActive ? "Live" : "Not live"}
+                      </StatusBadge>
+                    ) : readiness ? (
+                      <StatusBadge tone={readiness.canApprove ? "success" : "warning"}>
+                        {readiness.canApprove ? "Ready to approve" : "Not ready"}
+                      </StatusBadge>
+                    ) : null}
+                  </div>
+                </div>
+
+                {readiness && !approved && readiness.missing.length > 0 ? (
+                  <p className="mx-4 mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:mx-5">
+                    Still needs: {readiness.missing.join(", ").toLowerCase()}.
                   </p>
-                  <div className="grid gap-1.5">
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      const active = view === item.id;
-                      return (
+                ) : null}
+
+                <dl className="mt-3 grid gap-x-6 px-4 text-sm sm:grid-cols-2 sm:px-5 lg:grid-cols-3">
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Phone</dt>
+                    <dd className="truncate font-medium text-slate-900">
+                      {vendor.phone ? (
+                        <a href={`tel:${vendor.phone}`} className="hover:underline">
+                          {vendor.phone}
+                        </a>
+                      ) : (
+                        "Not added"
+                      )}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Email</dt>
+                    <dd className="truncate font-medium text-slate-900">
+                      {vendor.email || "Not added"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Menu</dt>
+                    <dd className="font-medium text-slate-900">
+                      {vendor.productCount != null
+                        ? `${(vendor.productCount ?? 0) + (vendor.menuItemCount ?? 0)} item${
+                            (vendor.productCount ?? 0) + (vendor.menuItemCount ?? 0) === 1
+                              ? ""
+                              : "s"
+                          }`
+                        : "—"}
+                      {vendor.pendingProductCount ? (
                         <button
-                          key={`${group.title}-${item.label}`}
-                          className={`flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${
-                            active
-                              ? "bg-lethela-primary text-white"
-                              : "bg-white/[0.025] text-white/68 hover:bg-white/[0.075] hover:text-white"
-                          }`}
                           type="button"
-                          onClick={() => navigateView(item.id)}
+                          className="ml-2 text-lethela-primary hover:underline"
+                          onClick={() => {
+                            setProductSearch(vendor.name);
+                            navigateView("products", { status: "SUBMITTED" });
+                          }}
                         >
-                          <Icon className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{item.label}</span>
+                          {vendor.pendingProductCount} to approve
                         </button>
-                      );
-                    })}
+                      ) : null}
+                    </dd>
                   </div>
-                </div>
-              ))}
-            </nav>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Open days</dt>
+                    <dd className="font-medium text-slate-900">
+                      {vendor.openDays != null ? `${vendor.openDays} of 7` : "—"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Sells</dt>
+                    <dd className="truncate font-medium text-slate-900">
+                      {cuisines.length > 0 ? cuisines.join(", ") : vendor.storeType || "Not added"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Signed up</dt>
+                    <dd className="font-medium text-slate-900">
+                      {new Date(vendor.createdAt).toLocaleDateString()}
+                    </dd>
+                  </div>
+                </dl>
 
-            <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.035] p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
-                Quick actions
-              </p>
-              <div className="mt-3 grid gap-1.5 text-sm">
-                <button
-                  type="button"
-                  onClick={() => navigateView("vendors", { status: "SUBMITTED" })}
-                  className="flex min-h-10 items-center justify-between rounded-md px-2 text-left text-white/75 hover:bg-white/[0.07] hover:text-white"
-                >
-                  Review vendors
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigateView("riders", { status: "SUBMITTED" })}
-                  className="flex min-h-10 items-center justify-between rounded-md px-2 text-left text-white/75 hover:bg-white/[0.07] hover:text-white"
-                >
-                  Review riders
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigateView("orders")}
-                  className="flex min-h-10 items-center justify-between rounded-md px-2 text-left text-white/75 hover:bg-white/[0.07] hover:text-white"
-                >
-                  View live orders
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          </aside>
-
-          <div className="min-w-0 space-y-6">
-            <div className="hidden text-xs text-slate-600 lg:block" aria-label="Breadcrumb">
-              Dashboard <span aria-hidden="true">/</span>{" "}
-              <span className="font-semibold text-slate-900">{currentViewLabel}</span>
-            </div>
-            <section className="rounded-xl border border-slate-200 bg-white p-5">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
-                    Owner workspace
+                {readiness && readiness.later.length > 0 ? (
+                  <p className="px-4 pt-1 text-xs text-slate-500 sm:px-5">
+                    Can add later: {readiness.later.join(", ").toLowerCase()}.
                   </p>
-                  <h2 className="mt-2 text-2xl font-bold md:text-3xl">Lethela dashboard</h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-                    Monitor orders, vendors, riders, customers and marketplace operations.
-                  </p>
-                  <div
-                    className="mt-3 flex flex-wrap items-center gap-3 text-xs"
-                    aria-live="polite"
-                  >
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold ${
-                        lastRefreshedAt && !error
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                          : "border-slate-300 bg-white text-slate-500"
-                      }`}
+                ) : null}
+
+                {vendor.kycIdUrl || vendor.kycProofUrl || vendor.liquorLicenceUrl ? (
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 pt-2 text-sm sm:px-5">
+                    {vendor.kycIdUrl ? (
+                      <a
+                        href={vendor.kycIdUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={dashButton.link}
+                      >
+                        ID document
+                        <ExternalLink aria-hidden="true" />
+                      </a>
+                    ) : null}
+                    {vendor.kycProofUrl ? (
+                      <a
+                        href={vendor.kycProofUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={dashButton.link}
+                      >
+                        Proof of address
+                        <ExternalLink aria-hidden="true" />
+                      </a>
+                    ) : null}
+                    {vendor.liquorLicenceUrl ? (
+                      <a
+                        href={vendor.liquorLicenceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={dashButton.link}
+                      >
+                        Liquor licence ({statusText(vendor.liquorVerificationStatus).toLowerCase()})
+                        <ExternalLink aria-hidden="true" />
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3 sm:px-5">
+                  {!approved ? (
+                    <button
+                      type="button"
+                      className={dashButton.primary}
+                      disabled={saving || Boolean(blockedReason)}
+                      title={blockedReason || "Approve this store"}
+                      onClick={() => updateVendorStatus(vendor.id, "approve")}
                     >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${lastRefreshedAt && !error ? "bg-emerald-400" : "bg-slate-400"}`}
-                        aria-hidden="true"
-                      />
-                      {lastRefreshedAt && !error ? "Live data connected" : "Connecting"}
-                    </span>
-                    <span className="text-slate-500">
-                      {lastRefreshedAt
-                        ? `Last synced ${lastRefreshedAt.toLocaleTimeString()}`
-                        : "Waiting for the first successful sync"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    className="bg-lethela-primary text-white hover:opacity-90"
-                    disabled={loading}
-                    onClick={load}
+                      <CheckCircle2 aria-hidden="true" />
+                      {saving ? "Saving…" : "Approve store"}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className={dashButton.secondary}
+                    disabled={saving}
+                    onClick={() => updateVendorStatus(vendor.id, "changes_requested")}
                   >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    {loading ? "Refreshing" : "Refresh"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                    onClick={enableBrowserAlerts}
-                    disabled={pushPermission === "granted"}
-                  >
-                    <Bell className="mr-2 h-4 w-4" />
-                    {pushPermission === "granted" ? "Alerts enabled" : "Enable alerts"}
-                  </Button>
-                </div>
-              </div>
-
-              {notice ? (
-                <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-                  {notice}
-                </div>
-              ) : null}
-              {error ? (
-                <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
-                  {error}
-                </div>
-              ) : null}
-            </section>
-
-            {view === "overview" ? (
-              <div className="space-y-5">
-                <section>
-                  <AdminSectionHeader
-                    eyebrow="Live marketplace"
-                    title="Immediate operations"
-                    description="The four signals most likely to require an owner decision right now."
-                  />
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <PriorityCard
-                      label="Live orders"
-                      value={stats ? stats.pendingDeliveries : "—"}
-                      note="Orders waiting, preparing or out for delivery."
-                      icon={ShoppingBag}
-                      onClick={() => navigateView("orders")}
-                    />
-                    <PriorityCard
-                      label="Orders needing action"
-                      value={stats ? stats.delayedOrders + stats.failedDeliveries : "—"}
-                      note="Delayed, failed or exception orders."
-                      icon={Bell}
-                      onClick={() => navigateView("operations")}
-                    />
-                    <PriorityCard
-                      label="Pending vendor approvals"
-                      value={vendorCounts.submitted ?? vendorCounts.pending ?? 0}
-                      note="Complete vendor profiles waiting for owner review."
-                      icon={Store}
-                      onClick={() => navigateView("vendors", { status: "SUBMITTED" })}
-                    />
-                    <PriorityCard
-                      label="Riders online now"
-                      value={stats ? stats.availableRiders : "—"}
-                      note={`${stats?.activeRiders ?? riderCounts.approved} approved rider(s) in total.`}
-                      icon={Bike}
-                      onClick={() => navigateView("riders", { status: "APPROVED" })}
-                    />
-                  </div>
-                </section>
-
-                <section>
-                  <AdminSectionHeader
-                    eyebrow="Performance"
-                    title="Business today"
-                    description="Paid-order performance and service quality, kept separate from rider earnings."
-                  />
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <MetricCard
-                      label="Platform revenue today"
-                      value={stats ? money(stats.revenueTodayCents) : "—"}
-                      note="Commission only; rider fees and tips excluded."
-                      icon={WalletCards}
-                      onClick={() => navigateView("finance", { period: "today" })}
-                    />
-                    <MetricCard
-                      label="Platform revenue this month"
-                      value={stats ? money(stats.revenueMonthCents) : "—"}
-                      note="Commission from paid orders this month."
-                      icon={LineChart}
-                      onClick={() => navigateView("finance", { period: "month" })}
-                    />
-                    <MetricCard
-                      label="Orders today"
-                      value={stats ? stats.ordersToday : "—"}
-                      note={`${stats?.completedOrdersToday ?? 0} delivered today.`}
-                      icon={PackageCheck}
-                      onClick={() => navigateView("orders", { period: "today" })}
-                    />
-                    <MetricCard
-                      label="Completed deliveries"
-                      value={stats ? stats.completedOrdersToday : "—"}
-                      note="Orders delivered today."
-                      icon={CheckCircle2}
-                      onClick={() => navigateView("orders", { status: "DELIVERED" })}
-                    />
-                    <MetricCard
-                      label="Cancelled orders"
-                      value={stats ? stats.cancelledOrders : "—"}
-                      note="Cancelled orders needing review."
-                      icon={Clock}
-                      onClick={() => navigateView("orders", { status: "CANCELLED" })}
-                    />
-                    <MetricCard
-                      label="Average delivery"
-                      value={
-                        !stats
-                          ? "—"
-                          : stats.averageDeliveryTimeMins
-                            ? `${stats.averageDeliveryTimeMins}m`
-                            : "N/A"
-                      }
-                      note={
-                        stats && !stats.averageDeliveryTimeMins
-                          ? "No completed deliveries yet."
-                          : "Average time from order to delivery."
-                      }
-                      icon={Truck}
-                      onClick={() => navigateView("operations")}
-                    />
-                    <MetricCard
-                      label="Customer satisfaction"
-                      value={
-                        !stats
-                          ? "—"
-                          : stats.reviewCount
-                            ? `${stats.customerSatisfactionScore}/5`
-                            : "N/A"
-                      }
-                      note={
-                        stats && !stats.reviewCount
-                          ? "No customer reviews submitted yet."
-                          : `Across ${stats?.reviewCount ?? 0} review(s).`
-                      }
-                      icon={CheckCircle2}
-                      onClick={() => navigateView("operations")}
-                    />
-                    <MetricCard
-                      label="Average order value"
-                      value={stats ? money(stats.averageOrderValueTodayCents) : "—"}
-                      note="Average product value per order today."
-                      icon={ShoppingBag}
-                      onClick={() => navigateView("finance", { period: "today" })}
-                    />
-                  </div>
-                </section>
-
-                <NeedsAttentionQueue rows={attentionRows} onNavigate={navigateView} />
-              </div>
-            ) : null}
-
-            {view === "vendors" ? (
-              <section className="space-y-4">
-                <SearchBox
-                  label="Vendor approvals"
-                  value={vendorSearch}
-                  placeholder="Search vendors by name, slug, email, or area"
-                  onChange={setVendorSearch}
-                />
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
-                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-slate-500">
-                    Vendor status filter
-                  </label>
-                  <select
-                    value={vendorStatus}
-                    onChange={(event) => setVendorStatus(event.target.value as VendorStatusOption)}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-black md:max-w-xs"
-                  >
-                    {VENDOR_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option.replaceAll("_", " ")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {filteredVendors.map((vendor) => {
-                  const saving = savingKey === `vendor:${vendor.id}`;
-                  const location = [vendor.address, vendor.suburb, vendor.city, vendor.province]
-                    .filter(Boolean)
-                    .join(", ");
-                  const cuisines = parseCuisine(vendor.cuisine);
-
-                  return (
-                    <article
-                      key={vendor.id}
-                      className="rounded-lg border border-slate-200 bg-white p-5"
+                    Ask for changes
+                  </button>
+                  {approved ? (
+                    <button
+                      type="button"
+                      className={dashButton.danger}
+                      disabled={saving}
+                      onClick={() => updateVendorStatus(vendor.id, "suspend")}
                     >
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">{vendor.name}</h3>
-                          <p className="text-xs text-slate-500">/{vendor.slug}</p>
-                        </div>
-                        <span
-                          className={`rounded-full border px-3 py-1 text-xs ${statusClass(vendor.status)}`}
-                        >
-                          {vendor.status} {vendor.isActive ? "Live" : "Not live"}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm text-slate-600">
-                        {location || "Location not set"}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {vendor.email || "No email provided"}
-                        {vendor.phone ? ` | ${vendor.phone}` : ""}
-                      </p>
-                      <div className="mt-4 grid gap-2 text-xs text-slate-600 md:grid-cols-3">
-                        <div>Delivery: Lethela R10/km (R10 minimum)</div>
-                        <div>Owner linked: {vendor.ownerId ? "Yes" : "No"}</div>
-                        <div>
-                          KYC:{" "}
-                          {vendor.kycIdUrl && vendor.kycProofUrl ? "Complete" : "Needs documents"}
-                        </div>
-                        <div>Halaal: {vendor.halaal ? "Yes" : "No"}</div>
-                        <div>
-                          {cuisines.length > 0
-                            ? `Cuisine: ${cuisines.join(", ")}`
-                            : "Cuisine: Not set"}
-                        </div>
-                        <div>Applied: {formatDate(vendor.createdAt)}</div>
-                        <div>Liquor: {vendor.liquorVerificationStatus.replaceAll("_", " ")}</div>
-                      </div>
-                      <div className="mt-4 flex flex-wrap items-center gap-3">
-                        <Button
-                          className="bg-lethela-primary text-white hover:opacity-90"
-                          disabled={saving}
-                          onClick={() => updateVendorStatus(vendor.id, "approve")}
-                        >
-                          {saving ? "Saving..." : "Approve vendor"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="border-amber-200 bg-transparent text-amber-800 hover:border-amber-300 hover:bg-amber-100"
-                          disabled={saving}
-                          onClick={() => updateVendorStatus(vendor.id, "changes_requested")}
-                        >
-                          Request changes
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="border-red-200 bg-transparent text-red-800 hover:border-red-300 hover:bg-red-100"
-                          disabled={saving}
-                          onClick={() => updateVendorStatus(vendor.id, "reject")}
-                        >
-                          Reject
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="border-slate-300 bg-transparent text-slate-900 hover:border-slate-400 hover:bg-slate-50"
-                          disabled={saving}
-                          onClick={() => updateVendorStatus(vendor.id, "suspend")}
-                        >
-                          Suspend
-                        </Button>
-                        {vendor.kycIdUrl ? (
-                          <a
-                            href={vendor.kycIdUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-sm underline"
-                          >
-                            ID document
-                          </a>
-                        ) : null}
-                        {vendor.kycProofUrl ? (
-                          <a
-                            href={vendor.kycProofUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-sm underline"
-                          >
-                            Proof of address
-                          </a>
-                        ) : null}
-                        {vendor.liquorLicenceUrl ? (
-                          <>
-                            <a
-                              href={vendor.liquorLicenceUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-sm underline"
-                            >
-                              Liquor licence
-                            </a>
-                            <Button
-                              className="bg-lethela-primary text-white hover:opacity-90"
-                              disabled={savingKey === `liquor:${vendor.id}`}
-                              onClick={() => updateLiquorStatus(vendor.id, "APPROVED")}
-                            >
-                              Approve liquor
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="border-amber-200 bg-transparent text-amber-800 hover:border-amber-300 hover:bg-amber-100"
-                              disabled={savingKey === `liquor:${vendor.id}`}
-                              onClick={() => updateLiquorStatus(vendor.id, "CHANGES_REQUESTED")}
-                            >
-                              Liquor changes
-                            </Button>
-                          </>
-                        ) : null}
-                      </div>
-                    </article>
-                  );
-                })}
-                {!loading && filteredVendors.length === 0 ? (
-                  <EmptyState
-                    title="No vendors found"
-                    text="There are no vendor applications for this filter yet."
-                  />
-                ) : null}
-              </section>
-            ) : null}
-
-            {view === "products" ? (
-              <section className="space-y-4">
-                <SearchBox
-                  label="Product review queue"
-                  value={productSearch}
-                  placeholder="Search products by name, vendor, status, or reason"
-                  onChange={setProductSearch}
-                />
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
-                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-slate-500">
-                    Product status filter
-                  </label>
-                  <select
-                    value={productStatus}
-                    onChange={(event) =>
-                      setProductStatus(event.target.value as ProductStatusFilter)
-                    }
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-black md:max-w-xs"
-                  >
-                    {PRODUCT_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option.replaceAll("_", " ")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {filteredProducts.map((product) => (
-                  <article
-                    key={product.id}
-                    className="rounded-lg border border-slate-200 bg-white p-5"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">{product.name}</h3>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {product.vendor.name} · /{product.slug} · {money(product.priceCents)}
-                        </p>
-                      </div>
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs ${statusClass(product.status)}`}
-                      >
-                        {product.status.replaceAll("_", " ")}
-                      </span>
-                    </div>
-                    {product.description ? (
-                      <p className="mt-3 text-sm text-slate-600">{product.description}</p>
-                    ) : null}
-                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
-                      <span>{product.inStock ? "In stock" : "Out of stock"}</span>
-                      <span>
-                        {product.isAlcohol
-                          ? `Liquor 18+${product.abv ? ` · ${product.abv}% ABV` : ""}`
-                          : "Standard product"}
-                      </span>
-                      <span>Vendor: {product.vendor.status.replaceAll("_", " ")}</span>
-                      <span>Updated: {formatDate(product.updatedAt)}</span>
-                    </div>
-                    {product.reviewReason ? (
-                      <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                        Review reason: {product.reviewReason}
-                      </p>
-                    ) : null}
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <Button
-                        className="bg-lethela-primary text-white hover:opacity-90"
-                        disabled={savingKey === `product:${product.id}`}
-                        onClick={() => updateProductStatus(product.id, "APPROVED")}
-                      >
-                        Approve product
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="border-amber-200 bg-transparent text-amber-800 hover:border-amber-300 hover:bg-amber-100"
-                        disabled={savingKey === `product:${product.id}`}
-                        onClick={() => updateProductStatus(product.id, "CHANGES_REQUESTED")}
-                      >
-                        Request changes
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="border-red-200 bg-transparent text-red-800 hover:border-red-300 hover:bg-red-100"
-                        disabled={savingKey === `product:${product.id}`}
-                        onClick={() => updateProductStatus(product.id, "REJECTED")}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </article>
-                ))}
-                {!loading && filteredProducts.length === 0 ? (
-                  <EmptyState
-                    title="No products found"
-                    text="There are no products in this review filter."
-                  />
-                ) : null}
-              </section>
-            ) : null}
-
-            {view === "riders" ? (
-              <section className="space-y-4">
-                <SearchBox
-                  label="Rider approvals and fleet"
-                  value={riderSearch}
-                  placeholder="Search riders by name, phone, vehicle, or area"
-                  onChange={setRiderSearch}
-                />
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
-                  <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-slate-500">
-                    Rider status filter
-                  </label>
-                  <select
-                    value={riderStatus}
-                    onChange={(event) => setRiderStatus(event.target.value as RiderStatusFilter)}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-black md:max-w-xs"
-                  >
-                    {RIDER_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option.replaceAll("_", " ")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <MetricCard
-                    label="Pending"
-                    value={riderCounts.pending}
-                    note="New rider applications."
-                    icon={Clock}
-                    onClick={() => setRiderStatus("SUBMITTED")}
-                  />
-                  <MetricCard
-                    label="Review"
-                    value={riderCounts.underReview}
-                    note="Documents being checked."
-                    icon={PackageCheck}
-                    onClick={() => setRiderStatus("UNDER_REVIEW")}
-                  />
-                  <MetricCard
-                    label="Approved"
-                    value={riderCounts.approved}
-                    note="Riders ready for shifts."
-                    icon={Bike}
-                    onClick={() => setRiderStatus("APPROVED")}
-                  />
-                </div>
-                {filteredRiders.map((rider) => (
-                  <article
-                    key={rider.id}
-                    className="rounded-lg border border-slate-200 bg-white p-5"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">{rider.fullName}</h3>
-                        <p className="text-sm text-slate-600">
-                          {[rider.suburb, rider.city].filter(Boolean).join(", ") ||
-                            "Location not set"}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {rider.email} | {rider.phone}
-                        </p>
-                      </div>
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs ${statusClass(rider.status)}`}
-                      >
-                        {rider.status.replaceAll("_", " ")}
-                      </span>
-                    </div>
-                    <div className="mt-4 grid gap-2 text-xs text-slate-600 md:grid-cols-3">
-                      <div>
-                        Vehicle: {rider.vehicleType}
-                        {rider.vehicleRegistration ? ` (${rider.vehicleRegistration})` : ""}
-                      </div>
-                      <div>Licence: {rider.licenseCode}</div>
-                      <div>Available: {rider.availableHours}</div>
-                      <div>ID ending: {rider.idNumberLast4}</div>
-                      <div>
-                        Emergency: {rider.emergencyContactName} ({rider.emergencyContactPhone})
-                      </div>
-                      <div>
-                        Smartphone: {rider.hasSmartphone ? "Yes" : "No"} | Bank:{" "}
-                        {rider.hasBankAccount ? "Yes" : "No"}
-                      </div>
-                    </div>
-                    {rider.aiSummary ? (
-                      <div className="mt-4 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
-                        {rider.aiSummary}
-                      </div>
-                    ) : null}
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      {(
-                        [
-                          "SUBMITTED",
-                          "UNDER_REVIEW",
-                          "CHANGES_REQUESTED",
-                          "APPROVED",
-                          "REJECTED",
-                          "SUSPENDED",
-                        ] as RiderApplicationStatus[]
-                      ).map((status) => (
-                        <Button
-                          key={status}
-                          variant={status === "APPROVED" ? "default" : "outline"}
-                          className={
-                            status === "APPROVED"
-                              ? "bg-lethela-primary text-white hover:opacity-90"
-                              : "border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:text-lethela-primary"
-                          }
-                          disabled={savingKey === `rider:${rider.id}:${status}`}
-                          onClick={() => updateRiderStatus(rider.id, status)}
-                        >
-                          {savingKey === `rider:${rider.id}:${status}`
-                            ? "Saving..."
-                            : status.replaceAll("_", " ")}
-                        </Button>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-                {!loading && filteredRiders.length === 0 ? (
-                  <EmptyState
-                    title="No riders found"
-                    text="There are no rider applications for this filter yet."
-                  />
-                ) : null}
-              </section>
-            ) : null}
-
-            {view === "users" ? (
-              <section className="space-y-4">
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
-                      People
-                    </p>
-                    <h3 className="mt-1 text-xl font-semibold">Customers</h3>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {customerMeta.total} registered account{customerMeta.total === 1 ? "" : "s"}.
-                      Contact details are for authorised support use only.
-                    </p>
-                  </div>
-                  <label className="w-full md:w-80">
-                    <span className="sr-only">Search customers</span>
-                    <input
-                      type="search"
-                      value={customerSearchInput}
-                      onChange={(event) => setCustomerSearchInput(event.target.value)}
-                      placeholder="Search name, email or phone"
-                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-black placeholder:text-black/40"
-                      aria-label="Search customers"
-                    />
-                  </label>
-                </div>
-
-                <div className="rounded-lg border border-slate-200 bg-white">
-                  {customerState === "error" ? (
-                    <div className="p-6 text-sm">
-                      <p className="font-semibold text-slate-900">Unable to load customers.</p>
-                      <p className="mt-1 text-slate-500">{customerError}</p>
-                      <Button
-                        className="mt-3 bg-lethela-primary text-white hover:opacity-90"
-                        onClick={() => void loadCustomers(customerSearch, customerPage)}
-                      >
-                        Retry
-                      </Button>
-                    </div>
-                  ) : customerState === "loading" && customers.length === 0 ? (
-                    <div className="space-y-2 p-4">
-                      {Array.from({ length: 6 }).map((_, index) => (
-                        <div
-                          key={index}
-                          className="h-12 animate-pulse rounded-md border border-slate-200 bg-white"
-                        />
-                      ))}
-                    </div>
-                  ) : customers.length === 0 ? (
-                    <div className="p-6 text-sm">
-                      <p className="font-semibold text-slate-900">
-                        {customerSearch
-                          ? "No customers match this search."
-                          : "No customer accounts yet."}
-                      </p>
-                      <p className="mt-1 text-slate-500">
-                        {customerSearch
-                          ? "Check the spelling or clear the search."
-                          : "Accounts appear here as soon as customers register."}
-                      </p>
-                    </div>
+                      Pause store
+                    </button>
                   ) : (
-                    <div className="overflow-x-auto p-2">
-                      <table className="w-full min-w-[880px] border-separate border-spacing-y-2 text-left text-sm">
-                        <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                          <tr>
-                            <th className="px-3 py-2">Customer</th>
-                            <th className="px-3 py-2">Phone</th>
-                            <th className="px-3 py-2">Orders</th>
-                            <th className="px-3 py-2">Total spent</th>
-                            <th className="px-3 py-2">Last order</th>
-                            <th className="px-3 py-2">Joined</th>
-                            <th className="px-3 py-2">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {customers.map((customer) => (
-                            <tr key={customer.id} className="bg-white">
-                              <td className="rounded-l-lg px-3 py-3">
-                                <div className="font-semibold text-slate-900">
-                                  {customer.name || "—"}
-                                </div>
-                                <div className="text-xs text-slate-500">{customer.email}</div>
-                              </td>
-                              <td className="px-3 py-3 text-slate-600">{customer.phone || "—"}</td>
-                              <td className="px-3 py-3 text-slate-600">{customer.orderCount}</td>
-                              <td className="px-3 py-3 text-slate-600">
-                                {money(customer.totalSpentCents)}
-                              </td>
-                              <td className="px-3 py-3 text-slate-500">
-                                {customer.lastOrderAt ? formatDate(customer.lastOrderAt) : "—"}
-                              </td>
-                              <td className="px-3 py-3 text-slate-500">
-                                {formatDate(customer.joinedAt)}
-                              </td>
-                              <td className="rounded-r-lg px-3 py-3">
-                                <span
-                                  className={`rounded-full border px-2.5 py-1 text-xs ${
-                                    customer.status === "LOCKED"
-                                      ? "border-red-200 bg-red-50 text-red-800"
-                                      : customer.status === "UNVERIFIED"
-                                        ? "border-amber-200 bg-amber-50 text-amber-800"
-                                        : "border-emerald-200 bg-emerald-50 text-emerald-800"
-                                  }`}
-                                >
-                                  {customer.status === "LOCKED"
-                                    ? "Locked"
-                                    : customer.status === "UNVERIFIED"
-                                      ? "Unverified"
-                                      : customer.status === "VERIFIED"
-                                        ? "Verified"
-                                        : "Active"}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <button
+                      type="button"
+                      className={dashButton.danger}
+                      disabled={saving}
+                      onClick={() => updateVendorStatus(vendor.id, "reject")}
+                    >
+                      Reject
+                    </button>
                   )}
+                  {vendor.liquorLicenceUrl && vendor.liquorVerificationStatus !== "APPROVED" ? (
+                    <>
+                      <button
+                        type="button"
+                        className={dashButton.secondary}
+                        disabled={savingKey === `liquor:${vendor.id}`}
+                        onClick={() => updateLiquorStatus(vendor.id, "APPROVED")}
+                      >
+                        Approve liquor licence
+                      </button>
+                      <button
+                        type="button"
+                        className={dashButton.quiet}
+                        disabled={savingKey === `liquor:${vendor.id}`}
+                        onClick={() => updateLiquorStatus(vendor.id, "CHANGES_REQUESTED")}
+                      >
+                        Licence changes
+                      </button>
+                    </>
+                  ) : null}
+                  {blockedReason && !approved ? (
+                    <p className="w-full text-xs text-slate-500 sm:ml-1 sm:w-auto">
+                      {blockedReason}.
+                    </p>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
+          {!loading && filteredVendors.length === 0 ? (
+            <EmptyState
+              title="No stores here"
+              text="Stores show up here when they sign up or send their store for approval."
+            />
+          ) : null}
+        </section>
+      ) : null}
+
+      {view === "products" ? (
+        <section className="space-y-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <FilterTabs
+              label="Item status"
+              value={productStatus}
+              onChange={setProductStatus}
+              options={[
+                { value: "SUBMITTED", label: "Waiting", count: productCounts?.submitted ?? null },
+                {
+                  value: "CHANGES_REQUESTED",
+                  label: "Changes asked",
+                  count: productCounts?.changesRequested ?? null,
+                },
+                { value: "APPROVED", label: "Approved", count: productCounts?.approved ?? null },
+                {
+                  value: "REJECTED",
+                  label: "Not approved",
+                  count: productCounts?.rejected ?? null,
+                },
+                { value: "ALL", label: "All", count: productCounts?.total ?? null },
+              ]}
+            />
+            <SearchBox
+              label="Search items"
+              value={productSearch}
+              placeholder="Search by item or store"
+              onChange={setProductSearch}
+            />
+          </div>
+
+          {productGroups.map((group) => {
+            const waitingIds = group.products
+              .filter((product) => product.status === "SUBMITTED")
+              .map((product) => product.id);
+            const storeApproved =
+              group.vendor.isActive && ["APPROVED", "ACTIVE"].includes(group.vendor.status);
+            const bulkSaving = savingKey === `products:${group.vendor.id}`;
+
+            return (
+              <div key={group.vendor.id} className="rounded-xl border border-slate-200 bg-white">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-slate-900">{group.vendor.name}</h3>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      {group.products.length} item{group.products.length === 1 ? "" : "s"}
+                      {storeApproved ? "" : " · store not approved yet"}
+                    </p>
+                  </div>
+                  {waitingIds.length > 1 ? (
+                    <button
+                      type="button"
+                      className={dashButton.secondary}
+                      disabled={bulkSaving || !storeApproved}
+                      title={storeApproved ? undefined : "Approve the store before its items"}
+                      onClick={() => approveStoreProducts(group.vendor, waitingIds)}
+                    >
+                      <CheckCircle2 aria-hidden="true" />
+                      {bulkSaving ? "Approving…" : `Approve all ${waitingIds.length}`}
+                    </button>
+                  ) : null}
                 </div>
 
-                {customerMeta.pageCount > 1 ? (
-                  <div className="flex items-center justify-between gap-3 text-sm text-slate-500">
-                    <span>
-                      Page {customerPage} of {customerMeta.pageCount} · {customerMeta.total} total
-                    </span>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                        disabled={customerPage <= 1 || customerState === "loading"}
-                        onClick={() => setCustomerPage((page) => Math.max(1, page - 1))}
-                      >
-                        Previous
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                        disabled={
-                          customerPage >= customerMeta.pageCount || customerState === "loading"
-                        }
-                        onClick={() =>
-                          setCustomerPage((page) => Math.min(customerMeta.pageCount, page + 1))
-                        }
-                      >
-                        Next
-                      </Button>
+                <ul className="divide-y divide-slate-100">
+                  {group.products.map((product) => {
+                    const saving = savingKey === `product:${product.id}` || bulkSaving;
+                    return (
+                      <li key={product.id} className="flex gap-3 px-4 py-4 sm:px-5">
+                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                          {product.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={product.image}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="grid h-full w-full place-items-center text-slate-400">
+                              <ImageOff className="h-5 w-5" aria-hidden="true" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-900">{product.name}</p>
+                              <p className="text-sm text-slate-600">
+                                {money(product.priceCents)}
+                                {product.inStock ? "" : " · out of stock"}
+                                {product.isAlcohol
+                                  ? ` · liquor 18+${product.abv ? ` (${product.abv}%)` : ""}`
+                                  : ""}
+                              </p>
+                            </div>
+                            <StatusBadge tone={toneForStatus(product.status)}>
+                              {product.status === "SUBMITTED"
+                                ? "Waiting"
+                                : statusText(product.status)}
+                            </StatusBadge>
+                          </div>
+                          {product.description ? (
+                            <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                              {product.description}
+                            </p>
+                          ) : null}
+                          {product.reviewReason ? (
+                            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                              Your note: {product.reviewReason}
+                            </p>
+                          ) : null}
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {product.status !== "APPROVED" ? (
+                              <button
+                                type="button"
+                                className={dashButton.primary}
+                                disabled={saving || !storeApproved}
+                                title={
+                                  storeApproved ? undefined : "Approve the store before its items"
+                                }
+                                onClick={() => updateProductStatus(product.id, "APPROVED")}
+                              >
+                                Approve
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              className={dashButton.secondary}
+                              disabled={saving}
+                              onClick={() => updateProductStatus(product.id, "CHANGES_REQUESTED")}
+                            >
+                              Ask for changes
+                            </button>
+                            {product.status !== "REJECTED" ? (
+                              <button
+                                type="button"
+                                className={dashButton.quiet}
+                                disabled={saving}
+                                onClick={() => updateProductStatus(product.id, "REJECTED")}
+                              >
+                                Reject
+                              </button>
+                            ) : null}
+                            <span className="text-xs text-slate-400">
+                              Updated {formatDate(product.updatedAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+          {!loading && filteredProducts.length === 0 ? (
+            <EmptyState
+              title="No items here"
+              text="Menu items show up here when a store adds them or changes them."
+            />
+          ) : null}
+        </section>
+      ) : null}
+
+      {view === "riders" ? (
+        <section className="space-y-4">
+          <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+            <FilterTabs
+              label="Rider status"
+              value={riderStatus}
+              onChange={setRiderStatus}
+              options={[
+                {
+                  value: "SUBMITTED" as RiderStatusFilter,
+                  label: "Waiting",
+                  count: riderCounts.submitted ?? riderCounts.pending,
+                },
+                ...(riderCounts.underReview > 0 || riderStatus === "UNDER_REVIEW"
+                  ? [
+                      {
+                        value: "UNDER_REVIEW" as RiderStatusFilter,
+                        label: "Checking",
+                        count: riderCounts.underReview,
+                      },
+                    ]
+                  : []),
+                {
+                  value: "CHANGES_REQUESTED",
+                  label: "Changes asked",
+                  count: riderCounts.changesRequested ?? null,
+                },
+                { value: "DRAFT", label: "Setting up", count: riderCounts.draft ?? null },
+                { value: "APPROVED", label: "Approved", count: riderCounts.approved },
+                { value: "REJECTED", label: "Not approved", count: riderCounts.rejected },
+                { value: "SUSPENDED", label: "Paused", count: riderCounts.suspended ?? null },
+                { value: "ALL", label: "All", count: riderCounts.total },
+              ]}
+            />
+            <SearchBox
+              label="Search riders"
+              value={riderSearch}
+              placeholder="Search by name, phone or area"
+              onChange={setRiderSearch}
+            />
+          </div>
+
+          {riderStatus === "DRAFT" && filteredRiders.length > 0 ? (
+            <Notice tone="info">
+              These riders have not pressed Send to Lethela yet. You can still approve a rider you
+              know once they have everything they need.
+            </Notice>
+          ) : null}
+
+          {filteredRiders.map((rider) => {
+            const saving = Boolean(savingKey?.startsWith(`rider:${rider.id}:`));
+            const readiness = rider.readiness;
+            const approved = ["APPROVED", "AVAILABLE", "BUSY", "OFFLINE"].includes(rider.status);
+            const area = [rider.township || rider.suburb, rider.municipality || rider.city]
+              .filter(Boolean)
+              .join(", ");
+            const blockedReason = approved
+              ? "Already approved"
+              : readiness && !readiness.canApprove
+                ? `Still needs: ${readiness.missing.join(", ").toLowerCase()}`
+                : rider.accountCanSignIn === false
+                  ? "This rider's account has no way to sign in yet"
+                  : null;
+            const documents = [
+              rider.hasIdDocument ? "ID" : null,
+              rider.hasPhoto ? "photo" : null,
+              rider.hasLicenceDocument ? "licence" : null,
+            ].filter(Boolean);
+
+            return (
+              <article key={rider.id} className="rounded-xl border border-slate-200 bg-white">
+                <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-slate-900">
+                      {rider.fullName || "Name not added"}
+                    </h3>
+                    <p className="mt-0.5 text-sm text-slate-500">{area || "No area yet"}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <StatusBadge tone={toneForStatus(rider.status)}>
+                      {rider.status === "SUBMITTED"
+                        ? "Waiting for approval"
+                        : statusText(rider.status)}
+                    </StatusBadge>
+                    {!approved && readiness ? (
+                      <StatusBadge tone={readiness.canApprove ? "success" : "warning"}>
+                        {readiness.canApprove ? "Ready to approve" : "Not ready"}
+                      </StatusBadge>
+                    ) : null}
+                  </div>
+                </div>
+
+                {readiness && !approved && readiness.missing.length > 0 ? (
+                  <p className="mx-4 mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:mx-5">
+                    Still needs: {readiness.missing.join(", ").toLowerCase()}.
+                  </p>
+                ) : null}
+
+                {rider.reviewReason && !approved ? (
+                  <p className="mx-4 mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 sm:mx-5">
+                    Your last note: {rider.reviewReason}
+                  </p>
+                ) : null}
+
+                <dl className="mt-3 grid gap-x-6 px-4 text-sm sm:grid-cols-2 sm:px-5 lg:grid-cols-3">
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Phone</dt>
+                    <dd className="truncate font-medium text-slate-900">
+                      {rider.phone ? (
+                        <a href={`tel:${rider.phone}`} className="hover:underline">
+                          {rider.phone}
+                        </a>
+                      ) : (
+                        "Not added"
+                      )}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Email</dt>
+                    <dd className="truncate font-medium text-slate-900">
+                      {rider.email || "Not added"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Delivers by</dt>
+                    <dd className="truncate font-medium text-slate-900">
+                      {rider.vehicleType || "Not added"}
+                      {rider.vehicleRegistration ? ` (${rider.vehicleRegistration})` : ""}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Documents</dt>
+                    <dd className="truncate font-medium text-slate-900">
+                      {documents.length > 0 ? documents.join(", ") : "None yet"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Emergency contact</dt>
+                    <dd className="truncate font-medium text-slate-900">
+                      {rider.emergencyContactName
+                        ? `${rider.emergencyContactName}${
+                            rider.emergencyContactPhone ? ` (${rider.emergencyContactPhone})` : ""
+                          }`
+                        : "Not added"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
+                    <dt className="text-slate-500">Bank account</dt>
+                    <dd className="font-medium text-slate-900">
+                      {rider.hasBankAccount ? "Added" : "Not added"}
+                    </dd>
+                  </div>
+                </dl>
+
+                {readiness && readiness.later.length > 0 ? (
+                  <p className="px-4 pt-1 text-xs text-slate-500 sm:px-5">
+                    Can add later: {readiness.later.join(", ").toLowerCase()}.
+                  </p>
+                ) : null}
+
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3 sm:px-5">
+                  {!approved ? (
+                    <button
+                      type="button"
+                      className={dashButton.primary}
+                      disabled={saving || Boolean(blockedReason)}
+                      title={blockedReason || "Approve this rider"}
+                      onClick={() => updateRiderStatus(rider.id, "APPROVED")}
+                    >
+                      <CheckCircle2 aria-hidden="true" />
+                      {savingKey === `rider:${rider.id}:APPROVED` ? "Saving…" : "Approve rider"}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className={dashButton.secondary}
+                    disabled={saving}
+                    onClick={() => updateRiderStatus(rider.id, "CHANGES_REQUESTED")}
+                  >
+                    Ask for changes
+                  </button>
+                  {approved ? (
+                    <button
+                      type="button"
+                      className={dashButton.danger}
+                      disabled={saving}
+                      onClick={() => updateRiderStatus(rider.id, "SUSPENDED")}
+                    >
+                      Pause rider
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={dashButton.danger}
+                      disabled={saving}
+                      onClick={() => updateRiderStatus(rider.id, "REJECTED")}
+                    >
+                      Reject
+                    </button>
+                  )}
+                  {blockedReason && !approved ? (
+                    <p className="w-full text-xs text-slate-500 sm:ml-1 sm:w-auto">
+                      {blockedReason}.
+                    </p>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
+          {!loading && filteredRiders.length === 0 ? (
+            <EmptyState
+              title="No riders here"
+              text="Riders show up here when they sign up or send their details to Lethela."
+            />
+          ) : null}
+        </section>
+      ) : null}
+
+      {view === "users" ? (
+        <section className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-600">
+              {customerMeta.total} registered account{customerMeta.total === 1 ? "" : "s"}
+            </p>
+            <SearchBox
+              label="Search customers"
+              value={customerSearchInput}
+              placeholder="Search name, email or phone"
+              onChange={setCustomerSearchInput}
+            />
+          </div>
+
+          {customerState === "error" ? (
+            <Notice
+              tone="danger"
+              title="Customers did not load"
+              action={
+                <button
+                  type="button"
+                  className={dashButton.secondary}
+                  onClick={() => void loadCustomers(customerSearch, customerPage)}
+                >
+                  Try again
+                </button>
+              }
+            >
+              {customerError}
+            </Notice>
+          ) : customerState === "loading" && customers.length === 0 ? (
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="h-14 animate-pulse rounded-xl bg-slate-100" />
+              ))}
+            </div>
+          ) : customers.length === 0 ? (
+            <EmptyState
+              title={customerSearch ? "No customers match this search" : "No customer accounts yet"}
+              text={
+                customerSearch
+                  ? "Check the spelling or clear the search."
+                  : "Accounts show up here as soon as customers register."
+              }
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <ul className="divide-y divide-slate-100 md:hidden">
+                {customers.map((customer) => (
+                  <li key={customer.id} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-900">
+                          {customer.name || "No name"}
+                        </p>
+                        <p className="truncate text-sm text-slate-500">{customer.email}</p>
+                      </div>
+                      <StatusBadge tone={customerTone(customer)}>
+                        {customerStatusText(customer)}
+                      </StatusBadge>
                     </div>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {customer.orderCount} order{customer.orderCount === 1 ? "" : "s"} ·{" "}
+                      {money(customer.totalSpentCents)}
+                      {customer.phone ? ` · ${customer.phone}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-xs font-medium text-slate-500">
+                    <tr>
+                      <th className="px-4 py-2.5 font-medium">Customer</th>
+                      <th className="px-4 py-2.5 font-medium">Phone</th>
+                      <th className="px-4 py-2.5 text-right font-medium">Orders</th>
+                      <th className="px-4 py-2.5 text-right font-medium">Total spent</th>
+                      <th className="px-4 py-2.5 font-medium">Last order</th>
+                      <th className="px-4 py-2.5 font-medium">Joined</th>
+                      <th className="px-4 py-2.5 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {customers.map((customer) => (
+                      <tr key={customer.id}>
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-slate-900">
+                            {customer.name || "No name"}
+                          </div>
+                          <div className="text-xs text-slate-500">{customer.email}</div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{customer.phone || "—"}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-slate-600">
+                          {customer.orderCount}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-slate-600">
+                          {money(customer.totalSpentCents)}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500">
+                          {customer.lastOrderAt ? formatDate(customer.lastOrderAt) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500">
+                          {formatDate(customer.joinedAt)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge tone={customerTone(customer)}>
+                            {customerStatusText(customer)}
+                          </StatusBadge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {customerMeta.pageCount > 1 ? (
+            <div className="flex items-center justify-between gap-3 text-sm text-slate-500">
+              <span>
+                Page {customerPage} of {customerMeta.pageCount}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={dashButton.secondary}
+                  disabled={customerPage <= 1 || customerState === "loading"}
+                  onClick={() => setCustomerPage((page) => Math.max(1, page - 1))}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className={dashButton.secondary}
+                  disabled={customerPage >= customerMeta.pageCount || customerState === "loading"}
+                  onClick={() =>
+                    setCustomerPage((page) => Math.min(customerMeta.pageCount, page + 1))
+                  }
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {view === "orders" ? (
+        <section className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+            <StatTile
+              label="Live orders"
+              value={stats ? stats.pendingDeliveries : "—"}
+              hint="Waiting, preparing or on the way."
+              icon={<ShoppingBag />}
+              onClick={() => navigateView("operations")}
+            />
+            <StatTile
+              label="Running late"
+              value={stats ? stats.delayedOrders : "—"}
+              hint="Past the expected delivery time."
+              icon={<Clock />}
+              tone={stats && stats.delayedOrders > 0 ? "attention" : "default"}
+              onClick={() => navigateView("operations")}
+            />
+            <StatTile
+              label="Failed deliveries"
+              value={stats ? stats.failedDeliveries : "—"}
+              hint="Could not be delivered."
+              icon={<Truck />}
+              tone={stats && stats.failedDeliveries > 0 ? "attention" : "default"}
+              onClick={() => setOrderStatusFilter("FAILED")}
+            />
+            <StatTile
+              label="Cancelled"
+              value={stats ? stats.cancelledOrders : "—"}
+              hint="May need a refund or a call."
+              icon={<Bell />}
+              onClick={() => setOrderStatusFilter("CANCELLED")}
+            />
+          </div>
+
+          <Panel
+            title="Recent orders"
+            description={`${filteredOrders.length} of the ${operationsOrders.length} most recent orders`}
+            padded={false}
+          >
+            <div className="grid gap-2 border-b border-slate-100 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-6">
+              <label className="relative block sm:col-span-2">
+                <span className="sr-only">Search orders</span>
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                  aria-hidden="true"
+                />
+                <input
+                  type="search"
+                  value={orderSearch}
+                  onChange={(event) => setOrderSearch(event.target.value)}
+                  placeholder="Order, customer, store or rider"
+                  className={`${dashField.input} pl-9`}
+                />
+              </label>
+              <label>
+                <span className="sr-only">Order status</span>
+                <select
+                  value={orderStatusFilter}
+                  onChange={(event) => setOrderStatusFilter(event.target.value)}
+                  className={dashField.input}
+                >
+                  <option value="ALL">All statuses</option>
+                  {[
+                    "NEW",
+                    "VENDOR_ACCEPTED",
+                    "PREPARING",
+                    "READY_FOR_PICKUP",
+                    "RIDER_ASSIGNED",
+                    "PICKED_UP",
+                    "ON_THE_WAY",
+                    "DELIVERED",
+                    "CANCELLED",
+                    "FAILED",
+                  ].map((status) => (
+                    <option key={status} value={status}>
+                      {statusText(status)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="sr-only">Payment status</span>
+                <select
+                  value={orderPaymentFilter}
+                  onChange={(event) => setOrderPaymentFilter(event.target.value)}
+                  className={dashField.input}
+                >
+                  <option value="ALL">All payments</option>
+                  <option value="PENDING">Waiting for payment</option>
+                  <option value="PAID">Paid</option>
+                  <option value="FAILED">Failed</option>
+                  <option value="REFUNDED">Refunded</option>
+                </select>
+              </label>
+              <label>
+                <span className="sr-only">Order period</span>
+                <select
+                  value={orderPeriodFilter}
+                  onChange={(event) => setOrderPeriodFilter(event.target.value)}
+                  className={dashField.input}
+                >
+                  <option value="ALL">Any date</option>
+                  <option value="TODAY">Today</option>
+                  <option value="MONTH">This month</option>
+                </select>
+              </label>
+              <label>
+                <span className="sr-only">Sort orders</span>
+                <select
+                  value={orderSort}
+                  onChange={(event) => setOrderSort(event.target.value as "newest" | "oldest")}
+                  className={dashField.input}
+                >
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                </select>
+              </label>
+            </div>
+
+            {filteredOrders.length === 0 ? (
+              <EmptyState
+                compact
+                title={operationsOrders.length ? "No orders match these filters" : "No orders yet"}
+                text={
+                  operationsOrders.length
+                    ? "Clear or change the filters to see other recent orders."
+                    : "Orders show up here as soon as customers start ordering."
+                }
+              />
+            ) : (
+              <>
+                <ul className="divide-y divide-slate-100 lg:hidden">
+                  {visibleOrders.map((order) => (
+                    <li key={order.id} className="px-4 py-3 sm:px-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900">
+                            {order.ozowReference || order.publicId}
+                          </p>
+                          <p className="truncate text-sm text-slate-500">
+                            {order.vendorName} · {order.customerName || "Guest"}
+                          </p>
+                        </div>
+                        <StatusBadge tone={toneForStatus(order.status)}>
+                          {statusText(order.status)}
+                        </StatusBadge>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm text-slate-600">
+                          <span className="font-semibold text-slate-900">
+                            {money(order.totalCents)}
+                          </span>{" "}
+                          · {paymentText(order.paymentStatus)} · {formatDate(order.createdAt)}
+                        </p>
+                        <button
+                          type="button"
+                          className={dashButton.secondary}
+                          onClick={() => manageOrder(order)}
+                        >
+                          Manage
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="w-full text-left text-sm">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500">
+                      <tr>
+                        <th className="px-5 py-2.5 font-medium">Order</th>
+                        <th className="px-3 py-2.5 font-medium">Customer</th>
+                        <th className="px-3 py-2.5 font-medium">Store</th>
+                        <th className="px-3 py-2.5 font-medium">Rider</th>
+                        <th className="px-3 py-2.5 text-right font-medium">Total</th>
+                        <th className="px-3 py-2.5 font-medium">Payment</th>
+                        <th className="px-3 py-2.5 font-medium">Status</th>
+                        <th className="px-5 py-2.5 text-right font-medium">
+                          <span className="sr-only">Action</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {visibleOrders.map((order) => (
+                        <tr key={order.id} className="align-top">
+                          <td className="px-5 py-3">
+                            <div className="font-semibold text-slate-900">
+                              {order.ozowReference || order.publicId}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {formatDate(order.createdAt)}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3">
+                            <div className="text-slate-900">{order.customerName || "Guest"}</div>
+                            <div className="text-xs text-slate-500">
+                              {order.customerEmail || "—"}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 text-slate-700">{order.vendorName}</td>
+                          <td className="px-3 py-3 text-slate-700">
+                            {order.riderName || (
+                              <span className="text-slate-400">Not assigned</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-3 text-right tabular-nums">
+                            <div className="font-semibold text-slate-900">
+                              {money(order.totalCents)}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {order.itemCount} item{order.itemCount === 1 ? "" : "s"} · delivery{" "}
+                              {money(order.deliveryFeeCents)}
+                              {order.riderTipCents > 0
+                                ? ` · tip ${money(order.riderTipCents)}`
+                                : ""}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3">
+                            <StatusBadge tone={toneForStatus(order.paymentStatus)}>
+                              {paymentText(order.paymentStatus)}
+                            </StatusBadge>
+                          </td>
+                          <td className="px-3 py-3">
+                            <StatusBadge tone={toneForStatus(order.status)}>
+                              {statusText(order.status)}
+                            </StatusBadge>
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <button
+                              type="button"
+                              className={dashButton.secondary}
+                              onClick={() => manageOrder(order)}
+                            >
+                              Manage
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+            {orderPageCount > 1 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-sm text-slate-500 sm:px-5">
+                <span>
+                  Page {orderPage} of {orderPageCount}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className={dashButton.secondary}
+                    disabled={orderPage <= 1}
+                    onClick={() => setOrderPage((page) => Math.max(1, page - 1))}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    className={dashButton.secondary}
+                    disabled={orderPage >= orderPageCount}
+                    onClick={() => setOrderPage((page) => Math.min(orderPageCount, page + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </Panel>
+        </section>
+      ) : null}
+
+      {view === "messages" ? (
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <Panel
+            title="Send a message"
+            description="Reaches their dashboard inbox, and email or WhatsApp if you choose."
+          >
+            <form
+              className="grid gap-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void sendOwnerMessage();
+              }}
+            >
+              <label className="grid gap-1.5">
+                <span className={dashField.label}>Send to</span>
+                <select
+                  className={dashField.input}
+                  value={messageForm.recipientType}
+                  onChange={(event) =>
+                    setMessageForm((state) => ({
+                      ...state,
+                      recipientType: event.target.value as MessageRecipientType,
+                      recipientId: "",
+                    }))
+                  }
+                >
+                  <option value="ALL">All vendors and riders</option>
+                  <option value="ALL_VENDORS">All approved vendors</option>
+                  <option value="ALL_RIDERS">All approved riders</option>
+                  <option value="VENDOR">One vendor</option>
+                  <option value="RIDER">One rider</option>
+                </select>
+              </label>
+
+              {messageForm.recipientType === "VENDOR" ? (
+                <label className="grid gap-1.5">
+                  <span className={dashField.label}>Vendor</span>
+                  <select
+                    className={dashField.input}
+                    value={messageForm.recipientId}
+                    onChange={(event) =>
+                      setMessageForm((state) => ({ ...state, recipientId: event.target.value }))
+                    }
+                  >
+                    <option value="">
+                      {recipientOptions ? "Choose a vendor" : "Loading vendors…"}
+                    </option>
+                    {(recipientOptions?.vendors ?? []).map((vendor) => (
+                      <option key={vendor.id} value={vendor.id}>
+                        {vendor.name} ({statusText(vendor.status).toLowerCase()})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
+              {messageForm.recipientType === "RIDER" ? (
+                <label className="grid gap-1.5">
+                  <span className={dashField.label}>Rider</span>
+                  <select
+                    className={dashField.input}
+                    value={messageForm.recipientId}
+                    onChange={(event) =>
+                      setMessageForm((state) => ({ ...state, recipientId: event.target.value }))
+                    }
+                  >
+                    <option value="">
+                      {recipientOptions ? "Choose a rider" : "Loading riders…"}
+                    </option>
+                    {(recipientOptions?.riders ?? []).map((rider) => (
+                      <option key={rider.id} value={rider.id}>
+                        {rider.fullName || rider.id} ({statusText(rider.status).toLowerCase()})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
+              <label className="grid gap-1.5">
+                <span className={dashField.label}>How to send</span>
+                <select
+                  className={dashField.input}
+                  value={messageForm.channel}
+                  onChange={(event) =>
+                    setMessageForm((state) => ({
+                      ...state,
+                      channel: event.target.value as "DASHBOARD" | "EMAIL_WHATSAPP" | "ALL",
+                    }))
+                  }
+                >
+                  <option value="ALL">Dashboard, email and WhatsApp</option>
+                  <option value="DASHBOARD">Dashboard inbox only</option>
+                  <option value="EMAIL_WHATSAPP">
+                    Email and WhatsApp (also saved in the inbox)
+                  </option>
+                </select>
+              </label>
+
+              <label className="grid gap-1.5">
+                <span className={dashField.label}>Subject</span>
+                <input
+                  className={dashField.input}
+                  value={messageForm.subject}
+                  onChange={(event) =>
+                    setMessageForm((state) => ({ ...state, subject: event.target.value }))
+                  }
+                  placeholder="For example: Weekend opening hours"
+                />
+              </label>
+
+              <label className="grid gap-1.5">
+                <span className={dashField.label}>Message</span>
+                <textarea
+                  className={`${dashField.input} min-h-36`}
+                  value={messageForm.body}
+                  onChange={(event) =>
+                    setMessageForm((state) => ({ ...state, body: event.target.value }))
+                  }
+                  placeholder="Write your message"
+                />
+              </label>
+
+              <div>
+                <button
+                  type="submit"
+                  className={dashButton.primary}
+                  disabled={savingKey === "message:send"}
+                >
+                  <Mail aria-hidden="true" />
+                  {savingKey === "message:send" ? "Sending…" : "Send message"}
+                </button>
+              </div>
+            </form>
+          </Panel>
+
+          <Panel
+            title="Sent messages"
+            description="Everything sent from here, newest first."
+            padded={false}
+          >
+            {messages.length === 0 ? (
+              <EmptyState
+                compact
+                title="No messages yet"
+                text="Messages you send to vendors and riders show here."
+              />
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {messages.map((message) => (
+                  <li key={message.id} className="px-4 py-4 sm:px-5">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900">{message.subject}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          To {messageRecipientLabel(message)} ·{" "}
+                          {new Date(message.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <StatusBadge tone="neutral" dot={false}>
+                        {message.channel === "ALL"
+                          ? "Dashboard, email, WhatsApp"
+                          : message.channel === "DASHBOARD"
+                            ? "Dashboard"
+                            : "Email and WhatsApp"}
+                      </StatusBadge>
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                      {message.body}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        </section>
+      ) : null}
+
+      {view === "finance" ? (
+        <section className="space-y-4" aria-label="Finance">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+            <StatTile
+              label="Paid by customers"
+              value={stats ? money(stats.customerPaymentsMonthCents) : "—"}
+              hint="This month, paid orders only."
+              icon={<WalletCards />}
+              onClick={() => navigateView("orders", { period: "month", payment: "PAID" })}
+            />
+            <StatTile
+              label="Lethela commission"
+              value={stats ? money(stats.revenueMonthCents) : "—"}
+              hint="Lethela's income this month."
+              icon={<LineChart />}
+              onClick={() => navigateView("orders", { period: "month", payment: "PAID" })}
+            />
+            <StatTile
+              label="Owed to vendors"
+              value={stats ? money(stats.vendorSalesMonthCents) : "—"}
+              hint="Vendor payouts this month."
+              icon={<Store />}
+              onClick={() => navigateView("vendors", { status: "APPROVED" })}
+            />
+            <StatTile
+              label="Owed to riders"
+              value={stats ? money(stats.riderEarningsMonthCents) : "—"}
+              hint="Delivery fees and tips this month."
+              icon={<Bike />}
+              onClick={() => navigateView("riders", { status: "APPROVED" })}
+            />
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            <Panel
+              title="Where the money goes"
+              description="Paid orders only. Delivery fees and tips belong to the rider, so they are never counted as Lethela income."
+              padded={false}
+            >
+              <table className="w-full text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left font-medium sm:px-5">&nbsp;</th>
+                    <th className="px-4 py-2.5 text-right font-medium">Today</th>
+                    <th className="px-4 py-2.5 text-right font-medium sm:px-5">This month</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {[
+                    {
+                      label: "Food and products",
+                      today: stats?.grossMerchandiseValueTodayCents,
+                      month: stats?.grossMerchandiseValueMonthCents,
+                    },
+                    {
+                      label: "Delivery fees",
+                      today: stats?.deliveryFeesTodayCents,
+                      month: stats?.deliveryFeesMonthCents,
+                    },
+                    {
+                      label: "Tips",
+                      today: stats?.riderTipsTodayCents,
+                      month: stats?.riderTipsMonthCents,
+                    },
+                    {
+                      label: "Paid by customers",
+                      today: stats?.customerPaymentsTodayCents,
+                      month: stats?.customerPaymentsMonthCents,
+                      strong: true,
+                    },
+                    {
+                      label: "Lethela commission",
+                      today: stats?.revenueTodayCents,
+                      month: stats?.revenueMonthCents,
+                    },
+                    {
+                      label: "Owed to vendors",
+                      today: stats?.vendorSalesTodayCents,
+                      month: stats?.vendorSalesMonthCents,
+                    },
+                    {
+                      label: "Owed to riders",
+                      today: stats?.riderEarningsTodayCents,
+                      month: stats?.riderEarningsMonthCents,
+                    },
+                  ].map((row) => (
+                    <tr key={row.label} className={row.strong ? "bg-slate-50/60" : undefined}>
+                      <th
+                        scope="row"
+                        className={`px-4 py-3 text-left sm:px-5 ${
+                          row.strong ? "font-semibold text-slate-900" : "font-normal text-slate-600"
+                        }`}
+                      >
+                        {row.label}
+                      </th>
+                      <td
+                        className={`px-4 py-3 text-right tabular-nums ${
+                          row.strong ? "font-semibold text-slate-900" : "text-slate-700"
+                        }`}
+                      >
+                        {row.today != null ? money(row.today) : "—"}
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-right tabular-nums sm:px-5 ${
+                          row.strong ? "font-semibold text-slate-900" : "text-slate-700"
+                        }`}
+                      >
+                        {row.month != null ? money(row.month) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Panel>
+
+            <div className="grid content-start gap-4">
+              <StatTile
+                label="Refunds to look at"
+                value={openRefundCount}
+                hint="Open refund cases. Tap to handle them."
+                icon={<Bell />}
+                tone={openRefundCount > 0 ? "attention" : "default"}
+                onClick={() => navigateView("operations", { filter: "refunds" })}
+              />
+              <StatTile
+                label="Average order today"
+                value={stats ? money(stats.averageOrderValueTodayCents) : "—"}
+                hint="Paid orders only."
+                icon={<ShoppingBag />}
+                onClick={() => navigateView("orders", { period: "today" })}
+              />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {view === "operations" ? (
+        <section className="space-y-6">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+            <Panel
+              title="Manage an order"
+              description="Pick an order, then change its status, give it to a rider, open a refund or add a note."
+            >
+              <div className="grid gap-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="grid gap-1.5">
+                    <span className={dashField.label}>Recent order</span>
+                    <select
+                      className={dashField.input}
+                      value={selectedOperationsOrder ? selectedOperationsOrder.publicId : ""}
+                      onChange={(event) =>
+                        setOperationsForm((state) => ({ ...state, orderRef: event.target.value }))
+                      }
+                    >
+                      <option value="">Choose an order</option>
+                      {operationsOrders.map((order) => (
+                        <option key={order.id} value={order.publicId}>
+                          {order.publicId} · {order.vendorName} · {money(order.totalCents)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className={dashField.label}>Or type the order reference</span>
+                    <input
+                      className={dashField.input}
+                      value={operationsForm.orderRef}
+                      onChange={(event) =>
+                        setOperationsForm((state) => ({ ...state, orderRef: event.target.value }))
+                      }
+                      placeholder="LET-…"
+                    />
+                  </label>
+                </div>
+
+                {selectedOperationsOrder ? (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900">
+                          {selectedOperationsOrder.publicId}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          {selectedOperationsOrder.vendorName} ·{" "}
+                          {selectedOperationsOrder.customerName || "Guest"} ·{" "}
+                          {formatDate(selectedOperationsOrder.createdAt)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <StatusBadge tone={toneForStatus(selectedOperationsOrder.status)}>
+                          {statusText(selectedOperationsOrder.status)}
+                        </StatusBadge>
+                        <StatusBadge tone={toneForStatus(selectedOperationsOrder.paymentStatus)}>
+                          {paymentText(selectedOperationsOrder.paymentStatus)}
+                        </StatusBadge>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid gap-x-6 sm:grid-cols-2">
+                      <DetailRow
+                        label="Food"
+                        value={money(selectedOperationsOrder.subtotalCents)}
+                      />
+                      <DetailRow
+                        label="Vendor gets"
+                        value={money(selectedOperationsOrder.vendorPayoutCents)}
+                      />
+                      <DetailRow
+                        label="Delivery fee"
+                        value={money(selectedOperationsOrder.deliveryFeeCents)}
+                      />
+                      <DetailRow
+                        label="Rider gets"
+                        value={money(selectedOperationsOrder.riderPayoutCents)}
+                      />
+                      <DetailRow label="Tip" value={money(selectedOperationsOrder.riderTipCents)} />
+                      <DetailRow
+                        label="Customer paid"
+                        value={money(selectedOperationsOrder.totalCents)}
+                      />
+                      <DetailRow
+                        label="Rider"
+                        value={selectedOperationsOrder.riderName || "Not assigned"}
+                      />
+                      <DetailRow
+                        label="Distance"
+                        value={
+                          selectedOperationsOrder.deliveryDistanceKm != null
+                            ? `${selectedOperationsOrder.deliveryDistanceKm.toFixed(1)} km`
+                            : "Not worked out yet"
+                        }
+                      />
+                    </div>
+                    {selectedOperationsOrder.containsAlcohol ? (
+                      <p className="mt-3 text-sm font-medium text-amber-800">
+                        Contains liquor: the rider must check the customer&apos;s ID.
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
-              </section>
-            ) : null}
 
-            {view === "orders" ? (
-              <section className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {orderMonitoring.map((item) => (
-                    <MetricCard
-                      key={item.label}
-                      label={item.label}
-                      value={item.value}
-                      note={item.note}
-                      icon={item.icon}
-                      onClick={() => navigateView("operations")}
-                    />
-                  ))}
-                </div>
+                <label className="grid gap-1.5">
+                  <span className={dashField.label}>Note</span>
+                  <textarea
+                    className={`${dashField.input} min-h-20`}
+                    value={operationsForm.note}
+                    onChange={(event) =>
+                      setOperationsForm((state) => ({ ...state, note: event.target.value }))
+                    }
+                    placeholder="What happened and what you did. Needed when you cancel an order."
+                  />
+                </label>
 
-                <div className="rounded-lg border border-slate-200 bg-white p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Recent orders
-                      </p>
-                      <h3 className="mt-1 text-lg font-semibold">Order monitoring</h3>
-                    </div>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500">
-                      {filteredOrders.length} matching · {operationsOrders.length} recent loaded
-                    </span>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2 xl:grid-cols-6">
-                    <label className="xl:col-span-2">
-                      <span className="sr-only">Search orders</span>
-                      <input
-                        type="search"
-                        value={orderSearch}
-                        onChange={(event) => setOrderSearch(event.target.value)}
-                        placeholder="Order, customer, vendor or rider"
-                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black placeholder:text-black/45"
-                      />
-                    </label>
-                    <label>
-                      <span className="sr-only">Order status</span>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <div className="grid content-start gap-2 rounded-lg border border-slate-200 p-3">
+                    <label className="grid gap-1.5">
+                      <span className={dashField.label}>Change status to</span>
                       <select
-                        value={orderStatusFilter}
-                        onChange={(event) => setOrderStatusFilter(event.target.value)}
-                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black"
+                        className={dashField.input}
+                        value={operationsForm.status}
+                        onChange={(event) =>
+                          setOperationsForm((state) => ({ ...state, status: event.target.value }))
+                        }
                       >
-                        <option value="ALL">All statuses</option>
-                        {[
-                          "NEW",
-                          "VENDOR_ACCEPTED",
-                          "PREPARING",
-                          "READY_FOR_PICKUP",
-                          "RIDER_ASSIGNED",
-                          "PICKED_UP",
-                          "ON_THE_WAY",
-                          "DELIVERED",
-                          "CANCELLED",
-                          "FAILED",
-                        ].map((status) => (
+                        {ADMIN_ORDER_STATUSES.map((status) => (
                           <option key={status} value={status}>
-                            {status.replaceAll("_", " ")}
+                            {statusText(status)}
                           </option>
                         ))}
                       </select>
                     </label>
-                    <label>
-                      <span className="sr-only">Payment status</span>
-                      <select
-                        value={orderPaymentFilter}
-                        onChange={(event) => setOrderPaymentFilter(event.target.value)}
-                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black"
-                      >
-                        <option value="ALL">All payments</option>
-                        <option value="PENDING">Pending payment</option>
-                        <option value="PAID">Paid</option>
-                        <option value="SUCCESS">Successful</option>
-                        <option value="FAILED">Failed</option>
-                        <option value="REFUNDED">Refunded</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span className="sr-only">Order period</span>
-                      <select
-                        value={orderPeriodFilter}
-                        onChange={(event) => setOrderPeriodFilter(event.target.value)}
-                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black"
-                      >
-                        <option value="ALL">All recent dates</option>
-                        <option value="TODAY">Today</option>
-                        <option value="MONTH">This month</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span className="sr-only">Sort orders</span>
-                      <select
-                        value={orderSort}
-                        onChange={(event) =>
-                          setOrderSort(event.target.value as "newest" | "oldest")
-                        }
-                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-black"
-                      >
-                        <option value="newest">Newest first</option>
-                        <option value="oldest">Oldest first</option>
-                      </select>
-                    </label>
+                    <button
+                      type="button"
+                      className={dashButton.primary}
+                      disabled={savingKey === "operation:status"}
+                      onClick={() => void submitOperation("status")}
+                    >
+                      {savingKey === "operation:status" ? "Saving…" : "Update status"}
+                    </button>
                   </div>
 
-                  {filteredOrders.length === 0 ? (
-                    <div className="mt-4">
-                      <EmptyState
-                        title={
-                          operationsOrders.length
-                            ? "No orders match these filters"
-                            : "No orders loaded"
+                  <div className="grid content-start gap-2 rounded-lg border border-slate-200 p-3">
+                    <label className="grid gap-1.5">
+                      <span className={dashField.label}>Give to rider</span>
+                      <select
+                        className={dashField.input}
+                        value={operationsForm.riderApplicationId}
+                        onChange={(event) =>
+                          setOperationsForm((state) => ({
+                            ...state,
+                            riderApplicationId: event.target.value,
+                          }))
                         }
-                        text={
-                          operationsOrders.length
-                            ? "Clear or change the filters to see other recent orders."
-                            : "Paid and pending orders will appear here as customers begin ordering."
-                        }
-                      />
-                    </div>
-                  ) : (
-                    <div className="mt-4 overflow-x-auto">
-                      <table className="min-w-[1320px] text-sm">
-                        <thead>
-                          <tr>
-                            <th className="px-3 py-3 text-left">Order</th>
-                            <th className="px-3 py-3 text-left">Customer</th>
-                            <th className="px-3 py-3 text-left">Vendor</th>
-                            <th className="px-3 py-3 text-left">Rider</th>
-                            <th className="px-3 py-3 text-right">Items</th>
-                            <th className="px-3 py-3 text-right">Subtotal</th>
-                            <th className="px-3 py-3 text-right">Delivery</th>
-                            <th className="px-3 py-3 text-right">Tip</th>
-                            <th className="px-3 py-3 text-right">Total</th>
-                            <th className="px-3 py-3 text-left">Payment</th>
-                            <th className="px-3 py-3 text-left">Status</th>
-                            <th className="px-3 py-3 text-left">Created</th>
-                            <th className="px-3 py-3 text-right">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {visibleOrders.map((order) => (
-                            <tr key={order.id}>
-                              <td className="border-t border-slate-200 px-3 py-3 font-semibold">
-                                {order.ozowReference || order.publicId}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3">
-                                <div>{order.customerName || "Guest"}</div>
-                                <div className="text-xs text-slate-500">
-                                  {order.customerEmail || "—"}
-                                </div>
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3">
-                                {order.vendorName}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3">
-                                {order.riderName || "Unassigned"}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3 text-right">
-                                {order.itemCount}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3 text-right">
-                                {money(order.subtotalCents)}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3 text-right">
-                                {money(order.deliveryFeeCents)}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3 text-right">
-                                {money(order.riderTipCents)}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3 text-right font-semibold">
-                                {money(order.totalCents)}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3">
-                                {order.paymentStatus}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3">
-                                <span
-                                  className={`rounded-full border px-2.5 py-1 text-xs ${statusClass(order.status)}`}
-                                >
-                                  {order.status.replaceAll("_", " ")}
-                                </span>
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3 text-slate-500">
-                                {formatDate(order.createdAt)}
-                              </td>
-                              <td className="border-t border-slate-200 px-3 py-3 text-right">
-                                <button
-                                  type="button"
-                                  className="rounded-md bg-lethela-primary px-3 py-2 text-xs font-semibold text-white"
-                                  onClick={() => {
-                                    setOperationsForm((current) => ({
-                                      ...current,
-                                      orderRef: order.ozowReference || order.publicId,
-                                    }));
-                                    navigateView("operations");
-                                  }}
-                                >
-                                  Manage
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                  {orderPageCount > 1 ? (
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
-                      <span>
-                        Page {orderPage} of {orderPageCount}
-                      </span>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                          disabled={orderPage <= 1}
-                          onClick={() => setOrderPage((page) => Math.max(1, page - 1))}
-                        >
-                          Previous
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                          disabled={orderPage >= orderPageCount}
-                          onClick={() => setOrderPage((page) => Math.min(orderPageCount, page + 1))}
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
+                      >
+                        <option value="">
+                          {operationsRiders.length ? "Choose a rider" : "No approved riders yet"}
+                        </option>
+                        {operationsRiders.map((rider) => (
+                          <option key={rider.id} value={rider.id}>
+                            {rider.fullName} · {rider.suburb || rider.city} · {rider.vehicleType}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      className={dashButton.secondary}
+                      disabled={savingKey === "operation:dispatch"}
+                      onClick={() => void submitOperation("dispatch")}
+                    >
+                      <Truck aria-hidden="true" />
+                      {savingKey === "operation:dispatch" ? "Saving…" : "Assign rider"}
+                    </button>
+                  </div>
                 </div>
-              </section>
-            ) : null}
 
-            {view === "messages" ? (
-              <section className="grid gap-4 xl:grid-cols-[0.95fr,1.05fr]">
-                <div className="rounded-lg border border-slate-200 bg-white p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-10 w-10 place-items-center rounded-lg bg-lethela-primary/15 text-lethela-primary">
-                      <MessageSquare className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <h3 className="text-lg font-semibold">Send owner message</h3>
-                      <p className="text-sm text-slate-500">
-                        Message vendors, riders, or everyone from one place.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid gap-3">
-                    <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Recipient
-                      </span>
-                      <select
-                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                        value={messageForm.recipientType}
-                        onChange={(event) =>
-                          setMessageForm((state) => ({
-                            ...state,
-                            recipientType: event.target.value as MessageRecipientType,
-                            recipientId: "",
-                          }))
-                        }
-                      >
-                        <option value="ALL">All vendors and riders</option>
-                        <option value="ALL_VENDORS">All active vendors</option>
-                        <option value="ALL_RIDERS">All approved riders</option>
-                        <option value="VENDOR">One vendor</option>
-                        <option value="RIDER">One rider</option>
-                      </select>
-                    </label>
-
-                    {messageForm.recipientType === "VENDOR" ? (
-                      <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                          Vendor
-                        </span>
-                        <select
-                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                          value={messageForm.recipientId}
-                          onChange={(event) =>
-                            setMessageForm((state) => ({
-                              ...state,
-                              recipientId: event.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">Choose vendor</option>
-                          {vendors.map((vendor) => (
-                            <option key={vendor.id} value={vendor.id}>
-                              {vendor.name} ({vendor.status})
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : null}
-
-                    {messageForm.recipientType === "RIDER" ? (
-                      <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                          Rider
-                        </span>
-                        <select
-                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                          value={messageForm.recipientId}
-                          onChange={(event) =>
-                            setMessageForm((state) => ({
-                              ...state,
-                              recipientId: event.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">Choose rider</option>
-                          {riders.map((rider) => (
-                            <option key={rider.id} value={rider.id}>
-                              {rider.fullName} ({rider.status.replaceAll("_", " ")})
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : null}
-
-                    <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Channel
-                      </span>
-                      <select
-                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                        value={messageForm.channel}
-                        onChange={(event) =>
-                          setMessageForm((state) => ({
-                            ...state,
-                            channel: event.target.value as "DASHBOARD" | "EMAIL_WHATSAPP" | "ALL",
-                          }))
-                        }
-                      >
-                        <option value="ALL">Dashboard plus email/WhatsApp</option>
-                        <option value="DASHBOARD">Dashboard inbox only</option>
-                        <option value="EMAIL_WHATSAPP">Email and WhatsApp plus inbox</option>
-                      </select>
-                    </label>
-
-                    <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Subject
-                      </span>
+                <details className="group rounded-lg border border-slate-200">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 text-sm font-semibold text-slate-800">
+                    Open a refund case
+                    <ChevronRight
+                      className="dash-summary-chevron h-4 w-4 text-slate-400 transition-transform"
+                      aria-hidden="true"
+                    />
+                  </summary>
+                  <div className="grid gap-3 border-t border-slate-100 p-3 sm:grid-cols-2">
+                    <label className="grid gap-1.5">
+                      <span className={dashField.label}>Amount (R)</span>
                       <input
-                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                        value={messageForm.subject}
+                        className={dashField.input}
+                        inputMode="decimal"
+                        value={operationsForm.refundAmountRand}
                         onChange={(event) =>
-                          setMessageForm((state) => ({ ...state, subject: event.target.value }))
+                          setOperationsForm((state) => ({
+                            ...state,
+                            refundAmountRand: event.target.value,
+                          }))
                         }
-                        placeholder="Weekend specials, payout notice, rider shift update..."
+                        placeholder="0.00"
                       />
                     </label>
-
-                    <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Message
-                      </span>
-                      <textarea
-                        className="min-h-36 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black"
-                        value={messageForm.body}
+                    <label className="grid gap-1.5">
+                      <span className={dashField.label}>Proof link (optional)</span>
+                      <input
+                        className={dashField.input}
+                        value={operationsForm.evidenceUrl}
                         onChange={(event) =>
-                          setMessageForm((state) => ({ ...state, body: event.target.value }))
+                          setOperationsForm((state) => ({
+                            ...state,
+                            evidenceUrl: event.target.value,
+                          }))
                         }
-                        placeholder="Write the operational message here..."
+                        placeholder="Photo or proof link"
                       />
                     </label>
-
-                    <Button
-                      className="bg-lethela-primary text-white hover:opacity-90"
-                      disabled={savingKey === "message:send"}
-                      onClick={sendOwnerMessage}
-                    >
-                      {savingKey === "message:send" ? "Sending..." : "Send message"}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-slate-200 bg-white p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-semibold">Recent owner messages</h3>
-                      <p className="text-sm text-slate-500">
-                        Sent dashboard messages are saved here for audit and follow-up.
-                      </p>
+                    <label className="grid gap-1.5 sm:col-span-2">
+                      <span className={dashField.label}>Reason</span>
+                      <input
+                        className={dashField.input}
+                        value={operationsForm.refundReason}
+                        onChange={(event) =>
+                          setOperationsForm((state) => ({
+                            ...state,
+                            refundReason: event.target.value,
+                          }))
+                        }
+                        placeholder="Missing item, failed delivery, wrong order…"
+                      />
+                    </label>
+                    <div className="sm:col-span-2">
+                      <button
+                        type="button"
+                        className={dashButton.secondary}
+                        disabled={savingKey === "operation:refund"}
+                        onClick={() => void submitOperation("refund")}
+                      >
+                        {savingKey === "operation:refund" ? "Saving…" : "Open refund case"}
+                      </button>
                     </div>
-                    <Button
-                      variant="outline"
-                      className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                      onClick={load}
-                    >
-                      Refresh
-                    </Button>
                   </div>
+                </details>
 
-                  <div className="mt-5 grid gap-3">
-                    {messages.length === 0 ? (
-                      <EmptyState
-                        title="No messages yet"
-                        text="Send your first update to vendors or riders."
-                      />
-                    ) : (
-                      messages.map((message) => (
-                        <article
-                          key={message.id}
-                          className="rounded-lg border border-slate-200 bg-white p-4"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <h4 className="text-sm font-semibold">{message.subject}</h4>
-                              <p className="mt-1 text-xs text-slate-500">
-                                {message.recipientType.replaceAll("_", " ")}
-                                {message.recipientId ? ` · ${message.recipientId}` : ""} ·{" "}
-                                {new Date(message.createdAt).toLocaleString()}
-                              </p>
-                            </div>
-                            <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs text-slate-600">
-                              {message.channel.replaceAll("_", " ")}
-                            </span>
-                          </div>
-                          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-                            {message.body}
-                          </p>
-                        </article>
-                      ))
-                    )}
-                  </div>
+                <div>
+                  <button
+                    type="button"
+                    className={dashButton.quiet}
+                    disabled={savingKey === "operation:event"}
+                    onClick={() => void submitOperation("event")}
+                  >
+                    {savingKey === "operation:event" ? "Saving…" : "Save the note only"}
+                  </button>
                 </div>
-              </section>
-            ) : null}
+              </div>
+            </Panel>
 
-            {view === "finance" ? (
-              <section className="space-y-4" aria-labelledby="finance-heading">
-                <div className="rounded-lg border border-slate-200 bg-white p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Finance
-                  </p>
-                  <h3 id="finance-heading" className="mt-1 text-xl font-semibold">
-                    Marketplace money flow
-                  </h3>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-                    Paid orders only. Delivery fees and rider tips are shown separately because they
-                    belong entirely to the rider and are never counted as Lethela platform revenue.
-                  </p>
-                </div>
+            <div className="grid content-start gap-4">
+              <OperationsFeed
+                title="Order history"
+                empty="Status changes and notes show here."
+                items={operationsEvents.map((event) => ({
+                  id: event.id,
+                  title: `${event.publicId} · ${statusText(event.type)}`,
+                  body: event.note || event.actor || "No note added.",
+                  meta: new Date(event.createdAt).toLocaleString(),
+                }))}
+              />
+              <OperationsFeed
+                id="refund-cases"
+                title="Refund cases"
+                empty="No refund cases."
+                items={operationsRefunds.map((refund) => ({
+                  id: refund.id,
+                  title: `${refund.publicId} · ${money(refund.amountCents)} · ${statusText(refund.status)}`,
+                  body: `${refund.reason}${refund.note ? ` · ${refund.note}` : ""}`,
+                  meta: new Date(refund.createdAt).toLocaleString(),
+                }))}
+              />
+              <OperationsFeed
+                title="Rider assignments"
+                empty="Orders you give to riders show here."
+                items={operationsDispatches.map((dispatch) => ({
+                  id: dispatch.id,
+                  title: `${dispatch.publicId} · ${dispatch.riderName}`,
+                  body: `${statusText(dispatch.status)} · ${dispatch.riderPhone}${
+                    dispatch.note ? ` · ${dispatch.note}` : ""
+                  }`,
+                  meta: new Date(dispatch.createdAt).toLocaleString(),
+                }))}
+              />
+            </div>
+          </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <MetricCard
-                    label="Gross merchandise value"
-                    value={stats ? money(stats.grossMerchandiseValueMonthCents) : "—"}
-                    note="Product value from paid orders this month."
-                    icon={ShoppingBag}
-                    onClick={() => navigateView("orders", { period: "month" })}
-                  />
-                  <MetricCard
-                    label="Platform revenue"
-                    value={stats ? money(stats.revenueMonthCents) : "—"}
-                    note="Lethela commission this month."
-                    icon={LineChart}
-                    onClick={() => navigateView("orders", { period: "month" })}
-                  />
-                  <MetricCard
-                    label="Vendor sales"
-                    value={stats ? money(stats.vendorSalesMonthCents) : "—"}
-                    note="Vendor payout value this month."
-                    icon={Store}
-                    onClick={() => navigateView("orders", { period: "month" })}
-                  />
-                  <MetricCard
-                    label="Customer payments"
-                    value={stats ? money(stats.customerPaymentsMonthCents) : "—"}
-                    note="Full paid customer charge for reconciliation."
-                    icon={WalletCards}
-                    onClick={() => navigateView("orders", { period: "month" })}
-                  />
-                  <MetricCard
-                    label="Delivery earnings"
-                    value={stats ? money(stats.deliveryFeesMonthCents) : "—"}
-                    note="Delivery fees owed entirely to riders."
-                    icon={Bike}
-                    onClick={() => navigateView("riders", { status: "APPROVED" })}
-                  />
-                  <MetricCard
-                    label="Rider tips"
-                    value={stats ? money(stats.riderTipsMonthCents) : "—"}
-                    note="Tips owed entirely to riders."
-                    icon={WalletCards}
-                    onClick={() => navigateView("riders", { status: "APPROVED" })}
-                  />
-                  <MetricCard
-                    label="Total rider earnings"
-                    value={stats ? money(stats.riderEarningsMonthCents) : "—"}
-                    note="Recorded rider payout value this month."
-                    icon={Truck}
-                    onClick={() => navigateView("riders", { status: "APPROVED" })}
-                  />
-                  <MetricCard
-                    label="Open refund cases"
-                    value={
-                      operationsRefunds.filter(
-                        (refund) =>
-                          !["COMPLETED", "PAID", "REJECTED", "CANCELLED", "CLOSED"].includes(
-                            refund.status,
-                          ),
-                      ).length
-                    }
-                    note="Cases requiring finance or support review."
-                    icon={Bell}
-                    onClick={() => navigateView("operations", { filter: "refunds" })}
-                  />
-                </div>
-              </section>
-            ) : null}
-
-            {view === "operations" ? (
-              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <MetricCard
-                  label="Email"
-                  value={channels?.email.enabled ? channels.email.recipients : "Off"}
-                  note="Admin recipient coverage."
-                  icon={Mail}
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Panel
+              title="Alerts and settings"
+              description="Who gets told about new orders and sign-ups."
+            >
+              <div className="divide-y divide-slate-100">
+                <DetailRow
+                  label="New order alerts by email"
+                  value={
+                    channels?.email.enabled
+                      ? `On, ${channels.email.recipients} ${channels.email.recipients === 1 ? "person" : "people"}`
+                      : "Off"
+                  }
                 />
-                <MetricCard
-                  label="WhatsApp"
-                  value={channels?.whatsapp.enabled ? channels.whatsapp.recipients : "Off"}
-                  note="Operations escalation channel."
-                  icon={Bell}
+                <DetailRow
+                  label="New order alerts by WhatsApp"
+                  value={
+                    channels?.whatsapp.enabled
+                      ? `On, ${channels.whatsapp.recipients} ${channels.whatsapp.recipients === 1 ? "person" : "people"}`
+                      : "Off"
+                  }
                 />
-                <MetricCard
-                  label="Applicant email"
+                <DetailRow
+                  label="Emails to vendors and riders"
                   value={applicantChannels?.email.enabled ? "On" : "Off"}
-                  note="Vendor and rider confirmations and approval notices."
-                  icon={Mail}
                 />
-                <MetricCard
-                  label="Applicant WhatsApp"
+                <DetailRow
+                  label="WhatsApp to vendors and riders"
                   value={applicantChannels?.whatsapp.enabled ? "On" : "Off"}
-                  note="Compulsory phone-based onboarding updates."
-                  icon={Bell}
                 />
-                <MetricCard
-                  label="Settings"
-                  value={authMode || "Local"}
-                  note={`Browser push: ${pushPermission}`}
-                  icon={Settings}
+                <DetailRow
+                  label="Alerts in this browser"
+                  value={
+                    pushPermission === "granted"
+                      ? "On"
+                      : pushPermission === "denied"
+                        ? "Blocked in browser settings"
+                        : pushPermission === "unsupported"
+                          ? "Not supported here"
+                          : "Off"
+                  }
                 />
-                <div className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2 xl:col-span-4">
-                  <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                    Settings / Developer Tools
-                  </p>
-                  <h3 className="mt-1 text-lg font-semibold">Admin access key</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Use this only when the production admin approval key is required to restore
-                    owner access on this browser.
+                <DetailRow
+                  label="Signed in with"
+                  value={
+                    authMode === "dev-bypass"
+                      ? "Local test access"
+                      : authMode === "key"
+                        ? "Admin key"
+                        : authMode === "key-cookie"
+                          ? "Owner account"
+                          : "Checking…"
+                  }
+                />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {pushPermission !== "granted" && pushPermission !== "unsupported" ? (
+                  <button
+                    type="button"
+                    className={dashButton.secondary}
+                    onClick={enableBrowserAlerts}
+                  >
+                    <Bell aria-hidden="true" />
+                    Turn on alerts
+                  </button>
+                ) : null}
+                <Link href="/admin/launch-checklist" className={dashButton.secondary}>
+                  <Settings aria-hidden="true" />
+                  Go-live checklist
+                </Link>
+              </div>
+              <details className="group mt-4 rounded-lg border border-slate-200">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 text-sm font-semibold text-slate-800">
+                  Admin access key
+                  <ChevronRight
+                    className="dash-summary-chevron h-4 w-4 text-slate-400 transition-transform"
+                    aria-hidden="true"
+                  />
+                </summary>
+                <div className="grid gap-2 border-t border-slate-100 p-3">
+                  <p className="text-sm text-slate-500">
+                    Only needed to restore owner access on this browser.
                   </p>
                   <input
-                    className="mt-4 h-10 w-full max-w-md rounded-lg border border-slate-200 bg-white px-3 text-sm text-black outline-none focus:ring-2 focus:ring-lethela-primary"
+                    className={`${dashField.input} max-w-md`}
                     value={adminKey}
                     onChange={(event) => setAdminKey(event.target.value)}
                     placeholder="ADMIN_APPROVAL_KEY"
                     type="password"
+                    autoComplete="off"
+                    aria-label="Admin access key"
                   />
                 </div>
+              </details>
+            </Panel>
 
-                <div className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2 xl:col-span-4">
-                  <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                    Push notifications
-                  </p>
-                  <h3 className="mt-1 text-lg font-semibold">Send a broadcast push</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Self-hosted web push. Goes to every subscribed device in the chosen segment that
-                    still allows marketing notifications.
-                  </p>
-                  {webPushConfigured === false ? (
-                    <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                      Web push keys are not configured. Set NEXT_PUBLIC_VAPID_PUBLIC_KEY and
-                      WEB_PUSH_VAPID_PRIVATE_KEY before sending.
-                    </p>
-                  ) : null}
-
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <label className="grid gap-1 text-sm md:col-span-2">
-                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Title
-                      </span>
-                      <input
-                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                        value={pushForm.title}
-                        maxLength={80}
-                        onChange={(event) =>
-                          setPushForm((state) => ({ ...state, title: event.target.value }))
-                        }
-                        placeholder="Fresh kotas near you"
-                      />
-                    </label>
-                    <label className="grid gap-1 text-sm md:col-span-2">
-                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Message
-                      </span>
-                      <textarea
-                        className="min-h-20 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black"
-                        value={pushForm.body}
-                        maxLength={200}
-                        onChange={(event) =>
-                          setPushForm((state) => ({ ...state, body: event.target.value }))
-                        }
-                        placeholder="Order now and get it delivered in under 30 minutes."
-                      />
-                    </label>
-                    <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Open link
-                      </span>
-                      <input
-                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                        value={pushForm.url}
-                        onChange={(event) =>
-                          setPushForm((state) => ({ ...state, url: event.target.value }))
-                        }
-                        placeholder="/"
-                      />
-                    </label>
-                    <label className="grid gap-1 text-sm">
-                      <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Segment
-                      </span>
-                      <select
-                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                        value={pushForm.segment}
-                        onChange={(event) =>
-                          setPushForm((state) => ({
-                            ...state,
-                            segment: event.target.value as PushSegment,
-                          }))
-                        }
-                      >
-                        <option value="ALL">Everyone subscribed</option>
-                        <option value="ENGAGED">Engaged (searched or browsed)</option>
-                        <option value="LOYAL">Loyal (clicked or added to cart)</option>
-                        <option value="NO_ORDER_YET">Registered, no order yet</option>
-                      </select>
-                    </label>
-                  </div>
-
-                  <Button
-                    className="mt-4 bg-lethela-primary text-white hover:opacity-90"
-                    disabled={savingKey === "push:send" || webPushConfigured === false}
-                    onClick={() => void sendPushCampaign()}
+            <Panel
+              title="Send a broadcast push"
+              description="A phone or browser notification to customers who allowed marketing messages."
+            >
+              {webPushConfigured === false ? (
+                <Notice tone="warning" className="mb-4">
+                  Push messages are not set up yet. The web push keys need to be added in Vercel
+                  first.
+                </Notice>
+              ) : null}
+              <form
+                className="grid gap-3 sm:grid-cols-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void sendPushCampaign();
+                }}
+              >
+                <label className="grid gap-1.5 sm:col-span-2">
+                  <span className={dashField.label}>Title</span>
+                  <input
+                    className={dashField.input}
+                    value={pushForm.title}
+                    maxLength={80}
+                    onChange={(event) =>
+                      setPushForm((state) => ({ ...state, title: event.target.value }))
+                    }
+                    placeholder="Fresh kotas near you"
+                  />
+                </label>
+                <label className="grid gap-1.5 sm:col-span-2">
+                  <span className={dashField.label}>Message</span>
+                  <textarea
+                    className={`${dashField.input} min-h-20`}
+                    value={pushForm.body}
+                    maxLength={200}
+                    onChange={(event) =>
+                      setPushForm((state) => ({ ...state, body: event.target.value }))
+                    }
+                    placeholder="Order now from your favourite local spot."
+                  />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className={dashField.label}>Opens</span>
+                  <input
+                    className={dashField.input}
+                    value={pushForm.url}
+                    onChange={(event) =>
+                      setPushForm((state) => ({ ...state, url: event.target.value }))
+                    }
+                    placeholder="/"
+                  />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className={dashField.label}>Send to</span>
+                  <select
+                    className={dashField.input}
+                    value={pushForm.segment}
+                    onChange={(event) =>
+                      setPushForm((state) => ({
+                        ...state,
+                        segment: event.target.value as PushSegment,
+                      }))
+                    }
                   >
-                    {savingKey === "push:send" ? "Sending..." : "Send push"}
-                  </Button>
-
-                  {pushCampaigns.length > 0 ? (
-                    <div className="mt-5 overflow-x-auto">
-                      <table className="w-full min-w-[520px] border-separate border-spacing-y-2 text-left text-sm">
-                        <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                          <tr>
-                            <th className="px-3 py-2">Campaign</th>
-                            <th className="px-3 py-2">Segment</th>
-                            <th className="px-3 py-2">Sent</th>
-                            <th className="px-3 py-2">Failed</th>
-                            <th className="px-3 py-2">When</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pushCampaigns.map((campaign) => (
-                            <tr key={campaign.id} className="bg-white">
-                              <td className="rounded-l-lg px-3 py-3 font-semibold text-slate-900">
-                                {campaign.title}
-                              </td>
-                              <td className="px-3 py-3 text-slate-600">{campaign.segment}</td>
-                              <td className="px-3 py-3 text-slate-600">{campaign.sentCount}</td>
-                              <td className="px-3 py-3 text-slate-600">{campaign.failedCount}</td>
-                              <td className="rounded-r-lg px-3 py-3 text-slate-500">
-                                {new Date(campaign.createdAt).toLocaleString()}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : null}
+                    <option value="ALL">Everyone who allowed messages</option>
+                    <option value="ENGAGED">People who searched or browsed</option>
+                    <option value="LOYAL">People who added to cart</option>
+                    <option value="NO_ORDER_YET">Signed up, no order yet</option>
+                  </select>
+                </label>
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    className={dashButton.primary}
+                    disabled={savingKey === "push:send" || webPushConfigured === false}
+                  >
+                    <Bell aria-hidden="true" />
+                    {savingKey === "push:send" ? "Sending…" : "Send push"}
+                  </button>
                 </div>
+              </form>
 
-                <div className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2 xl:col-span-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Order control
-                      </p>
-                      <h3 className="mt-1 text-lg font-semibold">Operations center</h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Update order lifecycle, assign approved riders, log refund cases and keep an
-                        audit trail for support follow-up.
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                      onClick={load}
-                    >
-                      Refresh
-                    </Button>
-                  </div>
-
-                  <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr,1.1fr]">
-                    <div className="grid gap-3">
-                      <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                          Order
+              {pushCampaigns.length > 0 ? (
+                <div className="mt-5 border-t border-slate-100 pt-4">
+                  <p className="text-sm font-semibold text-slate-900">Sent before</p>
+                  <ul className="mt-2 divide-y divide-slate-100">
+                    {pushCampaigns.map((campaign) => (
+                      <li
+                        key={campaign.id}
+                        className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
+                      >
+                        <span className="min-w-0 truncate font-medium text-slate-900">
+                          {campaign.title}
                         </span>
-                        <select
-                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                          value={operationsForm.orderRef}
-                          onChange={(event) =>
-                            setOperationsForm((state) => ({
-                              ...state,
-                              orderRef: event.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">Choose recent order</option>
-                          {operationsOrders.map((order) => (
-                            <option key={order.id} value={order.publicId}>
-                              {order.publicId} - {order.vendorName} - {money(order.totalCents)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                          Manual reference
+                        <span className="text-xs text-slate-500">
+                          {campaign.sentCount} sent
+                          {campaign.failedCount ? `, ${campaign.failedCount} failed` : ""} ·{" "}
+                          {new Date(campaign.createdAt).toLocaleString()}
                         </span>
-                        <input
-                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                          value={operationsForm.orderRef}
-                          onChange={(event) =>
-                            setOperationsForm((state) => ({
-                              ...state,
-                              orderRef: event.target.value,
-                            }))
-                          }
-                          placeholder="LET-..."
-                        />
-                      </label>
-
-                      <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                          Status
-                        </span>
-                        <select
-                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                          value={operationsForm.status}
-                          onChange={(event) =>
-                            setOperationsForm((state) => ({
-                              ...state,
-                              status: event.target.value,
-                            }))
-                          }
-                        >
-                          {[
-                            "PENDING_PAYMENT",
-                            "PAID",
-                            "NEW",
-                            "VENDOR_ACCEPTED",
-                            "PREPARING",
-                            "READY_FOR_PICKUP",
-                            "RIDER_ASSIGNED",
-                            "PICKED_UP",
-                            "ON_THE_WAY",
-                            "DELIVERED",
-                            "CANCELLED",
-                            "REFUND_REQUESTED",
-                            "REFUNDED",
-                            "FAILED",
-                          ].map((status) => (
-                            <option key={status} value={status}>
-                              {status.replaceAll("_", " ")}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                          Approved rider
-                        </span>
-                        <select
-                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                          value={operationsForm.riderApplicationId}
-                          onChange={(event) =>
-                            setOperationsForm((state) => ({
-                              ...state,
-                              riderApplicationId: event.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">Choose rider</option>
-                          {operationsRiders.map((rider) => (
-                            <option key={rider.id} value={rider.id}>
-                              {rider.fullName} - {rider.suburb || rider.city} - {rider.vehicleType}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <label className="grid gap-1 text-sm">
-                          <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                            Refund amount
-                          </span>
-                          <input
-                            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                            value={operationsForm.refundAmountRand}
-                            onChange={(event) =>
-                              setOperationsForm((state) => ({
-                                ...state,
-                                refundAmountRand: event.target.value,
-                              }))
-                            }
-                            placeholder="0.00"
-                          />
-                        </label>
-                        <label className="grid gap-1 text-sm">
-                          <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                            Evidence URL
-                          </span>
-                          <input
-                            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                            value={operationsForm.evidenceUrl}
-                            onChange={(event) =>
-                              setOperationsForm((state) => ({
-                                ...state,
-                                evidenceUrl: event.target.value,
-                              }))
-                            }
-                            placeholder="Photo or proof link"
-                          />
-                        </label>
-                      </div>
-
-                      <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                          Refund reason
-                        </span>
-                        <input
-                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-black"
-                          value={operationsForm.refundReason}
-                          onChange={(event) =>
-                            setOperationsForm((state) => ({
-                              ...state,
-                              refundReason: event.target.value,
-                            }))
-                          }
-                          placeholder="Missing item, failed delivery, incorrect order..."
-                        />
-                      </label>
-
-                      <label className="grid gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                          Operations note
-                        </span>
-                        <textarea
-                          className="min-h-24 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black"
-                          value={operationsForm.note}
-                          onChange={(event) =>
-                            setOperationsForm((state) => ({ ...state, note: event.target.value }))
-                          }
-                          placeholder="What happened and what action was taken?"
-                        />
-                      </label>
-
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          className="bg-lethela-primary text-white"
-                          disabled={savingKey === "operation:status"}
-                          onClick={() => void submitOperation("status")}
-                        >
-                          Update status
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                          disabled={savingKey === "operation:dispatch"}
-                          onClick={() => void submitOperation("dispatch")}
-                        >
-                          Assign rider
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                          disabled={savingKey === "operation:refund"}
-                          onClick={() => void submitOperation("refund")}
-                        >
-                          Create refund case
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="border-slate-300 bg-transparent text-slate-900 hover:border-lethela-primary hover:bg-slate-50 hover:text-lethela-primary"
-                          disabled={savingKey === "operation:event"}
-                          onClick={() => void submitOperation("event")}
-                        >
-                          Save note
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid gap-3">
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <h4 className="text-sm font-semibold text-slate-900">
-                          Recent order money split
-                        </h4>
-                        <div className="mt-3 grid gap-2">
-                          {operationsOrders.length === 0 ? (
-                            <p className="text-sm text-slate-500">No recent orders loaded yet.</p>
-                          ) : (
-                            operationsOrders.slice(0, 5).map((order) => (
-                              <div
-                                key={order.id}
-                                className="rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600"
-                              >
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <span className="font-semibold text-slate-900">
-                                    {order.publicId}
-                                  </span>
-                                  <span>{order.vendorName}</span>
-                                </div>
-                                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                                  <span>Products: {money(order.subtotalCents)}</span>
-                                  <span>Vendor payout: {money(order.vendorPayoutCents)}</span>
-                                  <span>Delivery fee: {money(order.deliveryFeeCents)}</span>
-                                  <span>Tip: {money(order.riderTipCents)}</span>
-                                  <span>Rider payout: {money(order.riderPayoutCents)}</span>
-                                  <span>Total paid: {money(order.totalCents)}</span>
-                                </div>
-                                <div className="mt-2 text-slate-500">
-                                  {order.deliveryDistanceKm != null
-                                    ? `${order.deliveryDistanceKm.toFixed(2)} km`
-                                    : "Distance pending"}
-                                  {order.containsAlcohol ? " - Liquor ID check required" : ""}
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                      <OperationsFeed
-                        title="Recent order events"
-                        empty="No order events logged yet."
-                        items={operationsEvents.map((event) => ({
-                          id: event.id,
-                          title: `${event.publicId} - ${event.type.replaceAll("_", " ")}`,
-                          body: event.note || event.actor || "No note captured.",
-                          meta: new Date(event.createdAt).toLocaleString(),
-                        }))}
-                      />
-                      <OperationsFeed
-                        title="Refund cases"
-                        empty="No refund cases yet."
-                        items={operationsRefunds.map((refund) => ({
-                          id: refund.id,
-                          title: `${refund.publicId} - ${money(refund.amountCents)} - ${refund.status}`,
-                          body: `${refund.reason}${refund.note ? ` - ${refund.note}` : ""}`,
-                          meta: new Date(refund.createdAt).toLocaleString(),
-                        }))}
-                      />
-                      <OperationsFeed
-                        title="Dispatch assignments"
-                        empty="No rider assignments yet."
-                        items={operationsDispatches.map((dispatch) => ({
-                          id: dispatch.id,
-                          title: `${dispatch.publicId} - ${dispatch.riderName}`,
-                          body: `${dispatch.status} - ${dispatch.riderPhone}${
-                            dispatch.note ? ` - ${dispatch.note}` : ""
-                          }`,
-                          meta: new Date(dispatch.createdAt).toLocaleString(),
-                        }))}
-                      />
-                      <OperationsFeed
-                        title="Audit logs"
-                        empty="No admin audit logs yet."
-                        items={auditLogs.map((log) => ({
-                          id: log.id,
-                          title: `${log.action.replaceAll("_", " ")} - ${log.targetType}`,
-                          body: `${log.actor} updated ${log.targetId}`,
-                          meta: new Date(log.createdAt).toLocaleString(),
-                        }))}
-                      />
-                    </div>
-                  </div>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-5 md:col-span-2 xl:col-span-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                        Owner control room
-                      </p>
-                      <h3 className="mt-1 text-lg font-semibold">Operating readiness workflow</h3>
-                    </div>
-                    <Link
-                      href="/admin/launch-checklist"
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 transition hover:border-lethela-primary hover:text-lethela-primary"
-                    >
-                      Open readiness checklist
-                    </Link>
-                  </div>
-                  <div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
-                    <p className="rounded-lg border border-slate-200 bg-white p-3">
-                      Vendor registration sends an applicant confirmation and owner alert.
-                    </p>
-                    <p className="rounded-lg border border-slate-200 bg-white p-3">
-                      Rider registration sends an applicant confirmation and owner alert.
-                    </p>
-                    <p className="rounded-lg border border-slate-200 bg-white p-3">
-                      Approval or rejection sends a decision notice by email and WhatsApp.
-                    </p>
-                  </div>
-                </div>
-                <OperationsList
-                  title="Daily operating SOP"
-                  items={DAILY_OPERATING_PLAYBOOK}
-                  className="md:col-span-2 xl:col-span-4"
-                />
-                <OperationsList
-                  title="Order exception SOP"
-                  items={ORDER_EXCEPTION_PLAYBOOK}
-                  className="md:col-span-2"
-                />
-                <OperationsList
-                  title="Scale-up gate"
-                  items={SCALE_READINESS_PLAYBOOK}
-                  className="md:col-span-2"
-                />
-              </section>
-            ) : null}
-
-            {view === "activity" ? (
-              <section className="space-y-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
-                    System
-                  </p>
-                  <h3 className="mt-1 text-xl font-semibold">Activity log</h3>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Every recorded admin action — who did it, what changed and when.
-                  </p>
-                </div>
-
-                <div className="rounded-lg border border-slate-200 bg-white">
-                  {auditLogs.length === 0 ? (
-                    <div className="p-6 text-sm">
-                      <p className="font-semibold text-slate-900">
-                        No admin activity recorded yet.
-                      </p>
-                      <p className="mt-1 text-slate-500">
-                        Approvals, rejections, status changes and other owner actions appear here.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto p-2">
-                      <table className="w-full min-w-[760px] border-separate border-spacing-y-2 text-left text-sm">
-                        <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                          <tr>
-                            <th className="px-3 py-2">Action</th>
-                            <th className="px-3 py-2">Target</th>
-                            <th className="px-3 py-2">Actor</th>
-                            <th className="px-3 py-2">When</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {auditLogs.map((log) => (
-                            <tr key={log.id} className="bg-white">
-                              <td className="rounded-l-lg px-3 py-3 font-semibold text-slate-900">
-                                {log.action.replaceAll("_", " ")}
-                              </td>
-                              <td className="px-3 py-3 text-slate-600">
-                                {log.targetType}
-                                <span className="block text-xs text-slate-500">{log.targetId}</span>
-                              </td>
-                              <td className="px-3 py-3 text-slate-600">{log.actor}</td>
-                              <td className="rounded-r-lg px-3 py-3 text-slate-500">
-                                {new Date(log.createdAt).toLocaleString()}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </section>
-            ) : null}
+              ) : null}
+            </Panel>
           </div>
-        </div>
-      </section>
-    </main>
+
+          <Panel
+            title="How Lethela runs"
+            description="Short checklists for the team. Open one when you need it."
+            padded={false}
+          >
+            <div className="divide-y divide-slate-100">
+              <OperationsList title="Every day" items={DAILY_OPERATING_PLAYBOOK} />
+              <OperationsList title="When an order goes wrong" items={ORDER_EXCEPTION_PLAYBOOK} />
+              <OperationsList title="Before growing" items={SCALE_READINESS_PLAYBOOK} />
+            </div>
+          </Panel>
+        </section>
+      ) : null}
+
+      {view === "activity" ? (
+        <section className="space-y-4">
+          {auditLogs.length === 0 ? (
+            <EmptyState
+              title="No activity yet"
+              text="Approvals, rejections, status changes and other admin actions show here."
+            />
+          ) : (
+            <Panel padded={false}>
+              <ul className="divide-y divide-slate-100 md:hidden">
+                {auditLogs.map((log) => (
+                  <li key={log.id} className="px-4 py-3">
+                    <p className="font-medium text-slate-900">{statusText(log.action)}</p>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      {statusText(log.targetType)} · {log.actor}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500">
+                    <tr>
+                      <th className="px-5 py-2.5 font-medium">What happened</th>
+                      <th className="px-3 py-2.5 font-medium">On</th>
+                      <th className="px-3 py-2.5 font-medium">By</th>
+                      <th className="px-5 py-2.5 font-medium">When</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {auditLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td className="px-5 py-3 font-medium text-slate-900">
+                          {statusText(log.action)}
+                        </td>
+                        <td className="px-3 py-3 text-slate-600">
+                          {statusText(log.targetType)}
+                          <span className="block max-w-[16rem] truncate text-xs text-slate-400">
+                            {log.targetId}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-slate-600">{log.actor}</td>
+                        <td className="whitespace-nowrap px-5 py-3 text-slate-500">
+                          {new Date(log.createdAt).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+          )}
+        </section>
+      ) : null}
+    </DashboardShell>
   );
 }
 
-function OperationsList({
-  title,
-  items,
-  className = "",
-}: {
-  title: string;
-  items: string[];
-  className?: string;
-}) {
+function OperationsList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className={`rounded-lg border border-slate-200 bg-white p-5 ${className}`}>
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <div className="mt-4 grid gap-3">
+    <details className="group">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-semibold text-slate-800 sm:px-5">
+        {title}
+        <ChevronRight
+          className="dash-summary-chevron h-4 w-4 text-slate-400 transition-transform"
+          aria-hidden="true"
+        />
+      </summary>
+      <ul className="grid gap-2 px-4 pb-4 sm:px-5">
         {items.map((item) => (
-          <div key={item} className="flex gap-3 rounded-lg border border-slate-200 bg-white p-3">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-lethela-primary" />
-            <p className="text-sm leading-6 text-slate-600">{item}</p>
-          </div>
+          <li key={item} className="flex gap-3 text-sm leading-6 text-slate-600">
+            <CheckCircle2
+              className="mt-1 h-4 w-4 shrink-0 text-lethela-primary"
+              aria-hidden="true"
+            />
+            {item}
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </details>
   );
 }
 
 function OperationsFeed({
+  id,
   title,
   empty,
   items,
 }: {
+  id?: string;
   title: string;
   empty: string;
   items: Array<{ id: string; title: string; body: string; meta: string }>;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <h4 className="text-sm font-semibold text-slate-900">{title}</h4>
-      <div className="mt-3 grid gap-2">
-        {items.length === 0 ? (
-          <p className="text-sm text-slate-500">{empty}</p>
-        ) : (
-          items.slice(0, 5).map((item) => (
-            <article key={item.id} className="rounded-lg border border-slate-200 bg-white p-3">
-              <div className="text-sm font-medium text-slate-900">{item.title}</div>
-              <p className="mt-1 text-xs leading-5 text-slate-600">{item.body}</p>
-              <div className="mt-2 text-[11px] text-slate-500">{item.meta}</div>
-            </article>
-          ))
-        )}
-      </div>
-    </div>
+    <Panel id={id} title={title} padded={false} className="scroll-mt-24">
+      {items.length === 0 ? (
+        <p className="px-4 py-4 text-sm text-slate-500 sm:px-5">{empty}</p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {items.slice(0, 5).map((item) => (
+            <li key={item.id} className="px-4 py-3 sm:px-5">
+              <p className="text-sm font-medium text-slate-900">{item.title}</p>
+              <p className="mt-0.5 text-sm leading-5 text-slate-600">{item.body}</p>
+              <p className="mt-1 text-xs text-slate-400">{item.meta}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
   );
+}
+
+function approvalStateText(status: string) {
+  if (status === "SUBMITTED") return "waiting for approval";
+  if (status === "UNDER_REVIEW") return "being checked";
+  if (status === "CHANGES_REQUESTED") return "changes asked";
+  return statusText(status).toLowerCase();
+}
+
+function paymentText(status: string) {
+  const value = status.toUpperCase();
+  if (value === "PAID" || value === "SUCCESS") return "Paid";
+  if (value === "PENDING") return "Waiting for payment";
+  return statusText(status);
+}
+
+function customerTone(customer: AdminCustomer) {
+  return customer.status === "LOCKED"
+    ? "danger"
+    : customer.status === "UNVERIFIED"
+      ? "warning"
+      : "success";
+}
+
+function customerStatusText(customer: AdminCustomer) {
+  return customer.status === "LOCKED"
+    ? "Locked"
+    : customer.status === "UNVERIFIED"
+      ? "Unverified"
+      : customer.status === "VERIFIED"
+        ? "Verified"
+        : "Active";
 }
 
 function SearchBox({
@@ -3945,19 +4218,19 @@ function SearchBox({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </label>
-      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
-        <Search className="h-4 w-4 text-black/45" />
-        <input
-          className="h-10 min-w-0 flex-1 bg-transparent text-sm text-black outline-none"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-        />
-      </div>
-    </div>
+    <label className="relative block w-full sm:max-w-sm">
+      <span className="sr-only">{label}</span>
+      <Search
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+        aria-hidden="true"
+      />
+      <input
+        type="search"
+        className={`${dashField.input} pl-9`}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+      />
+    </label>
   );
 }

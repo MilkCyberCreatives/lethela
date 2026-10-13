@@ -144,7 +144,8 @@ export default async function VendorProfilePage({ params }: PageProps) {
   const cuisines = normalizeCuisine(vendor.cuisine);
   const imageUrl = vendor.image || (isAlcoholVendor ? "/vendors/vegan.jpg" : "/vendors/grill.jpg");
   const menuItemCount = vendor.sections.reduce((sum, section) => sum + section.items.length, 0);
-  const visibleMenuCount = menuItemCount || vendor.products.length;
+  // Approved shop products show under the menu, so a store can sell both.
+  const visibleMenuCount = menuItemCount + vendor.products.length;
   const vendorHours: OperatingHourView[] =
     "hours" in vendor && Array.isArray(vendor.hours) ? (vendor.hours as OperatingHourView[]) : [];
   const hoursState = getVendorHoursState(
@@ -392,7 +393,12 @@ export default async function VendorProfilePage({ params }: PageProps) {
           <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
             No products listed yet.
           </div>
-        ) : (
+        ) : null}
+
+        {vendor.products.length > 0 && vendor.sections.length > 0 ? (
+          <h3 className="mb-3 mt-8 text-lg font-semibold">More from this store</h3>
+        ) : null}
+        {vendor.products.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {vendor.products.map((product) => (
               <ProductCard
@@ -414,7 +420,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
               />
             ))}
           </div>
-        )}
+        ) : null}
       </section>
 
       {trust.recentReviews.length > 0 ? (

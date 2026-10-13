@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DashCard from "./DashCard";
+import { CalendarClock, CalendarDays, Hourglass, RefreshCw, Wallet } from "lucide-react";
+import {
+  DetailRow,
+  EmptyState,
+  Notice,
+  Panel,
+  StatTile,
+  dashButton,
+} from "@/components/dashboard/kit/ui";
+import { cn } from "@/lib/utils";
 
 type Settlement = {
   publicId: string;
@@ -35,6 +44,15 @@ function money(cents: number) {
   return `R${(cents / 100).toFixed(2)}`;
 }
 
+function shortDateTime(value: string) {
+  return new Date(value).toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function PayoutsPanel() {
   const [payouts, setPayouts] = useState<PayoutsPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,148 +79,170 @@ export default function PayoutsPanel() {
     void load();
   }, []);
 
+  // The first load shows placeholders; a refresh keeps the last numbers on screen.
+  const firstLoad = loading && !payouts;
+  const amount = (cents: number | undefined) => (firstLoad ? "…" : money(cents ?? 0));
+  const nextPayout = payouts ? new Date(payouts.nextEstimatedPayoutAt) : null;
+
   return (
-    <div className="grid gap-4">
-      <DashCard title="Payouts and Settlements">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">
-            Lethela currently charges a 2% service fee on product sales per order. Your vendor
-            payout is the product subtotal less this 2% fee. Delivery fees and customer tips are
-            excluded from the fee and go fully to the rider.
-          </p>
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-        {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <StatCard
-            label="Vendor available"
-            value={loading ? "..." : money(payouts?.availableCents ?? 0)}
-          />
-          <StatCard
-            label="Vendor pending"
-            value={loading ? "..." : money(payouts?.pendingCents ?? 0)}
-          />
-          <StatCard
-            label="Rider fees"
-            value={loading ? "..." : money(payouts?.riderDeliveryFeeCents ?? 0)}
-          />
-          <StatCard
-            label="Rider tips"
-            value={loading ? "..." : money(payouts?.riderTipCents ?? 0)}
-          />
-          <StatCard
-            label="Vendor 7 days"
-            value={loading ? "..." : money(payouts?.last7DaysCents ?? 0)}
-          />
-        </div>
-      </DashCard>
-
-      <div className="grid gap-4 xl:grid-cols-[0.85fr,1.15fr]">
-        <DashCard title="Settlement Status">
-          <div className="space-y-3">
-            <StatusRow label="Paid and ready" count={payouts?.paidOrdersCount ?? 0} />
-            <StatusRow label="Pending settlement" count={payouts?.pendingOrdersCount ?? 0} />
-            <StatusRow label="Failed or cancelled" count={payouts?.failedOrdersCount ?? 0} />
-          </div>
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
-            <div className="text-xs uppercase tracking-[0.12em] text-slate-500">
-              Next estimated payout
-            </div>
-            <div className="mt-2 text-lg font-semibold text-slate-900">
-              {loading || !payouts
-                ? "..."
-                : new Date(payouts.nextEstimatedPayoutAt).toLocaleString()}
-            </div>
-            <div className="mt-1 text-xs text-slate-500">
-              {payouts?.latestPaidAt
-                ? `Latest paid order: ${new Date(payouts.latestPaidAt).toLocaleString()}`
-                : "No paid orders yet."}
-            </div>
-          </div>
-        </DashCard>
-
-        <DashCard title="Recent Settled Orders">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                <tr>
-                  <th className="pb-3 pr-4 font-medium">Order</th>
-                  <th className="pb-3 pr-4 font-medium">Time</th>
-                  <th className="pb-3 pr-4 font-medium">Items</th>
-                  <th className="pb-3 pr-4 font-medium">Vendor payout</th>
-                  <th className="pb-3 pr-4 font-medium">Rider payout</th>
-                  <th className="pb-3 font-medium">Total paid</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr className="border-t border-slate-200">
-                    <td colSpan={6} className="py-4">
-                      <div className="grid animate-pulse gap-2">
-                        <div className="h-5 rounded bg-slate-100" />
-                        <div className="h-5 rounded bg-slate-100" />
-                        <div className="h-5 rounded bg-slate-100" />
-                      </div>
-                    </td>
-                  </tr>
-                ) : payouts && payouts.recentSettlements.length > 0 ? (
-                  payouts.recentSettlements.map((settlement) => (
-                    <tr key={settlement.publicId} className="border-t border-slate-200">
-                      <td className="py-3 pr-4 font-medium text-slate-700">
-                        {settlement.publicId}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-600">
-                        {new Date(settlement.createdAt).toLocaleString()}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-600">{settlement.itemsCount}</td>
-                      <td className="py-3 pr-4 font-semibold text-slate-900">
-                        {money(settlement.amountCents)}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-600">
-                        {money(settlement.riderPayoutCents)}
-                      </td>
-                      <td className="py-3 font-semibold text-slate-900">
-                        {money(settlement.totalPaidCents)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr className="border-t border-slate-200">
-                    <td colSpan={6} className="py-6 text-center text-slate-500">
-                      No paid orders to settle yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </DashCard>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">Last 30 days</p>
+        <button type="button" onClick={load} disabled={loading} className={dashButton.secondary}>
+          <RefreshCw aria-hidden="true" className={loading ? "animate-spin" : undefined} />
+          {loading ? "Refreshing…" : "Refresh"}
+        </button>
       </div>
-    </div>
-  );
-}
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-      <div className="text-xs uppercase tracking-[0.12em] text-slate-500">{label}</div>
-      <div className="mt-2 text-xl font-semibold text-slate-900">{value}</div>
-    </div>
-  );
-}
+      {error ? <Notice tone="danger">{error}</Notice> : null}
 
-function StatusRow({ label, count }: { label: string; count: number }) {
-  return (
-    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-      <span className="text-slate-600">{label}</span>
-      <span className="font-semibold text-slate-900">{count}</span>
+      {payouts || loading ? (
+        <>
+          <div
+            className={cn(
+              "grid grid-cols-2 gap-3 transition-opacity lg:grid-cols-4 lg:gap-4",
+              loading && !firstLoad ? "opacity-60" : "",
+            )}
+            aria-busy={loading}
+          >
+            <StatTile
+              label="Owed to you"
+              value={amount(payouts?.availableCents)}
+              hint="Delivered and paid"
+              icon={<Wallet />}
+            />
+            <StatTile
+              label="Waiting"
+              value={amount(payouts?.pendingCents)}
+              hint="Paid, not delivered yet"
+              icon={<Hourglass />}
+            />
+            <StatTile
+              label="Last 7 days"
+              value={amount(payouts?.last7DaysCents)}
+              hint="Your share of paid orders"
+              icon={<CalendarDays />}
+            />
+            <StatTile
+              label="Next payout"
+              value={
+                nextPayout
+                  ? nextPayout.toLocaleDateString(undefined, {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                    })
+                  : loading
+                    ? "…"
+                    : "—"
+              }
+              hint={
+                nextPayout
+                  ? `Estimated, ${nextPayout.toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`
+                  : undefined
+              }
+              icon={<CalendarClock />}
+            />
+          </div>
+
+          <div
+            className={cn(
+              "grid items-start gap-4 transition-opacity lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]",
+              loading && !firstLoad ? "opacity-60" : "",
+            )}
+          >
+            <Panel title="Payout summary">
+              {firstLoad ? (
+                <div className="grid animate-pulse gap-3" aria-hidden="true">
+                  <div className="h-5 rounded bg-slate-100" />
+                  <div className="h-5 rounded bg-slate-100" />
+                  <div className="h-5 rounded bg-slate-100" />
+                </div>
+              ) : (
+                <div className="-my-2.5 divide-y divide-slate-100">
+                  <DetailRow label="Orders paid out" value={payouts?.paidOrdersCount ?? 0} />
+                  <DetailRow
+                    label="Waiting for delivery"
+                    value={payouts?.pendingOrdersCount ?? 0}
+                  />
+                  <DetailRow label="Failed or cancelled" value={payouts?.failedOrdersCount ?? 0} />
+                  <DetailRow
+                    label="Last payout"
+                    value={payouts?.latestPaidAt ? shortDateTime(payouts.latestPaidAt) : "None yet"}
+                  />
+                  <DetailRow
+                    label="Delivery fees, to riders"
+                    value={money(payouts?.riderDeliveryFeeCents ?? 0)}
+                  />
+                  <DetailRow label="Tips, to riders" value={money(payouts?.riderTipCents ?? 0)} />
+                </div>
+              )}
+              <p className="mt-5 rounded-lg bg-slate-50 p-3 text-sm leading-6 text-slate-600">
+                Lethela keeps 2% of your food sales and pays you the rest. Delivery fees and tips go
+                to the rider.
+              </p>
+            </Panel>
+
+            <Panel
+              title="Recent paid orders"
+              description="Delivered orders and what you get"
+              padded={!firstLoad && !(payouts && payouts.recentSettlements.length > 0)}
+            >
+              {firstLoad ? (
+                <div className="grid animate-pulse gap-2 p-4 sm:p-5" aria-hidden="true">
+                  <div className="h-10 rounded-lg bg-slate-100" />
+                  <div className="h-10 rounded-lg bg-slate-100" />
+                  <div className="h-10 rounded-lg bg-slate-100" />
+                </div>
+              ) : payouts && payouts.recentSettlements.length > 0 ? (
+                <>
+                  <div className="flex justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600 sm:px-5">
+                    <span>Order</span>
+                    <span>You get</span>
+                  </div>
+                  <ul className="divide-y divide-slate-100">
+                    {payouts.recentSettlements.map((settlement) => (
+                      <li
+                        key={settlement.publicId}
+                        className="flex items-start justify-between gap-3 px-4 py-3 sm:px-5"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {settlement.publicId}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {shortDateTime(settlement.createdAt)} · {settlement.itemsCount} item
+                            {settlement.itemsCount === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-semibold tabular-nums text-slate-900">
+                            {money(settlement.amountCents)}
+                          </p>
+                          <p className="mt-0.5 text-xs tabular-nums text-slate-500">
+                            Rider {money(settlement.riderPayoutCents)} · Total{" "}
+                            {money(settlement.totalPaidCents)}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <EmptyState
+                  compact
+                  icon={<Wallet />}
+                  title="No paid orders yet"
+                  text="Orders show here once they are paid and delivered."
+                />
+              )}
+            </Panel>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

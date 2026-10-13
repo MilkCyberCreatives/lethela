@@ -215,7 +215,7 @@ async function recipientContacts(type: MessageRecipientType, id?: string | null)
 
   if (type === "ALL_VENDORS" || type === "ALL") {
     const vendors = await prisma.vendor.findMany({
-      where: { status: "ACTIVE", isActive: true },
+      where: { status: { in: ["ACTIVE", "APPROVED"] }, isActive: true },
       select: { name: true, email: true, phone: true },
       take: 500,
     });
@@ -263,7 +263,7 @@ async function recipientUserIds(type: MessageRecipientType, id?: string | null):
 
   if (type === "ALL_VENDORS" || type === "ALL") {
     const vendors = await prisma.vendor.findMany({
-      where: { status: "ACTIVE", isActive: true },
+      where: { status: { in: ["ACTIVE", "APPROVED"] }, isActive: true },
       select: {
         ownerId: true,
         members: { select: { userId: true }, take: 20 },

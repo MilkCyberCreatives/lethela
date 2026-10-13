@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bike, CircleDollarSign, Clock3, Power } from "lucide-react";
+import { Power } from "lucide-react";
+import { dashButton } from "@/components/dashboard/kit/ui";
 
 function money(cents: number) {
   return `R ${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -92,82 +93,76 @@ export default function RiderOperationsPanel() {
   }
 
   const periods = [
-    ["Today", earnings?.today, Clock3],
-    ["This week", earnings?.week, Bike],
-    ["This month", earnings?.month, CircleDollarSign],
+    ["Today", earnings?.today],
+    ["This week", earnings?.week],
+    ["This month", earnings?.month],
   ] as const;
+  const online = Boolean(availability?.availableNow);
 
   return (
-    <section className="grid gap-4 lg:grid-cols-[0.8fr,1.2fr]">
-      <article className="rounded-xl border border-slate-200 bg-white p-5 text-slate-900">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Shift status
-            </p>
-            <h3 className="mt-2 text-lg font-semibold">
-              {availability?.availableNow ? "Online for delivery" : "Offline"}
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              {availability?.approved
-                ? `Dispatch area: ${availability.area || "complete your area in the profile"}.`
-                : "Lethela approval is required before a rider can go online."}
-            </p>
-          </div>
+    <section className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <article className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+        <div className="flex items-center gap-3">
           <span
-            className={`grid h-11 w-11 place-items-center rounded-xl ${
-              availability?.availableNow
-                ? "bg-emerald-50 text-emerald-800"
-                : "bg-white text-slate-500"
+            className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${
+              online ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
             }`}
+            aria-hidden="true"
           >
             <Power className="h-5 w-5" />
           </span>
+          <div className="min-w-0">
+            <h2 className="text-[17px] font-semibold text-slate-900">
+              {loading ? "Checking your shift…" : online ? "You are online" : "You are offline"}
+            </h2>
+            <p className="mt-0.5 text-sm text-slate-500">
+              {loading
+                ? "One moment."
+                : availability?.approved
+                  ? `Area: ${availability.area || "add your area in your profile"}`
+                  : "You can go online once Lethela approves you."}
+            </p>
+          </div>
         </div>
         <button
           type="button"
           disabled={loading || saving || !availability?.approved}
           onClick={() => void toggleAvailability()}
-          className={`mt-5 w-full rounded-lg px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${
-            availability?.availableNow
-              ? "border border-slate-300 bg-transparent text-slate-900 hover:border-red-300"
-              : "bg-lethela-primary text-white hover:opacity-90"
-          }`}
+          className={`mt-5 ${online ? dashButton.secondary : dashButton.primary} min-h-12 w-full text-base`}
         >
-          {saving
-            ? "Updating..."
-            : availability?.availableNow
-              ? "Go offline"
-              : "Go online for deliveries"}
+          {saving ? "Updating…" : online ? "Go offline" : "Go online"}
         </button>
-        {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
+        {error ? (
+          <p className="mt-3 text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        ) : null}
       </article>
 
-      <article className="rounded-xl border border-slate-200 bg-white p-5 text-slate-900">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Completed earnings
+      <article className="rounded-xl border border-slate-200 bg-white">
+        <header className="border-b border-slate-100 px-4 py-3.5 sm:px-5">
+          <h2 className="text-[15px] font-semibold text-slate-900">Your earnings</h2>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Delivery fees and tips from completed deliveries
           </p>
-          <h3 className="mt-2 text-lg font-semibold">Delivery fee and tip summary</h3>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {periods.map(([label, period, Icon]) => (
-            <div key={label} className="rounded-lg border border-slate-200 bg-white p-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs text-slate-500">{label}</span>
-                <Icon className="h-4 w-4 text-lethela-primary" />
-              </div>
-              <p className="mt-2 text-xl font-bold">{money(period?.totalCents || 0)}</p>
-              <p className="mt-1 text-[11px] text-slate-500">
-                {period?.deliveries || 0} {period?.deliveries === 1 ? "delivery" : "deliveries"} ·
-                Tips {money(period?.tipCents || 0)}
+        </header>
+        <div className="grid grid-cols-3 divide-x divide-slate-100">
+          {periods.map(([label, period]) => (
+            <div key={label} className="min-w-0 px-3 py-4 sm:px-5">
+              <p className="text-xs font-medium text-slate-500 sm:text-sm">{label}</p>
+              <p className="mt-1 truncate text-lg font-semibold tabular-nums text-slate-900 sm:text-2xl">
+                {money(period?.totalCents || 0)}
+              </p>
+              <p className="mt-1 text-[11px] leading-4 text-slate-500 sm:text-xs">
+                {period?.deliveries || 0} {period?.deliveries === 1 ? "delivery" : "deliveries"}
+                <span className="hidden sm:inline"> · tips {money(period?.tipCents || 0)}</span>
               </p>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-xs leading-5 text-slate-500">
+        <p className="border-t border-slate-100 px-4 py-3 text-xs leading-5 text-slate-500 sm:px-5">
           {earnings?.settlementNote ||
-            "Completed earnings appear here after delivered, paid orders are reconciled."}
+            "Earnings show here once a delivered order has been paid and checked."}
         </p>
       </article>
     </section>

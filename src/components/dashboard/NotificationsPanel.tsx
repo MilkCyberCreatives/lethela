@@ -1,8 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import DashCard from "./DashCard";
+import {
+  CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  Info,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
+import { EmptyState, Notice, Panel, dashButton } from "@/components/dashboard/kit/ui";
+import { cn } from "@/lib/utils";
 
 type NotificationItem = {
   id: string;
@@ -12,10 +21,10 @@ type NotificationItem = {
   href: string;
 };
 
-const toneClasses: Record<NotificationItem["tone"], string> = {
-  info: "border-sky-200 bg-sky-50 text-sky-800",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
-  danger: "border-red-200 bg-red-50 text-red-800",
+const toneStyles: Record<NotificationItem["tone"], { icon: ReactNode; className: string }> = {
+  danger: { icon: <CircleAlert />, className: "bg-red-50 text-red-600" },
+  warning: { icon: <TriangleAlert />, className: "bg-amber-50 text-amber-600" },
+  info: { icon: <Info />, className: "bg-sky-50 text-sky-700" },
 };
 
 export default function NotificationsPanel() {
@@ -44,49 +53,96 @@ export default function NotificationsPanel() {
     void load();
   }, []);
 
+  const firstLoad = loading && items.length === 0;
+  const summary = firstLoad
+    ? "Checking your store…"
+    : items.length === 0
+      ? error
+        ? ""
+        : "Nothing to check"
+      : `${items.length} ${items.length === 1 ? "thing" : "things"} to check`;
+
   return (
-    <DashCard title="Notifications and Issues">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-600">
-          This is the operational inbox for store blockers, missed settings, and urgent order
-          signals.
-        </p>
-        <button
-          type="button"
-          onClick={load}
-          disabled={loading}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-xs transition-colors hover:border-lethela-primary hover:text-lethela-primary disabled:opacity-60"
-        >
-          {loading ? "Refreshing..." : "Refresh"}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">{summary}</p>
+        <button type="button" onClick={load} disabled={loading} className={dashButton.secondary}>
+          <RefreshCw aria-hidden="true" className={loading ? "animate-spin" : undefined} />
+          {loading ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
-      {error ? <p className="mt-3 text-xs text-red-800">{error}</p> : null}
+      {error ? <Notice tone="danger">{error}</Notice> : null}
 
-      <div className="mt-4 space-y-3">
-        {!loading && items.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
-            No active dashboard notifications right now.
-          </div>
-        ) : null}
-
-        {items.map((item) => (
-          <div key={item.id} className={`rounded-xl border px-4 py-4 ${toneClasses[item.tone]}`}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="max-w-3xl">
-                <div className="text-sm font-semibold">{item.title}</div>
-                <p className="mt-1 text-sm opacity-85">{item.body}</p>
+      {firstLoad ? (
+        <Panel padded={false}>
+          <div className="divide-y divide-slate-100" aria-hidden="true">
+            {[0, 1, 2].map((row) => (
+              <div key={row} className="flex animate-pulse items-start gap-3 px-4 py-4 sm:px-5">
+                <div className="h-8 w-8 shrink-0 rounded-lg bg-slate-100" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-1/2 rounded bg-slate-100" />
+                  <div className="h-3 w-3/4 rounded bg-slate-100" />
+                </div>
               </div>
-              <Link
-                href={item.href}
-                className="rounded-full border border-current/30 px-4 py-2 text-xs font-semibold transition-opacity hover:opacity-90"
-              >
-                Open
-              </Link>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </DashCard>
+        </Panel>
+      ) : null}
+
+      {!loading && !error && items.length === 0 ? (
+        <Panel>
+          <EmptyState
+            compact
+            icon={<CheckCircle2 />}
+            title="All caught up"
+            text="Nothing needs your attention right now."
+          />
+        </Panel>
+      ) : null}
+
+      {items.length > 0 ? (
+        <Panel
+          padded={false}
+          className={cn("overflow-hidden transition-opacity", loading ? "opacity-60" : "")}
+        >
+          <ul className="divide-y divide-slate-100">
+            {items.map((item) => {
+              const tone = toneStyles[item.tone] ?? toneStyles.info;
+              return (
+                <li key={item.id}>
+                  <Link
+                    href={item.href}
+                    className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50 sm:px-5"
+                  >
+                    <span
+                      className={cn(
+                        "grid h-8 w-8 shrink-0 place-items-center rounded-lg [&_svg]:h-4 [&_svg]:w-4",
+                        tone.className,
+                      )}
+                      aria-hidden="true"
+                    >
+                      {tone.icon}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-slate-900">
+                        {item.title}
+                      </span>
+                      <span className="mt-0.5 block text-sm leading-5 text-slate-500">
+                        {item.body}
+                      </span>
+                    </span>
+                    <span className="mt-1.5 flex shrink-0 items-center gap-1 text-sm font-semibold text-slate-500">
+                      <span className="hidden sm:inline">Open</span>
+                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
+      ) : null}
+    </div>
   );
 }

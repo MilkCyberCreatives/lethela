@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { formatZAR } from "../src/lib/format";
 import { PUBLIC_DELIVERY_WORDING, deliveryFeeCents } from "../src/lib/pricing";
 
 async function source(path: string) {
@@ -73,4 +74,15 @@ test("pages anyone can open do not show Lethela fee figures", async () => {
     assert.doesNotMatch(text, /DELIVERY_PRICING_WORDING|DELIVERY_FEE_TIERS/, path);
     assert.doesNotMatch(text, FEE_FIGURE, path);
   }
+});
+
+test("prices print the same everywhere, with two digits when there are cents", () => {
+  const nbsp = "\u00a0";
+  assert.equal(formatZAR(4500), `R${nbsp}45`);
+  assert.equal(formatZAR(4550), `R${nbsp}45.50`);
+  assert.equal(formatZAR(1230), `R${nbsp}12.30`);
+  assert.equal(formatZAR(5), `R${nbsp}0.05`);
+  assert.equal(formatZAR(123450), `R${nbsp}1${nbsp}234.50`);
+  assert.equal(formatZAR(0), `R${nbsp}0`);
+  assert.equal(formatZAR(-2500), `-R${nbsp}25`);
 });

@@ -57,28 +57,59 @@ function listHasItems(value: string | null | undefined) {
   }
 }
 
+export const DELIVERY_METHODS = ["WALKING", "BICYCLE", "SCOOTER", "MOTORCYCLE", "CAR"] as const;
+
+/**
+ * What a rider must have before Lethela can approve them. Only what is needed to reach the
+ * rider and send them deliveries is required; documents, vehicle papers, working times and
+ * banking can be added later in the profile.
+ */
 export function getRiderReadiness(input: RiderReadinessInput) {
   const vehicleType = String(input.vehicleType || "").toUpperCase();
   const requiresVehicle = ["SCOOTER", "MOTORCYCLE", "CAR"].includes(vehicleType);
   const checks = [
     {
       key: "personal",
-      label: "Personal details",
+      label: "Name and phone number",
+      required: true,
+      complete: hasText(input.fullName) && hasText(input.phone, 8),
+    },
+    {
+      key: "delivery-method",
+      label: "How you deliver",
+      required: true,
+      complete: (DELIVERY_METHODS as readonly string[]).includes(vehicleType),
+    },
+    {
+      key: "service-area",
+      label: "Area you deliver in",
+      required: true,
+      complete: hasText(input.province) && hasText(input.township),
+    },
+    {
+      key: "safety",
+      label: "Rider agreement",
+      required: true,
+      complete: Boolean(
+        input.hasSmartphone &&
+          input.lawfulWorkDeclared &&
+          input.conductAccepted &&
+          input.liquorIdCheckAccepted,
+      ),
+    },
+    {
+      key: "identity",
+      label: "ID and photo",
+      required: false,
       complete:
-        hasText(input.fullName) &&
-        hasText(input.phone, 8) &&
         /^\d{4}$/.test(input.idNumberLast4 || "") &&
         hasText(input.idDocumentUrl) &&
         hasText(input.profilePhotoUrl),
     },
     {
-      key: "delivery-method",
-      label: "Delivery method",
-      complete: ["WALKING", "BICYCLE", "SCOOTER", "MOTORCYCLE", "CAR"].includes(vehicleType),
-    },
-    {
       key: "vehicle",
-      label: "Vehicle details",
+      label: "Vehicle and licence",
+      required: false,
       complete:
         !requiresVehicle ||
         (hasText(input.vehicleRegistration) &&
@@ -89,23 +120,16 @@ export function getRiderReadiness(input: RiderReadinessInput) {
           hasText(input.vehicleDocumentUrl)),
     },
     {
-      key: "service-area",
-      label: "Service area",
-      complete:
-        hasText(input.province) &&
-        hasText(input.municipality) &&
-        hasText(input.township) &&
-        listHasItems(input.preferredZones),
-    },
-    {
       key: "availability",
-      label: "Availability",
+      label: "When you can work",
+      required: false,
       complete:
         listHasItems(input.workingDays) && hasText(input.startTime) && hasText(input.endTime),
     },
     {
       key: "banking",
-      label: "Banking and payouts",
+      label: "Bank account for payouts",
+      required: false,
       complete:
         hasText(input.bankAccountName) &&
         hasText(input.bankName) &&
@@ -113,22 +137,14 @@ export function getRiderReadiness(input: RiderReadinessInput) {
         hasText(input.bankBranchCode) &&
         hasText(input.bankAccountType),
     },
-    {
-      key: "safety",
-      label: "Safety declarations",
-      complete: Boolean(
-        input.hasSmartphone &&
-          input.lawfulWorkDeclared &&
-          input.conductAccepted &&
-          input.liquorIdCheckAccepted,
-      ),
-    },
   ];
-  const completed = checks.filter((check) => check.complete).length;
+  const required = checks.filter((check) => check.required);
+  const completed = required.filter((check) => check.complete).length;
   return {
     checks,
-    percent: Math.round((completed / checks.length) * 100),
-    canSubmit: completed === checks.length,
-    missing: checks.filter((check) => !check.complete).map((check) => check.label),
+    percent: Math.round((completed / required.length) * 100),
+    canSubmit: completed === required.length,
+    missing: required.filter((check) => !check.complete).map((check) => check.label),
+    later: checks.filter((check) => !check.required && !check.complete).map((check) => check.label),
   };
 }

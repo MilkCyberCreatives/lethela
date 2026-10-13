@@ -117,7 +117,7 @@ export default function NotificationBell({ operationsCount = 0, onOpenOperations
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        className="relative grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-lethela-primary hover:text-white"
+        className="relative grid h-10 w-10 place-items-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
         aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
         aria-expanded={open}
         aria-haspopup="true"
@@ -126,9 +126,9 @@ export default function NotificationBell({ operationsCount = 0, onOpenOperations
           if (!open) void load();
         }}
       >
-        <Bell className="h-4 w-4" />
+        <Bell className="h-5 w-5" aria-hidden="true" />
         {badge > 0 ? (
-          <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border border-[#05071D] bg-lethela-primary px-1 text-[10px] font-bold text-white">
+          <span className="absolute right-0.5 top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-white bg-lethela-primary px-1 text-[10px] font-bold leading-none text-white">
             {badge > 99 ? "99+" : badge}
           </span>
         ) : null}
@@ -138,14 +138,14 @@ export default function NotificationBell({ operationsCount = 0, onOpenOperations
         <div
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 top-[calc(100%+8px)] z-[140] w-[min(92vw,22rem)] overflow-hidden rounded-xl border border-white/12 bg-[#0B0F2A] text-white shadow-xl"
+          className="fixed inset-x-3 top-16 z-[140] overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900 sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-[22rem]"
         >
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <span className="text-sm font-semibold">Notifications</span>
             {unread > 0 ? (
               <button
                 type="button"
-                className="text-xs text-white/60 underline-offset-2 hover:text-white hover:underline"
+                className="text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
                 onClick={() => void markRead({ all: true })}
               >
                 Mark all read
@@ -156,14 +156,14 @@ export default function NotificationBell({ operationsCount = 0, onOpenOperations
           {operationsCount > 0 && onOpenOperations ? (
             <button
               type="button"
-              className="flex w-full items-center justify-between border-b border-white/10 bg-lethela-primary/10 px-4 py-3 text-left text-sm hover:bg-lethela-primary/15"
+              className="flex w-full items-center justify-between border-b border-slate-100 bg-lethela-primary/[0.06] px-4 py-3 text-left text-sm font-medium text-lethela-primary hover:bg-lethela-primary/10"
               onClick={() => {
                 setOpen(false);
                 onOpenOperations();
               }}
             >
               <span>Operational issues need attention</span>
-              <span className="rounded-full bg-lethela-primary px-2 py-0.5 text-[11px] font-bold">
+              <span className="rounded-full bg-lethela-primary px-2 py-0.5 text-[11px] font-bold text-white">
                 {operationsCount}
               </span>
             </button>
@@ -171,9 +171,9 @@ export default function NotificationBell({ operationsCount = 0, onOpenOperations
 
           <div className="max-h-[60vh] overflow-y-auto">
             {loading && items.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-white/50">Loading…</p>
+              <p className="px-4 py-6 text-center text-sm text-slate-500">Loading…</p>
             ) : items.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-white/50">You are all caught up.</p>
+              <p className="px-4 py-6 text-center text-sm text-slate-500">You are all caught up.</p>
             ) : (
               <ul>
                 {items.map((row) => {
@@ -192,9 +192,9 @@ export default function NotificationBell({ operationsCount = 0, onOpenOperations
                         <span className="min-w-0">
                           <span className="block text-sm font-medium">{row.title}</span>
                           {row.body ? (
-                            <span className="mt-0.5 block text-xs text-white/60">{row.body}</span>
+                            <span className="mt-0.5 block text-xs text-slate-600">{row.body}</span>
                           ) : null}
-                          <span className="mt-1 block text-[11px] text-white/40">
+                          <span className="mt-1 block text-[11px] text-slate-400">
                             {relativeTime(row.createdAt)}
                             {isUnread ? " · unread" : ""}
                           </span>
@@ -202,11 +202,11 @@ export default function NotificationBell({ operationsCount = 0, onOpenOperations
                       </span>
                     </>
                   );
-                  const className = `block w-full px-4 py-3 text-left transition hover:bg-white/[0.04] ${
-                    isUnread ? "bg-white/[0.02]" : ""
+                  const className = `block w-full px-4 py-3 text-left transition-colors hover:bg-slate-50 ${
+                    isUnread ? "bg-lethela-primary/[0.03]" : ""
                   }`;
                   return (
-                    <li key={row.id} className="border-b border-white/6 last:border-b-0">
+                    <li key={row.id} className="border-b border-slate-100 last:border-b-0">
                       {row.href ? (
                         <Link
                           href={row.href}

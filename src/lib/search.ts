@@ -209,12 +209,6 @@ async function searchPostgres(
           AND v.city IS NOT NULL
           AND v.province IS NOT NULL
           AND v.cuisine IS NOT NULL
-          AND v."storeType" IS NOT NULL
-          AND v."kycIdUrl" IS NOT NULL
-          AND v."kycProofUrl" IS NOT NULL
-          AND v."bankName" IS NOT NULL
-          AND v."bankAccountName" IS NOT NULL
-          AND v."bankAccountNumber" IS NOT NULL
           AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
           AND EXISTS (SELECT 1 FROM "Product" vp WHERE vp."vendorId" = v.id AND vp."inStock" = true AND vp."isAlcohol" = false)
           AND to_tsvector('simple', coalesce(v.name, '') || ' ' || coalesce(v.suburb, '') || ' ' || coalesce(v.city, '') || ' ' || coalesce(v.cuisine, ''))
@@ -246,12 +240,6 @@ async function searchPostgres(
           AND v.city IS NOT NULL
           AND v.province IS NOT NULL
           AND v.cuisine IS NOT NULL
-          AND v."storeType" IS NOT NULL
-          AND v."kycIdUrl" IS NOT NULL
-          AND v."kycProofUrl" IS NOT NULL
-          AND v."bankName" IS NOT NULL
-          AND v."bankAccountName" IS NOT NULL
-          AND v."bankAccountNumber" IS NOT NULL
           AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
           AND to_tsvector('simple', coalesce(p.name, '') || ' ' || coalesce(p.description, '') || ' ' || coalesce(v.name, ''))
               @@ websearch_to_tsquery('simple', ${tsQuery})
@@ -351,12 +339,6 @@ async function searchPostgresLoose(query: string, tokens: string[], limit: numbe
           AND v.city IS NOT NULL
           AND v.province IS NOT NULL
           AND v.cuisine IS NOT NULL
-          AND v."storeType" IS NOT NULL
-          AND v."kycIdUrl" IS NOT NULL
-          AND v."kycProofUrl" IS NOT NULL
-          AND v."bankName" IS NOT NULL
-          AND v."bankAccountName" IS NOT NULL
-          AND v."bankAccountNumber" IS NOT NULL
           AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
           AND EXISTS (SELECT 1 FROM "Product" vp WHERE vp."vendorId" = v.id AND vp."inStock" = true AND vp."isAlcohol" = false)
           AND (
@@ -388,12 +370,6 @@ async function searchPostgresLoose(query: string, tokens: string[], limit: numbe
           AND v.city IS NOT NULL
           AND v.province IS NOT NULL
           AND v.cuisine IS NOT NULL
-          AND v."storeType" IS NOT NULL
-          AND v."kycIdUrl" IS NOT NULL
-          AND v."kycProofUrl" IS NOT NULL
-          AND v."bankName" IS NOT NULL
-          AND v."bankAccountName" IS NOT NULL
-          AND v."bankAccountNumber" IS NOT NULL
           AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
           AND (
             p.name ILIKE ANY(${patterns})
@@ -483,12 +459,6 @@ async function searchFallback(
           address: { not: null },
           city: { not: null },
           province: { not: null },
-          storeType: { not: null },
-          kycIdUrl: { not: null },
-          kycProofUrl: { not: null },
-          bankName: { not: null },
-          bankAccountName: { not: null },
-          bankAccountNumber: { not: null },
           hours: { some: { closed: false } },
           products: { some: { inStock: true, isAlcohol: false, status: "APPROVED" } },
           OR: vendorOr,
@@ -509,11 +479,6 @@ async function searchFallback(
           province: true,
           cuisine: true,
           storeType: true,
-          kycIdUrl: true,
-          kycProofUrl: true,
-          bankName: true,
-          bankAccountName: true,
-          bankAccountNumber: true,
           deliveryFee: true,
           etaMins: true,
           _count: { select: { products: true, hours: true } },
@@ -531,12 +496,6 @@ async function searchFallback(
             address: { not: null },
             city: { not: null },
             province: { not: null },
-            storeType: { not: null },
-            kycIdUrl: { not: null },
-            kycProofUrl: { not: null },
-            bankName: { not: null },
-            bankAccountName: { not: null },
-            bankAccountNumber: { not: null },
             hours: { some: { closed: false } },
           },
           OR: productOr,
@@ -556,11 +515,6 @@ async function searchFallback(
               province: true,
               cuisine: true,
               storeType: true,
-              kycIdUrl: true,
-              kycProofUrl: true,
-              bankName: true,
-              bankAccountName: true,
-              bankAccountNumber: true,
               deliveryFee: true,
               etaMins: true,
               _count: { select: { products: true, hours: true } },

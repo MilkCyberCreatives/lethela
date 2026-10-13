@@ -16,6 +16,7 @@ type Item = {
   priceCents: number;
   tags: string[];
   image?: string | null;
+  isAlcohol?: boolean | null;
 };
 
 type Section = {
@@ -99,9 +100,9 @@ export default function MenuSectionList({
                           name: it.name,
                           priceCents: it.priceCents,
                           image: it.image ?? undefined,
-                          isAlcohol: it.tags.some((tag) =>
-                            /alcohol|beer|wine|spirit|18/i.test(tag),
-                          ),
+                          isAlcohol:
+                            Boolean(it.isAlcohol) ||
+                            it.tags.some((tag) => /alcohol|beer|wine|spirit|18/i.test(tag)),
                         },
                         1,
                       );

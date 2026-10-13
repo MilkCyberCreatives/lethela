@@ -175,6 +175,7 @@ export type CatalogSectionItem = {
   priceCents: number;
   tags: string[];
   image: string | null;
+  isAlcohol?: boolean;
 };
 
 export type CatalogSection = {
