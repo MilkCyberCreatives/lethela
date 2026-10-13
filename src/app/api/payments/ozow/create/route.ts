@@ -56,6 +56,24 @@ const BodySchema = z
     },
   );
 
+// The checkout page shows this text as it is, so it must be a plain sentence, never zod's
+// error object (an object there crashed the page).
+function checkoutProblem(error: z.ZodError) {
+  const field = String(error.issues[0]?.path[0] ?? "");
+  if (field === "customerName") return "Please enter your name (2 to 120 characters).";
+  if (field === "customerPhone") return "Please enter a phone number we can call.";
+  if (field === "whatsappNumber") return "Please check the WhatsApp number.";
+  if (["standNumber", "streetSection", "landmark"].includes(field)) {
+    return "Please shorten the address details.";
+  }
+  if (field === "deliveryNotes") return "Please keep delivery notes under 500 characters.";
+  if (field.startsWith("destination")) return "Please check your delivery area.";
+  if (field === "items") {
+    return "Your cart could not be read. Please refresh the page and try again.";
+  }
+  return "Please check your order details and try again.";
+}
+
 export const POST = withSentryRoute(async (req: NextRequest) => {
   const limited = await checkRateLimit({
     key: "ozow-create",
@@ -79,7 +97,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   const body = await req.json().catch(() => ({}));
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ ok: false, error: checkoutProblem(parsed.error) }, { status: 400 });
   }
 
   const siteCode = process.env.OZOW_SITE_CODE || "";

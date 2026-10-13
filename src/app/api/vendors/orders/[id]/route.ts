@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { optionalReason } from "@/lib/review-reason";
 import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
 import { vendorApiErrorMessage, vendorApiErrorStatus } from "@/lib/vendor-api-error";
@@ -12,7 +13,7 @@ import { recordOrderEvent } from "@/lib/order-operations";
 const StatusSchema = z
   .object({
     status: z.enum(["VENDOR_ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "CANCELLED"]),
-    reason: z.string().trim().min(5).max(500).optional(),
+    reason: optionalReason(),
   })
   .refine((value) => value.status !== "CANCELLED" || Boolean(value.reason), {
     message: "A cancellation reason is required.",
