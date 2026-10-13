@@ -97,3 +97,28 @@ test("admin can approve a trusted store's waiting items in one go", async () => 
   );
   assert.match(admin, /ADMIN_ORDER_STATUSES\.map/);
 });
+
+test("the homepage lists an approved store with only menu items, whatever capitals its area has", async () => {
+  const [home, sqlite, page] = await Promise.all([
+    source("src/lib/home-data.ts"),
+    source("src/lib/sqlite-catalog.ts"),
+    source("src/app/page.tsx"),
+  ]);
+  const homeVendors = home.slice(home.indexOf("export async function getHomeVendors"));
+  // Same rule as the store page: an approved product or a published menu item is enough.
+  assert.match(
+    homeVendors,
+    /OR: \[\s*\{ products: \{ some: \{[^}]*status: "APPROVED" \} \} \},\s*\{ items: \{ some: \{ draft: false, isAlcohol: false \} \} \},\s*\]/,
+  );
+  assert.match(
+    sqlite,
+    /OR EXISTS \(SELECT 1 FROM Item vi WHERE vi\.vendorId = v\.id AND vi\.draft = 0 AND vi\.isAlcohol = 0\)/,
+  );
+  assert.match(page, /const hasMarketplaceItems = vendors\.length > 0;/);
+  // Postgres compares capitals, so "Klipfontein view" typed on a phone must still match.
+  assert.match(
+    home,
+    /provider === "postgresql"\s*\?\s*\(\{ contains: area, mode: "insensitive" \}/,
+  );
+  assert.doesNotMatch(home, /suburb: \{ contains: normalizedSuburb \}/);
+});

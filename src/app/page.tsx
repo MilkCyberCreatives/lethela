@@ -99,7 +99,9 @@ export default async function HomePage() {
   const recentProducts = products
     .filter((product) => !featuredProductIds.has(product.id))
     .slice(0, 8);
-  const hasMarketplaceItems = vendors.length > 0 && products.length > 0;
+  // A store is only listed when customers can order from it (an approved product or a published
+  // menu item), so one listed store is enough. A store with only a menu has no product rails.
+  const hasMarketplaceItems = vendors.length > 0;
   const launchStatus = getMarketplaceLaunchStatus({
     approvedVendorCount: vendors.length,
     publicProductCount: products.length,

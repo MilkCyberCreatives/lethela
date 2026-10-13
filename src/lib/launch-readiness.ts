@@ -21,7 +21,9 @@ export function getMarketplaceLaunchStatus({
   const vendors = Math.max(0, Math.floor(approvedVendorCount));
   const products = Math.max(0, Math.floor(publicProductCount));
 
-  if (vendors === 0 || products === 0) {
+  // Listed stores always have something to order (an approved product or a published menu
+  // item), so the pilot opens with the first store even when its items are all on its menu.
+  if (vendors === 0) {
     return {
       phase: "PRE_LAUNCH",
       eyebrow: "Launching shortly in Klipfontein View. Vendors and riders are joining now.",

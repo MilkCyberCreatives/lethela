@@ -208,7 +208,10 @@ export async function getSqliteCatalogVendors({
            AND v.city IS NOT NULL
            AND v.province IS NOT NULL
            AND EXISTS (SELECT 1 FROM OperatingHour oh WHERE oh.vendorId = v.id AND oh.closed = 0)
-           AND EXISTS (SELECT 1 FROM Product vp WHERE vp.vendorId = v.id AND vp.inStock = 1 AND vp.isAlcohol = 0 AND vp.status = 'APPROVED')${clauses.sql}
+           AND (
+             EXISTS (SELECT 1 FROM Product vp WHERE vp.vendorId = v.id AND vp.inStock = 1 AND vp.isAlcohol = 0 AND vp.status = 'APPROVED')
+             OR EXISTS (SELECT 1 FROM Item vi WHERE vi.vendorId = v.id AND vi.draft = 0 AND vi.isAlcohol = 0)
+           )${clauses.sql}
          GROUP BY v.id
          ORDER BY v.updatedAt DESC
          LIMIT ?`,
