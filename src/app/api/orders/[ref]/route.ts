@@ -5,6 +5,7 @@ import { buildTrackingSnapshot } from "@/lib/order-tracking";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { auth } from "@/auth";
+import { scheduleOrderSweep } from "@/lib/order-automation";
 
 type Params = { params: Promise<{ ref: string }> };
 
@@ -107,6 +108,9 @@ export async function GET(req: NextRequest, { params }: Params) {
       { status: 404, headers: privateHeaders },
     );
   }
+
+  // A customer watching their order keeps the order sweep running while it is open.
+  scheduleOrderSweep();
 
   const trackingToken =
     req.nextUrl.searchParams.get("t")?.trim() || req.headers.get("x-tracking-token")?.trim() || "";

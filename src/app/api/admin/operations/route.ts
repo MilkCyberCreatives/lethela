@@ -12,7 +12,8 @@ import {
   listOperationRows,
   recordOrderEvent,
 } from "@/lib/order-operations";
-import { notifyRiderOfAssignment } from "@/lib/order-notifications";
+import { notifyCustomerOfCancellation, notifyRiderOfAssignment } from "@/lib/order-notifications";
+import { dispatchReadyOrder, scheduleOrderSweep } from "@/lib/order-automation";
 import { canTransitionOrderStatus } from "@/lib/order-state";
 
 const ADMIN_OPERATIONAL_STATUSES = [
@@ -223,6 +224,7 @@ export async function GET(req: NextRequest) {
   if (!guard.ok)
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
 
+  scheduleOrderSweep();
   const orderPage = await loadOrderPage(req);
   if (req.nextUrl.searchParams.get("ordersOnly") === "1") {
     return NextResponse.json({ ok: true, ...orderPage });
@@ -317,6 +319,12 @@ export async function POST(req: NextRequest) {
       before: { status: order.status },
       after: { status: parsed.data.status, publicId: order.publicId },
     });
+    if (parsed.data.status === "READY_FOR_PICKUP") {
+      await dispatchReadyOrder(order.id);
+    }
+    if (parsed.data.status === "CANCELLED") {
+      await notifyCustomerOfCancellation(order.id).catch(() => null);
+    }
   }
 
   if (parsed.data.action === "refund") {
