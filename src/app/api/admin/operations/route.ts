@@ -12,6 +12,7 @@ import {
   listOperationRows,
   recordOrderEvent,
 } from "@/lib/order-operations";
+import { notifyRiderOfAssignment } from "@/lib/order-notifications";
 import { canTransitionOrderStatus } from "@/lib/order-state";
 
 const ADMIN_OPERATIONAL_STATUSES = [
@@ -420,6 +421,8 @@ export async function POST(req: NextRequest) {
       before: { status: order.status },
       after: { status: "RIDER_ASSIGNED", riderId: rider.id, riderName: rider.fullName },
     });
+    // The assignment is saved even if a message cannot go out.
+    await notifyRiderOfAssignment(order.id, rider.id).catch(() => null);
   }
 
   if (parsed.data.action === "event") {

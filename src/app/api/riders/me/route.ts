@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { createRiderConsoleToken } from "@/lib/rider-console";
 import { prisma } from "@/server/db";
 import { getRiderReadiness } from "@/lib/rider-readiness";
+import { joinAddress, riderDropoff } from "@/lib/order-notifications";
 
 const ACTIVE_ORDER_STATUSES = [
   "NEW",
@@ -111,6 +112,8 @@ export async function GET() {
           vendor: {
             select: {
               name: true,
+              phone: true,
+              address: true,
               suburb: true,
               city: true,
               latitude: true,
@@ -146,8 +149,12 @@ export async function GET() {
         status: order.status,
         vendor: order.vendor?.name || "Unknown vendor",
         pickupArea:
-          [order.vendor?.suburb, order.vendor?.city].filter(Boolean).join(", ") || "Area not set",
+          joinAddress(order.vendor?.address, order.vendor?.suburb, order.vendor?.city) ||
+          "Area not set",
         pickupInstructions: order.vendor?.pickupInstructions || null,
+        vendorPhone: order.vendor?.phone || null,
+        // Only the rider assigned to an active order gets the customer's details.
+        dropoff: riderDropoff(order.itemsJson),
         totalCents: order.totalCents,
         deliveryFeeCents: order.deliveryFeeCents,
         riderTipCents,

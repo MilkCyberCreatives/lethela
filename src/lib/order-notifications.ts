@@ -9,7 +9,7 @@ import {
   splitCsv,
 } from "@/lib/notification-channels";
 import { sendPushToAdmins, sendPushToUsers } from "@/lib/push-notifications";
-import { notifyStaff } from "@/lib/notifications";
+import { createNotification, notifyStaff } from "@/lib/notifications";
 import { absoluteUrl } from "@/lib/site";
 
 type OrderPayloadItem = {
@@ -106,6 +106,52 @@ export function buildVendorOrderWhatsAppMessage(input: {
     `Total paid: ${rand(input.totalCents)}`,
     containsAlcohol ? "Liquor order — ID check required." : "",
     `Dashboard: ${input.dashboardUrl}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/** Joins address parts, leaving out a part that an earlier one already contains. */
+export function joinAddress(...parts: unknown[]) {
+  const kept: string[] = [];
+  for (const part of parts.map(cleanLine).filter(Boolean)) {
+    const lower = part.toLowerCase();
+    if (!kept.some((existing) => existing.toLowerCase().includes(lower))) kept.push(part);
+  }
+  return kept.join(", ");
+}
+
+/** What the assigned rider needs to find the customer. */
+export function riderDropoff(itemsJson: string | null | undefined) {
+  const { items, deliveryDetails: details } = parseOrderPayload(itemsJson);
+  return {
+    customerName: cleanLine(details?.customerName),
+    phone: cleanLine(details?.customerPhone) || cleanLine(details?.whatsappNumber),
+    address: joinAddress(details?.standNumber, details?.streetSection, details?.destinationSuburb),
+    landmark: cleanLine(details?.landmark),
+    notes: cleanLine(details?.deliveryNotes),
+    containsAlcohol:
+      Boolean(details?.containsAlcohol) || items.some((item) => Boolean(item?.isAlcohol)),
+  };
+}
+
+// The customer's name and phone number stay in the rider dashboard, not in the message.
+export function buildRiderAssignmentMessage(input: {
+  orderRef: string;
+  vendorName: string;
+  pickupAddress: string;
+  dropoff: ReturnType<typeof riderDropoff>;
+  earnCents: number;
+  dashboardUrl: string;
+}) {
+  return [
+    `New Lethela delivery for you: ${input.orderRef}`,
+    `Collect from: ${joinAddress(input.vendorName, input.pickupAddress) || "See your dashboard"}`,
+    `Deliver to: ${input.dropoff.address || "See your dashboard"}`,
+    input.dropoff.landmark ? `Landmark: ${input.dropoff.landmark}` : "",
+    input.dropoff.containsAlcohol ? "Liquor order: check the customer's ID at handover." : "",
+    `You earn: ${rand(input.earnCents)}`,
+    `Customer details and delivery buttons: ${input.dashboardUrl}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -419,6 +465,93 @@ export async function notifyAdminsOfOrder(orderId: string, event: AdminOrderEven
   }
   if (hasWhatsAppChannel() && whatsapp.length > 0) {
     tasks.push(settleWithin(sendTwilioWhatsApp({ to: whatsapp, body: text }), 3000));
+  }
+
+  await Promise.all(tasks);
+  return { delivered: true as const };
+}
+
+// Dispatch is manual, so a rider only hears about a delivery when we tell them.
+export async function notifyRiderOfAssignment(orderId: string, riderApplicationId: string) {
+  const [order, rider] = await Promise.all([
+    prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        publicId: true,
+        ozowReference: true,
+        itemsJson: true,
+        deliveryFeeCents: true,
+        riderTipCents: true,
+        riderPayoutCents: true,
+        vendor: { select: { name: true, address: true, suburb: true, city: true } },
+      },
+    }),
+    prisma.riderApplication.findUnique({
+      where: { id: riderApplicationId },
+      select: { email: true, phone: true, userId: true },
+    }),
+  ]);
+  if (!order || !rider) return { delivered: false as const };
+  if (!(await claimOrderNotification(orderId, `rider-assigned:${riderApplicationId}`, "rider"))) {
+    return { delivered: false as const };
+  }
+
+  const orderRef = order.publicId || order.ozowReference || orderId;
+  const vendorName = cleanLine(order.vendor.name);
+  const text = buildRiderAssignmentMessage({
+    orderRef,
+    vendorName,
+    pickupAddress: joinAddress(order.vendor.address, order.vendor.suburb, order.vendor.city),
+    dropoff: riderDropoff(order.itemsJson),
+    earnCents: order.riderPayoutCents || order.deliveryFeeCents + (order.riderTipCents || 0),
+    dashboardUrl: absoluteUrl("/rider/dashboard"),
+  });
+  const summary = `${orderRef}: collect from ${vendorName}.`;
+  const email = cleanLine(rider.email);
+  const phone = cleanLine(rider.phone);
+
+  const tasks: Promise<unknown>[] = [];
+  if (rider.userId) {
+    tasks.push(
+      settleWithin(
+        createNotification({
+          userId: rider.userId,
+          type: "rider-assigned",
+          title: "New delivery",
+          body: summary,
+          href: "/rider/dashboard",
+        }),
+        3000,
+      ),
+      settleWithin(
+        sendPushToUsers([rider.userId], "orderUpdatesEnabled", {
+          title: "New delivery",
+          body: summary,
+          url: "/rider/dashboard",
+          tag: `lethela-rider-${orderRef}`,
+        }),
+        3000,
+      ),
+    );
+  }
+  if (email) {
+    tasks.push(
+      settleWithin(
+        sendEmail({
+          to: email,
+          subject: `New delivery for you: ${orderRef}`,
+          text,
+          html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">${text
+            .split("\n")
+            .map((line) => `<p style="margin:0 0 6px">${escapeHtml(line)}</p>`)
+            .join("")}</div>`,
+        }),
+        3000,
+      ),
+    );
+  }
+  if (hasWhatsAppChannel() && phone) {
+    tasks.push(settleWithin(sendTwilioWhatsApp({ to: phone, body: text }), 3000));
   }
 
   await Promise.all(tasks);
