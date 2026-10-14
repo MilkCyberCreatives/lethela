@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Lock, MapPin, Navigation, PackageCheck, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  Lock,
+  MapPin,
+  Navigation,
+  PackageCheck,
+  Phone,
+  RefreshCw,
+  ShieldCheck,
+  Store,
+} from "lucide-react";
 import {
   ChecklistItem,
   DetailRow,
@@ -57,6 +66,15 @@ type RiderMeResponse = {
     vendor: string;
     pickupArea: string;
     pickupInstructions: string | null;
+    vendorPhone: string | null;
+    dropoff: {
+      customerName: string;
+      phone: string;
+      address: string;
+      landmark: string;
+      notes: string;
+      containsAlcohol: boolean;
+    };
     totalCents: number;
     deliveryFeeCents: number;
     riderTipCents: number;
@@ -78,6 +96,10 @@ type PlatformMessage = {
 
 function money(cents: number) {
   return `R ${(Number(cents || 0) / 100).toFixed(2)}`;
+}
+
+function telHref(phone: string) {
+  return `tel:${phone.replace(/[^\d+]/g, "")}`;
 }
 
 function riderOrderPriority(status: string) {
@@ -253,13 +275,62 @@ export default function RiderDashboardClient() {
                     {statusText(order.status)}
                   </StatusBadge>
                 </div>
-                <p className="mt-2 flex items-center gap-2 text-sm text-slate-700">
-                  <MapPin className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-                  Collect from {order.pickupArea}
+                <p className="mt-2 flex items-start gap-2 text-sm text-slate-700">
+                  <Store className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+                  <span className="min-w-0">
+                    Collect from {order.pickupArea}
+                    {order.vendorPhone ? (
+                      <>
+                        {" · "}
+                        <a
+                          href={telHref(order.vendorPhone)}
+                          className="font-medium text-slate-900 underline"
+                        >
+                          Call the store
+                        </a>
+                      </>
+                    ) : null}
+                  </span>
                 </p>
                 {order.pickupInstructions ? (
                   <p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
                     {order.pickupInstructions}
+                  </p>
+                ) : null}
+                <p className="mt-2 flex items-start gap-2 text-sm text-slate-700">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+                  <span className="min-w-0">
+                    Deliver to {order.dropoff.address || "the address Lethela gives you"}
+                  </span>
+                </p>
+                {order.dropoff.customerName || order.dropoff.phone ? (
+                  <p className="mt-2 flex items-start gap-2 text-sm text-slate-700">
+                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+                    <span className="min-w-0">
+                      {order.dropoff.customerName || "Customer"}
+                      {order.dropoff.phone ? (
+                        <>
+                          {" · "}
+                          <a
+                            href={telHref(order.dropoff.phone)}
+                            className="font-medium text-slate-900 underline"
+                          >
+                            {order.dropoff.phone}
+                          </a>
+                        </>
+                      ) : null}
+                    </span>
+                  </p>
+                ) : null}
+                {order.dropoff.landmark || order.dropoff.notes ? (
+                  <div className="mt-2 space-y-1 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                    {order.dropoff.landmark ? <p>Landmark: {order.dropoff.landmark}</p> : null}
+                    {order.dropoff.notes ? <p>Notes: {order.dropoff.notes}</p> : null}
+                  </div>
+                ) : null}
+                {order.dropoff.containsAlcohol ? (
+                  <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                    Liquor order: check the customer&apos;s ID at handover.
                   </p>
                 ) : null}
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
