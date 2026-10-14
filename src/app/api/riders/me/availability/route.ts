@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { dispatchWaitingOrders } from "@/lib/order-automation";
 
 const BodySchema = z.object({ availableNow: z.boolean() });
 
@@ -83,6 +84,10 @@ export async function PATCH(req: NextRequest) {
     data: { availableNow: parsed.data.availableNow },
     select: { availableNow: true, suburb: true, city: true },
   });
+  // A rider who comes online picks up any order that is waiting for a rider.
+  if (updated.availableNow) {
+    await dispatchWaitingOrders().catch(() => 0);
+  }
 
   return NextResponse.json({
     ok: true,

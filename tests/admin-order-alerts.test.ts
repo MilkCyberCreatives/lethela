@@ -31,7 +31,7 @@ test("admins are alerted, with the reason, when a paid order is cancelled", asyn
   assert.match(file, /status === "CANCELLED"[\s\S]*notifyAdminsOfOrder\(orderId, "cancelled"\)/);
   assert.match(
     file,
-    /cancelled: \{ title: "Order cancelled", action: "Refund the customer and let them know\." \}/,
+    /title: "Order cancelled",\s*action: "The customer has been told\. Refund them\."/,
   );
   assert.match(file, /statusReason: true/);
   assert.match(file, /\.\.\.\(reason \? \[`Reason: \$\{reason\}`\] : \[\]\)/);

@@ -9,7 +9,7 @@ import {
   splitCsv,
 } from "@/lib/notification-channels";
 import { sendPushToAdmins, sendPushToUsers } from "@/lib/push-notifications";
-import { createNotification, notifyStaff } from "@/lib/notifications";
+import { createNotification, createNotificationForUsers, notifyStaff } from "@/lib/notifications";
 import { absoluteUrl } from "@/lib/site";
 
 type OrderPayloadItem = {
@@ -186,7 +186,8 @@ async function ensureOrderNotificationLog() {
   `);
 }
 
-async function claimOrderNotification(orderId: string, event: string, channel: string) {
+/** Records that a message went out, so each one is sent once per order. */
+export async function claimOrderNotification(orderId: string, event: string, channel: string) {
   await ensureOrderNotificationLog();
   const id = `${orderId}:${event}:${channel}`;
 
@@ -345,7 +346,10 @@ export async function notifyOrderStatusPush(orderId: string, status: string) {
   }
   // Stores and riders only act on paid orders, so a cancelled one needs a refund.
   if (status === "CANCELLED") {
-    await notifyAdminsOfOrder(orderId, "cancelled");
+    await Promise.all([
+      notifyAdminsOfOrder(orderId, "cancelled"),
+      notifyCustomerOfCancellation(orderId),
+    ]);
   }
 
   const orderRef = order.publicId || order.ozowReference || orderId;
@@ -378,17 +382,31 @@ export async function notifyOrderStatusPush(orderId: string, status: string) {
   };
 }
 
-type AdminOrderEvent = "paid" | "ready" | "cancelled";
+type AdminOrderEvent = "paid" | "ready" | "cancelled" | "store-slow" | "rider-slow";
 
 const ADMIN_ORDER_ALERTS: Record<AdminOrderEvent, { title: string; action: string }> = {
   paid: { title: "New paid order", action: "Watch for the vendor to accept it." },
-  ready: { title: "Order ready for a rider", action: "Assign an approved rider now." },
-  cancelled: { title: "Order cancelled", action: "Refund the customer and let them know." },
+  ready: {
+    title: "Order needs a rider",
+    action: "No free rider is online to take it. Assign an approved rider now.",
+  },
+  cancelled: {
+    title: "Order cancelled",
+    action: "The customer has been told. Refund them.",
+  },
+  "store-slow": {
+    title: "Store has not accepted an order",
+    action: "Paid more than 15 minutes ago and the store was reminded. Call the store.",
+  },
+  "rider-slow": {
+    title: "Rider has not collected an order",
+    action: "Assigned more than 30 minutes ago and the rider was reminded. Call the rider.",
+  },
 };
 
-// Dispatch is manual, so the admin team must hear about every paid order and
-// every order that is waiting for a rider (including after a rider declines),
-// and refunds are manual, so also about every cancelled order.
+// Riders are assigned automatically (src/lib/order-automation.ts), so the admin
+// team hears about every paid order, an order no rider could take, an order the
+// store or rider is sitting on, and, because refunds are manual, every cancelled order.
 export async function notifyAdminsOfOrder(orderId: string, event: AdminOrderEvent) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -545,6 +563,226 @@ export async function notifyRiderOfAssignment(orderId: string, riderApplicationI
             .split("\n")
             .map((line) => `<p style="margin:0 0 6px">${escapeHtml(line)}</p>`)
             .join("")}</div>`,
+        }),
+        3000,
+      ),
+    );
+  }
+  if (hasWhatsAppChannel() && phone) {
+    tasks.push(settleWithin(sendTwilioWhatsApp({ to: phone, body: text }), 3000));
+  }
+
+  await Promise.all(tasks);
+  return { delivered: true as const };
+}
+
+function linesToHtml(lines: string[]) {
+  return `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">${lines
+    .map((line) => `<p style="margin:0 0 6px">${escapeHtml(line)}</p>`)
+    .join("")}</div>`;
+}
+
+export function buildCustomerCancellationMessage(input: {
+  orderRef: string;
+  vendorName: string;
+  reason: string;
+  paid: boolean;
+  totalCents: number;
+  orderUrl: string;
+}) {
+  return [
+    `Sorry, your Lethela order ${input.orderRef} from ${input.vendorName} has been cancelled.`,
+    input.reason ? `Reason: ${input.reason}` : "",
+    input.paid
+      ? `You paid ${rand(input.totalCents)}. We will refund you and let you know when it is done.`
+      : "",
+    `Order details: ${input.orderUrl}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+// Without this the customer only learns about a cancelled order if they open it.
+export async function notifyCustomerOfCancellation(orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      publicId: true,
+      ozowReference: true,
+      itemsJson: true,
+      totalCents: true,
+      paymentStatus: true,
+      statusReason: true,
+      userId: true,
+      user: { select: { email: true } },
+      vendor: { select: { name: true } },
+    },
+  });
+  if (!order) return { delivered: false as const };
+  if (!(await claimOrderNotification(orderId, "cancelled", "customer"))) {
+    return { delivered: false as const };
+  }
+
+  const orderRef = order.publicId || order.ozowReference || orderId;
+  const details = parseOrderPayload(order.itemsJson).deliveryDetails;
+  const text = buildCustomerCancellationMessage({
+    orderRef,
+    vendorName: cleanLine(order.vendor.name),
+    reason: cleanLine(order.statusReason),
+    paid: ["PAID", "SUCCESS"].includes(String(order.paymentStatus).toUpperCase()),
+    totalCents: order.totalCents,
+    orderUrl: absoluteUrl(`/orders/${orderRef}`),
+  });
+  const email = cleanLine(order.user?.email);
+  const phone = cleanLine(details?.whatsappNumber) || cleanLine(details?.customerPhone);
+
+  const tasks: Promise<unknown>[] = [];
+  if (order.userId) {
+    tasks.push(
+      settleWithin(
+        createNotification({
+          userId: order.userId,
+          type: "order-cancelled",
+          title: "Order cancelled",
+          body: text.split("\n").slice(0, 3).join(" "),
+          href: `/orders/${orderRef}`,
+        }),
+        3000,
+      ),
+    );
+  }
+  if (email) {
+    tasks.push(
+      settleWithin(
+        sendEmail({
+          to: email,
+          subject: `Your Lethela order ${orderRef} was cancelled`,
+          text,
+          html: linesToHtml(text.split("\n")),
+        }),
+        3000,
+      ),
+    );
+  }
+  if (hasWhatsAppChannel() && phone) {
+    tasks.push(settleWithin(sendTwilioWhatsApp({ to: phone, body: text }), 3000));
+  }
+
+  await Promise.all(tasks);
+  return { delivered: true as const };
+}
+
+/** Reminds a store about a paid order it has not accepted yet. */
+export async function remindStoreOfPaidOrder(orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      publicId: true,
+      ozowReference: true,
+      vendor: {
+        select: {
+          name: true,
+          phone: true,
+          ownerId: true,
+          members: { select: { userId: true }, take: 20 },
+        },
+      },
+    },
+  });
+  if (!order) return { delivered: false as const };
+
+  const orderRef = order.publicId || order.ozowReference || orderId;
+  const dashboardUrl = absoluteUrl("/vendors/dashboard");
+  const text = [
+    `Reminder: Lethela order ${orderRef} is paid and waiting for ${cleanLine(order.vendor.name)} to accept it.`,
+    "Please accept it, or decline it with a reason so we can refund the customer.",
+    `Dashboard: ${dashboardUrl}`,
+  ].join("\n");
+  const vendorUserIds = [
+    order.vendor.ownerId,
+    ...order.vendor.members.map((member) => member.userId),
+  ].filter((value): value is string => Boolean(value));
+  const phone = cleanLine(order.vendor.phone);
+
+  const tasks: Promise<unknown>[] = [];
+  if (vendorUserIds.length > 0) {
+    tasks.push(
+      settleWithin(
+        createNotificationForUsers(vendorUserIds, {
+          type: "order-waiting",
+          title: "Order waiting for you",
+          body: `${orderRef} is paid and waiting for you to accept it.`,
+          href: "/vendors/dashboard",
+        }),
+        3000,
+      ),
+      settleWithin(
+        sendPushToUsers(vendorUserIds, "orderUpdatesEnabled", {
+          title: "Order waiting for you",
+          body: `${orderRef} is paid and waiting for you to accept it.`,
+          url: "/vendors/dashboard",
+          tag: `lethela-order-${orderRef}`,
+        }),
+        3000,
+      ),
+    );
+  }
+  if (hasWhatsAppChannel() && phone) {
+    tasks.push(settleWithin(sendTwilioWhatsApp({ to: phone, body: text }), 3000));
+  }
+
+  await Promise.all(tasks);
+  return { delivered: true as const };
+}
+
+/** Reminds the assigned rider to collect an order, or decline it so another rider can. */
+export async function remindRiderOfPickup(orderId: string, riderApplicationId: string) {
+  const [order, rider] = await Promise.all([
+    prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        publicId: true,
+        ozowReference: true,
+        vendor: { select: { name: true, address: true, suburb: true, city: true } },
+      },
+    }),
+    prisma.riderApplication.findUnique({
+      where: { id: riderApplicationId },
+      select: { phone: true, userId: true },
+    }),
+  ]);
+  if (!order || !rider) return { delivered: false as const };
+
+  const orderRef = order.publicId || order.ozowReference || orderId;
+  const vendorName = cleanLine(order.vendor.name);
+  const dashboardUrl = absoluteUrl("/rider/dashboard");
+  const text = [
+    `Reminder: please collect Lethela order ${orderRef} from ${joinAddress(vendorName, order.vendor.address, order.vendor.suburb, order.vendor.city)}.`,
+    "If you can't take it, tap Decline assignment so another rider gets it.",
+    `Dashboard: ${dashboardUrl}`,
+  ].join("\n");
+  const summary = `Please collect ${orderRef} from ${vendorName}, or decline it.`;
+  const phone = cleanLine(rider.phone);
+
+  const tasks: Promise<unknown>[] = [];
+  if (rider.userId) {
+    tasks.push(
+      settleWithin(
+        createNotification({
+          userId: rider.userId,
+          type: "rider-reminder",
+          title: "Delivery waiting for you",
+          body: summary,
+          href: "/rider/dashboard",
+        }),
+        3000,
+      ),
+      settleWithin(
+        sendPushToUsers([rider.userId], "orderUpdatesEnabled", {
+          title: "Delivery waiting for you",
+          body: summary,
+          url: "/rider/dashboard",
+          tag: `lethela-rider-${orderRef}`,
         }),
         3000,
       ),

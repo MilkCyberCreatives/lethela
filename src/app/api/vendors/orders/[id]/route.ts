@@ -9,6 +9,7 @@ import { notifyOrderStatusPush } from "@/lib/order-notifications";
 import { settleWithin } from "@/lib/notification-channels";
 import { canTransitionOrderStatus, normalizeOrderStatus } from "@/lib/order-state";
 import { recordOrderEvent } from "@/lib/order-operations";
+import { dispatchReadyOrder } from "@/lib/order-automation";
 
 const StatusSchema = z
   .object({
@@ -104,7 +105,12 @@ export async function PATCH(req: Request, { params }: Params) {
       // realtime may be disabled in local environments
     }
 
-    await settleWithin(notifyOrderStatusPush(order.id, parsed.data.status), 3000);
+    // A ready order goes straight to a free rider; the messages follow the outcome.
+    if (parsed.data.status === "READY_FOR_PICKUP") {
+      await dispatchReadyOrder(order.id);
+    } else {
+      await settleWithin(notifyOrderStatusPush(order.id, parsed.data.status), 3000);
+    }
 
     return NextResponse.json({ ok: true, order: updated });
   } catch (error: unknown) {

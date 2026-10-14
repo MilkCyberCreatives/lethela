@@ -12,6 +12,7 @@ import { settleWithin } from "@/lib/notification-channels";
 import { canTransitionOrderStatus, ORDER_STATUSES } from "@/lib/order-state";
 import { parseOrderPayload } from "@/lib/order-notifications";
 import { recordOrderEvent } from "@/lib/order-operations";
+import { dispatchReadyOrder, dispatchWaitingOrders } from "@/lib/order-automation";
 
 const BodySchema = z.object({
   status: z.enum(ORDER_STATUSES),
@@ -20,6 +21,8 @@ const BodySchema = z.object({
 });
 
 type Params = { params: Promise<{ ref: string }> };
+
+const RIDER_FREED_STATUSES: string[] = ["DELIVERED", "READY_FOR_PICKUP", "CANCELLED"];
 
 export async function POST(req: NextRequest, { params }: Params) {
   const { ref } = await params;
@@ -215,7 +218,17 @@ export async function POST(req: NextRequest, { params }: Params) {
     // do not block successful updates when realtime is not configured
   }
 
-  await settleWithin(notifyOrderStatusPush(order.id, canonicalStatus), 3000);
+  // A ready order (from the store, or after a rider declines) goes straight to the
+  // next free rider; the messages follow the outcome.
+  if (canonicalStatus === "READY_FOR_PICKUP") {
+    await dispatchReadyOrder(order.id);
+  } else {
+    await settleWithin(notifyOrderStatusPush(order.id, canonicalStatus), 3000);
+  }
+  // A rider who delivers, declines or cancels is free for the next waiting order.
+  if (isRiderAuthorized && RIDER_FREED_STATUSES.includes(canonicalStatus)) {
+    await dispatchWaitingOrders().catch(() => 0);
+  }
 
   return NextResponse.json({ ok: true, status: canonicalStatus });
 }

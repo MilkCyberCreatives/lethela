@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { listNotifications, markNotificationsRead } from "@/lib/notifications";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { scheduleOrderSweep } from "@/lib/order-automation";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,8 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: "Sign in required." }, { status: 401 });
   }
 
+  // Every open dashboard checks the bell each minute, which keeps the order sweep running.
+  scheduleOrderSweep();
   const { items, unreadCount } = await listNotifications(session.user.id);
   return NextResponse.json(
     { ok: true, notifications: items, unreadCount },
