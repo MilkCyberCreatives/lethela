@@ -89,6 +89,15 @@ test("the order sweep runs from pages people keep open", async () => {
   }
 });
 
+test("the order sweep also runs on a schedule when no page is open", async () => {
+  const route = await source("src/app/api/cron/order-sweep/route.ts");
+  assert.match(route, /await runOrderSweep\(\)/);
+  assert.doesNotMatch(route, /assigned|reminders|escalations/);
+  const workflow = await source(".github/workflows/order-sweep.yml");
+  assert.match(workflow, /cron: "\*\/5 \* \* \* \*"/);
+  assert.match(workflow, /https:\/\/www\.lethela\.co\.za\/api\/cron\/order-sweep/);
+});
+
 test("slow stores and riders are reminded before admins are told", async () => {
   const {
     STORE_REMINDER_AFTER_MS,
