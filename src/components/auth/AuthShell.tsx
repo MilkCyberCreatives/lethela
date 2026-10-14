@@ -102,7 +102,7 @@ export default function AuthShell({
               ))}
             </ul>
             <p className="mt-6 border-t border-white/10 pt-5 text-sm text-white/55">
-              Launching from Klipfontein View, Midrand.
+              Now open in Klipfontein View, Midrand.
             </p>
           </div>
         </div>

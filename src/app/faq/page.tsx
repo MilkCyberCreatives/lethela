@@ -42,7 +42,7 @@ const faq = [
   },
   {
     q: "Which areas are currently served?",
-    a: "Lethela starts with Klipfontein View. The marketplace clearly shows pre-launch, pilot or public-delivery status according to the approved vendors, products, riders and completed proof orders available in the area.",
+    a: "Lethela is open in Klipfontein View, Midrand. The homepage shows the approved stores that deliver to your area.",
   },
   {
     q: "How is the delivery fee calculated?",
