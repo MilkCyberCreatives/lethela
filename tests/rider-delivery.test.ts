@@ -102,3 +102,13 @@ test("the rider dashboard shows where to deliver and who to call", async () => {
   assert.match(card, /href=\{telHref\(order\.dropoff\.phone\)\}/);
   assert.match(card, /Liquor order: check the customer&apos;s ID at handover\./);
 });
+
+test("the launch checklist counts menu items as well as products", async () => {
+  const page = await source("src/app/admin/launch-checklist/page.tsx");
+  assert.match(
+    page,
+    /prisma\.item\.count\(\{ where: \{ draft: false, isAlcohol: false, vendor: approvedStore \} \}\)/,
+  );
+  assert.match(page, /const activeItems = activeProducts \+ menuItems;/);
+  assert.doesNotMatch(page, /activeProducts >= /);
+});

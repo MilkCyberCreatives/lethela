@@ -73,20 +73,19 @@ export default async function LaunchChecklistPage() {
     redirect("/owner-access");
   }
 
-  const [activeVendors, activeProducts, approvedRiders, paidOrders] = await Promise.all([
-    // Approving a store sets it to APPROVED; older stores may still say ACTIVE.
-    withQueryTimeout(
-      prisma.vendor.count({ where: { isActive: true, status: { in: ["ACTIVE", "APPROVED"] } } }),
-      0,
-    ),
+  // Approving a store sets it to APPROVED; older stores may still say ACTIVE.
+  const approvedStore = { isActive: true, status: { in: ["ACTIVE", "APPROVED"] } };
+  const [activeVendors, activeProducts, menuItems, approvedRiders, paidOrders] = await Promise.all([
+    withQueryTimeout(prisma.vendor.count({ where: approvedStore }), 0),
     withQueryTimeout(
       prisma.product.count({
-        where: {
-          inStock: true,
-          status: "APPROVED",
-          vendor: { isActive: true, status: { in: ["ACTIVE", "APPROVED"] } },
-        },
+        where: { inStock: true, status: "APPROVED", vendor: approvedStore },
       }),
+      0,
+    ),
+    // A store can sell from its menu alone, so published menu items count too.
+    withQueryTimeout(
+      prisma.item.count({ where: { draft: false, isAlcohol: false, vendor: approvedStore } }),
       0,
     ),
     withQueryTimeout(prisma.riderApplication.count({ where: { status: "APPROVED" } }), 0),
@@ -95,6 +94,8 @@ export default async function LaunchChecklistPage() {
       0,
     ),
   ]);
+
+  const activeItems = activeProducts + menuItems;
 
   const pilotMinimums = {
     vendors: numberSetting("MIN_PILOT_VENDORS", 1),
@@ -134,8 +135,8 @@ export default async function LaunchChecklistPage() {
       ok:
         getCatalogMode() === "live" &&
         activeVendors >= pilotMinimums.vendors &&
-        activeProducts >= pilotMinimums.products,
-      detail: `${activeVendors}/${pilotMinimums.vendors} active vendor(s), ${activeProducts}/${pilotMinimums.products} active product(s). Public marketing target: ${publicMinimums.vendors} vendor(s), ${publicMinimums.products} product(s).`,
+        activeItems >= pilotMinimums.products,
+      detail: `${activeVendors}/${pilotMinimums.vendors} active vendor(s), ${activeItems}/${pilotMinimums.products} products or menu items. Public marketing target: ${publicMinimums.vendors} vendor(s), ${publicMinimums.products} items.`,
     },
     {
       label: "Approved riders",
@@ -146,10 +147,10 @@ export default async function LaunchChecklistPage() {
       label: "Public marketing gate",
       ok:
         activeVendors >= publicMinimums.vendors &&
-        activeProducts >= publicMinimums.products &&
+        activeItems >= publicMinimums.products &&
         approvedRiders >= publicMinimums.riders &&
         paidOrders >= publicMinimums.paidOrders,
-      detail: `${activeVendors}/${publicMinimums.vendors} vendor(s), ${activeProducts}/${publicMinimums.products} product(s), ${approvedRiders}/${publicMinimums.riders} rider(s), ${paidOrders}/${publicMinimums.paidOrders} paid proof order(s).`,
+      detail: `${activeVendors}/${publicMinimums.vendors} vendor(s), ${activeItems}/${publicMinimums.products} item(s), ${approvedRiders}/${publicMinimums.riders} rider(s), ${paidOrders}/${publicMinimums.paidOrders} paid proof order(s).`,
     },
     {
       label: "Durable uploads",
