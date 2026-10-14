@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { optionalReason } from "@/lib/review-reason";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { logAdminAudit } from "@/lib/admin-audit";
@@ -7,7 +8,7 @@ import { logAdminAudit } from "@/lib/admin-audit";
 const ReviewSchema = z
   .object({
     status: z.enum(["APPROVED", "CHANGES_REQUESTED", "REJECTED"]),
-    reason: z.string().trim().min(5).max(500).optional(),
+    reason: optionalReason(),
   })
   .refine((value) => value.status === "APPROVED" || Boolean(value.reason), {
     path: ["reason"],

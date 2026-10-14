@@ -26,6 +26,14 @@ test("small live catalogue is labelled as pilot", () => {
   assert.match(status.eyebrow, /Pilot now open/i);
 });
 
+test("a first store whose items are all on its menu opens the pilot", () => {
+  process.env.NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE = "pilot";
+  // Menu items are not products, but a listed store always has something to order.
+  const status = getMarketplaceLaunchStatus({ approvedVendorCount: 1, publicProductCount: 0 });
+  assert.equal(status.phase, "PILOT");
+  assert.match(status.eyebrow, /Pilot now open/i);
+});
+
 test("public label requires explicit mode and minimum catalogue", () => {
   process.env.NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE = "public";
   const status = getMarketplaceLaunchStatus({ approvedVendorCount: 3, publicProductCount: 20 });

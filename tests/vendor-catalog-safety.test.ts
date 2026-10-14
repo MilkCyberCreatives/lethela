@@ -97,3 +97,64 @@ test("admin can approve a trusted store's waiting items in one go", async () => 
   );
   assert.match(admin, /ADMIN_ORDER_STATUSES\.map/);
 });
+
+test("the homepage lists an approved store with only menu items, whatever capitals its area has", async () => {
+  const [home, sqlite, page] = await Promise.all([
+    source("src/lib/home-data.ts"),
+    source("src/lib/sqlite-catalog.ts"),
+    source("src/app/page.tsx"),
+  ]);
+  const homeVendors = home.slice(home.indexOf("export async function getHomeVendors"));
+  // Same rule as the store page: an approved product or a published menu item is enough.
+  assert.match(
+    homeVendors,
+    /OR: \[\s*\{ products: \{ some: \{[^}]*status: "APPROVED" \} \} \},\s*\{ items: \{ some: \{ draft: false, isAlcohol: false \} \} \},\s*\]/,
+  );
+  assert.match(
+    sqlite,
+    /OR EXISTS \(SELECT 1 FROM Item vi WHERE vi\.vendorId = v\.id AND vi\.draft = 0 AND vi\.isAlcohol = 0\)/,
+  );
+  assert.match(page, /const hasMarketplaceItems = vendors\.length > 0;/);
+  // Postgres compares capitals, so "Klipfontein view" typed on a phone must still match.
+  assert.match(
+    home,
+    /provider === "postgresql"\s*\?\s*\(\{ contains: area, mode: "insensitive" \}/,
+  );
+  assert.doesNotMatch(home, /suburb: \{ contains: normalizedSuburb \}/);
+});
+
+test("homepage store cards say Closed outside trading hours", async () => {
+  const { buildPublicVendorCard } = await import("../src/lib/public-catalog");
+  const base = { id: "v1", name: "Kasi Kitchen", slug: "kasi-kitchen", products: [] };
+  const everyDay = (hour: { openMin: number; closeMin: number; closed: boolean }) =>
+    Array.from({ length: 7 }, (_, day) => ({ day, ...hour }));
+
+  const closedAllWeek = everyDay({ openMin: 480, closeMin: 1200, closed: true });
+  const openAllDay = everyDay({ openMin: 0, closeMin: 1440, closed: false });
+  assert.equal(buildPublicVendorCard({ ...base, hours: closedAllWeek }).isOpen, false);
+  assert.equal(buildPublicVendorCard({ ...base, hours: openAllDay }).isOpen, true);
+  assert.equal(
+    buildPublicVendorCard({ ...base, hours: openAllDay, temporaryClosed: true }).isOpen,
+    false,
+  );
+  // Callers that pass no trading hours keep the old label.
+  assert.equal(buildPublicVendorCard(base).isOpen, true);
+
+  const [home, sqlite, card] = await Promise.all([
+    source("src/lib/home-data.ts"),
+    source("src/lib/sqlite-catalog.ts"),
+    source("src/components/VendorCard.tsx"),
+  ]);
+  const homeVendors = home.slice(home.indexOf("export async function getHomeVendors"));
+  assert.match(
+    homeVendors,
+    /hours: \{ select: \{ day: true, openMin: true, closeMin: true, closed: true \} \}/,
+  );
+  assert.match(homeVendors, /hours: vendor\.hours,\s*temporaryClosed: vendor\.temporaryClosed,/);
+  assert.match(sqlite, /json_group_array\(json_object\('day', h\.day/);
+  assert.match(sqlite, /hours: parseHours\(row\.hoursJson\)/);
+  // The homepage is cached, so the card checks the hours again in the browser.
+  assert.match(card, /useSyncExternalStore\(/);
+  assert.match(card, /isStoreOpenNow\(v\.hours, \{ temporaryClosed: v\.temporaryClosed \}\)/);
+  assert.match(card, /\{isOpen \? "Open" : "Closed"\}/);
+});

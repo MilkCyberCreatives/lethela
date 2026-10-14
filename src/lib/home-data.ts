@@ -7,7 +7,7 @@ import {
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
 import { inferProductCategory } from "@/lib/categories";
-import { prisma } from "@/lib/db";
+import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import {
   buildPublicVendorCard,
   isPublicCatalogProduct,
@@ -18,6 +18,7 @@ import {
   getSqliteCatalogProducts,
   getSqliteCatalogVendors,
 } from "@/lib/sqlite-catalog";
+import type { StoreHour } from "@/lib/store-availability";
 import type { Vendor } from "@/types";
 
 type VendorWithAlcohol = {
@@ -43,6 +44,8 @@ type VendorWithAlcohol = {
   sectionArea?: string | null;
   storeType?: string | null;
   deliveryFee?: number | null;
+  temporaryClosed?: boolean | null;
+  hours?: StoreHour[];
   _count?: { products?: number; items?: number; hours?: number };
 };
 
@@ -80,6 +83,15 @@ function normalizeSuburb(suburb: string | null) {
   if (!suburb) return null;
   const [firstPart] = suburb.split(",");
   return firstPart?.trim() || suburb.trim();
+}
+
+// Stores type their own area, often on a phone that writes "Klipfontein view". Postgres compares
+// capitals by default, so ask it to ignore them. SQLite's LIKE already does, and its client has
+// no `mode` option.
+function areaMatch(area: string) {
+  return prismaRuntimeInfo.provider === "postgresql"
+    ? ({ contains: area, mode: "insensitive" } as { contains: string })
+    : { contains: area };
 }
 
 function publicReadinessFlags<T extends object>(vendor: T) {
@@ -131,7 +143,7 @@ export async function getHomeProducts(suburb: string | null, take = 24): Promise
             city: { not: null },
             province: { not: null },
             hours: { some: { closed: false } },
-            ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
+            ...(normalizedSuburb ? { suburb: areaMatch(normalizedSuburb) } : {}),
           },
         },
         select: {
@@ -236,8 +248,12 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
           city: { not: null },
           province: { not: null },
           hours: { some: { closed: false } },
-          products: { some: { isAlcohol: false, inStock: true, status: "APPROVED" } },
-          ...(normalizedSuburb ? { suburb: { contains: normalizedSuburb } } : {}),
+          // Same rule as the store page: an approved product or a published menu item is enough.
+          OR: [
+            { products: { some: { isAlcohol: false, inStock: true, status: "APPROVED" } } },
+            { items: { some: { draft: false, isAlcohol: false } } },
+          ],
+          ...(normalizedSuburb ? { suburb: areaMatch(normalizedSuburb) } : {}),
         },
         select: {
           id: true,
@@ -260,6 +276,8 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
           sectionArea: true,
           storeType: true,
           deliveryFee: true,
+          temporaryClosed: true,
+          hours: { select: { day: true, openMin: true, closeMin: true, closed: true } },
           products: {
             select: { isAlcohol: true },
             where: { isAlcohol: false, inStock: true, status: "APPROVED" },
@@ -298,6 +316,8 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
         products: vendor.products,
         reviews: vendor.reviews,
         baseEtaMin: vendor.etaMins ?? 15,
+        hours: vendor.hours,
+        temporaryClosed: vendor.temporaryClosed,
       }),
     );
 

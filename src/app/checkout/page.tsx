@@ -354,7 +354,12 @@ export default function CheckoutPage() {
       const json = await res.json();
       if (!res.ok || !json.ok) {
         if (res.status >= 500) checkoutKeyRef.current = null;
-        setError(json?.error ?? "Payment init failed");
+        // Only a plain sentence can be shown; anything else falls back to a general message.
+        setError(
+          typeof json?.error === "string"
+            ? json.error
+            : "Please check your order details and try again.",
+        );
         return;
       }
       window.location.href = json.redirectUrl;
@@ -477,6 +482,7 @@ export default function CheckoutPage() {
                   </label>
                   <input
                     id="checkout-customer-name"
+                    maxLength={120}
                     className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                     value={customerName}
                     onChange={(event) => setCustomerName(event.target.value)}
@@ -493,6 +499,7 @@ export default function CheckoutPage() {
                   </label>
                   <input
                     id="checkout-phone"
+                    maxLength={40}
                     className="w-full rounded bg-white px-3 py-2 text-sm text-black"
                     value={customerPhone}
                     onChange={(event) => setCustomerPhone(event.target.value)}
@@ -512,6 +519,7 @@ export default function CheckoutPage() {
                 <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                   <input
                     id="checkout-area"
+                    maxLength={140}
                     className="min-h-11 w-full rounded bg-white px-3 py-2 text-sm text-black"
                     value={destinationSuburb}
                     onChange={(event) => {
@@ -543,6 +551,7 @@ export default function CheckoutPage() {
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <input
                     aria-label="WhatsApp number"
+                    maxLength={40}
                     className="min-h-11 rounded bg-white px-3 py-2 text-sm text-black"
                     value={whatsappNumber}
                     onChange={(event) => setWhatsappNumber(event.target.value)}
@@ -551,6 +560,7 @@ export default function CheckoutPage() {
                   />
                   <input
                     aria-label="Stand or house number"
+                    maxLength={120}
                     className="min-h-11 rounded bg-white px-3 py-2 text-sm text-black"
                     value={standNumber}
                     onChange={(event) => setStandNumber(event.target.value)}
@@ -559,6 +569,7 @@ export default function CheckoutPage() {
                   />
                   <input
                     aria-label="Street, extension or section"
+                    maxLength={120}
                     className="min-h-11 rounded bg-white px-3 py-2 text-sm text-black"
                     value={streetSection}
                     onChange={(event) => setStreetSection(event.target.value)}
@@ -567,6 +578,7 @@ export default function CheckoutPage() {
                   />
                   <input
                     aria-label="Nearby landmark"
+                    maxLength={180}
                     className="min-h-11 rounded bg-white px-3 py-2 text-sm text-black"
                     value={landmark}
                     onChange={(event) => setLandmark(event.target.value)}
@@ -574,6 +586,7 @@ export default function CheckoutPage() {
                   />
                   <textarea
                     aria-label="Delivery notes"
+                    maxLength={500}
                     className="min-h-20 rounded bg-white px-3 py-2 text-sm text-black md:col-span-2"
                     value={deliveryNotes}
                     onChange={(event) => setDeliveryNotes(event.target.value)}

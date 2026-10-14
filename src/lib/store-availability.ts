@@ -1,4 +1,4 @@
-type StoreHour = { day: number; openMin: number; closeMin: number; closed: boolean };
+export type StoreHour = { day: number; openMin: number; closeMin: number; closed: boolean };
 
 export function johannesburgClock(date: Date) {
   const parts = new Intl.DateTimeFormat("en-ZA", {

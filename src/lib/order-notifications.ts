@@ -297,6 +297,10 @@ export async function notifyOrderStatusPush(orderId: string, status: string) {
   if (status === "READY_FOR_PICKUP") {
     await notifyAdminsOfOrder(orderId, "ready");
   }
+  // Stores and riders only act on paid orders, so a cancelled one needs a refund.
+  if (status === "CANCELLED") {
+    await notifyAdminsOfOrder(orderId, "cancelled");
+  }
 
   const orderRef = order.publicId || order.ozowReference || orderId;
   const label = status.replaceAll("_", " ").toLowerCase();
@@ -328,15 +332,17 @@ export async function notifyOrderStatusPush(orderId: string, status: string) {
   };
 }
 
-type AdminOrderEvent = "paid" | "ready";
+type AdminOrderEvent = "paid" | "ready" | "cancelled";
 
 const ADMIN_ORDER_ALERTS: Record<AdminOrderEvent, { title: string; action: string }> = {
   paid: { title: "New paid order", action: "Watch for the vendor to accept it." },
   ready: { title: "Order ready for a rider", action: "Assign an approved rider now." },
+  cancelled: { title: "Order cancelled", action: "Refund the customer and let them know." },
 };
 
 // Dispatch is manual, so the admin team must hear about every paid order and
-// every order that is waiting for a rider (including after a rider declines).
+// every order that is waiting for a rider (including after a rider declines),
+// and refunds are manual, so also about every cancelled order.
 export async function notifyAdminsOfOrder(orderId: string, event: AdminOrderEvent) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -346,6 +352,7 @@ export async function notifyAdminsOfOrder(orderId: string, event: AdminOrderEven
       totalCents: true,
       deliveryFeeCents: true,
       itemsJson: true,
+      statusReason: true,
       vendor: { select: { name: true } },
     },
   });
@@ -359,9 +366,11 @@ export async function notifyAdminsOfOrder(orderId: string, event: AdminOrderEven
     .join(", ");
   const { title, action } = ADMIN_ORDER_ALERTS[event];
   const adminUrl = absoluteUrl("/admin?view=operations");
+  const reason = event === "cancelled" ? cleanLine(order.statusReason) : "";
   const lines = [
     `${title}: ${orderRef}`,
     `Vendor: ${cleanLine(order.vendor.name)}`,
+    ...(reason ? [`Reason: ${reason}`] : []),
     `Total: ${rand(order.totalCents)} (delivery ${rand(order.deliveryFeeCents)})`,
     `Deliver to: ${address || "See order"}`,
     action,
