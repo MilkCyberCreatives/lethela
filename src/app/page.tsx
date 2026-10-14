@@ -18,7 +18,7 @@ import { buildLaunchNotificationLink } from "@/lib/support";
 import type { Vendor } from "@/types";
 
 const homeDescription =
-  "Lethela is a township delivery marketplace for South Africa, launching from Klipfontein View with approved local vendors and community riders.";
+  "Lethela is a township delivery marketplace for South Africa, now open in Klipfontein View with approved local vendors and community riders.";
 
 export const metadata: Metadata = {
   ...buildPageMetadata({
