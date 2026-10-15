@@ -1,0 +1,56 @@
+name: Lighthouse scores
+
+# Measures the live site's Lighthouse scores (speed, accessibility, best practices and SEO,
+# on phones and desktops) after each deploy to main and once a week. It only opens public,
+# signed-out pages, so it never places orders or sends messages. The results are on the run's
+# summary page and in the "lighthouse-reports" download. It never fails a deploy.
+on:
+  push:
+    branches:
+      - main
+  # A pull request that changes this check measures the live site as it is now.
+  pull_request:
+    paths:
+      - .github/workflows/lighthouse.yml
+      - scripts/lighthouse-scores.mjs
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse
+  cancel-in-progress: true
+
+jobs:
+  scores:
+    name: Measure the live site
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Wait for Vercel to finish deploying this commit
+        if: github.event_name == 'push'
+        run: sleep 240
+
+      - name: Run Lighthouse
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/lighthouse-scores.mjs https://www.lethela.co.za lighthouse-reports
+
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: lighthouse-reports
+          retention-days: 30

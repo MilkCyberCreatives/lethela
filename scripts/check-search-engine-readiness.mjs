@@ -66,12 +66,14 @@ const requiredChecks = [
   [robots.includes("/admin"), "robots.ts must block private admin routes."],
   [sitemap.includes("TOWNSHIP_CATEGORIES"), "The dynamic marketplace sitemap is incomplete."],
   [
-    !sitemap.includes("url: `${SITE_URL}/vendors/register`"),
-    "Noindex vendor signup route must not be included in the sitemap.",
+    sitemap.includes("url: `${SITE_URL}/vendors/register`") &&
+      !file("src/app/vendors/register/page.tsx").includes("index: false"),
+    "The public vendor sign-up page must stay indexable and listed in the sitemap.",
   ],
   [
-    !sitemap.includes("url: `${SITE_URL}/rider`"),
-    "Noindex rider signup route must not be included in the sitemap.",
+    sitemap.includes("url: `${SITE_URL}/rider`") &&
+      !file("src/app/rider/page.tsx").includes("index: false"),
+    "The public rider sign-up page must stay indexable and listed in the sitemap.",
   ],
   [
     !sitemap.includes("STATIC_LAST_MODIFIED"),
@@ -93,7 +95,10 @@ const requiredChecks = [
   ],
   [manifest.includes("standalone"), "The web app manifest is incomplete."],
   [openSearch.includes("OpenSearchDescription"), "OpenSearch discovery is missing."],
-  [llms.includes("Public discovery"), "The public AI discovery summary is incomplete."],
+  [
+    llms.includes("## Key facts") && llms.includes("## Public pages"),
+    "The public AI discovery summary is incomplete.",
+  ],
   [areaPage.includes("BreadcrumbList"), "Area-page structured data is incomplete."],
 ];
 

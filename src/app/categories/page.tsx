@@ -18,7 +18,7 @@ export default function CategoriesPage() {
     <main className="min-h-screen bg-lethela-secondary text-white">
       <MainHeader />
       <section className="container py-10 md:py-16">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary-bright">
           Everything local
         </p>
         <h1 className="mt-3 max-w-3xl text-3xl font-bold tracking-tight md:text-5xl">

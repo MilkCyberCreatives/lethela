@@ -18,14 +18,16 @@ import { buildLaunchNotificationLink } from "@/lib/support";
 import type { Vendor } from "@/types";
 
 const homeDescription =
-  "Lethela is a township delivery marketplace for South Africa, now open in Klipfontein View with approved local vendors and community riders.";
+  "Lethela is open in Klipfontein View, Midrand. Order kota, chicken, groceries and township essentials from approved local stores, delivered by Lethela riders.";
 
 export const metadata: Metadata = {
   ...buildPageMetadata({
-    title: "Township Delivery South Africa",
+    title: "Township food and grocery delivery in Midrand",
     description: homeDescription,
     path: "/",
   }),
+  // The root layout's "%s | Lethela" template does not apply to the homepage itself.
+  title: { absolute: "Lethela | Township food and grocery delivery in Midrand" },
   keywords: [
     "Township delivery South Africa",
     "Spaza shop delivery",
@@ -47,29 +49,6 @@ const homeWebPageSchema = {
   url: absoluteUrl("/"),
   isPartOf: { "@id": `${SITE_URL}/#website` },
   about: ["Township delivery", "Food delivery", "Grocery delivery", "Spaza shop delivery"],
-};
-
-const homeFaqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    [
-      "What can I order on Lethela?",
-      "KoTa, chicken, groceries and other products from approved local businesses.",
-    ],
-    [
-      "How does delivery work?",
-      "Share your location, choose a nearby vendor, checkout and track a community rider.",
-    ],
-    [
-      "Can my business sell on Lethela?",
-      "Yes. Apply as a vendor, add your products and submit your profile for approval.",
-    ],
-  ].map(([name, text]) => ({
-    "@type": "Question",
-    name,
-    acceptedAnswer: { "@type": "Answer", text },
-  })),
 };
 
 const groceryCategories = new Set(["Groceries", "Drinks", "Snacks"]);
@@ -110,7 +89,6 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-lethela-secondary text-white">
       <StructuredData data={homeWebPageSchema} />
-      <StructuredData data={homeFaqSchema} />
       <MainHeader />
 
       <Hero initialArea={address} launchStatus={launchStatus} />

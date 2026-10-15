@@ -69,7 +69,7 @@ export default function RestaurantsPage() {
 
       <section className="border-b border-white/10 bg-[#080B27]">
         <div className="container py-12 md:py-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary-bright">
             Restaurant and franchise partners
           </p>
           <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight md:text-5xl">

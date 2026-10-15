@@ -346,7 +346,7 @@ export default function Hero({
 
       <div className="relative z-10 container py-12 md:py-20">
         <div className="flex max-w-3xl flex-col items-start text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary-bright">
             {launchStatus.eyebrow}
           </p>
           <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">

@@ -184,7 +184,7 @@ export default function CartDrawer() {
         <div className="fixed inset-0 z-[98] bg-black/60" aria-hidden onClick={closeCart} />
       ) : null}
 
-      <aside
+      <div
         className={`fixed right-0 top-0 z-[99] flex h-dvh w-full max-w-md transform flex-col overflow-hidden border-l border-white/10 bg-lethela-secondary text-white transition-transform ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
@@ -348,7 +348,7 @@ export default function CartDrawer() {
             </Button>
           </div>
         </div>
-      </aside>
+      </div>
     </>
   );
 }

@@ -28,7 +28,7 @@ export default async function PricingPage() {
 
       <section className="border-b border-white/10 bg-[#080B27]">
         <div className="container py-10 md:py-14">
-          <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
+          <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary-bright">
             Clear township pricing
           </p>
           <h1 className="mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-5xl">
