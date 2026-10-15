@@ -1,24 +1,25 @@
 import type { Metadata } from "next";
 import AuthShell from "@/components/auth/AuthShell";
 import OnboardingPreview from "@/components/auth/OnboardingPreview";
+import SignupFaq from "@/components/auth/SignupFaq";
 import RiderSignupForm from "@/components/auth/RiderSignupForm";
 import { isGoogleAuthEnabled } from "@/lib/google-auth";
 
 export const metadata: Metadata = {
-  title: "Become a delivery rider",
+  title: "Delivery rider jobs",
   description:
-    "Deliver for Lethela in Klipfontein View, Midrand. Riders keep the full delivery fee and every tip. Sign up with your email and a password.",
+    "Become a delivery rider with Lethela, the South African township delivery app. Riders keep the full delivery fee and every tip. Registration is free.",
   alternates: { canonical: "/rider" },
   openGraph: {
-    title: "Become a Lethela delivery rider | Lethela",
+    title: "Delivery rider jobs | Lethela",
     description:
-      "Deliver for Lethela in Klipfontein View, Midrand. Riders keep the full delivery fee and every tip. Sign up with your email and a password.",
+      "Become a delivery rider with Lethela, the South African township delivery app. Riders keep the full delivery fee and every tip. Registration is free.",
     url: "/rider",
   },
   twitter: {
-    title: "Become a Lethela delivery rider | Lethela",
+    title: "Delivery rider jobs | Lethela",
     description:
-      "Deliver for Lethela in Klipfontein View, Midrand. Riders keep the full delivery fee and every tip. Sign up with your email and a password.",
+      "Become a delivery rider with Lethela, the South African township delivery app. Riders keep the full delivery fee and every tip. Registration is free.",
   },
 };
 
@@ -29,7 +30,12 @@ export default function RiderPage() {
       supportingText="Just your email and a password for now. Finish your rider details in your dashboard."
       audience="rider"
       showRoleTabs
-      after={<OnboardingPreview accountType="rider" />}
+      after={
+        <>
+          <OnboardingPreview accountType="rider" />
+          <SignupFaq accountType="rider" />
+        </>
+      }
     >
       <RiderSignupForm googleEnabled={isGoogleAuthEnabled()} />
     </AuthShell>

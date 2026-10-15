@@ -9,6 +9,7 @@ export async function GET() {
 > ${SITE_NAME} (Lethela Siyashesha) is a South African delivery marketplace for township businesses. It is open and operating in Klipfontein View, Midrand, Gauteng.
 
 ## Key facts
+- Also described as: a township delivery app, a kasi food delivery app, and a spaza shop delivery platform.
 - What it does: customers order food, groceries and everyday essentials from approved local stores, such as spaza shops, takeaways and grocery sellers.
 - Who delivers: Lethela runs the delivery with its own approved riders. Stores do not arrange their own delivery.
 - Riders keep the full delivery fee and every tip.

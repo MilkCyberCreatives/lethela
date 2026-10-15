@@ -43,3 +43,10 @@ test("AI summaries carry no fee figures", async () => {
     assert.doesNotMatch(text, /R\s?\d|\d+\s?%|per km|\/km/i);
   }
 });
+
+// The rider and vendor sign-up FAQs are public, so they must not quote Lethela's fees.
+test("sign-up FAQs carry no fee figures", async () => {
+  const faq = await source("src/components/auth/SignupFaq.tsx");
+  assert.match(faq, /"FAQPage"/);
+  assert.doesNotMatch(faq, /R\s?\d|\d+\s?%|per km|\/km/i);
+});
