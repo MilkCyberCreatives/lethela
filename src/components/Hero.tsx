@@ -334,7 +334,6 @@ export default function Hero({
         alt="A Lethela rider presenting a branded delivery box filled with local favourites"
         fill
         preload
-        placeholder="blur"
         sizes="100vw"
         quality={72}
         className="pointer-events-none z-0 object-cover object-[67%_center] opacity-95 md:object-center"
