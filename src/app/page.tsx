@@ -18,7 +18,7 @@ import { buildLaunchNotificationLink } from "@/lib/support";
 import type { Vendor } from "@/types";
 
 const homeDescription =
-  "Lethela is open in Klipfontein View, Midrand. Order kota, chicken, groceries and township essentials from approved local stores, delivered by Lethela riders.";
+  "Lethela is a South African township delivery app. Order kota, chicken, groceries and spaza essentials from local stores, delivered by Lethela riders. Lethela is open in Klipfontein View, Midrand.";
 
 export const metadata: Metadata = {
   ...buildPageMetadata({
@@ -27,16 +27,18 @@ export const metadata: Metadata = {
     path: "/",
   }),
   // The root layout's "%s | Lethela" template does not apply to the homepage itself.
-  title: { absolute: "Lethela | Township food and grocery delivery in Midrand" },
+  title: { absolute: "Lethela | Township delivery app for kota, food and groceries" },
   keywords: [
-    "Township delivery South Africa",
-    "Spaza shop delivery",
-    "Grocery delivery in townships",
-    "Kota delivery near me",
-    "Local food delivery township",
-    "Become a township vendor",
-    "Sell groceries online in South Africa",
-    "Delivery platform for spaza shops",
+    "township delivery app",
+    "township delivery South Africa",
+    "kasi food delivery",
+    "kota delivery near me",
+    "spaza shop delivery",
+    "grocery delivery in townships",
+    "food delivery Midrand",
+    "Klipfontein View delivery",
+    "sell food online South Africa",
+    "delivery rider jobs South Africa",
   ],
 };
 

@@ -43,7 +43,11 @@ const faq = [
   },
   {
     q: "Can riders apply online?",
-    a: "Yes. Riders create a simple account, complete personal, vehicle, banking and document details in the private dashboard, and receive dispatch access only after Lethela approval.",
+    a: "Yes. Riders create a simple account, complete personal, vehicle, banking and document details in the private dashboard, and receive dispatch access only after Lethela approval. Rider registration is free.",
+  },
+  {
+    q: "Do Lethela riders keep the delivery fee?",
+    a: "Yes. Riders keep the full delivery fee for every delivery they complete, plus every tip.",
   },
   {
     q: "How do I track my order?",
@@ -56,6 +60,14 @@ const faq = [
   {
     q: "Does Lethela deliver outside Klipfontein View?",
     a: "Not yet. Lethela delivers in Klipfontein View, Midrand, and plans to add more township areas over time.",
+  },
+  {
+    q: "Is there a delivery app for townships?",
+    a: "Yes. Lethela is a South African delivery app built for townships. It lists local kasi stores such as spaza shops, kota takeaways and grocery sellers, and Lethela riders deliver to your door. It is open in Klipfontein View, Midrand.",
+  },
+  {
+    q: "What is a kota?",
+    a: "A kota is a South African township favourite: a quarter loaf of bread, hollowed out and filled with chips and fillings such as polony, russian, cheese, egg, atchar and sauce. You can order kota from local stores on Lethela.",
   },
   {
     q: "How is the delivery fee calculated?",
