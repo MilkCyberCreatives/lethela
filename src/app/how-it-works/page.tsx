@@ -59,7 +59,7 @@ export default function HowItWorksPage() {
       <MainHeader />
       <section className="container py-10 md:py-16">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary-bright">
             Simple by design
           </p>
           <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-6xl">
@@ -85,7 +85,7 @@ export default function HowItWorksPage() {
                     <Icon className="h-5 w-5" />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
                       Step {index + 1}
                     </p>
                     <h2 className="mt-1 text-xl font-semibold">{step.title}</h2>

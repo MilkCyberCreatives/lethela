@@ -5,20 +5,20 @@ import VendorSignupForm from "@/components/VendorSignupForm";
 import { isGoogleAuthEnabled } from "@/lib/google-auth";
 
 export const metadata: Metadata = {
-  title: "Create your vendor account",
-  description: "Create a Lethela vendor account and complete your store profile after signing in.",
+  title: "Register your store",
+  description:
+    "List your spaza shop, takeaway or grocery store on Lethela in Klipfontein View, Midrand. Lethela handles delivery. Sign up with your email and a password.",
   alternates: { canonical: "/vendors/register" },
-  robots: { index: false, follow: false },
   openGraph: {
-    title: "Create your vendor account | Lethela",
+    title: "Sell on Lethela: register your store | Lethela",
     description:
-      "Join Lethela as a local vendor and complete your private store profile after signup.",
+      "List your spaza shop, takeaway or grocery store on Lethela in Klipfontein View, Midrand. Lethela handles delivery. Sign up with your email and a password.",
     url: "/vendors/register",
   },
   twitter: {
-    title: "Create your vendor account | Lethela",
+    title: "Sell on Lethela: register your store | Lethela",
     description:
-      "Join Lethela as a local vendor and complete your private store profile after signup.",
+      "List your spaza shop, takeaway or grocery store on Lethela in Klipfontein View, Midrand. Lethela handles delivery. Sign up with your email and a password.",
   },
 };
 

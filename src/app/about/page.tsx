@@ -4,9 +4,9 @@ import Footer from "@/components/Footer";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 
 export const metadata: Metadata = {
-  title: "About Lethela | Township Delivery South Africa",
+  title: { absolute: "About Lethela | Township delivery in Klipfontein View, Midrand" },
   description:
-    "Lethela is a South African township delivery platform helping local businesses, spaza shops, food vendors, riders and restaurants sell online and deliver faster.",
+    "Lethela is a South African township delivery platform helping local businesses, spaza shops, food vendors, riders and restaurants sell online and deliver faster. Open in Klipfontein View, Midrand.",
   alternates: {
     canonical: "/about",
   },

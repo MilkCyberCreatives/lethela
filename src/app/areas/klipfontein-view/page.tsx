@@ -8,7 +8,7 @@ import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 
 const areaName = "Klipfontein View, Midrand";
 const description =
-  "Discover Lethela delivery coverage, approved local vendors and marketplace onboarding for Klipfontein View in Midrand.";
+  "Lethela is open in Klipfontein View, Midrand. Order food, groceries and essentials from approved local stores, delivered to your door by Lethela riders.";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Klipfontein View Delivery",
@@ -69,8 +69,8 @@ export default function KlipfonteinViewAreaPage() {
 
       <section className="border-b border-white/10 bg-black/20">
         <div className="container py-10 sm:py-12 md:py-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary">
-            Starting in Midrand
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-lethela-primary-bright">
+            Now open in Midrand
           </p>
           <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
             Local delivery for Klipfontein View

@@ -102,6 +102,25 @@ export const viewport: Viewport = {
   themeColor: "#080B27",
 };
 
+// Lethela operates in one area today. Structured data names that area instead of the whole
+// country so search and AI answers do not present Lethela as a national service.
+const servicePlace = {
+  "@type": "Place",
+  name: "Klipfontein View, Midrand",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Midrand",
+    addressRegion: "Gauteng",
+    addressCountry: "ZA",
+  },
+};
+
+// The official Facebook page is listed even when the footer link is not configured.
+const OFFICIAL_FACEBOOK_URL = "https://www.facebook.com/lethelashop";
+const organizationSameAs = Array.from(
+  new Set([OFFICIAL_FACEBOOK_URL, ...getFooterSocialLinks().map((item) => item.href)]),
+);
+
 const globalSchema = {
   "@context": "https://schema.org",
   "@graph": [
@@ -111,11 +130,14 @@ const globalSchema = {
       name: SITE_NAME,
       legalName: process.env.NEXT_PUBLIC_LEGAL_ENTITY_NAME?.trim() || SITE_NAME,
       url: SITE_URL,
+      alternateName: "Lethela Siyashesha",
+      slogan: "Siyashesha",
+      description: SITE_DESCRIPTION,
       logo: absoluteUrl("/lethelalogo.svg"),
       email: LEGAL_SUPPORT_EMAIL || undefined,
-      areaServed: { "@type": "Country", name: "South Africa" },
+      areaServed: servicePlace,
       knowsLanguage: ["en-ZA", "zu-ZA", "xh-ZA"],
-      sameAs: getFooterSocialLinks().map((item) => item.href),
+      sameAs: organizationSameAs,
       contactPoint: [
         {
           "@type": "ContactPoint",
@@ -146,10 +168,8 @@ const globalSchema = {
       name: SITE_NAME,
       url: SITE_URL,
       provider: { "@id": `${SITE_URL}/#organization` },
-      areaServed: [
-        { "@type": "Country", name: "South Africa" },
-        { "@type": "Place", name: "Klipfontein View, Midrand" },
-      ],
+      description: SITE_DESCRIPTION,
+      areaServed: servicePlace,
       serviceType: "Food and grocery delivery",
       availableChannel: {
         "@type": "ServiceChannel",

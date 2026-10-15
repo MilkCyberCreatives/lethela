@@ -16,7 +16,7 @@ test("fixed public wording says Lethela is open in Klipfontein View", async () =
   ]);
   assert.match(authShell, /Now open in Klipfontein View, Midrand\./);
   assert.doesNotMatch(authShell, /Launching from/);
-  assert.match(home, /marketplace for South Africa, now open in Klipfontein View/);
+  assert.match(home, /Lethela is open in Klipfontein View, Midrand\./);
   assert.doesNotMatch(home, /launching from Klipfontein View/);
   assert.match(faq, /Lethela is open in Klipfontein View, Midrand\./);
   assert.doesNotMatch(faq, /pre-launch/);

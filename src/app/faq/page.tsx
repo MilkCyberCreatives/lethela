@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import MainHeader from "@/components/MainHeader";
 import Footer from "@/components/Footer";
 import StructuredData from "@/components/StructuredData";
+import { LEGAL_SUPPORT_EMAIL } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "FAQ",
   description:
-    "Answers to common questions about ordering, vendor onboarding, rider applications, delivery areas, pricing and support on Lethela.",
+    "What Lethela is, where it delivers, who delivers your order, how to track it, and how vendors and riders join. Quick answers about Lethela in Klipfontein View, Midrand.",
   alternates: {
     canonical: "/faq",
   },
@@ -24,6 +25,14 @@ export const metadata: Metadata = {
 };
 
 const faq = [
+  {
+    q: "What is Lethela?",
+    a: "Lethela is a South African delivery marketplace built for township businesses. You order food, groceries and everyday essentials from approved local stores, and Lethela riders bring the order to your door. Lethela is open in Klipfontein View, Midrand.",
+  },
+  {
+    q: "Who delivers my order?",
+    a: "Lethela runs the delivery. An approved Lethela rider collects your order from the store and brings it to your address, so stores do not need their own drivers.",
+  },
   {
     q: "What can I order on Lethela?",
     a: "When approved vendors are available in your area, you can browse township favourites such as kota, chips, burgers, wings, braai, mogodu and breakfast items, plus groceries from participating stores.",
@@ -45,6 +54,10 @@ const faq = [
     a: "Lethela is open in Klipfontein View, Midrand. The homepage shows the approved stores that deliver to your area.",
   },
   {
+    q: "Does Lethela deliver outside Klipfontein View?",
+    a: "Not yet. Lethela delivers in Klipfontein View, Midrand, and plans to add more township areas over time.",
+  },
+  {
     q: "How is the delivery fee calculated?",
     a: "Delivery is worked out from the road distance between the shop and your address, and you see the exact fee before you pay. The full delivery fee goes to the assigned rider. Google road routing is used where available, with a clearly labelled conservative estimate only as a fallback.",
   },
@@ -59,6 +72,10 @@ const faq = [
   {
     q: "What happens if something is missing or wrong?",
     a: "Open a support case quickly with the order reference, phone number and evidence link where useful. Depending on the issue, Lethela may arrange a correction, replacement, credit, partial refund or full refund.",
+  },
+  {
+    q: "How do I contact Lethela?",
+    a: `Use the Contact page or the WhatsApp button on the website${LEGAL_SUPPORT_EMAIL ? `, or email ${LEGAL_SUPPORT_EMAIL}` : ""}. Have your order reference ready if your question is about an order.`,
   },
 ];
 

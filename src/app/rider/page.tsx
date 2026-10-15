@@ -5,20 +5,20 @@ import RiderSignupForm from "@/components/auth/RiderSignupForm";
 import { isGoogleAuthEnabled } from "@/lib/google-auth";
 
 export const metadata: Metadata = {
-  title: "Create your rider account",
-  description: "Create a Lethela rider account and complete your rider details after signing in.",
+  title: "Become a delivery rider",
+  description:
+    "Deliver for Lethela in Klipfontein View, Midrand. Riders keep the full delivery fee and every tip. Sign up with your email and a password.",
   alternates: { canonical: "/rider" },
-  robots: { index: false, follow: false },
   openGraph: {
-    title: "Create your rider account | Lethela",
+    title: "Become a Lethela delivery rider | Lethela",
     description:
-      "Join Lethela as a community rider and complete your private profile after signup.",
+      "Deliver for Lethela in Klipfontein View, Midrand. Riders keep the full delivery fee and every tip. Sign up with your email and a password.",
     url: "/rider",
   },
   twitter: {
-    title: "Create your rider account | Lethela",
+    title: "Become a Lethela delivery rider | Lethela",
     description:
-      "Join Lethela as a community rider and complete your private profile after signup.",
+      "Deliver for Lethela in Klipfontein View, Midrand. Riders keep the full delivery fee and every tip. Sign up with your email and a password.",
   },
 };
 

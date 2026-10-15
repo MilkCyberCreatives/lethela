@@ -33,7 +33,7 @@ const rawSiteUrl =
 export const SITE_URL = normalizeSiteUrl(rawSiteUrl);
 export const SITE_NAME = "Lethela";
 export const SITE_DESCRIPTION =
-  "Order KoTa, chicken, groceries and township essentials from trusted local businesses with fast community delivery on Lethela.";
+  "Order kota, chicken, groceries and township essentials from trusted local businesses in Klipfontein View, Midrand, delivered fast by Lethela riders.";
 
 export function absoluteUrl(path = "/") {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;

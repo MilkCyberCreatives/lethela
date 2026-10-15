@@ -89,7 +89,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
         {itemListSchema ? <StructuredData data={itemListSchema} /> : null}
 
         <div className="max-w-3xl">
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-lethela-primary">
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-lethela-primary-bright">
             Fast local discovery
           </p>
           <h1 className="mt-2 text-3xl font-bold md:text-5xl">Find food and groceries nearby</h1>
@@ -127,7 +127,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             <Link
               key={chip.label}
               href={chip.href}
-              className="rounded-full border border-lethela-primary/40 px-3 py-1.5 text-sm font-semibold text-lethela-primary transition hover:border-lethela-primary hover:text-white"
+              className="rounded-full border border-lethela-primary/40 px-3 py-1.5 text-sm font-semibold text-lethela-primary-bright transition hover:border-lethela-primary hover:text-white"
             >
               {chip.label}
             </Link>
@@ -180,7 +180,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                   </div>
                   <div className="p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-lethela-primary">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-lethela-primary-bright">
                         {item.kind}
                       </span>
                       {item.priceCents != null ? (

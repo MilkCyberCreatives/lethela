@@ -165,7 +165,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           )}
         </div>
         <div className="self-center">
-          <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary">
+          <p className="text-xs uppercase tracking-[0.16em] text-lethela-primary-bright">
             {product.isAlcohol ? "Liquor · 18+" : "Local marketplace"}
           </p>
           <h1 className="mt-2 text-3xl font-bold md:text-4xl">{product.name}</h1>
@@ -175,7 +175,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </p>
           <Link
             href={`/vendors/${product.vendor.slug}`}
-            className="mt-5 inline-flex text-sm font-semibold text-lethela-primary hover:underline"
+            className="mt-5 inline-flex text-sm font-semibold text-lethela-primary-bright hover:underline"
           >
             Sold by {product.vendor.name}
           </Link>
@@ -185,6 +185,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </p>
           ) : null}
           <div className="mt-6 max-w-md">
+            <h2 className="sr-only">Order {product.name}</h2>
             <ProductCard p={product} showMealPreference={false} />
           </div>
         </div>

@@ -29,6 +29,9 @@ const config: Config = {
 
         // Brand aliases you’re using in class names
         "lethela-primary": "#B5001B",
+        // Brand red lifted for small text on the navy background, where #B5001B is too dark
+        // to read (2.7:1). This keeps the red accent while meeting the 4.5:1 contrast minimum.
+        "lethela-primary-bright": "#FF4D5E",
         "lethela-secondary": "#080B27",
       },
       // Opacity steps the components already use (e.g. text-white/68, border-white/12) that

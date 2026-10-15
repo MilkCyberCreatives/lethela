@@ -30,7 +30,7 @@ export default function TrackOrderPage() {
       <MainHeader />
 
       <section className="container max-w-2xl py-10 md:py-14">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lethela-primary-bright">
           Secure order access
         </p>
         <h1 className="mt-2 text-3xl font-bold md:text-4xl">Track your order</h1>
