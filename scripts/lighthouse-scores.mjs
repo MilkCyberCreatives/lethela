@@ -56,6 +56,45 @@ function runLighthouse(url, mode, outputPath) {
   return null;
 }
 
+// For any score below 100, print what held it back so a fix can be planned from the log.
+function printDiagnostics(report) {
+  const lines = [];
+  for (const category of Object.values(report.categories)) {
+    if (category.score === 1) continue;
+    for (const ref of category.auditRefs) {
+      if (!ref.weight) continue;
+      const audit = report.audits[ref.id];
+      if (audit && audit.score !== null && audit.score < 1) {
+        lines.push(`${audit.id} ${audit.displayValue || audit.score}`);
+      }
+    }
+  }
+  if (report.categories.performance?.score < 0.95) {
+    const metrics = report.audits.metrics?.details?.items?.[0] || {};
+    lines.push(
+      `metrics FCP ${metrics.firstContentfulPaint} LCP ${metrics.largestContentfulPaint} TBT ${metrics.totalBlockingTime} TTFB ${metrics.timeToFirstByte} observed LCP ${metrics.observedLargestContentfulPaint}`,
+    );
+    const lcp = report.audits["largest-contentful-paint-element"]?.details?.items || [];
+    const node = lcp[0]?.items?.[0]?.node;
+    if (node) lines.push(`LCP element ${String(node.snippet).slice(0, 300)}`);
+    const phases = lcp[1]?.items?.map((item) => `${item.phase} ${Math.round(item.timing)}`);
+    if (phases) lines.push(`LCP phases ${phases.join(", ")}`);
+    for (const id of ["bootup-time", "network-requests"]) {
+      const items = report.audits[id]?.details?.items || [];
+      const sorted =
+        id === "network-requests"
+          ? [...items].sort((a, b) => (b.transferSize || 0) - (a.transferSize || 0))
+          : items;
+      for (const item of sorted.slice(0, 8)) {
+        lines.push(
+          `${id} ${item.url} ${id === "bootup-time" ? `${Math.round(item.total)}ms` : `${item.transferSize}B ${Math.round(item.networkEndTime - item.networkRequestTime)}ms ${item.resourceType}`}`,
+        );
+      }
+    }
+  }
+  for (const line of lines) console.log(`    ${line}`);
+}
+
 const rows = [];
 for (const pagePath of pages) {
   for (const mode of ["mobile", "desktop"]) {
@@ -73,6 +112,7 @@ for (const pagePath of pages) {
     console.log(
       `${pagePath} (${mode}): ${scores.map((score, index) => `${labels[index]} ${score ?? "failed"}`).join(", ")}`,
     );
+    if (report) printDiagnostics(report);
   }
 }
 
