@@ -30,6 +30,20 @@ export default function CookiePolicyPage() {
           choice, timestamp and policy version for up to 12 months, and reopens when the version
           changes.
         </p>
+        <p className="mt-3 text-sm leading-7 text-white/72">
+          They include Google Analytics or Tag Manager where set up, Vercel Analytics, and the Meta
+          Pixel with the Meta Conversions API, which let Facebook and Instagram show Lethela adverts
+          to people who visited the site.
+        </p>
+      </section>
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <h2 className="text-lg font-semibold">Visit counting</h2>
+        <p className="mt-3 text-sm leading-7 text-white/72">
+          A random visitor number in your browser lets Lethela count visits in its own database:
+          pages opened, where the visit came from and how far it got towards an order. It holds no
+          name, email or phone number, is not shared, and is only linked to your account after you
+          accept optional cookies.
+        </p>
       </section>
     </LegalPageShell>
   );

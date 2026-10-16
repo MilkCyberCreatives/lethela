@@ -98,6 +98,21 @@ export default function PrivacyPolicyPage() {
           fraud prevention and marketing tools where appropriate.
         </p>
         <p>
+          We count visits to Lethela in our own database so we know how many people visit, where
+          they came from (for example Facebook or Google), which pages they open and where they stop
+          before ordering. Each browser gets a random visitor number. This count does not include
+          your name, email or phone number, stays with Lethela and is not sold or shared. It is only
+          linked to your account if you are signed in and have accepted optional cookies.
+        </p>
+        <p>
+          If you accept optional cookies, we also use the Meta Pixel and Meta Conversions API so
+          Facebook and Instagram can show Lethela adverts to people who visited the site. Meta
+          receives the page you viewed, actions such as adding to cart or paying, your IP address,
+          browser details and Meta&apos;s own cookies, but not your name, email or phone number from
+          us. If you decline, these tools stay off. You can change your choice at any time with
+          Cookie Settings in the footer.
+        </p>
+        <p>
           Voice search uses your device or browser microphone permission to turn speech into search
           text. Lethela does not store your voice recording.
         </p>

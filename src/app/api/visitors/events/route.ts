@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
+import { isAutomatedUserAgent } from "@/lib/bot-detect";
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { VISITOR_COOKIE_NAME } from "@/lib/visitor";
@@ -100,6 +101,7 @@ export async function POST(req: Request) {
     searchQuery?: string;
     preferredArea?: string | null;
     meta?: Record<string, unknown>;
+    consented?: boolean;
   };
 
   const visitorId = (await cookies()).get(VISITOR_COOKIE_NAME)?.value?.trim() || "";
@@ -115,17 +117,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, stored: false });
   }
 
-  let userId: string | undefined;
-  try {
-    const session = await auth();
-    if (typeof session?.user?.id === "string" && session.user.id) {
-      userId = session.user.id;
-    }
-  } catch {
-    // ignore auth lookup issues for anonymous traffic
+  // Crawlers, speed tests and our own scheduled jobs are not visitors.
+  const userAgent = req.headers.get("user-agent")?.slice(0, 240) || null;
+  if (isAutomatedUserAgent(userAgent)) {
+    return NextResponse.json({ ok: true, stored: false });
   }
 
-  const userAgent = req.headers.get("user-agent")?.slice(0, 240) || null;
+  // Without cookie consent the visit is counted anonymously, never tied to an account.
+  const consented = body.consented !== false;
+  let userId: string | undefined;
+  if (consented) {
+    try {
+      const session = await auth();
+      if (typeof session?.user?.id === "string" && session.user.id) {
+        userId = session.user.id;
+      }
+    } catch {
+      // ignore auth lookup issues for anonymous traffic
+    }
+  }
+
   if (!isKnownVisitor(visitorId) || body.preferredArea?.trim()) {
     await ensureVisitorRecord(visitorId, body.preferredArea, userAgent);
   }

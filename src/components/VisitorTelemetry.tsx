@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { canUseAnalyticsCookies, canUsePushCookies } from "@/lib/cookie-consent";
+import { canUsePushCookies } from "@/lib/cookie-consent";
 import { readPreferredLocation } from "@/lib/location-preference";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import {
   ensureVisitorId,
   incrementPushPageViews,
   markPushPrompted,
+  readSessionEntry,
   registerPushSubscription,
   trackVisitorEvent,
   wasPushPrompted,
@@ -16,6 +18,7 @@ import {
 export default function VisitorTelemetry() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const firstPageRef = useRef(true);
 
   useEffect(() => {
     ensureVisitorId();
@@ -27,9 +30,18 @@ export default function VisitorTelemetry() {
   useEffect(() => {
     const path = `${pathname || "/"}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`;
     const preferredArea = readPreferredLocation()?.label || null;
-    if (canUseAnalyticsCookies()) {
-      void trackVisitorEvent({ type: "page_view", path, preferredArea });
-    }
+    // Every visit is counted in Lethela's own database with a random visitor number
+    // and no personal details. Ad tools only see it after cookies are accepted.
+    const entry = readSessionEntry();
+    void trackVisitorEvent({
+      type: "page_view",
+      path,
+      preferredArea,
+      meta: entry ? { entry } : undefined,
+    });
+    // The pixel counts the landing page itself; later in-app page changes are sent here.
+    if (firstPageRef.current) firstPageRef.current = false;
+    else trackMetaEvent("PageView");
 
     const pageViews = incrementPushPageViews();
     const isTransactionalPath =

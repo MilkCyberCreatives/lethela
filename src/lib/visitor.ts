@@ -1,8 +1,13 @@
+import { isAutomatedUserAgent } from "@/lib/bot-detect";
+import { canUseAnalyticsCookies } from "@/lib/cookie-consent";
+import { mirrorToMeta } from "@/lib/meta-pixel";
+
 export const VISITOR_COOKIE_NAME = "lethela_visitor_id";
 const VISITOR_STORAGE_KEY = "lethela_visitor_id";
 const VISITOR_PUSH_PROMPTED_KEY = "lethela_push_prompted";
 const VISITOR_PUSH_PAGEVIEWS_KEY = "lethela_push_pageviews";
 const VISITOR_EVENT_DEDUPE_KEY = "lethela_event_dedupe";
+const VISITOR_SESSION_ENTRY_KEY = "lethela_session_entry";
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 
 export type VisitorEventInput = {
@@ -28,6 +33,9 @@ export type VisitorEventInput = {
   searchQuery?: string;
   preferredArea?: string | null;
   meta?: Record<string, unknown>;
+  /** False when the visitor has not accepted optional cookies: the visit is counted
+   * anonymously and never linked to their account. */
+  consented?: boolean;
 };
 
 type AnalyticsItem = {
@@ -193,6 +201,7 @@ export function pushDataLayerEvent(event: string, payload: Record<string, unknow
   }
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event, ...payload });
+  mirrorToMeta(event, payload);
 }
 
 export function pushEcommerceEvent(
@@ -209,6 +218,39 @@ export function pushEcommerceEvent(
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ ecommerce: null });
   window.dataLayer.push({ event, ecommerce });
+  mirrorToMeta(event, ecommerce);
+}
+
+/**
+ * Where this browsing session started (link tags and the referring site), read once
+ * per session so the daily report can say where visitors came from.
+ */
+export function readSessionEntry() {
+  if (typeof window === "undefined") return null;
+  try {
+    if (window.sessionStorage.getItem(VISITOR_SESSION_ENTRY_KEY)) return null;
+    window.sessionStorage.setItem(VISITOR_SESSION_ENTRY_KEY, "1");
+  } catch {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const tag = (name: string) => params.get(name)?.trim().slice(0, 60) || null;
+  let referrer: string | null = null;
+  try {
+    const host = document.referrer ? new URL(document.referrer).hostname : "";
+    referrer = host && host !== window.location.hostname ? host.slice(0, 80) : null;
+  } catch {
+    referrer = null;
+  }
+
+  return {
+    utmSource: tag("utm_source"),
+    utmMedium: tag("utm_medium"),
+    utmCampaign: tag("utm_campaign"),
+    referrer,
+    clickId: params.has("fbclid") ? "fbclid" : params.has("gclid") ? "gclid" : null,
+  };
 }
 
 export function trackWhatsAppClick(context: string, meta: Record<string, unknown> = {}) {
@@ -227,6 +269,8 @@ export function trackWhatsAppClick(context: string, meta: Record<string, unknown
 
 export async function trackVisitorEvent(input: VisitorEventInput) {
   if (typeof window === "undefined") return;
+  // Automated browsers (tests, speed checks) are not visitors.
+  if (navigator.webdriver || isAutomatedUserAgent(navigator.userAgent)) return;
 
   try {
     const dedupeWindowMs =
@@ -263,6 +307,7 @@ export async function trackVisitorEvent(input: VisitorEventInput) {
     visitorId: ensureVisitorId(),
     ...input,
     meta: input.meta ?? undefined,
+    consented: input.consented ?? canUseAnalyticsCookies(),
   };
 
   try {
