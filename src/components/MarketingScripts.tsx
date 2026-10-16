@@ -77,6 +77,7 @@ export default function MarketingScripts() {
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq('init', '${metaPixelId}');
               fbq('track', 'PageView');
+              (window.__lethelaFbqPending || []).splice(0).forEach(function(a){ fbq.apply(null, a); });
             `,
           }}
         />

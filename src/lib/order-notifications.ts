@@ -220,6 +220,19 @@ export async function claimOrderNotification(orderId: string, event: string, cha
   return Number(inserted) > 0;
 }
 
+/** Undoes a claim when nothing went out, so a later attempt can try again. */
+export async function releaseOrderNotification(orderId: string, event: string, channel: string) {
+  await ensureOrderNotificationLog();
+  const placeholders =
+    prismaRuntimeInfo.provider === "postgresql" ? ["$1", "$2", "$3"] : ["?", "?", "?"];
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM app_order_notification_logs WHERE order_id = ${placeholders[0]} AND event = ${placeholders[1]} AND channel = ${placeholders[2]}`,
+    orderId,
+    event,
+    channel,
+  );
+}
+
 export async function notifyVendorOfPaidOrder(orderId: string) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },

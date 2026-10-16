@@ -1,0 +1,26 @@
+name: Daily visitor report
+
+# Sends yesterday's website visitor report to Lethela's admins (WhatsApp and email)
+# around 07:00 South African time. The later runs are retries: the site sends the
+# report once per day, so a run after a successful one does nothing.
+on:
+  schedule:
+    - cron: "0 5 * * *"
+    - cron: "45 5 * * *"
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: visitor-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Send the daily visitor report
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call the live site
+        run: curl --fail --silent --show-error --max-time 90 https://www.lethela.co.za/api/cron/visitor-report

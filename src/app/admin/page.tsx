@@ -3911,6 +3911,10 @@ export default function AdminPage() {
                   <Settings aria-hidden="true" />
                   Go-live checklist
                 </Link>
+                <Link href="/admin/visitors" className={dashButton.secondary}>
+                  <LineChart aria-hidden="true" />
+                  Website visitors
+                </Link>
               </div>
               <details className="group mt-4 rounded-lg border border-slate-200">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 text-sm font-semibold text-slate-800">

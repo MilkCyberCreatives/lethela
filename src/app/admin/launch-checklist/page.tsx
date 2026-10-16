@@ -6,6 +6,7 @@ import { ADMIN_ACCESS_COOKIE_NAME, readAdminAccessToken } from "@/lib/admin-acce
 import { getCatalogMode } from "@/lib/catalog-runtime";
 import { hasWhatsAppChannel } from "@/lib/notification-channels";
 import { withQueryTimeout } from "@/lib/query-timeout";
+import { getVisitorReportChannelStatus } from "@/lib/visitor-report-data";
 import { hasStorageConfig, storageProvider } from "@/server/supabase";
 import { hasWebPushConfig } from "@/lib/web-push";
 import { prisma, prismaRuntimeInfo } from "@/server/db";
@@ -161,6 +162,21 @@ export default async function LaunchChecklistPage() {
       label: "Vendor WhatsApp order alerts",
       ok: hasWhatsAppChannel(),
       detail: "Paid Ozow orders are sent to the vendor phone number and still appear on dashboard.",
+    },
+    {
+      label: "Daily visitor report",
+      ok: getVisitorReportChannelStatus().whatsapp,
+      detail: getVisitorReportChannelStatus().whatsapp
+        ? "Yesterday's visitors go to the admin WhatsApp number(s) every morning at about 07:00, and by email where set."
+        : getVisitorReportChannelStatus().email
+          ? "The 07:00 visitor report goes by email only. Set ADMIN_NOTIFICATION_WHATSAPP_TO and the Twilio WhatsApp keys to get it on WhatsApp too."
+          : "Set ADMIN_NOTIFICATION_WHATSAPP_TO (with the Twilio WhatsApp keys) or ADMIN_NOTIFICATION_EMAILS so the 07:00 visitor report can be sent.",
+    },
+    {
+      label: "Facebook and Instagram retargeting",
+      ok: configured("NEXT_PUBLIC_META_PIXEL_ID") && configured("META_CONVERSIONS_API_TOKEN"),
+      detail:
+        "Set NEXT_PUBLIC_META_PIXEL_ID and META_CONVERSIONS_API_TOKEN from Meta Events Manager. Visits, add to cart, checkout and purchases then build ad audiences, only for visitors who accept cookies.",
     },
     {
       label: "Sentry monitoring",

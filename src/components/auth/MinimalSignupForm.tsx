@@ -130,6 +130,8 @@ export default function MinimalSignupForm({
           meta: { signupStage: "account_created" },
         });
         pushDataLayerEvent("generate_lead", { lead_type: "vendor_account_created" });
+      } else {
+        pushDataLayerEvent("sign_up", { method: "email", account_type: accountType });
       }
 
       if (data.verificationRequired) {
