@@ -6,37 +6,49 @@ async function source(path: string) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-const rider = (id: string, suburb: string, city = "Ekurhuleni", preferredZones = "[]") => ({
-  id,
-  suburb,
-  city,
-  township: "",
-  preferredZones,
-});
+const rider = (
+  id: string,
+  suburb: string,
+  city = "Ekurhuleni",
+  preferredZones = "[]",
+  distanceKm: number | null = null,
+) => ({ id, suburb, city, township: "", preferredZones, distanceKm });
 
-test("riders in the store's suburb or zones are offered the order first", async () => {
-  const { rankRiders } = await import("../src/lib/order-automation");
+const store = { suburb: "Klipfontein View", city: "Ekurhuleni", latitude: -26.1, longitude: 28.2 };
+
+test("riders closest to the store by phone location come first, then its suburb or zones", async () => {
+  const { rankRiders } = await import("../src/lib/rider-offers");
   const ranked = rankRiders(
     [
       rider("far", "Soweto", "Johannesburg"),
       rider("city", "Tembisa"),
       rider("zone", "Tembisa", "Ekurhuleni", '["Klipfontein View"]'),
-      rider("local", "klipfontein view"),
+      rider("gps-2km", "Tembisa", "Ekurhuleni", "[]", 2),
+      rider("gps-1km", "Soweto", "Johannesburg", "[]", 0.8),
+      rider("gps-8km", "Klipfontein View", "Ekurhuleni", "[]", 8),
     ],
-    { suburb: "Klipfontein View", city: "Ekurhuleni" },
-    new Map([["local", 3]]),
+    store,
+    new Map(),
   );
   assert.deepEqual(
     ranked.map((row) => row.id),
-    ["zone", "local", "city", "far"],
+    ["gps-1km", "gps-2km", "zone", "gps-8km", "city", "far"],
   );
 });
 
+test("a rider's phone location beats their saved suburb when deciding who is nearby", async () => {
+  const { isNearby, NEARBY_KM } = await import("../src/lib/rider-offers");
+  assert.equal(isNearby(rider("a", "Klipfontein View", "x", "[]", NEARBY_KM + 1), store), false);
+  assert.equal(isNearby(rider("b", "Soweto", "x", "[]", NEARBY_KM - 1), store), true);
+  assert.equal(isNearby(rider("c", "klipfontein view"), store), true);
+  assert.equal(isNearby(rider("d", "Soweto"), store), false);
+});
+
 test("riders with fewer deliveries today come first among equals", async () => {
-  const { rankRiders } = await import("../src/lib/order-automation");
+  const { rankRiders } = await import("../src/lib/rider-offers");
   const ranked = rankRiders(
     [rider("busy", "Klipfontein View"), rider("quiet", "Klipfontein View")],
-    { suburb: "Klipfontein View", city: "Ekurhuleni" },
+    store,
     new Map([["busy", 4]]),
   );
   assert.equal(ranked[0].id, "quiet");
@@ -53,16 +65,60 @@ test("a ready order is given to a rider automatically by every route that marks 
   }
 });
 
-test("only free, online, approved riders who have not declined are offered an order", async () => {
-  const file = await source("src/lib/order-automation.ts");
+test("only free, online, approved riders who have not declined are alerted", async () => {
+  const file = await source("src/lib/rider-offers.ts");
   assert.match(file, /status: "APPROVED", availableNow: true/);
   assert.match(file, /RIDER_ASSIGNMENT_DECLINED/);
-  assert.match(file, /!busyIds\.has\(rider\.id\) && !declined\.has\(rider\.id\)/);
-  // Two requests can never give the same order to two riders.
+  assert.match(file, /!busy\.has\(rider\.id\) && !declined\.has\(rider\.id\)/);
+  assert.match(file, /rider\.distanceKm <= MAX_OFFER_KM/);
+});
+
+test("the first rider to accept gets the order, and only one can win", async () => {
+  const file = await source("src/lib/rider-offers.ts");
   assert.match(
     file,
     /where: \{ id: order\.id, status: "READY_FOR_PICKUP", assignedRiderId: null \}/,
   );
+  assert.match(file, /if \(claimed\.count === 0\) return "taken";/);
+  assert.match(file, /await closeOpenOffers\(order\.id, rider\.id\)/);
+  const route = await source("src/app/api/riders/me/offers/[ref]/route.ts");
+  assert.match(route, /Another rider accepted this delivery first\./);
+});
+
+test("nobody accepting widens the request and then tells admins", async () => {
+  const { WIDEN_AFTER_MS, NO_ACCEPT_ALERT_AFTER_MS } = await import("../src/lib/rider-offers");
+  assert.ok(WIDEN_AFTER_MS < NO_ACCEPT_ALERT_AFTER_MS);
+  const file = await source("src/lib/order-automation.ts");
+  assert.match(file, /offerOrder\(order\.id, \{ widen: true \}\)/);
+  assert.match(file, /notifyAdminsOfOrder\(order\.id, "no-rider-accepted"\)/);
+  // Admins hear straight away only when no rider could be alerted.
+  assert.match(file, /alertAdmins: !ridersAlerted/);
+});
+
+test("riders see the customer's details only after they accept", async () => {
+  const offers = await source("src/lib/rider-offers.ts");
+  const listing = offers.slice(offers.indexOf("export async function listRiderOffers"));
+  assert.doesNotMatch(listing, /customerName|customerPhone|whatsappNumber|standNumber/);
+  const { buildRiderOfferMessage } = await import("../src/lib/order-notifications");
+  const text = buildRiderOfferMessage({
+    orderRef: "LET-9",
+    vendorName: "Mama's Kitchen",
+    pickupAddress: "12 Main Rd, Klipfontein View",
+    dropoffArea: "Klipfontein View",
+    distanceKm: 1.24,
+    earnCents: 2300,
+    dashboardUrl: "https://www.lethela.co.za/rider/dashboard",
+  });
+  assert.match(text, /\(1\.2 km from you\)/);
+  assert.match(text, /The first rider to tap Accept gets it\./);
+  assert.match(text, /You earn: R23\.00/);
+});
+
+test("riders are only located while online", async () => {
+  const location = await source("src/app/api/riders/me/location/route.ts");
+  assert.match(location, /rider\.status !== "APPROVED" \|\| !rider\.availableNow/);
+  const availability = await source("src/app/api/riders/me/availability/route.ts");
+  assert.match(availability, /clearRiderLocation\(application\.id\)/);
 });
 
 test("waiting orders are offered when a rider comes online or finishes a delivery", async () => {

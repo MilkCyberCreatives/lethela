@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { dispatchWaitingOrders } from "@/lib/order-automation";
+import { clearRiderLocation } from "@/lib/rider-offers";
 
 const BodySchema = z.object({ availableNow: z.boolean() });
 
@@ -84,9 +85,12 @@ export async function PATCH(req: NextRequest) {
     data: { availableNow: parsed.data.availableNow },
     select: { availableNow: true, suburb: true, city: true },
   });
-  // A rider who comes online picks up any order that is waiting for a rider.
+  // A rider who comes online hears about any order that is waiting for a rider.
   if (updated.availableNow) {
     await dispatchWaitingOrders().catch(() => 0);
+  } else {
+    // Riders are only located while they are online.
+    await clearRiderLocation(application.id).catch(() => null);
   }
 
   return NextResponse.json({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Power } from "lucide-react";
 import { dashButton } from "@/components/dashboard/kit/ui";
 
@@ -62,6 +62,41 @@ export default function RiderOperationsPanel() {
     void load();
   }, []);
 
+  const online = Boolean(availability?.availableNow);
+  const [locationNote, setLocationNote] = useState<string | null>(null);
+  const lastSent = useRef(0);
+
+  // While online, the phone shares where the rider is so the nearest riders hear
+  // about deliveries first. Nothing is shared while offline.
+  useEffect(() => {
+    if (!online || typeof navigator === "undefined" || !("geolocation" in navigator)) return;
+    const send = (position: GeolocationPosition) => {
+      if (Date.now() - lastSent.current < 60_000) return;
+      lastSent.current = Date.now();
+      setLocationNote(null);
+      void fetch("/api/riders/me/location", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }),
+      }).catch(() => null);
+    };
+    const watchId = navigator.geolocation.watchPosition(
+      send,
+      () =>
+        setLocationNote(
+          "Allow location on this phone to get deliveries near you first. Without it we use your area.",
+        ),
+      { enableHighAccuracy: false, maximumAge: 60_000, timeout: 20_000 },
+    );
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+      lastSent.current = 0;
+    };
+  }, [online]);
+
   async function toggleAvailability() {
     if (!availability?.approved) return;
     setSaving(true);
@@ -97,7 +132,6 @@ export default function RiderOperationsPanel() {
     ["This week", earnings?.week],
     ["This month", earnings?.month],
   ] as const;
-  const online = Boolean(availability?.availableNow);
 
   return (
     <section className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -132,6 +166,12 @@ export default function RiderOperationsPanel() {
         >
           {saving ? "Updating…" : online ? "Go offline" : "Go online"}
         </button>
+        {online ? (
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            {locationNote ||
+              "While you are online, Lethela uses your phone's location to send you deliveries near you."}
+          </p>
+        ) : null}
         {error ? (
           <p className="mt-3 text-sm text-red-700" role="alert">
             {error}

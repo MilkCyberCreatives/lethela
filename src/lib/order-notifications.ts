@@ -334,7 +334,11 @@ export async function notifyVendorOfPaidOrder(orderId: string) {
   } as const;
 }
 
-export async function notifyOrderStatusPush(orderId: string, status: string) {
+export async function notifyOrderStatusPush(
+  orderId: string,
+  status: string,
+  options: { alertAdmins?: boolean } = {},
+) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
@@ -354,7 +358,8 @@ export async function notifyOrderStatusPush(orderId: string, status: string) {
   });
   if (!order) return { sent: 0, failed: 0, total: 0 };
 
-  if (status === "READY_FOR_PICKUP") {
+  // Riders were alerted about the order, so admins only hear when none could take it.
+  if (status === "READY_FOR_PICKUP" && options.alertAdmins !== false) {
     await notifyAdminsOfOrder(orderId, "ready");
   }
   // Stores and riders only act on paid orders, so a cancelled one needs a refund.
@@ -395,7 +400,13 @@ export async function notifyOrderStatusPush(orderId: string, status: string) {
   };
 }
 
-type AdminOrderEvent = "paid" | "ready" | "cancelled" | "store-slow" | "rider-slow";
+type AdminOrderEvent =
+  | "paid"
+  | "ready"
+  | "no-rider-accepted"
+  | "cancelled"
+  | "store-slow"
+  | "rider-slow";
 
 const ADMIN_ORDER_ALERTS: Record<AdminOrderEvent, { title: string; action: string }> = {
   paid: { title: "New paid order", action: "Watch for the vendor to accept it." },
@@ -411,14 +422,18 @@ const ADMIN_ORDER_ALERTS: Record<AdminOrderEvent, { title: string; action: strin
     title: "Store has not accepted an order",
     action: "Paid more than 15 minutes ago and the store was reminded. Call the store.",
   },
+  "no-rider-accepted": {
+    title: "No rider accepted an order",
+    action: "Riders who are online were alerted but none accepted. Assign a rider now.",
+  },
   "rider-slow": {
     title: "Rider has not collected an order",
     action: "Assigned more than 30 minutes ago and the rider was reminded. Call the rider.",
   },
 };
 
-// Riders are assigned automatically (src/lib/order-automation.ts), so the admin
-// team hears about every paid order, an order no rider could take, an order the
+// Riders are alerted automatically (src/lib/rider-offers.ts), so the admin team
+// hears about every paid order, an order no rider took, an order the
 // store or rider is sitting on, and, because refunds are manual, every cancelled order.
 export async function notifyAdminsOfOrder(orderId: string, event: AdminOrderEvent) {
   const order = await prisma.order.findUnique({
@@ -796,6 +811,102 @@ export async function remindRiderOfPickup(orderId: string, riderApplicationId: s
           body: summary,
           url: "/rider/dashboard",
           tag: `lethela-rider-${orderRef}`,
+        }),
+        3000,
+      ),
+    );
+  }
+  if (hasWhatsAppChannel() && phone) {
+    tasks.push(settleWithin(sendTwilioWhatsApp({ to: phone, body: text }), 3000));
+  }
+
+  await Promise.all(tasks);
+  return { delivered: true as const };
+}
+
+export function buildRiderOfferMessage(input: {
+  orderRef: string;
+  vendorName: string;
+  pickupAddress: string;
+  dropoffArea: string;
+  distanceKm: number | null;
+  earnCents: number;
+  dashboardUrl: string;
+}) {
+  return [
+    `New Lethela delivery request near you: ${input.orderRef}`,
+    `Collect from: ${joinAddress(input.vendorName, input.pickupAddress) || "See your dashboard"}${
+      input.distanceKm !== null ? ` (${input.distanceKm.toFixed(1)} km from you)` : ""
+    }`,
+    input.dropoffArea ? `Deliver to: ${input.dropoffArea}` : "",
+    `You earn: ${rand(input.earnCents)}`,
+    "Other riders nearby got this request too. The first rider to tap Accept gets it.",
+    `Accept here: ${input.dashboardUrl}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+// The customer's name, phone and exact address only go to the rider who accepts.
+export async function notifyRiderOfOffer(
+  orderId: string,
+  riderApplicationId: string,
+  distanceKm: number | null,
+) {
+  const [order, rider] = await Promise.all([
+    prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        publicId: true,
+        ozowReference: true,
+        itemsJson: true,
+        deliveryFeeCents: true,
+        riderTipCents: true,
+        riderPayoutCents: true,
+        vendor: { select: { name: true, address: true, suburb: true, city: true } },
+      },
+    }),
+    prisma.riderApplication.findUnique({
+      where: { id: riderApplicationId },
+      select: { phone: true, userId: true },
+    }),
+  ]);
+  if (!order || !rider) return { delivered: false as const };
+
+  const orderRef = order.publicId || order.ozowReference || orderId;
+  const vendorName = cleanLine(order.vendor.name);
+  const earnCents = order.riderPayoutCents || order.deliveryFeeCents + (order.riderTipCents || 0);
+  const text = buildRiderOfferMessage({
+    orderRef,
+    vendorName,
+    pickupAddress: joinAddress(order.vendor.address, order.vendor.suburb, order.vendor.city),
+    dropoffArea: cleanLine(parseOrderPayload(order.itemsJson).deliveryDetails?.destinationSuburb),
+    distanceKm,
+    earnCents,
+    dashboardUrl: absoluteUrl("/rider/dashboard"),
+  });
+  const summary = `Collect from ${vendorName}, earn ${rand(earnCents)}. First to accept gets it.`;
+  const phone = cleanLine(rider.phone);
+
+  const tasks: Promise<unknown>[] = [];
+  if (rider.userId) {
+    tasks.push(
+      settleWithin(
+        createNotification({
+          userId: rider.userId,
+          type: "rider-offer",
+          title: "Delivery request near you",
+          body: summary,
+          href: "/rider/dashboard",
+        }),
+        3000,
+      ),
+      settleWithin(
+        sendPushToUsers([rider.userId], "orderUpdatesEnabled", {
+          title: "Delivery request near you",
+          body: summary,
+          url: "/rider/dashboard",
+          tag: `lethela-rider-offer-${orderRef}`,
         }),
         3000,
       ),

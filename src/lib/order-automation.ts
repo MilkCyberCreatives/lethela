@@ -1,28 +1,26 @@
 import { after } from "next/server";
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
-import {
-  createDispatchAssignment,
-  ensureOrderOperationsTables,
-  recordOrderEvent,
-} from "@/lib/order-operations";
+import { ensureOrderOperationsTables } from "@/lib/order-operations";
 import {
   claimOrderNotification,
   notifyAdminsOfOrder,
   notifyOrderStatusPush,
-  notifyRiderOfAssignment,
   remindRiderOfPickup,
   remindStoreOfPaidOrder,
 } from "@/lib/order-notifications";
 import { settleWithin } from "@/lib/notification-channels";
-import { pusherServer } from "@/lib/pusher-server";
+import {
+  NO_ACCEPT_ALERT_AFTER_MS,
+  WIDEN_AFTER_MS,
+  offerOrder,
+  resetOpenOffers,
+} from "@/lib/rider-offers";
 
 // Lethela runs delivery, so a paid order should reach the customer without an
-// admin stepping in. Riders are offered orders automatically; admins only hear
-// about the orders that get stuck. Approvals, refunds and payouts stay manual.
+// admin stepping in. Nearby riders are alerted automatically and the first to
+// accept gets the order; admins only hear about the orders that get stuck. Approvals, refunds and payouts stay manual.
 
 const PAID_STATUSES = ["PAID", "SUCCESS"];
-const RIDER_BUSY_STATUSES = ["RIDER_ASSIGNED", "PICKED_UP", "ON_THE_WAY"];
-export const AUTO_DISPATCH_ACTOR = "system:auto-dispatch";
 
 const MINUTE = 60 * 1000;
 export const STORE_REMINDER_AFTER_MS = 5 * MINUTE;
@@ -37,187 +35,27 @@ function marker(index: number) {
   return prismaRuntimeInfo.provider === "postgresql" ? `$${index}` : "?";
 }
 
-function lower(value: unknown) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-}
-
-function parseZones(value: string | null | undefined) {
-  try {
-    const parsed = JSON.parse(value || "[]");
-    return Array.isArray(parsed) ? parsed.map(lower).filter(Boolean) : [];
-  } catch {
-    return [];
-  }
-}
-
-async function ridersWhoDeclined(orderId: string) {
-  await ensureOrderOperationsTables();
-  const rows = await prisma.$queryRawUnsafe<Array<{ actor: string | null }>>(
-    `SELECT actor FROM app_order_events WHERE order_id = ${marker(1)} AND type = 'RIDER_ASSIGNMENT_DECLINED'`,
-    orderId,
-  );
-  return new Set(
-    rows
-      .map((row) => String(row.actor || ""))
-      .filter((actor) => actor.startsWith("rider:"))
-      .map((actor) => actor.slice("rider:".length)),
-  );
-}
-
-type RiderCandidate = {
-  id: string;
-  suburb: string;
-  city: string;
-  township: string;
-  preferredZones: string;
-};
-
-/**
- * Orders the riders who are online and free, best first: riders in the store's
- * suburb or zones, then its city, then whoever has had the fewest deliveries today.
- */
-export function rankRiders(
-  riders: RiderCandidate[],
-  vendor: { suburb: string | null; city: string | null },
-  deliveriesToday: Map<string, number>,
-) {
-  const suburb = lower(vendor.suburb);
-  const city = lower(vendor.city);
-  const score = (rider: RiderCandidate) => {
-    const local = [lower(rider.suburb), lower(rider.township), ...parseZones(rider.preferredZones)];
-    if (suburb && local.includes(suburb)) return 2;
-    if (city && lower(rider.city) === city) return 1;
-    return 0;
-  };
-  return [...riders].sort(
-    (a, b) =>
-      score(b) - score(a) ||
-      (deliveriesToday.get(a.id) || 0) - (deliveriesToday.get(b.id) || 0) ||
-      a.id.localeCompare(b.id),
-  );
-}
-
-async function availableRiders(
-  orderId: string,
-  vendor: { suburb: string | null; city: string | null },
-) {
-  const [riders, busy, declined] = await Promise.all([
-    prisma.riderApplication.findMany({
-      where: { status: "APPROVED", availableNow: true },
-      select: { id: true, suburb: true, city: true, township: true, preferredZones: true },
-      take: 200,
-    }),
-    prisma.order.findMany({
-      where: { status: { in: RIDER_BUSY_STATUSES }, assignedRiderId: { not: null } },
-      select: { assignedRiderId: true },
-    }),
-    ridersWhoDeclined(orderId),
-  ]);
-  const busyIds = new Set(busy.map((order) => order.assignedRiderId));
-  const free = riders.filter((rider) => !busyIds.has(rider.id) && !declined.has(rider.id));
-  if (free.length === 0) return [];
-
-  const since = new Date(Date.now() - 24 * 60 * MINUTE);
-  const recent = await prisma.order.groupBy({
-    by: ["assignedRiderId"],
-    where: { assignedRiderId: { in: free.map((rider) => rider.id) }, createdAt: { gte: since } },
-    _count: { _all: true },
-  });
-  const deliveriesToday = new Map(
-    recent.map((row) => [String(row.assignedRiderId), row._count._all] as const),
-  );
-  return rankRiders(free, vendor, deliveriesToday);
-}
-
-/**
- * Gives a paid order that is ready for pickup to the best free rider who is online.
- * Returns the order's status afterwards: RIDER_ASSIGNED, or READY_FOR_PICKUP when
- * no rider could take it (the admins are then told by the READY_FOR_PICKUP alert).
- */
-export async function autoDispatchOrder(orderId: string) {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: {
-      id: true,
-      publicId: true,
-      ozowReference: true,
-      status: true,
-      paymentStatus: true,
-      assignedRiderId: true,
-      vendor: { select: { suburb: true, city: true } },
-    },
-  });
-  if (!order) return null;
-  if (order.status !== "READY_FOR_PICKUP" || order.assignedRiderId) return order.status;
-  if (!PAID_STATUSES.includes(order.paymentStatus.toUpperCase())) return order.status;
-
-  const candidates = await availableRiders(order.id, order.vendor);
-  for (const candidate of candidates) {
-    // Only one request can move the order out of READY_FOR_PICKUP.
-    const claimed = await prisma.order.updateMany({
-      where: { id: order.id, status: "READY_FOR_PICKUP", assignedRiderId: null },
-      data: { status: "RIDER_ASSIGNED", assignedRiderId: candidate.id, statusReason: null },
-    });
-    if (claimed.count === 0) return "RIDER_ASSIGNED";
-
-    const rider = await prisma.riderApplication.findUnique({
-      where: { id: candidate.id },
-      select: { id: true, fullName: true, phone: true, status: true, availableNow: true },
-    });
-    if (!rider || rider.status !== "APPROVED" || !rider.availableNow) {
-      // The rider went offline while we were choosing; put the order back and try the next one.
-      await prisma.order.updateMany({
-        where: { id: order.id, status: "RIDER_ASSIGNED", assignedRiderId: candidate.id },
-        data: { status: "READY_FOR_PICKUP", assignedRiderId: null },
-      });
-      continue;
-    }
-
-    await createDispatchAssignment({
-      orderId: order.id,
-      publicId: order.publicId,
-      riderApplicationId: rider.id,
-      riderName: rider.fullName,
-      riderPhone: rider.phone,
-      note: "Assigned automatically",
-      actor: AUTO_DISPATCH_ACTOR,
-    });
-    await recordOrderEvent({
-      orderId: order.id,
-      publicId: order.publicId,
-      type: "RIDER_ASSIGNED",
-      actor: AUTO_DISPATCH_ACTOR,
-      note: "Assigned automatically",
-      meta: { riderId: rider.id, riderName: rider.fullName },
-    });
-    try {
-      await pusherServer.trigger(`order-${order.ozowReference || order.publicId}`, "status", {
-        status: "RIDER_ASSIGNED",
-        at: new Date().toISOString(),
-      });
-    } catch {
-      // realtime may be disabled
-    }
-    // The assignment is saved even if a message cannot go out.
-    await notifyRiderOfAssignment(order.id, rider.id).catch(() => null);
-    return "RIDER_ASSIGNED";
-  }
-  return "READY_FOR_PICKUP";
-}
-
 /**
  * Runs after an order becomes ready for pickup (the store marked it ready, a rider
- * declined, or an admin moved it back) and sends the matching status messages.
+ * declined, or an admin moved it back): alerts the nearest free riders, the first
+ * to accept gets it, and sends the matching status messages. Admins are told at
+ * once only when no rider is online to alert.
  */
 export async function dispatchReadyOrder(orderId: string) {
-  const status = (await autoDispatchOrder(orderId).catch(() => null)) || "READY_FOR_PICKUP";
-  await settleWithin(notifyOrderStatusPush(orderId, status), 3000);
-  return status;
+  await resetOpenOffers(orderId).catch(() => null);
+  const round = await offerOrder(orderId).catch(() => null);
+  const ridersAlerted = Boolean(round && round.open > 0);
+  await settleWithin(
+    notifyOrderStatusPush(orderId, "READY_FOR_PICKUP", { alertAdmins: !ridersAlerted }),
+    3000,
+  );
+  return { ridersAlerted };
 }
 
-/** Offers every paid order still waiting for a rider, oldest first. */
+/**
+ * Alerts newly free riders (one came online, declined or delivered) about every
+ * paid order still waiting for a rider, oldest first.
+ */
 export async function dispatchWaitingOrders(limit = 10) {
   const waiting = await prisma.order.findMany({
     where: {
@@ -229,14 +67,44 @@ export async function dispatchWaitingOrders(limit = 10) {
     take: limit,
     select: { id: true },
   });
-  let assigned = 0;
+  let alerted = 0;
   for (const order of waiting) {
-    const status = await autoDispatchOrder(order.id).catch(() => null);
-    if (status !== "RIDER_ASSIGNED") continue;
-    assigned += 1;
-    await settleWithin(notifyOrderStatusPush(order.id, "RIDER_ASSIGNED"), 3000);
+    const round = await offerOrder(order.id).catch(() => null);
+    alerted += round?.alerted || 0;
   }
-  return assigned;
+  return alerted;
+}
+
+/** Widens offers nobody nearby accepted, and tells admins when nobody accepts at all. */
+async function chaseUnacceptedOffers(now: Date, since: Date) {
+  const waiting = await prisma.order.findMany({
+    where: {
+      status: "READY_FOR_PICKUP",
+      assignedRiderId: null,
+      paymentStatus: { in: PAID_STATUSES },
+      createdAt: { gte: since },
+    },
+    select: { id: true },
+    take: 50,
+  });
+  let widened = 0;
+  let escalations = 0;
+  for (const order of waiting) {
+    let round = await offerOrder(order.id).catch(() => null);
+    if (!round?.firstOfferedAt) continue;
+    const waited = now.getTime() - new Date(round.firstOfferedAt).getTime();
+    if (round.wave < 2 && waited >= WIDEN_AFTER_MS) {
+      round = (await offerOrder(order.id, { widen: true }).catch(() => null)) || round;
+      widened += 1;
+    }
+    if (waited >= NO_ACCEPT_ALERT_AFTER_MS) {
+      if (await claimOrderNotification(order.id, "no-rider-accepted", "auto")) {
+        escalations += 1;
+        await notifyAdminsOfOrder(order.id, "no-rider-accepted").catch(() => null);
+      }
+    }
+  }
+  return { widened, escalations };
 }
 
 let automationRunsTable: Promise<unknown> | null = null;
@@ -285,8 +153,8 @@ export async function runOrderSweep(options: { force?: boolean } = {}) {
   const now = new Date();
   if (!options.force && !(await claimSweep(now))) return { ran: false as const };
 
-  const assigned = await dispatchWaitingOrders();
   const since = new Date(now.getTime() - SWEEP_LOOKBACK_MS);
+  const offers = await chaseUnacceptedOffers(now, since);
 
   const [unaccepted, awaitingPickup] = await Promise.all([
     prisma.order.findMany({
@@ -311,7 +179,7 @@ export async function runOrderSweep(options: { force?: boolean } = {}) {
   ]);
 
   let reminders = 0;
-  let escalations = 0;
+  let escalations = offers.escalations;
   for (const order of unaccepted) {
     const waited = now.getTime() - (order.paymentCallbackAt || order.createdAt).getTime();
     if (waited >= STORE_REMINDER_AFTER_MS) {
@@ -347,7 +215,7 @@ export async function runOrderSweep(options: { force?: boolean } = {}) {
     }
   }
 
-  return { ran: true as const, assigned, reminders, escalations };
+  return { ran: true as const, widened: offers.widened, reminders, escalations };
 }
 
 /**
