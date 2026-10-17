@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  BellRing,
   Lock,
   MapPin,
   Navigation,
@@ -86,6 +87,16 @@ type RiderMeResponse = {
   }>;
 };
 
+type RiderOffer = {
+  ref: string;
+  vendor: string;
+  pickupArea: string;
+  dropoffArea: string;
+  distanceKm: number | null;
+  earnCents: number;
+  offeredAt: string;
+};
+
 type PlatformMessage = {
   id: string;
   subject: string;
@@ -118,6 +129,56 @@ export default function RiderDashboardClient() {
   const [data, setData] = useState<RiderMeResponse | null>(null);
   const [messages, setMessages] = useState<PlatformMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [offers, setOffers] = useState<RiderOffer[]>([]);
+  const [answering, setAnswering] = useState<string | null>(null);
+  const [offerNote, setOfferNote] = useState<string | null>(null);
+
+  async function loadOffers() {
+    try {
+      const response = await fetch("/api/riders/me/offers", { cache: "no-store" });
+      const json = await response.json().catch(() => ({}));
+      setOffers(json?.ok && Array.isArray(json.offers) ? json.offers : []);
+    } catch {
+      // Keep the last list on a failed check.
+    }
+  }
+
+  // Delivery requests go to several riders at once, so check for new ones often.
+  useEffect(() => {
+    void loadOffers();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void loadOffers();
+    }, 15_000);
+    const onFocus = () => void loadOffers();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
+  async function answerOffer(ref: string, action: "accept" | "decline") {
+    setAnswering(ref);
+    setOfferNote(null);
+    try {
+      const response = await fetch(`/api/riders/me/offers/${encodeURIComponent(ref)}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json?.ok) {
+        setOfferNote(json?.error || "Could not answer this request. Please try again.");
+      } else if (action === "accept") {
+        setOfferNote(`${ref} is yours. Collect it from the store.`);
+      }
+    } catch {
+      setOfferNote("Could not answer this request. Please try again.");
+    } finally {
+      setAnswering(null);
+      await Promise.all([loadOffers(), action === "accept" ? load() : Promise.resolve()]);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -237,6 +298,79 @@ export default function RiderDashboardClient() {
         >
           Use the same email as this account so we can link it to you.
         </Notice>
+      ) : null}
+
+      {offers.length > 0 || offerNote ? (
+        <Panel
+          title="Delivery requests"
+          description="Sent to riders near the store. The first rider to accept gets it."
+          padded={offers.length === 0}
+        >
+          {offerNote ? (
+            <p
+              className={`text-sm text-slate-700 ${offers.length > 0 ? "px-4 pt-4 sm:px-5" : ""}`}
+              role="status"
+            >
+              {offerNote}
+            </p>
+          ) : null}
+          {offers.length > 0 ? (
+            <ul className="divide-y divide-slate-100">
+              {offers.map((offer) => (
+                <li key={offer.ref} className="px-4 py-4 sm:px-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <BellRing className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                        {offer.vendor}
+                      </p>
+                      <p className="mt-0.5 text-sm text-slate-500">{offer.ref}</p>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      You earn {money(offer.earnCents)}
+                    </p>
+                  </div>
+                  <p className="mt-2 flex items-start gap-2 text-sm text-slate-700">
+                    <Store className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+                    <span className="min-w-0">
+                      Collect from {offer.pickupArea || offer.vendor}
+                      {offer.distanceKm !== null
+                        ? ` · ${offer.distanceKm.toFixed(1)} km from you`
+                        : ""}
+                    </span>
+                  </p>
+                  {offer.dropoffArea ? (
+                    <p className="mt-2 flex items-start gap-2 text-sm text-slate-700">
+                      <MapPin
+                        className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+                        aria-hidden="true"
+                      />
+                      <span className="min-w-0">Deliver to {offer.dropoffArea}</span>
+                    </p>
+                  ) : null}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={answering !== null}
+                      onClick={() => void answerOffer(offer.ref, "accept")}
+                      className={`${dashButton.primary} min-h-11`}
+                    >
+                      {answering === offer.ref ? "Accepting…" : "Accept delivery"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={answering !== null}
+                      onClick={() => void answerOffer(offer.ref, "decline")}
+                      className={`${dashButton.secondary} min-h-11`}
+                    >
+                      Not now
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Panel>
       ) : null}
 
       <Panel

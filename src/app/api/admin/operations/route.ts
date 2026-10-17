@@ -14,6 +14,7 @@ import {
 } from "@/lib/order-operations";
 import { notifyCustomerOfCancellation, notifyRiderOfAssignment } from "@/lib/order-notifications";
 import { dispatchReadyOrder, scheduleOrderSweep } from "@/lib/order-automation";
+import { closeOpenOffers } from "@/lib/rider-offers";
 import { canTransitionOrderStatus } from "@/lib/order-state";
 
 const ADMIN_OPERATIONAL_STATUSES = [
@@ -429,6 +430,8 @@ export async function POST(req: NextRequest) {
       before: { status: order.status },
       after: { status: "RIDER_ASSIGNED", riderId: rider.id, riderName: rider.fullName },
     });
+    // Riders who were alerted about the order see it has been taken.
+    await closeOpenOffers(order.id, rider.id).catch(() => null);
     // The assignment is saved even if a message cannot go out.
     await notifyRiderOfAssignment(order.id, rider.id).catch(() => null);
   }
