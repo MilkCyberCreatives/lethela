@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getVendorSession } from "@/lib/authz";
 import { STORE_TYPES } from "@/lib/vendor-readiness";
+import { autoApprovalEnabled, autoApproveVendor } from "@/lib/auto-approval";
 
 const ProtectedFileSchema = z
   .string()
@@ -281,7 +282,10 @@ export async function PATCH(req: Request) {
         temporaryClosed: parsed.data.temporaryClosed,
         latitude: parsed.data.latitude ?? null,
         longitude: parsed.data.longitude ?? null,
-        ...(currentVendor.status === "APPROVED" && approvalSensitiveChanged
+        // With automatic approval the store stays live; it is checked again just below.
+        ...(currentVendor.status === "APPROVED" &&
+        approvalSensitiveChanged &&
+        !autoApprovalEnabled()
           ? {
               status: "DRAFT",
               isActive: false,
@@ -308,11 +312,15 @@ export async function PATCH(req: Request) {
         },
       },
     });
+    // A store goes live as soon as its profile is complete.
+    const approvedNow = await autoApproveVendor(vendor.id).catch(() => false);
 
     return NextResponse.json({
       ok: true,
+      approvedNow,
       vendor: {
         ...vendor,
+        ...(approvedNow ? { status: "APPROVED", isActive: true } : {}),
         bankAccountNumber: "",
         bankAccountLast4: vendor.bankAccountNumber?.slice(-4) || null,
       },

@@ -100,8 +100,14 @@ const AdvancedAutomationsPanel = dynamic(
 );
 
 type SearchParams =
-  | Promise<{ tab?: string; welcome?: string; submitted?: string; submitError?: string }>
-  | { tab?: string; welcome?: string; submitted?: string; submitError?: string };
+  | Promise<{
+      tab?: string;
+      welcome?: string;
+      submitted?: string;
+      approved?: string;
+      submitError?: string;
+    }>
+  | { tab?: string; welcome?: string; submitted?: string; approved?: string; submitError?: string };
 type DashboardTab =
   | "overview"
   | "analytics"
@@ -881,9 +887,15 @@ export default async function VendorDashboardPage({
           We will let you know as soon as it is approved. You can keep adding to your menu.
         </Notice>
       ) : null}
+      {resolved.approved === "1" ? (
+        <Notice tone="success" title="Your store is live on Lethela" className="mb-6">
+          Customers can now order from you. Keep your opening hours and menu up to date.
+        </Notice>
+      ) : null}
       {resolved.welcome === "1" ? (
         <Notice tone="success" title="Your vendor account is ready" className="mb-6">
-          Add your store details and your menu. Nothing is public until Lethela approves your store.
+          Add your store details, opening hours and at least one menu item. Your store goes live for
+          customers as soon as those are in.
         </Notice>
       ) : null}
       {content}

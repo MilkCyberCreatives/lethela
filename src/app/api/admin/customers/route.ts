@@ -4,6 +4,7 @@ import { requireAdminRequest } from "@/lib/admin-auth";
 import { isEmailVerificationRequired } from "@/lib/email-verification";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
+import { isGuestEmail } from "@/lib/guest-customers";
 
 const CUSTOMER_ROLES = ["CUSTOMER", "USER"];
 const PAID_STATUSES = CONFIRMED_PAYMENT_STATUSES;
@@ -92,17 +93,22 @@ export async function GET(req: NextRequest) {
   const customers = rows.map((row) => {
     const spend = spendMap.get(row.id);
     const locked = row.lockedUntil ? new Date(row.lockedUntil).getTime() > now : false;
-    const status = locked
-      ? "LOCKED"
-      : row.emailVerifiedAt
-        ? "VERIFIED"
-        : verificationRequired
-          ? "UNVERIFIED"
-          : "ACTIVE";
+    const status = isGuestEmail(row.email)
+      ? "GUEST"
+      : locked
+        ? "LOCKED"
+        : row.emailVerifiedAt
+          ? "VERIFIED"
+          : verificationRequired
+            ? "UNVERIFIED"
+            : "ACTIVE";
+    const guest = isGuestEmail(row.email);
     return {
       id: row.id,
       name: row.name ?? null,
-      email: row.email,
+      // Guests ordered without an account, so they have no real email.
+      email: guest ? "Guest checkout (no account)" : row.email,
+      guest,
       phone: row.phone ?? null,
       joinedAt: row.createdAt.toISOString(),
       status,

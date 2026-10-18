@@ -476,8 +476,9 @@ export default function CheckoutPage() {
         ) : (
           <>
             <div className="mt-5 rounded-2xl border border-emerald-200/20 bg-emerald-300/10 p-4 text-sm text-emerald-50">
-              You can order as a guest. We only need your name, phone number and delivery details.
-              You can create an account after the order is placed.
+              You can order as a guest. We only need your name, phone number and delivery details,
+              and we keep them with your order so we can deliver it and help with future orders. You
+              can create an account later if you like.
             </div>
             {usingSavedDetails ? (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/15 px-4 py-3 text-sm text-white/80">

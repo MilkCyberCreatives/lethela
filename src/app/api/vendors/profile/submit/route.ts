@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { notifyAdminsOfVendorApplication } from "@/lib/admin-notifications";
 import { notifyApplicant } from "@/lib/application-notifications";
 import { getVendorReadiness, normalizeVendorStatus, VENDOR_STATUS } from "@/lib/vendor-readiness";
+import { autoApproveVendor } from "@/lib/auto-approval";
 
 // The dashboard posts a plain HTML form here, so every outcome redirects back to it.
 function backToDashboard(params: Record<string, string>) {
@@ -129,5 +130,8 @@ export async function POST() {
     }),
   ]);
 
+  if (await autoApproveVendor(updated.id).catch(() => false)) {
+    return backToDashboard({ approved: "1" });
+  }
   return backToDashboard({ submitted: "1" });
 }

@@ -11,6 +11,7 @@ import { withSentryRoute } from "@/server/withSentryRoute";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { calculateOrderFinancials } from "@/lib/order-financials";
 import { isStoreOpenNow } from "@/lib/store-availability";
+import { rememberGuestCustomer } from "@/lib/guest-customers";
 import {
   CASH_PAYMENT_STATUS,
   cashOnDeliverySettings,
@@ -388,11 +389,16 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     );
   }
 
+  // Guests keep checking out without an account; their name and phone are kept as a
+  // customer record so the order history stays together.
+  const customerUserId =
+    userId ?? (await rememberGuestCustomer({ name: customerName, phone: customerPhone }));
+
   if (payCash) {
     return placeCashOrder({
       baseUrl,
       checkoutKey,
-      userId,
+      userId: customerUserId,
       vendorId,
       normalizedItems,
       deliveryDetails: { ...deliveryDetails, paymentMethod: "CASH" },
@@ -453,7 +459,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     create: {
       publicId: ozowReference,
       checkoutKey,
-      userId,
+      userId: customerUserId,
       vendorId,
       itemsJson: JSON.stringify({
         items: normalizedItems,
