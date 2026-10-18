@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { runOrderSweep } from "@/lib/order-automation";
 import { autoApproveReadyAccounts } from "@/lib/auto-approval";
+import { runApprovalBroadcast } from "@/lib/approval-broadcast";
 
 export const dynamic = "force-dynamic";
+// The one-off approval emails send in small, spaced batches.
+export const maxDuration = 60;
 
 // Called every few minutes by .github/workflows/order-sweep.yml so stuck orders
 // are chased even when nobody has a Lethela page open. It needs no secret: the
@@ -13,5 +16,7 @@ export async function GET() {
   const approvals = autoApproveReadyAccounts().catch(() => null);
   await runOrderSweep().catch(() => null);
   await approvals;
+  // Tells everyone who already had an account that it is approved (once each).
+  await runApprovalBroadcast().catch(() => null);
   return NextResponse.json({ ok: true }, { headers: { "cache-control": "no-store" } });
 }
