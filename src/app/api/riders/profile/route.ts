@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { notifyAdminsOfRiderApplication } from "@/lib/application-notifications";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { DELIVERY_METHODS, getRiderReadiness } from "@/lib/rider-readiness";
+import { autoApprovalEnabled, autoApproveRider } from "@/lib/auto-approval";
 
 const PrivateFileSchema = z
   .string()
@@ -203,7 +204,9 @@ export async function PATCH(req: Request) {
     (Boolean(data.bankAccountNumber) &&
       replacesExisting(current.bankAccountNumber, data.bankAccountNumber)) ||
     replacesExisting(current.bankBranchCode, data.bankBranchCode);
-  const demoteApproved = current.status === "APPROVED" && approvalSensitiveChanged;
+  // With automatic approval the rider stays approved; the profile is checked again below.
+  const demoteApproved =
+    current.status === "APPROVED" && approvalSensitiveChanged && !autoApprovalEnabled();
   const nextStatus =
     ["CHANGES_REQUESTED", "REJECTED"].includes(current.status) || demoteApproved
       ? "DRAFT"
@@ -259,10 +262,14 @@ export async function PATCH(req: Request) {
       availableNow: demoteApproved ? false : current.availableNow,
     },
   });
+  // A rider is approved as soon as the profile has what a delivery needs.
+  const approvedNow = await autoApproveRider(profile.id).catch(() => false);
+  const latest = approvedNow ? { ...profile, status: "APPROVED", reviewReason: null } : profile;
   return NextResponse.json({
     ok: true,
-    profile: publicProfile(profile),
-    readiness: getRiderReadiness(profile),
+    approvedNow,
+    profile: publicProfile(latest),
+    readiness: getRiderReadiness(latest),
   });
 }
 
@@ -301,6 +308,13 @@ export async function POST() {
     city: profile.municipality || profile.city,
     vehicleType: profile.vehicleType,
   }).catch(() => null);
+  if (await autoApproveRider(profile.id).catch(() => false)) {
+    return NextResponse.json({
+      ok: true,
+      message: "You are approved. Go online on the Deliveries page to get delivery requests.",
+      profile: publicProfile({ ...profile, status: "APPROVED", reviewReason: null }),
+    });
+  }
   return NextResponse.json({
     ok: true,
     message: "Rider profile submitted for approval.",

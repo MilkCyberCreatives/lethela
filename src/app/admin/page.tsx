@@ -361,7 +361,8 @@ type AdminCustomer = {
   email: string;
   phone: string | null;
   joinedAt: string;
-  status: "VERIFIED" | "UNVERIFIED" | "ACTIVE" | "LOCKED";
+  status: "VERIFIED" | "UNVERIFIED" | "ACTIVE" | "LOCKED" | "GUEST";
+  guest?: boolean;
   orderCount: number;
   totalSpentCents: number;
   lastOrderAt: string | null;
@@ -4203,6 +4204,7 @@ function customerTone(customer: AdminCustomer) {
 }
 
 function customerStatusText(customer: AdminCustomer) {
+  if (customer.status === "GUEST") return "Guest";
   return customer.status === "LOCKED"
     ? "Locked"
     : customer.status === "UNVERIFIED"
