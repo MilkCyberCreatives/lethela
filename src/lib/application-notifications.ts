@@ -13,6 +13,7 @@ import { prisma } from "@/lib/db";
 import { hasWebPushConfig } from "@/lib/web-push";
 import { notifyStaff } from "@/lib/notifications";
 import { sendPushToAdmins } from "@/lib/push-notifications";
+import { buildApprovalEmail } from "@/lib/approval-email";
 
 export type ApplicationKind = "vendor" | "rider";
 export type ApplicationStatus = "submitted" | "under_review" | "approved" | "rejected";
@@ -159,6 +160,11 @@ export function getApplicantNotificationChannelStatus() {
 export async function notifyApplicant(input: ApplicantNotification) {
   const channels = getApplicantNotificationChannelStatus();
   const message = applicantMessage(input);
+  // Approvals use the branded Lethela email.
+  const approval =
+    input.status === "approved"
+      ? buildApprovalEmail({ audience: input.kind, name: input.name })
+      : null;
   const tasks: Promise<unknown>[] = [];
 
   if (channels.email.enabled) {
@@ -166,9 +172,9 @@ export async function notifyApplicant(input: ApplicantNotification) {
       settleWithin(
         sendResendEmail({
           to: input.email,
-          subject: message.subject,
-          text: message.text,
-          html: applicantHtml(input, message.text),
+          subject: approval?.subject || message.subject,
+          text: approval?.text || message.text,
+          html: approval?.html || applicantHtml(input, message.text),
         }),
         3000,
       ),
@@ -180,7 +186,7 @@ export async function notifyApplicant(input: ApplicantNotification) {
       settleWithin(
         sendTwilioWhatsApp({
           to: input.phone,
-          body: message.text,
+          body: approval?.whatsapp || message.text,
         }),
         3000,
       ),
