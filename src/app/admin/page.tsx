@@ -14,6 +14,7 @@ import {
   ImageOff,
   LayoutDashboard,
   LineChart,
+  MapPinned,
   Mail,
   MessageSquare,
   PackageCheck,
@@ -42,6 +43,7 @@ import {
   toneForStatus,
 } from "@/components/dashboard/kit/ui";
 import NotificationBell from "@/components/dashboard/NotificationBell";
+import AdminLiveMap from "@/components/admin/AdminLiveMap";
 
 type DashboardView =
   | "overview"
@@ -53,6 +55,7 @@ type DashboardView =
   | "messages"
   | "finance"
   | "operations"
+  | "tracking"
   | "activity";
 
 const DASHBOARD_VIEWS: DashboardView[] = [
@@ -65,6 +68,7 @@ const DASHBOARD_VIEWS: DashboardView[] = [
   "messages",
   "finance",
   "operations",
+  "tracking",
   "activity",
 ];
 
@@ -435,6 +439,7 @@ const ADMIN_NAV_GROUPS: Array<{
     title: "Daily work",
     items: [
       { id: "operations", label: "Operations", shortLabel: "Dispatch", icon: Activity },
+      { id: "tracking", label: "Live map", shortLabel: "Map", icon: MapPinned },
       { id: "orders", label: "Orders", icon: ShoppingBag },
     ],
   },
@@ -465,6 +470,10 @@ const VIEW_COPY: Record<DashboardView, { title: string; description: string }> =
   operations: {
     title: "Operations",
     description: "Assign riders, update orders, handle refunds and keep support notes.",
+  },
+  tracking: {
+    title: "Live map",
+    description: "Where every rider is right now and how each open delivery is moving.",
   },
   orders: {
     title: "Orders",
@@ -3547,6 +3556,15 @@ export default function AdminPage() {
             </div>
           </div>
         </section>
+      ) : null}
+
+      {view === "tracking" ? (
+        <AdminLiveMap
+          onOpenOrder={(ref) => {
+            setOperationsForm((current) => ({ ...current, orderRef: ref }));
+            navigateView("operations");
+          }}
+        />
       ) : null}
 
       {view === "operations" ? (

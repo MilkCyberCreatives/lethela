@@ -116,7 +116,7 @@ test("riders see the customer's details only after they accept", async () => {
 
 test("riders are only located while online", async () => {
   const location = await source("src/app/api/riders/me/location/route.ts");
-  assert.match(location, /rider\.status !== "APPROVED" \|\| !rider\.availableNow/);
+  assert.match(location, /if \(rider\.availableNow\) \{\s*await saveRiderLocation/);
   const availability = await source("src/app/api/riders/me/availability/route.ts");
   assert.match(availability, /clearRiderLocation\(application\.id\)/);
 });

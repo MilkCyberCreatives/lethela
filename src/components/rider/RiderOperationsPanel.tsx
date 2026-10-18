@@ -12,6 +12,7 @@ type AvailabilityResponse = {
   ok?: boolean;
   error?: string;
   availableNow?: boolean;
+  activeDelivery?: boolean;
   approved?: boolean;
   area?: string | null;
 };
@@ -63,15 +64,44 @@ export default function RiderOperationsPanel() {
   }, []);
 
   const online = Boolean(availability?.availableNow);
+  const [delivering, setDelivering] = useState(false);
   const [locationNote, setLocationNote] = useState<string | null>(null);
   const lastSent = useRef(0);
 
-  // While online, the phone shares where the rider is so the nearest riders hear
-  // about deliveries first. Nothing is shared while offline.
   useEffect(() => {
-    if (!online || typeof navigator === "undefined" || !("geolocation" in navigator)) return;
-    const send = (position: GeolocationPosition) => {
-      if (Date.now() - lastSent.current < 60_000) return;
+    setDelivering(Boolean(availability?.activeDelivery));
+  }, [availability?.activeDelivery]);
+
+  // A delivery can be given to the rider by an admin while they are offline, so
+  // check now and then whether they have one.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void fetch("/api/riders/me/availability", { cache: "no-store" })
+        .then((response) => response.json())
+        .then((json: AvailabilityResponse) => {
+          if (json?.ok) setDelivering(Boolean(json.activeDelivery));
+        })
+        .catch(() => null);
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  // While online, the phone shares where the rider is so the nearest riders hear
+  // about deliveries first and admins see them on the live map. During a
+  // delivery it updates more often so the customer can follow the rider.
+  // Nothing is shared while offline with no delivery.
+  const sharing = online || delivering;
+  useEffect(() => {
+    if (!sharing || typeof navigator === "undefined" || !("geolocation" in navigator)) return;
+    const every = delivering ? 10_000 : 60_000;
+    let latest: GeolocationPosition | null = null;
+    let pending: number | null = null;
+    const post = () => {
+      pending = null;
+      if (!latest) return;
+      const position = latest;
+      latest = null;
       lastSent.current = Date.now();
       setLocationNote(null);
       void fetch("/api/riders/me/location", {
@@ -80,22 +110,46 @@ export default function RiderOperationsPanel() {
         body: JSON.stringify({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          speed: position.coords.speed ?? null,
         }),
-      }).catch(() => null);
+      })
+        .then((response) => response.json())
+        .then((json: { ok?: boolean; activeDelivery?: boolean }) => {
+          if (json?.ok && typeof json.activeDelivery === "boolean") {
+            setDelivering(json.activeDelivery);
+          }
+        })
+        .catch(() => null);
+    };
+    // Send at most once per interval, but never drop the newest position: a
+    // move that arrives too soon is sent when the interval is up.
+    const send = (position: GeolocationPosition) => {
+      latest = position;
+      if (pending !== null) return;
+      const wait = every - (Date.now() - lastSent.current);
+      if (wait <= 0) post();
+      else pending = window.setTimeout(post, wait);
     };
     const watchId = navigator.geolocation.watchPosition(
       send,
       () =>
         setLocationNote(
-          "Allow location on this phone to get deliveries near you first. Without it we use your area.",
+          delivering
+            ? "Allow location on this phone so the customer can see you on the way."
+            : "Allow location on this phone to get deliveries near you first. Without it we use your area.",
         ),
-      { enableHighAccuracy: false, maximumAge: 60_000, timeout: 20_000 },
+      {
+        enableHighAccuracy: delivering,
+        maximumAge: delivering ? 5_000 : 60_000,
+        timeout: 20_000,
+      },
     );
     return () => {
       navigator.geolocation.clearWatch(watchId);
+      if (pending !== null) window.clearTimeout(pending);
       lastSent.current = 0;
     };
-  }, [online]);
+  }, [sharing, delivering]);
 
   async function toggleAvailability() {
     if (!availability?.approved) return;
@@ -166,10 +220,12 @@ export default function RiderOperationsPanel() {
         >
           {saving ? "Updating…" : online ? "Go offline" : "Go online"}
         </button>
-        {online ? (
+        {sharing ? (
           <p className="mt-3 text-xs leading-5 text-slate-500">
             {locationNote ||
-              "While you are online, Lethela uses your phone's location to send you deliveries near you."}
+              (delivering
+                ? "You have a delivery, so the customer and Lethela can see where you are until it is delivered. Keep this page open."
+                : "While you are online, Lethela uses your phone's location to send you deliveries near you.")}
           </p>
         ) : null}
         {error ? (
