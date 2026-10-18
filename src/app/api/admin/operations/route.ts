@@ -16,6 +16,7 @@ import { notifyCustomerOfCancellation, notifyRiderOfAssignment } from "@/lib/ord
 import { dispatchReadyOrder, scheduleOrderSweep } from "@/lib/order-automation";
 import { closeOpenOffers } from "@/lib/rider-offers";
 import { canTransitionOrderStatus } from "@/lib/order-state";
+import { isConfirmedPayment } from "@/lib/payment-status";
 
 const ADMIN_OPERATIONAL_STATUSES = [
   "NEW",
@@ -329,10 +330,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (parsed.data.action === "refund") {
-    if (
-      !["PAID", "SUCCESS"].includes(order.paymentStatus) ||
-      parsed.data.amountCents > order.totalCents
-    ) {
+    if (!isConfirmedPayment(order.paymentStatus) || parsed.data.amountCents > order.totalCents) {
       return NextResponse.json(
         { ok: false, error: "Refund amount or payment state is invalid." },
         { status: 409 },
@@ -380,7 +378,7 @@ export async function POST(req: NextRequest) {
 
   if (parsed.data.action === "dispatch") {
     if (
-      !["PAID", "SUCCESS"].includes(order.paymentStatus) ||
+      !isConfirmedPayment(order.paymentStatus) ||
       !["READY_FOR_PICKUP", "RIDER_ASSIGNED"].includes(order.status)
     ) {
       return NextResponse.json(

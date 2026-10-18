@@ -17,7 +17,6 @@ export async function getVendorBySlug(slug: string) {
       status: { in: ["ACTIVE", "APPROVED"] },
       temporaryClosed: false,
       phone: { not: null },
-      email: { not: null },
       address: { not: null },
       city: { not: null },
       province: { not: null },

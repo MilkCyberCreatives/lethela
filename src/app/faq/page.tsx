@@ -50,6 +50,10 @@ const faq = [
     a: "Yes. Riders keep the full delivery fee for every delivery they complete, plus every tip.",
   },
   {
+    q: "Can I pay cash on delivery?",
+    a: "Yes. Choose Cash on delivery at checkout, then pay the rider in cash when your order arrives. You do not need an account or a bank card to order. Very large orders are paid online.",
+  },
+  {
     q: "How do I track my order?",
     a: "Use the order reference and the phone number entered at checkout. Lethela then opens a signed tracking link so that a reference alone cannot reveal order, location or rider information.",
   },

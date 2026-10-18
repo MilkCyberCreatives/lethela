@@ -68,7 +68,7 @@ test("admin header controls are functional rather than decorative", async () => 
 
 test("vendor dashboard reports paid revenue and remains scrollable", async () => {
   const vendor = await source("src/app/vendors/dashboard/page.tsx");
-  assert.match(vendor, /\["PAID", "SUCCESS"\]\.includes\(payment\)/);
+  assert.match(vendor, /isConfirmedPayment\(payment\)/);
   assert.match(vendor, /filter\(\(order\) => countsTowardRevenue/);
   // The shared dashboard shell lets the page scroll normally instead of locking its height.
   assert.match(vendor, /<DashboardShell/);
@@ -84,7 +84,7 @@ test("operations reject zero refunds, duplicate cases and support successful pay
     source("src/lib/order-operations.ts"),
   ]);
   assert.match(route, /amountCents: z\.number\(\)\.int\(\)\.positive\(\)/);
-  assert.match(route, /\["PAID", "SUCCESS"\]\.includes\(order\.paymentStatus\)/);
+  assert.match(route, /isConfirmedPayment\(order\.paymentStatus\)/);
   assert.match(route, /hasOpenRefundCase/);
   assert.match(route, /hasDispatchAssignment/);
   assert.match(operations, /Math\.max\(1,/);
@@ -153,7 +153,7 @@ test("admin statistics use real availability, completion and paid-only rankings"
   assert.match(stats, /revenueMonthCents: financialsMonth\._sum\.platformFeeCents/);
   assert.match(stats, /deliveryFeesMonthCents: financialsMonth\._sum\.deliveryFeeCents/);
   assert.match(stats, /riderTipsMonthCents: financialsMonth\._sum\.riderTipCents/);
-  assert.match(stats, /order:\s*\{[\s\S]*paymentStatus: \{ in: \["PAID", "SUCCESS"\] \}/);
+  assert.match(stats, /order:\s*\{[\s\S]*paymentStatus: \{ in: CONFIRMED_PAYMENT_STATUSES \}/);
 });
 
 test("admin global search is server-authorised and bounded", async () => {

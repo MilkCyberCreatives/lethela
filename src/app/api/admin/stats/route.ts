@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { withQueryTimeout } from "@/lib/query-timeout";
+import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
 
 function startOfToday() {
   const value = new Date();
@@ -19,7 +20,7 @@ function startOfMonth() {
 function paidOrderWhere(from: Date) {
   return {
     createdAt: { gte: from },
-    paymentStatus: { in: ["PAID", "SUCCESS"] },
+    paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES },
   };
 }
 
@@ -90,7 +91,7 @@ export async function GET(req: NextRequest) {
     ),
     withQueryTimeout(
       prisma.order.findMany({
-        where: { status: "DELIVERED", paymentStatus: { in: ["PAID", "SUCCESS"] } },
+        where: { status: "DELIVERED", paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES } },
         orderBy: { updatedAt: "desc" },
         take: 100,
         select: { createdAt: true, updatedAt: true },
@@ -153,7 +154,7 @@ export async function GET(req: NextRequest) {
         by: ["productId"],
         where: {
           order: {
-            paymentStatus: { in: ["PAID", "SUCCESS"] },
+            paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES },
             createdAt: { gte: month },
           },
         },

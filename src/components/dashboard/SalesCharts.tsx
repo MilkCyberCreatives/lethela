@@ -114,6 +114,7 @@ function plural(count: number, word: string) {
 function paymentText(status: string) {
   const value = String(status || "").toUpperCase();
   if (value === "PAID" || value === "SUCCESS") return "Paid";
+  if (value === "CASH") return "Cash on delivery";
   if (["PENDING", "AWAITING_PAYMENT", "PENDING_PAYMENT"].includes(value)) return "Not paid yet";
   return `Payment ${statusText(value).toLowerCase()}`;
 }

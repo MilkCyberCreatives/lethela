@@ -10,6 +10,7 @@ import { getVisitorReportChannelStatus } from "@/lib/visitor-report-data";
 import { hasStorageConfig, storageProvider } from "@/server/supabase";
 import { hasWebPushConfig } from "@/lib/web-push";
 import { prisma, prismaRuntimeInfo } from "@/server/db";
+import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
 
 function configured(name: string) {
   return Boolean(process.env[name]?.trim());
@@ -91,7 +92,7 @@ export default async function LaunchChecklistPage() {
     ),
     withQueryTimeout(prisma.riderApplication.count({ where: { status: "APPROVED" } }), 0),
     withQueryTimeout(
-      prisma.order.count({ where: { paymentStatus: { in: ["PAID", "SUCCESS"] } } }),
+      prisma.order.count({ where: { paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES } } }),
       0,
     ),
   ]);
@@ -124,7 +125,8 @@ export default async function LaunchChecklistPage() {
         configured("OZOW_PRIVATE_KEY") &&
         falseFlag("OZOW_IS_TEST") &&
         falseFlag("NEXT_PUBLIC_OZOW_IS_TEST"),
-      detail: "Ozow keys are configured and test flags are false.",
+      detail:
+        "Ozow keys are configured and test flags are false. Until then customers can still order and pay cash on delivery.",
     },
     {
       label: "Real paid order proof",

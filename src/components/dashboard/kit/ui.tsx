@@ -103,6 +103,7 @@ export function toneForStatus(status: string | null | undefined): Tone {
       "COMPLETED",
       "PAID",
       "SUCCESS",
+      "CASH",
       "ONLINE",
       "RESOLVED",
     ].includes(value)

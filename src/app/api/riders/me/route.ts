@@ -4,6 +4,7 @@ import { createRiderConsoleToken } from "@/lib/rider-console";
 import { prisma } from "@/server/db";
 import { getRiderReadiness } from "@/lib/rider-readiness";
 import { joinAddress, riderDropoff } from "@/lib/order-notifications";
+import { CONFIRMED_PAYMENT_STATUSES, isCashOnDelivery } from "@/lib/payment-status";
 
 const ACTIVE_ORDER_STATUSES = [
   "NEW",
@@ -93,7 +94,7 @@ export async function GET() {
         where: {
           assignedRiderId: application?.id || "__none__",
           status: { in: ACTIVE_ORDER_STATUSES },
-          paymentStatus: { in: ["PAID", "SUCCESS"] },
+          paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES },
         },
         orderBy: { updatedAt: "desc" },
         take: 12,
@@ -102,6 +103,7 @@ export async function GET() {
           ozowReference: true,
           status: true,
           totalCents: true,
+          paymentStatus: true,
           deliveryFeeCents: true,
           riderTipCents: true,
           riderPayoutCents: true,
@@ -156,6 +158,7 @@ export async function GET() {
         // Only the rider assigned to an active order gets the customer's details.
         dropoff: riderDropoff(order.itemsJson),
         totalCents: order.totalCents,
+        collectCashCents: isCashOnDelivery(order.paymentStatus) ? order.totalCents : 0,
         deliveryFeeCents: order.deliveryFeeCents,
         riderTipCents,
         riderPayoutCents: order.riderPayoutCents || order.deliveryFeeCents + riderTipCents,

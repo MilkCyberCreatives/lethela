@@ -62,9 +62,12 @@ export default async function HomePage() {
   // preference through a request-time server API here only made every response
   // private and forced a server round trip.
   const address = defaultArea;
+  // Lethela delivers in one pilot zone, so every approved store is listed. Matching the area
+  // text here hid approved stores that typed their area differently ("Klipfontein", "Midrand");
+  // checkout still refuses addresses outside the delivery distance.
   const [vendors, products] = await Promise.all([
-    getHomeVendors(address, 6),
-    getHomeProducts(address, 36),
+    getHomeVendors(null, 6),
+    getHomeProducts(null, 36),
   ]);
 
   const groceryProducts = products

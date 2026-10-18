@@ -10,6 +10,7 @@ import { settleWithin } from "@/lib/notification-channels";
 import { canTransitionOrderStatus, normalizeOrderStatus } from "@/lib/order-state";
 import { recordOrderEvent } from "@/lib/order-operations";
 import { dispatchReadyOrder } from "@/lib/order-automation";
+import { isConfirmedPayment } from "@/lib/payment-status";
 
 const StatusSchema = z
   .object({
@@ -55,7 +56,7 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
     }
 
-    if (!new Set(["PAID", "SUCCESS"]).has(order.paymentStatus.toUpperCase())) {
+    if (!isConfirmedPayment(order.paymentStatus)) {
       return NextResponse.json(
         { ok: false, error: "This order has not been verified as paid." },
         { status: 409 },

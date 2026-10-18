@@ -15,12 +15,13 @@ import {
   offerOrder,
   resetOpenOffers,
 } from "@/lib/rider-offers";
+import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
 
 // Lethela runs delivery, so a paid order should reach the customer without an
 // admin stepping in. Nearby riders are alerted automatically and the first to
 // accept gets the order; admins only hear about the orders that get stuck. Approvals, refunds and payouts stay manual.
 
-const PAID_STATUSES = ["PAID", "SUCCESS"];
+const PAID_STATUSES = CONFIRMED_PAYMENT_STATUSES;
 
 const MINUTE = 60 * 1000;
 export const STORE_REMINDER_AFTER_MS = 5 * MINUTE;

@@ -53,19 +53,30 @@ export async function GET(req: Request) {
       ok: true,
       orders: orders.map((order) => {
         const { itemsJson, ...safeOrder } = order;
+        const parsed = (() => {
+          try {
+            const value = JSON.parse(itemsJson || "[]");
+            return Array.isArray(value) ? null : value;
+          } catch {
+            return null;
+          }
+        })();
+        // Menu items have no product row, so their names come from the saved cart. Order
+        // lines are created in cart order, so the two lists line up.
+        const cartItems: Array<{ name?: unknown }> = Array.isArray(parsed?.items)
+          ? parsed.items
+          : [];
         return {
           ...safeOrder,
+          items: safeOrder.items.map((item, index) => {
+            const cartName = cartItems[index]?.name;
+            return item.product || typeof cartName !== "string" || !cartName.trim()
+              ? item
+              : { ...item, product: { name: cartName.trim() } };
+          }),
           status: normalizeOrderStatus(safeOrder.status) || "FAILED",
-          deliveryDetails: (() => {
-            try {
-              const parsed = JSON.parse(itemsJson || "[]");
-              return !Array.isArray(parsed) && typeof parsed?.deliveryDetails === "object"
-                ? parsed.deliveryDetails
-                : null;
-            } catch {
-              return null;
-            }
-          })(),
+          deliveryDetails:
+            parsed && typeof parsed.deliveryDetails === "object" ? parsed.deliveryDetails : null,
         };
       }),
     });

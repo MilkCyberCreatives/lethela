@@ -79,11 +79,11 @@ export async function getSqliteReadinessCounts(): Promise<SqliteCounts | null> {
       ),
       paidOrders: count(
         db,
-        "SELECT COUNT(*) AS n FROM \"Order\" WHERE paymentStatus IN ('PAID', 'SUCCESS')",
+        "SELECT COUNT(*) AS n FROM \"Order\" WHERE paymentStatus IN ('PAID', 'SUCCESS', 'CASH')",
       ),
       paidOrders24h: count(
         db,
-        "SELECT COUNT(*) AS n FROM \"Order\" WHERE paymentStatus IN ('PAID', 'SUCCESS') AND createdAt >= ?",
+        "SELECT COUNT(*) AS n FROM \"Order\" WHERE paymentStatus IN ('PAID', 'SUCCESS', 'CASH') AND createdAt >= ?",
         paidSince,
       ),
       users: count(db, "SELECT COUNT(*) AS n FROM User"),

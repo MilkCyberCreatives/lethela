@@ -14,12 +14,13 @@ import {
 } from "@/lib/order-notifications";
 import { settleWithin } from "@/lib/notification-channels";
 import { pusherServer } from "@/lib/pusher-server";
+import { CONFIRMED_PAYMENT_STATUSES, isCashOnDelivery } from "@/lib/payment-status";
 
 // A ready order is offered to the free riders closest to the store at the same
 // time, and the first one to tap Accept gets it. If nobody accepts, the offer
 // widens to every free rider who is online (see runOrderSweep).
 
-const PAID_STATUSES = ["PAID", "SUCCESS"];
+const PAID_STATUSES = CONFIRMED_PAYMENT_STATUSES;
 const RIDER_BUSY_STATUSES = ["RIDER_ASSIGNED", "PICKED_UP", "ON_THE_WAY"];
 const MINUTE = 60 * 1000;
 
@@ -465,6 +466,8 @@ export type RiderOfferView = {
   distanceKm: number | null;
   earnCents: number;
   offeredAt: string;
+  /** Cash on delivery: what the rider collects at the door, else 0. */
+  collectCashCents: number;
 };
 
 /** Open delivery requests for one rider. The customer's name and phone stay hidden until they accept. */
@@ -493,6 +496,8 @@ export async function listRiderOffers(riderId: string): Promise<RiderOfferView[]
       deliveryFeeCents: true,
       riderTipCents: true,
       riderPayoutCents: true,
+      totalCents: true,
+      paymentStatus: true,
       vendor: { select: { name: true, address: true, suburb: true, city: true } },
     },
   });
@@ -517,6 +522,7 @@ export async function listRiderOffers(riderId: string): Promise<RiderOfferView[]
         distanceKm: row.distance_km === null ? null : Number(row.distance_km),
         earnCents: order.riderPayoutCents || order.deliveryFeeCents + (order.riderTipCents || 0),
         offeredAt: String(row.created_at),
+        collectCashCents: isCashOnDelivery(order.paymentStatus) ? order.totalCents : 0,
       },
     ];
   });

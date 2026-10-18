@@ -11,6 +11,14 @@ import { withSentryRoute } from "@/server/withSentryRoute";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { calculateOrderFinancials } from "@/lib/order-financials";
 import { isStoreOpenNow } from "@/lib/store-availability";
+import {
+  CASH_PAYMENT_STATUS,
+  cashOnDeliverySettings,
+  isCashOnDelivery,
+} from "@/lib/payment-status";
+import { notifyAdminsOfOrder, notifyVendorOfPaidOrder } from "@/lib/order-notifications";
+import { settleWithin } from "@/lib/notification-channels";
+import { recordOrderEvent } from "@/lib/order-operations";
 
 const BodySchema = z
   .object({
@@ -45,6 +53,8 @@ const BodySchema = z
     deliveryCents: z.number().int().nonnegative(),
     riderTipCents: z.number().int().nonnegative().optional().default(0),
     totalCents: z.number().int().positive(),
+    // "CASH" places the order straight away and the rider collects the money at the door.
+    paymentMethod: z.enum(["OZOW", "CASH"]).optional().default("OZOW"),
   })
   .refine(
     (data) =>
@@ -100,9 +110,36 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     return NextResponse.json({ ok: false, error: checkoutProblem(parsed.error) }, { status: 400 });
   }
 
+  const payCash = parsed.data.paymentMethod === "CASH";
+  const cashSettings = cashOnDeliverySettings();
+  if (payCash && !cashSettings.enabled) {
+    return NextResponse.json(
+      { ok: false, error: "Cash on delivery is not available right now. Please pay online." },
+      { status: 409 },
+    );
+  }
+  if (payCash) {
+    // A cash order costs nothing to place, so limit how many one device can place.
+    const cashLimited = await checkRateLimit({
+      key: "cash-order",
+      limit: 4,
+      windowMs: 60 * 60_000,
+      headers: req.headers,
+    });
+    if (!cashLimited.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "You have placed several cash orders. Please wait a while or pay online.",
+        },
+        { status: 429, headers: { "Retry-After": String(cashLimited.retryAfterSec) } },
+      );
+    }
+  }
+
   const siteCode = process.env.OZOW_SITE_CODE || "";
   const privateKey = process.env.OZOW_PRIVATE_KEY || "";
-  if (!siteCode || !privateKey) {
+  if (!payCash && (!siteCode || !privateKey)) {
     return NextResponse.json(
       {
         ok: false,
@@ -341,12 +378,54 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
     );
   }
 
+  if (payCash && totalCents > cashSettings.maxCents) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `Cash on delivery is for orders up to ${formatRand(cashSettings.maxCents)}. Please pay online for this order.`,
+      },
+      { status: 409 },
+    );
+  }
+
+  if (payCash) {
+    return placeCashOrder({
+      baseUrl,
+      checkoutKey,
+      userId,
+      vendorId,
+      normalizedItems,
+      deliveryDetails: { ...deliveryDetails, paymentMethod: "CASH" },
+      subtotalCents: calcSubtotal,
+      deliveryFeeCents: resolvedDeliveryCents,
+      distanceKm: deliveryQuote.distanceKm,
+      riderTipCents: resolvedRiderTipCents,
+      riderPayoutCents,
+      vendorPayoutCents,
+      platformFeeCents,
+      totalCents,
+      destinationPoint,
+    });
+  }
+
   const ozowReference = createOrderReference();
   const existingOrder = await prisma.order.findUnique({
     where: { checkoutKey },
-    select: { publicId: true, ozowReference: true, totalCents: true, vendorId: true },
+    select: {
+      publicId: true,
+      ozowReference: true,
+      totalCents: true,
+      vendorId: true,
+      paymentStatus: true,
+    },
   });
   if (existingOrder) {
+    if (isCashOnDelivery(existingOrder.paymentStatus)) {
+      return NextResponse.json(
+        { ok: false, error: "This order was already placed as cash on delivery." },
+        { status: 409 },
+      );
+    }
     if (existingOrder.vendorId !== vendorId || existingOrder.totalCents !== totalCents) {
       return NextResponse.json(
         { ok: false, error: "This checkout request no longer matches the cart." },
@@ -439,3 +518,110 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
 
   return NextResponse.json({ ok: true, redirectUrl, ref: reference });
 });
+
+function formatRand(cents: number) {
+  return `R${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+}
+
+type CashOrderInput = {
+  baseUrl: string;
+  checkoutKey: string;
+  userId: string | null;
+  vendorId: string;
+  normalizedItems: Array<{ productId: string | null; qty: number; priceCents: number }>;
+  deliveryDetails: Record<string, unknown>;
+  subtotalCents: number;
+  deliveryFeeCents: number;
+  distanceKm: number | null;
+  riderTipCents: number;
+  riderPayoutCents: number;
+  vendorPayoutCents: number;
+  platformFeeCents: number;
+  totalCents: number;
+  destinationPoint: { lat: number; lng: number };
+};
+
+// Cash on delivery skips Ozow: the order goes to the store at once, exactly as a paid order
+// does after Ozow's callback, and the rider collects the total at the door.
+async function placeCashOrder(input: CashOrderInput) {
+  const existing = await prisma.order.findUnique({
+    where: { checkoutKey: input.checkoutKey },
+    select: { id: true, publicId: true, vendorId: true, totalCents: true, paymentStatus: true },
+  });
+  if (existing) {
+    if (
+      !isCashOnDelivery(existing.paymentStatus) ||
+      existing.vendorId !== input.vendorId ||
+      existing.totalCents !== input.totalCents
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "This checkout request no longer matches the cart." },
+        { status: 409 },
+      );
+    }
+    return NextResponse.json({
+      ok: true,
+      redirectUrl: cashSuccessUrl(input.baseUrl, existing.publicId),
+      ref: existing.publicId,
+      idempotent: true,
+    });
+  }
+
+  const reference = createOrderReference();
+  const order = await prisma.order.create({
+    data: {
+      publicId: reference,
+      checkoutKey: input.checkoutKey,
+      userId: input.userId,
+      vendorId: input.vendorId,
+      itemsJson: JSON.stringify({
+        items: input.normalizedItems,
+        deliveryDetails: input.deliveryDetails,
+      }),
+      subtotalCents: input.subtotalCents,
+      deliveryFeeCents: input.deliveryFeeCents,
+      distanceKm: input.distanceKm,
+      riderTipCents: input.riderTipCents,
+      riderPayoutCents: input.riderPayoutCents,
+      vendorPayoutCents: input.vendorPayoutCents,
+      platformFeeCents: input.platformFeeCents,
+      totalCents: input.totalCents,
+      amountCents: input.totalCents,
+      status: "NEW",
+      paymentStatus: CASH_PAYMENT_STATUS,
+      customerLat: input.destinationPoint.lat,
+      customerLng: input.destinationPoint.lng,
+      items: {
+        create: input.normalizedItems.map((item) => ({
+          productId: item.productId,
+          qty: item.qty,
+          priceCents: item.priceCents,
+        })),
+      },
+    },
+    select: { id: true, publicId: true },
+  });
+
+  await recordOrderEvent({
+    orderId: order.id,
+    publicId: order.publicId,
+    type: "PAYMENT_CASH_ON_DELIVERY",
+    actor: "checkout",
+    note: "Customer pays the rider in cash on delivery.",
+  });
+  await settleWithin(
+    Promise.all([notifyVendorOfPaidOrder(order.id), notifyAdminsOfOrder(order.id, "paid")]),
+    4_000,
+  );
+
+  return NextResponse.json({
+    ok: true,
+    redirectUrl: cashSuccessUrl(input.baseUrl, order.publicId),
+    ref: order.publicId,
+  });
+}
+
+function cashSuccessUrl(baseUrl: string, reference: string) {
+  const trackingToken = createOrderTrackingToken(reference);
+  return `${baseUrl}/checkout/success?ref=${encodeURIComponent(reference)}&t=${encodeURIComponent(trackingToken)}`;
+}

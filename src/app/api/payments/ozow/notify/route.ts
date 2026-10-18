@@ -5,6 +5,7 @@ import { notifyAdminsOfOrder, notifyVendorOfPaidOrder } from "@/lib/order-notifi
 import { buildOzowResponseHash } from "@/lib/ozow";
 import { settleWithin } from "@/lib/notification-channels";
 import { recordOrderEvent } from "@/lib/order-operations";
+import { isCashOnDelivery } from "@/lib/payment-status";
 
 export const dynamic = "force-dynamic";
 
@@ -168,6 +169,10 @@ export async function POST(req: NextRequest) {
         ? "FAILED"
         : "PENDING";
 
+  // Cash-on-delivery orders never went to Ozow, so a callback for one is not genuine.
+  if (isCashOnDelivery(order.paymentStatus)) {
+    return NextResponse.json({ ok: false, error: "Not an online payment." }, { status: 409 });
+  }
   if (order.paymentStatus === "PAID") {
     if (order.ozowTxnId && order.ozowTxnId !== txnId) {
       return NextResponse.json(

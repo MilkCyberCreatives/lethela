@@ -3,9 +3,10 @@ import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { isEmailVerificationRequired } from "@/lib/email-verification";
 import { withQueryTimeout } from "@/lib/query-timeout";
+import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
 
 const CUSTOMER_ROLES = ["CUSTOMER", "USER"];
-const PAID_STATUSES = ["PAID", "SUCCESS"];
+const PAID_STATUSES = CONFIRMED_PAYMENT_STATUSES;
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = 25;
 

@@ -39,6 +39,7 @@ import { getSqliteVendorDashboardData } from "@/lib/sqlite-vendor-dashboard";
 import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 import { getVendorReadiness, normalizeVendorStatus } from "@/lib/vendor-readiness";
 import { buildNoIndexMetadata } from "@/lib/seo";
+import { isConfirmedPayment } from "@/lib/payment-status";
 
 export const metadata = buildNoIndexMetadata({
   title: "Vendor Dashboard",
@@ -261,8 +262,7 @@ function countsTowardRevenue(paymentStatus: string, orderStatus: string) {
   const payment = String(paymentStatus || "").toUpperCase();
   const status = String(orderStatus || "").toUpperCase();
   return (
-    ["PAID", "SUCCESS"].includes(payment) &&
-    !["CANCELED", "CANCELLED", "REFUNDED", "FAILED"].includes(status)
+    isConfirmedPayment(payment) && !["CANCELED", "CANCELLED", "REFUNDED", "FAILED"].includes(status)
   );
 }
 

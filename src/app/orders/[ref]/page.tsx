@@ -398,7 +398,11 @@ export default function OrderTrackingPage() {
                   <div className="grid gap-2 text-sm text-white/75 sm:grid-cols-2">
                     <div>
                       Payment:{" "}
-                      <span className="font-semibold text-white">{order.paymentStatus}</span>
+                      <span className="font-semibold text-white">
+                        {order.paymentStatus === "CASH"
+                          ? `Cash on delivery${order.totalCents != null ? `: pay ${formatZAR(order.totalCents)} to the rider` : ""}`
+                          : order.paymentStatus}
+                      </span>
                     </div>
                     <div>
                       Rider signal:{" "}
