@@ -8,6 +8,7 @@ import { hasWebPushConfig } from "@/lib/web-push";
 import { hasStorageConfig, storageProvider } from "@/server/supabase";
 import { getSqliteReadinessCounts } from "@/lib/sqlite-readiness";
 import { prisma, prismaRuntimeInfo } from "@/server/db";
+import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdminRequest(req);
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
         withQueryTimeout(
           prisma.order.count({
             where: {
-              paymentStatus: { in: ["PAID", "SUCCESS"] },
+              paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES },
               createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
             },
           }),

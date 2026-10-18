@@ -29,6 +29,8 @@ import {
 const isOzowSandbox = process.env.NEXT_PUBLIC_OZOW_IS_TEST === "true";
 
 type DistanceSource = "ROAD" | "ESTIMATED" | null;
+type PaymentMethod = "CASH" | "OZOW";
+type PaymentOptions = { online: boolean; cash: boolean; cashMaxCents: number };
 
 export default function CheckoutPage() {
   const items = useCart((s) => s.items);
@@ -69,6 +71,29 @@ export default function CheckoutPage() {
     extraPerKmCents: EXTRA_DELIVERY_FEE_PER_KM_CENTS,
   });
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [paymentOptions, setPaymentOptions] = useState<PaymentOptions | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+
+  // Ask which ways to pay are open, so the customer never presses a button that fails.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/checkout/payment-options", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((json) => {
+        if (cancelled || !json?.ok) return;
+        const options: PaymentOptions = {
+          online: Boolean(json.online),
+          cash: Boolean(json.cash),
+          cashMaxCents: Number(json.cashMaxCents) || 0,
+        };
+        setPaymentOptions(options);
+        setPaymentMethod((current) => current ?? (options.online ? "OZOW" : "CASH"));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [locationLoading, setLocationLoading] = useState(false);
 
   // Returning customers: fill the form from the last order on this device.
@@ -204,7 +229,7 @@ export default function CheckoutPage() {
 
   const hasItems = items.length > 0;
   const hasAlcohol = items.some((item) => item.isAlcohol);
-  const onlineCheckoutAvailable = true;
+  const onlineCheckoutAvailable = paymentOptions ? paymentOptions.online : true;
   const deliveryFee = hasItems ? deliveryQuote.deliveryCents : 0;
   const tipCents = hasItems ? Math.max(0, Math.round(riderTipCents)) : 0;
   const total = subtotal + deliveryFee + tipCents;
@@ -286,10 +311,16 @@ export default function CheckoutPage() {
     });
   }, [deliveryQuote.manualQuoteRequired, items, total]);
 
-  async function payOzow() {
+  const cashAllowed = Boolean(
+    paymentOptions?.cash && (!paymentOptions.cashMaxCents || total <= paymentOptions.cashMaxCents),
+  );
+  const payingCash = paymentMethod === "CASH" && cashAllowed;
+  const canPlaceOrder = payingCash || (paymentMethod !== "CASH" && onlineCheckoutAvailable);
+
+  async function placeOrder() {
     if (items.length === 0) return;
-    if (!onlineCheckoutAvailable) {
-      setError("Online checkout is not available for this cart yet. Please use WhatsApp ordering.");
+    if (!canPlaceOrder) {
+      setError("Choose how you will pay, or use WhatsApp ordering.");
       return;
     }
     if (hasAlcohol && !ageConfirmed) {
@@ -349,6 +380,7 @@ export default function CheckoutPage() {
           deliveryCents: deliveryFee,
           riderTipCents: tipCents,
           totalCents: total,
+          paymentMethod: payingCash ? "CASH" : "OZOW",
         }),
       });
       const json = await res.json();
@@ -667,6 +699,52 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {paymentOptions && (paymentOptions.cash || paymentOptions.online) ? (
+              <fieldset className="mt-4 rounded-lg border border-white/15 p-3 text-sm">
+                <legend className="px-1 text-sm font-semibold">How will you pay?</legend>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {paymentOptions.cash ? (
+                    <button
+                      type="button"
+                      aria-pressed={paymentMethod === "CASH"}
+                      disabled={!cashAllowed}
+                      onClick={() => setPaymentMethod("CASH")}
+                      className={`rounded-full border px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${
+                        paymentMethod === "CASH" && cashAllowed
+                          ? "border-lethela-primary bg-lethela-primary text-white"
+                          : "border-white/20 text-white/80 hover:border-lethela-primary"
+                      }`}
+                    >
+                      Cash on delivery
+                    </button>
+                  ) : null}
+                  {paymentOptions.online ? (
+                    <button
+                      type="button"
+                      aria-pressed={paymentMethod === "OZOW"}
+                      onClick={() => setPaymentMethod("OZOW")}
+                      className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                        paymentMethod === "OZOW" || (paymentMethod === "CASH" && !cashAllowed)
+                          ? "border-lethela-primary bg-lethela-primary text-white"
+                          : "border-white/20 text-white/80 hover:border-lethela-primary"
+                      }`}
+                    >
+                      Pay online now
+                    </button>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-xs text-white/60">
+                  {paymentOptions.cash && !cashAllowed
+                    ? `Cash on delivery is for orders up to ${formatZAR(paymentOptions.cashMaxCents)}.${
+                        paymentOptions.online ? " Please pay online for this order." : ""
+                      }`
+                    : payingCash
+                      ? "Pay the rider in cash when your order arrives. Please have the exact amount ready."
+                      : "Pay securely online with Ozow instant EFT."}
+                </p>
+              </fieldset>
+            ) : null}
+
             {hasAlcohol ? (
               <div className="mt-4 rounded-lg border border-amber-200/25 bg-amber-300/10 p-4 text-sm text-amber-50">
                 <p>
@@ -692,21 +770,25 @@ export default function CheckoutPage() {
                   loading ||
                   Boolean(quoteError) ||
                   deliveryQuote.manualQuoteRequired ||
-                  !onlineCheckoutAvailable ||
+                  !canPlaceOrder ||
                   (hasAlcohol && !ageConfirmed) ||
                   !contactDetailsComplete
                 }
-                onClick={payOzow}
+                onClick={placeOrder}
               >
                 {loading
-                  ? "Redirecting..."
-                  : !onlineCheckoutAvailable
-                    ? "Online checkout unavailable"
-                    : deliveryQuote.manualQuoteRequired
-                      ? "Manual quote required"
-                      : isOzowSandbox
-                        ? "Pay with Ozow (sandbox)"
-                        : "Pay with Ozow"}
+                  ? payingCash
+                    ? "Placing order..."
+                    : "Redirecting..."
+                  : deliveryQuote.manualQuoteRequired
+                    ? "Manual quote required"
+                    : payingCash
+                      ? `Place order, pay ${formatZAR(total)} cash`
+                      : !onlineCheckoutAvailable
+                        ? "Online checkout unavailable"
+                        : isOzowSandbox
+                          ? "Pay with Ozow (sandbox)"
+                          : "Pay with Ozow"}
               </Button>
               {contactDetailsComplete ? (
                 <Button
@@ -746,8 +828,8 @@ export default function CheckoutPage() {
 
             {error ? <p className="mt-3 text-sm text-red-200">{error}</p> : null}
             <p className="mt-2 text-xs text-white/70">
-              Prefer not to pay online? Complete your contact details, then use{" "}
-              <span className="font-semibold">Order via WhatsApp</span> for manual confirmation.
+              Need help with your order? Complete your contact details, then use{" "}
+              <span className="font-semibold">Order via WhatsApp</span> to talk to us.
             </p>
 
             {isOzowSandbox ? (

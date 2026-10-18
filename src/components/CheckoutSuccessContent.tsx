@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { pushEcommerceEvent } from "@/lib/visitor";
 import { useCart } from "@/store/cart";
 
-type OrderState = "loading" | "paid" | "pending" | "failed" | "missing";
+type OrderState = "loading" | "paid" | "cash" | "pending" | "failed" | "missing";
 
 type Props = {
   refId?: string;
@@ -38,7 +38,10 @@ function normalizeOrderState(payload: OrderResponse): OrderState {
   const orderStatus = String(payload.order.status || "").toUpperCase();
 
   if (paymentStatus === "PAID") return "paid";
-  if (paymentStatus === "FAILED" || orderStatus === "CANCELED") return "failed";
+  if (paymentStatus === "FAILED" || orderStatus === "CANCELED" || orderStatus === "CANCELLED") {
+    return "failed";
+  }
+  if (paymentStatus === "CASH") return "cash";
   return "pending";
 }
 
@@ -92,14 +95,14 @@ export default function CheckoutSuccessContent({ refId, trackingToken, isSandbox
   }, [refId, trackingToken]);
 
   useEffect(() => {
-    if (state === "paid" && !clearedRef.current) {
+    if ((state === "paid" || state === "cash") && !clearedRef.current) {
       clear();
       clearedRef.current = true;
     }
   }, [clear, state]);
 
   useEffect(() => {
-    if (state !== "paid" || !orderData || purchaseTrackedRef.current) return;
+    if ((state !== "paid" && state !== "cash") || !orderData || purchaseTrackedRef.current) return;
     purchaseTrackedRef.current = true;
     pushEcommerceEvent("purchase", {
       transaction_id: orderData.id || refId,
@@ -117,30 +120,39 @@ export default function CheckoutSuccessContent({ refId, trackingToken, isSandbox
     });
   }, [orderData, refId, state]);
 
+  const cashTotal = `R${(Number(orderData?.totalCents || 0) / 100).toFixed(2)}`;
   const title =
-    state === "paid"
-      ? `Payment received${isSandbox ? " (sandbox)" : ""}`
-      : state === "failed"
-        ? "Payment not completed"
-        : state === "loading"
-          ? "Confirming payment"
-          : state === "pending"
-            ? "Payment submitted"
-            : "Order reference unavailable";
+    state === "cash"
+      ? "Order placed"
+      : state === "paid"
+        ? `Payment received${isSandbox ? " (sandbox)" : ""}`
+        : state === "failed"
+          ? "Payment not completed"
+          : state === "loading"
+            ? "Confirming payment"
+            : state === "pending"
+              ? "Payment submitted"
+              : "Order reference unavailable";
 
   const titleClass =
-    state === "paid" ? "text-green-400" : state === "failed" ? "text-yellow-400" : "text-white";
+    state === "paid" || state === "cash"
+      ? "text-green-400"
+      : state === "failed"
+        ? "text-yellow-400"
+        : "text-white";
 
   const message =
-    state === "paid"
-      ? "Thanks! Your order is confirmed and ready for live tracking."
-      : state === "failed"
-        ? "We could not confirm payment for this order. You can return to checkout and try again."
-        : state === "loading"
-          ? "We are checking your payment with Ozow now."
-          : state === "pending"
-            ? "We received your return from Ozow and are waiting for final payment confirmation."
-            : "We could not load this order reference.";
+    state === "cash"
+      ? `Thanks! The store has your order. Pay ${cashTotal} in cash to the rider when it arrives.`
+      : state === "paid"
+        ? "Thanks! Your order is confirmed and ready for live tracking."
+        : state === "failed"
+          ? "We could not confirm payment for this order. You can return to checkout and try again."
+          : state === "loading"
+            ? "We are checking your payment with Ozow now."
+            : state === "pending"
+              ? "We received your return from Ozow and are waiting for final payment confirmation."
+              : "We could not load this order reference.";
 
   return (
     <>

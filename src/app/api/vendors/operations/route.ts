@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
+import { isConfirmedPayment } from "@/lib/payment-status";
 
 function isPaid(paymentStatus: string) {
-  const payment = String(paymentStatus || "").toUpperCase();
-  return payment === "PAID" || payment === "SUCCESS";
+  return isConfirmedPayment(paymentStatus);
 }
 
 function isFailed(paymentStatus: string, orderStatus: string) {

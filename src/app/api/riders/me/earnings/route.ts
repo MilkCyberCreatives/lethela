@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -68,7 +69,7 @@ export async function GET() {
     where: {
       assignedRiderId: application.id,
       status: "DELIVERED",
-      paymentStatus: { in: ["PAID", "SUCCESS"] },
+      paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES },
       updatedAt: { gte: monthStart },
     },
     orderBy: { updatedAt: "desc" },

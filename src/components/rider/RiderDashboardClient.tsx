@@ -77,6 +77,7 @@ type RiderMeResponse = {
       containsAlcohol: boolean;
     };
     totalCents: number;
+    collectCashCents?: number;
     deliveryFeeCents: number;
     riderTipCents: number;
     riderPayoutCents: number;
@@ -95,6 +96,7 @@ type RiderOffer = {
   distanceKm: number | null;
   earnCents: number;
   offeredAt: string;
+  collectCashCents?: number;
 };
 
 type PlatformMessage = {
@@ -330,6 +332,11 @@ export default function RiderDashboardClient() {
                       You earn {money(offer.earnCents)}
                     </p>
                   </div>
+                  {offer.collectCashCents ? (
+                    <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                      Cash on delivery: collect {money(offer.collectCashCents)} from the customer.
+                    </p>
+                  ) : null}
                   <p className="mt-2 flex items-start gap-2 text-sm text-slate-700">
                     <Store className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
                     <span className="min-w-0">
@@ -461,6 +468,12 @@ export default function RiderDashboardClient() {
                     {order.dropoff.landmark ? <p>Landmark: {order.dropoff.landmark}</p> : null}
                     {order.dropoff.notes ? <p>Notes: {order.dropoff.notes}</p> : null}
                   </div>
+                ) : null}
+                {order.collectCashCents ? (
+                  <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+                    Cash on delivery: collect {money(order.collectCashCents)} from the customer.
+                    Keep your fee and tip; hand the rest to Lethela.
+                  </p>
                 ) : null}
                 {order.dropoff.containsAlcohol ? (
                   <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">

@@ -85,6 +85,11 @@ const DELIVERY_STATUSES: OrderStatus[] = [
 ];
 const EXCEPTION_STATUSES: OrderStatus[] = ["CANCELLED", "REFUND_REQUESTED", "REFUNDED", "FAILED"];
 
+function paymentLabel(paymentStatus: string) {
+  return String(paymentStatus).toUpperCase() === "CASH"
+    ? "Cash on delivery (rider collects)"
+    : statusText(paymentStatus);
+}
 function vendorActions(status: OrderStatus): VendorOrderAction[] {
   if (status === "NEW") return ["VENDOR_ACCEPTED", "CANCELLED"];
   if (status === "VENDOR_ACCEPTED") return ["PREPARING", "CANCELLED"];
@@ -533,7 +538,7 @@ export default function OrdersManager() {
                             </span>
                             <span className="mt-1 block text-xs text-slate-500">
                               {formatWhen(order.createdAt)} · Payment:{" "}
-                              {statusText(order.paymentStatus)}
+                              {paymentLabel(order.paymentStatus)}
                             </span>
                           </span>
                           <span className="shrink-0 text-[15px] font-semibold tabular-nums text-slate-900">
@@ -652,7 +657,7 @@ export default function OrdersManager() {
                                   />
                                   <DetailRow
                                     label="Payment"
-                                    value={statusText(selectedOrder.paymentStatus)}
+                                    value={paymentLabel(selectedOrder.paymentStatus)}
                                   />
                                 </div>
                               </section>

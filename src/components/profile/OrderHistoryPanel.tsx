@@ -37,7 +37,7 @@ function statusLabel(value: string) {
 
 function statusClasses(value: string) {
   const normalized = String(value || "").toUpperCase();
-  if (["DELIVERED", "COMPLETED", "PAID", "SUCCESS"].includes(normalized)) {
+  if (["DELIVERED", "COMPLETED", "PAID", "SUCCESS", "CASH"].includes(normalized)) {
     return "border-emerald-200 bg-emerald-50 text-emerald-800";
   }
   if (["CANCELLED", "FAILED", "REFUNDED"].includes(normalized)) {

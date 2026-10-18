@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
+import { isConfirmedPayment } from "@/lib/payment-status";
 
 function dayKey(date: Date) {
   const year = date.getFullYear();
@@ -107,7 +108,7 @@ export async function GET() {
         days[key].deliveryFeeCents += o.deliveryFeeCents;
       }
 
-      if (payment === "PAID" || payment === "SUCCESS") {
+      if (isConfirmedPayment(payment)) {
         days[key].paidRevenueCents += o.totalCents;
         paymentSummary.paidOrders += 1;
         paymentSummary.paidRevenueCents += o.totalCents;

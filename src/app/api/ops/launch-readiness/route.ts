@@ -8,6 +8,7 @@ import { hasWebPushConfig } from "@/lib/web-push";
 import { hasPrivateStorageConfig, hasStorageConfig, storageProvider } from "@/server/supabase";
 import { getSqliteReadinessCounts } from "@/lib/sqlite-readiness";
 import { prisma, prismaRuntimeInfo } from "@/server/db";
+import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
 
 function configured(name: string) {
   return Boolean(process.env[name]?.trim());
@@ -97,7 +98,7 @@ export async function GET(req: NextRequest) {
           0,
         ),
         withQueryTimeout(
-          prisma.order.count({ where: { paymentStatus: { in: ["PAID", "SUCCESS"] } } }),
+          prisma.order.count({ where: { paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES } } }),
           0,
         ),
         withQueryTimeout(
@@ -163,7 +164,8 @@ export async function GET(req: NextRequest) {
     item(
       "Ozow live checkout",
       configured("OZOW_SITE_CODE") && configured("OZOW_PRIVATE_KEY"),
-      "Site code and private key configured",
+      "Site code and private key configured. Until then customers pay cash on delivery.",
+      "recommended",
     ),
     item(
       "Ozow live mode",

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdminRequest } from "@/lib/admin-auth";
 import { logAdminAudit } from "@/lib/admin-audit";
+import { CONFIRMED_PAYMENT_STATUSES, isConfirmedPayment } from "@/lib/payment-status";
 
 const PayoutSchema = z.object({
   orderRef: z.string().trim().min(3).max(120),
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }
   const orders = await prisma.order.findMany({
-    where: { paymentStatus: "PAID", status: "DELIVERED" },
+    where: { paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES }, status: "DELIVERED" },
     orderBy: { updatedAt: "desc" },
     take: 200,
     select: {
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     },
   });
   if (!order) return NextResponse.json({ ok: false, error: "Order not found." }, { status: 404 });
-  if (order.paymentStatus !== "PAID" || order.status !== "DELIVERED") {
+  if (!isConfirmedPayment(order.paymentStatus) || order.status !== "DELIVERED") {
     return NextResponse.json(
       { ok: false, error: "Only delivered, verified-paid orders can be paid out." },
       { status: 409 },

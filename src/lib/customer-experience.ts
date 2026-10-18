@@ -1,6 +1,7 @@
 import { prisma } from "@/server/db";
 import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
 import { withQueryTimeout } from "@/lib/query-timeout";
+import { CONFIRMED_PAYMENT_STATUSES, isConfirmedPayment } from "@/lib/payment-status";
 
 export type ProductFeedbackMap = {
   favorites: string[];
@@ -55,8 +56,7 @@ type PushPreferenceInput = {
 };
 
 export function isPaidLikeStatus(paymentStatus: string | null | undefined) {
-  const normalized = String(paymentStatus || "").toUpperCase();
-  return normalized === "PAID" || normalized === "SUCCESS";
+  return isConfirmedPayment(paymentStatus);
 }
 
 export async function getUserMealFeedback(userId: string): Promise<ProductFeedbackMap> {
@@ -157,7 +157,7 @@ export async function getUserExperienceSnapshot(
     prisma.order.findMany({
       where: {
         userId,
-        paymentStatus: { in: ["PAID", "SUCCESS"] },
+        paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES },
       },
       orderBy: { createdAt: "desc" },
       take: 8,
@@ -273,7 +273,7 @@ export async function getVendorTrustSnapshot(vendorId: string) {
       prisma.order.count({
         where: {
           vendorId,
-          paymentStatus: { in: ["PAID", "SUCCESS"] },
+          paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES },
         },
       }),
       prisma.userProductReview.findMany({

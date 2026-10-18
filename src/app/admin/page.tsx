@@ -3053,6 +3053,7 @@ export default function AdminPage() {
                   <option value="ALL">All payments</option>
                   <option value="PENDING">Waiting for payment</option>
                   <option value="PAID">Paid</option>
+                  <option value="CASH">Cash on delivery</option>
                   <option value="FAILED">Failed</option>
                   <option value="REFUNDED">Refunded</option>
                 </select>
@@ -4188,6 +4189,7 @@ function approvalStateText(status: string) {
 function paymentText(status: string) {
   const value = status.toUpperCase();
   if (value === "PAID" || value === "SUCCESS") return "Paid";
+  if (value === "CASH") return "Cash on delivery";
   if (value === "PENDING") return "Waiting for payment";
   return statusText(status);
 }

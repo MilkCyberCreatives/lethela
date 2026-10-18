@@ -11,6 +11,7 @@ import {
 import { sendPushToAdmins, sendPushToUsers } from "@/lib/push-notifications";
 import { createNotification, createNotificationForUsers, notifyStaff } from "@/lib/notifications";
 import { absoluteUrl } from "@/lib/site";
+import { isCashOnDelivery, isOnlinePaid } from "@/lib/payment-status";
 
 type OrderPayloadItem = {
   name?: string;
@@ -70,6 +71,7 @@ export function buildVendorOrderWhatsAppMessage(input: {
   items: OrderPayloadItem[];
   deliveryDetails: DeliveryDetails | null;
   dashboardUrl: string;
+  cashOnDelivery?: boolean;
 }) {
   const details = input.deliveryDetails;
   const customerName = cleanLine(details?.customerName) || "Not supplied";
@@ -92,7 +94,9 @@ export function buildVendorOrderWhatsAppMessage(input: {
     Boolean(details?.containsAlcohol) || input.items.some((item) => Boolean(item.isAlcohol));
 
   return [
-    `New paid Lethela order for ${input.vendorName}`,
+    input.cashOnDelivery
+      ? `New Lethela order for ${input.vendorName} (cash on delivery)`
+      : `New paid Lethela order for ${input.vendorName}`,
     `Order: ${input.orderRef}`,
     `Customer: ${customerName}`,
     `Phone: ${customerPhone}`,
@@ -103,7 +107,9 @@ export function buildVendorOrderWhatsAppMessage(input: {
     ...(itemLines.length ? itemLines : ["- Items are available in the dashboard"]),
     extraItems ? `- plus ${extraItems} more item(s)` : "",
     `Delivery fee: ${rand(input.deliveryFeeCents)}`,
-    `Total paid: ${rand(input.totalCents)}`,
+    input.cashOnDelivery
+      ? `Total: ${rand(input.totalCents)}, paid in cash to the rider. Lethela pays you as usual.`
+      : `Total paid: ${rand(input.totalCents)}`,
     containsAlcohol ? "Liquor order — ID check required." : "",
     `Dashboard: ${input.dashboardUrl}`,
   ]
@@ -136,6 +142,12 @@ export function riderDropoff(itemsJson: string | null | undefined) {
 }
 
 // The customer's name and phone number stay in the rider dashboard, not in the message.
+function cashLine(collectCashCents: number | undefined) {
+  return collectCashCents
+    ? `Cash on delivery: collect ${rand(collectCashCents)} from the customer.`
+    : "";
+}
+
 export function buildRiderAssignmentMessage(input: {
   orderRef: string;
   vendorName: string;
@@ -143,6 +155,7 @@ export function buildRiderAssignmentMessage(input: {
   dropoff: ReturnType<typeof riderDropoff>;
   earnCents: number;
   dashboardUrl: string;
+  collectCashCents?: number;
 }) {
   return [
     `New Lethela delivery for you: ${input.orderRef}`,
@@ -150,6 +163,7 @@ export function buildRiderAssignmentMessage(input: {
     `Deliver to: ${input.dropoff.address || "See your dashboard"}`,
     input.dropoff.landmark ? `Landmark: ${input.dropoff.landmark}` : "",
     input.dropoff.containsAlcohol ? "Liquor order: check the customer's ID at handover." : "",
+    cashLine(input.collectCashCents),
     `You earn: ${rand(input.earnCents)}`,
     `Customer details and delivery buttons: ${input.dashboardUrl}`,
   ]
@@ -243,6 +257,7 @@ export async function notifyVendorOfPaidOrder(orderId: string) {
       itemsJson: true,
       totalCents: true,
       deliveryFeeCents: true,
+      paymentStatus: true,
       userId: true,
       vendor: {
         select: {
@@ -273,6 +288,7 @@ export async function notifyVendorOfPaidOrder(orderId: string) {
     "https://www.lethela.co.za";
 
   const orderRef = order.publicId || order.ozowReference || orderId;
+  const cashOnDelivery = isCashOnDelivery(order.paymentStatus);
   const body = buildVendorOrderWhatsAppMessage({
     orderRef,
     vendorName: order.vendor.name,
@@ -281,6 +297,7 @@ export async function notifyVendorOfPaidOrder(orderId: string) {
     items: parsed.items,
     deliveryDetails: parsed.deliveryDetails,
     dashboardUrl: `${siteUrl.replace(/\/$/, "")}/vendors/dashboard`,
+    cashOnDelivery,
   });
 
   if (hasWhatsAppChannel() && vendorPhone) {
@@ -301,8 +318,10 @@ export async function notifyVendorOfPaidOrder(orderId: string) {
       pushQueued = true;
       tasks.push(
         sendPushToUsers(vendorUserIds, "orderUpdatesEnabled", {
-          title: "New paid order",
-          body: `${orderRef} is paid and ready in your vendor dashboard.`,
+          title: cashOnDelivery ? "New order" : "New paid order",
+          body: cashOnDelivery
+            ? `${orderRef} is in your vendor dashboard. The customer pays the rider in cash.`
+            : `${orderRef} is paid and ready in your vendor dashboard.`,
           url: "/vendors/dashboard",
           tag: `lethela-order-${orderRef}`,
         }),
@@ -316,8 +335,10 @@ export async function notifyVendorOfPaidOrder(orderId: string) {
       pushQueued = true;
       tasks.push(
         sendPushToUsers([order.userId], "orderUpdatesEnabled", {
-          title: "Order paid",
-          body: `${orderRef} has been paid. We will keep you posted as it moves.`,
+          title: cashOnDelivery ? "Order placed" : "Order paid",
+          body: cashOnDelivery
+            ? `${orderRef} is placed. Pay ${rand(order.totalCents)} in cash to the rider.`
+            : `${orderRef} has been paid. We will keep you posted as it moves.`,
           url: `/orders/${orderRef}`,
           tag: `lethela-order-${orderRef}`,
         }),
@@ -432,6 +453,18 @@ const ADMIN_ORDER_ALERTS: Record<AdminOrderEvent, { title: string; action: strin
   },
 };
 
+// Cash on delivery: nothing was paid up front, so there is nothing to refund.
+const CASH_ORDER_ALERTS: Partial<Record<AdminOrderEvent, { title: string; action: string }>> = {
+  paid: {
+    title: "New cash order",
+    action: "The customer pays the rider in cash. Watch for the vendor to accept it.",
+  },
+  cancelled: {
+    title: "Cash order cancelled",
+    action: "The customer has been told. No refund is needed: it was cash on delivery.",
+  },
+};
+
 // Riders are alerted automatically (src/lib/rider-offers.ts), so the admin team
 // hears about every paid order, an order no rider took, an order the
 // store or rider is sitting on, and, because refunds are manual, every cancelled order.
@@ -445,6 +478,7 @@ export async function notifyAdminsOfOrder(orderId: string, event: AdminOrderEven
       deliveryFeeCents: true,
       itemsJson: true,
       statusReason: true,
+      paymentStatus: true,
       vendor: { select: { name: true } },
     },
   });
@@ -456,7 +490,9 @@ export async function notifyAdminsOfOrder(orderId: string, event: AdminOrderEven
     .map(cleanLine)
     .filter(Boolean)
     .join(", ");
-  const { title, action } = ADMIN_ORDER_ALERTS[event];
+  const { title, action } = isCashOnDelivery(order.paymentStatus)
+    ? (CASH_ORDER_ALERTS[event] ?? ADMIN_ORDER_ALERTS[event])
+    : ADMIN_ORDER_ALERTS[event];
   const adminUrl = absoluteUrl("/admin?view=operations");
   const reason = event === "cancelled" ? cleanLine(order.statusReason) : "";
   const lines = [
@@ -529,6 +565,8 @@ export async function notifyRiderOfAssignment(orderId: string, riderApplicationI
         deliveryFeeCents: true,
         riderTipCents: true,
         riderPayoutCents: true,
+        totalCents: true,
+        paymentStatus: true,
         vendor: { select: { name: true, address: true, suburb: true, city: true } },
       },
     }),
@@ -551,6 +589,7 @@ export async function notifyRiderOfAssignment(orderId: string, riderApplicationI
     dropoff: riderDropoff(order.itemsJson),
     earnCents: order.riderPayoutCents || order.deliveryFeeCents + (order.riderTipCents || 0),
     dashboardUrl: absoluteUrl("/rider/dashboard"),
+    collectCashCents: isCashOnDelivery(order.paymentStatus) ? order.totalCents : 0,
   });
   const summary = `${orderRef}: collect from ${vendorName}.`;
   const email = cleanLine(rider.email);
@@ -657,7 +696,7 @@ export async function notifyCustomerOfCancellation(orderId: string) {
     orderRef,
     vendorName: cleanLine(order.vendor.name),
     reason: cleanLine(order.statusReason),
-    paid: ["PAID", "SUCCESS"].includes(String(order.paymentStatus).toUpperCase()),
+    paid: isOnlinePaid(order.paymentStatus),
     totalCents: order.totalCents,
     orderUrl: absoluteUrl(`/orders/${orderRef}`),
   });
@@ -832,6 +871,7 @@ export function buildRiderOfferMessage(input: {
   distanceKm: number | null;
   earnCents: number;
   dashboardUrl: string;
+  collectCashCents?: number;
 }) {
   return [
     `New Lethela delivery request near you: ${input.orderRef}`,
@@ -839,6 +879,7 @@ export function buildRiderOfferMessage(input: {
       input.distanceKm !== null ? ` (${input.distanceKm.toFixed(1)} km from you)` : ""
     }`,
     input.dropoffArea ? `Deliver to: ${input.dropoffArea}` : "",
+    cashLine(input.collectCashCents),
     `You earn: ${rand(input.earnCents)}`,
     "Other riders nearby got this request too. The first rider to tap Accept gets it.",
     `Accept here: ${input.dashboardUrl}`,
@@ -863,6 +904,8 @@ export async function notifyRiderOfOffer(
         deliveryFeeCents: true,
         riderTipCents: true,
         riderPayoutCents: true,
+        totalCents: true,
+        paymentStatus: true,
         vendor: { select: { name: true, address: true, suburb: true, city: true } },
       },
     }),
@@ -884,8 +927,11 @@ export async function notifyRiderOfOffer(
     distanceKm,
     earnCents,
     dashboardUrl: absoluteUrl("/rider/dashboard"),
+    collectCashCents: isCashOnDelivery(order.paymentStatus) ? order.totalCents : 0,
   });
-  const summary = `Collect from ${vendorName}, earn ${rand(earnCents)}. First to accept gets it.`;
+  const summary = `Collect from ${vendorName}, earn ${rand(earnCents)}.${
+    isCashOnDelivery(order.paymentStatus) ? ` Cash order: collect ${rand(order.totalCents)}.` : ""
+  } First to accept gets it.`;
   const phone = cleanLine(rider.phone);
 
   const tasks: Promise<unknown>[] = [];

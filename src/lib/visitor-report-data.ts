@@ -26,9 +26,10 @@ import {
   type VisitorDaySummary,
   type WeekComparison,
 } from "@/lib/visitor-report";
+import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
 
 const REPORT_EVENT_TYPES = ["page_view", "vendor_click", "product_add", "search", "whatsapp_click"];
-const PAID_STATUSES = ["PAID", "SUCCESS"];
+const PAID_STATUSES = CONFIRMED_PAYMENT_STATUSES;
 const MAX_EVENTS = 60_000;
 
 function chunk<T>(items: T[], size: number) {

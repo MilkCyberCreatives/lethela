@@ -31,7 +31,11 @@ export function businessFacts() {
       "Breakfast",
       "Local favourites",
     ],
-    orderMethods: ["Online checkout with Ozow", "WhatsApp order confirmation"],
+    orderMethods: [
+      "Cash on delivery: pay the rider when the order arrives",
+      "Online checkout with Ozow",
+      "WhatsApp order confirmation",
+    ],
     tracking:
       "Customers track orders with a reference such as LET-12345 on the Track Order page or through live order pages.",
     vendorFlow:
@@ -113,12 +117,12 @@ export function supportFaq(): SupportFaqItem[] {
     },
     {
       q: "How do I place an order?",
-      a: "You can add items to cart and check out online with Ozow, or place the order through WhatsApp for manual confirmation.",
+      a: "Add items to your cart and check out as a guest. Choose cash on delivery and pay the rider when your order arrives, or pay online with Ozow when it is offered. You can also order through WhatsApp.",
       tags: ["order", "checkout", "how to order", "buy", "basket", "cart", "ozow"],
     },
     {
       q: "Can I order without paying online?",
-      a: `Yes. You can place your basket through WhatsApp and request manual or offline confirmation here: ${supportLink}`,
+      a: `Yes. Choose cash on delivery at checkout and pay the rider in cash when your order arrives. You can also order through WhatsApp here: ${supportLink}`,
       tags: ["whatsapp", "offline", "cash", "manual order", "no card", "pay later"],
     },
     {

@@ -6,6 +6,7 @@ import {
   sendPushToMarketingSubscribers,
   sendPushToSelectedMarketingVisitors,
 } from "@/lib/push-notifications";
+import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
 
 type CampaignSegment = "ALL" | "ENGAGED" | "LOYAL" | "NO_ORDER_YET";
 
@@ -48,7 +49,7 @@ async function resolveSegmentVisitorIds(segment: CampaignSegment) {
 
   const visitorsWithOrders = await prisma.order.findMany({
     where: {
-      paymentStatus: { in: ["PAID", "SUCCESS"] },
+      paymentStatus: { in: CONFIRMED_PAYMENT_STATUSES },
       userId: { not: null },
     },
     select: { userId: true },
