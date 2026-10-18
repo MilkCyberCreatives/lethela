@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { dispatchWaitingOrders } from "@/lib/order-automation";
 import { clearRiderLocation } from "@/lib/rider-offers";
+import { riderActiveDeliveryCount } from "@/lib/rider-tracking";
 
 const BodySchema = z.object({ availableNow: z.boolean() });
 
@@ -37,9 +38,11 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: "Rider profile not found." }, { status: 404 });
   }
 
+  const activeDeliveries = await riderActiveDeliveryCount(application.id).catch(() => 0);
   return NextResponse.json({
     ok: true,
     availableNow: application.availableNow,
+    activeDelivery: activeDeliveries > 0,
     approved: application.status === "APPROVED" || session.user.role === "ADMIN",
     area: [application.suburb, application.city].filter(Boolean).join(", ") || null,
   });

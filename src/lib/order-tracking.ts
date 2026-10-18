@@ -70,6 +70,10 @@ export function normalizeTrackingStatus(input: string | null | undefined): Track
     .toUpperCase();
   if (upper === "PLACED") return "PENDING";
   if (upper === "CANCELED") return "CANCELLED";
+  // The order's own statuses (src/lib/order-state.ts) mapped onto the stages a
+  // customer sees, so an order with a rider on the way no longer reads "Pending".
+  if (upper === "VENDOR_ACCEPTED") return "ACCEPTED";
+  if (upper === "READY_FOR_PICKUP" || upper === "RIDER_ASSIGNED") return "PREPARING";
   if (
     upper === "PENDING" ||
     upper === "ACCEPTED" ||

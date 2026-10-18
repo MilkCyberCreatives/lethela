@@ -1,7 +1,7 @@
 "use client";
 
-import { APIProvider, AdvancedMarker, Map, Pin } from "@vis.gl/react-google-maps";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import LiveMap, { type LiveMapMarker } from "@/components/LiveMap";
 
 type TrackingPoint = {
   lat: number;
@@ -15,126 +15,38 @@ type Props = {
   compact?: boolean;
 };
 
-type MapMode = "fallback" | "embed" | "js";
-
-function midpoint(points: TrackingPoint[]) {
-  const totals = points.reduce(
-    (acc, point) => ({ lat: acc.lat + point.lat, lng: acc.lng + point.lng }),
-    { lat: 0, lng: 0 },
-  );
-  return {
-    lat: totals.lat / points.length,
-    lng: totals.lng / points.length,
-  };
-}
-
-function shouldRenderGoogleMap(apiKey?: string) {
-  const key = apiKey?.trim();
-  if (!key || key.length < 30 || /demo|example|replace|test/i.test(key)) return false;
-
-  return true;
-}
-
-function getMapMode(apiKey?: string): MapMode {
-  if (process.env.NEXT_PUBLIC_GOOGLE_MAPS_JS_MODE === "true" && shouldRenderGoogleMap(apiKey)) {
-    return "js";
-  }
-
-  return "embed";
-}
-
-function buildEmbedUrl(center: TrackingPoint) {
-  const params = new URLSearchParams({
-    q: `${center.lat},${center.lng}`,
-    z: "13",
-    output: "embed",
-  });
-  return `https://www.google.com/maps?${params.toString()}`;
-}
-
 export default function OrderMap({ rider, vendor, dest, compact = false }: Props) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  const [mapMode, setMapMode] = useState<MapMode>("fallback");
-  const markers = [vendor, rider, dest].filter(Boolean) as TrackingPoint[];
-  const center = useMemo(() => {
-    if (markers.length === 0) return { lat: -26.2041, lng: 28.0473 };
-    if (markers.length === 1) return markers[0];
-    return midpoint(markers);
-  }, [markers]);
+  const markers = useMemo(() => {
+    const list: LiveMapMarker[] = [];
+    if (vendor) list.push({ id: "vendor", kind: "vendor", label: "Store", ...vendor });
+    if (dest) list.push({ id: "dest", kind: "dest", label: "Drop-off", ...dest });
+    if (rider) list.push({ id: "rider", kind: "rider", label: "Rider", ...rider });
+    return list;
+  }, [rider, vendor, dest]);
+  const lines = useMemo(
+    () =>
+      rider && dest
+        ? [[rider, dest] as [TrackingPoint, TrackingPoint]]
+        : vendor && dest
+          ? [[vendor, dest] as [TrackingPoint, TrackingPoint]]
+          : [],
+    [rider, vendor, dest],
+  );
 
-  useEffect(() => {
-    setMapMode(getMapMode(apiKey));
-  }, [apiKey]);
-
-  if (mapMode === "embed") {
-    return (
-      <div className="overflow-hidden rounded-lg border border-white/10">
-        <iframe
-          title="Google Maps tracking preview"
-          src={buildEmbedUrl(center)}
-          className="block w-full border-0"
-          style={{ height: compact ? 260 : 360 }}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-        <div className="border-t border-white/10 bg-black/20 px-4 py-2">
-          <div className="flex flex-wrap gap-2 text-xs text-white/68">
-            {vendor ? <LegendDot color="bg-blue-500" label="Vendor" /> : null}
-            {rider ? <LegendDot color="bg-lethela-primary" label="Rider" /> : null}
-            {dest ? <LegendDot color="bg-green-500" label="Drop-off" /> : null}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (mapMode === "fallback") {
+  if (markers.length === 0) {
     return (
       <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-        <div className="font-semibold">Tracking map preview</div>
+        <div className="font-semibold">Tracking map</div>
         <p className="mt-1 text-sm text-white/60">
-          Live route markers will appear here when Google Maps is enabled for this environment.
+          The map shows here once the store and drop-off locations are known.
         </p>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/68">
-          {vendor ? <LegendDot color="bg-blue-500" label="Vendor" /> : null}
-          {rider ? <LegendDot color="bg-lethela-primary" label="Rider" /> : null}
-          {dest ? <LegendDot color="bg-green-500" label="Drop-off" /> : null}
-        </div>
       </div>
     );
   }
-
-  const mapApiKey = apiKey?.trim() || "";
 
   return (
     <div className="overflow-hidden rounded-lg border border-white/10">
-      <APIProvider apiKey={mapApiKey}>
-        <Map
-          center={center}
-          zoom={compact ? 12 : 13}
-          gestureHandling="greedy"
-          disableDefaultUI
-          mapId={undefined}
-          style={{ width: "100%", height: compact ? 260 : 360 }}
-        >
-          {vendor ? (
-            <AdvancedMarker position={vendor} title="Vendor">
-              <Pin background="#2563eb" borderColor="#1d4ed8" glyphColor="#fff" />
-            </AdvancedMarker>
-          ) : null}
-          {dest ? (
-            <AdvancedMarker position={dest} title="Destination">
-              <Pin background="#16a34a" borderColor="#166534" glyphColor="#fff" />
-            </AdvancedMarker>
-          ) : null}
-          {rider ? (
-            <AdvancedMarker position={rider} title="Rider">
-              <Pin background="#B5001B" borderColor="#7a0012" glyphColor="#fff" />
-            </AdvancedMarker>
-          ) : null}
-        </Map>
-      </APIProvider>
-
+      <LiveMap markers={markers} lines={lines} height={compact ? 260 : 360} />
       <div className="border-t border-white/10 bg-black/20 px-4 py-2">
         <div className="flex flex-wrap gap-2 text-xs text-white/68">
           {vendor ? <LegendDot color="bg-blue-500" label="Vendor" /> : null}

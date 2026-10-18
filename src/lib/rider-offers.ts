@@ -115,6 +115,23 @@ export async function clearRiderLocation(riderId: string) {
   );
 }
 
+/** Every online rider's latest shared position, for the admin live map. */
+export async function listFreshRiderLocations() {
+  await ensureRiderOfferTables();
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{ rider_id: string; lat: number; lng: number; located_at: string }>
+  >(
+    `SELECT rider_id, lat, lng, located_at FROM app_rider_locations WHERE located_at >= ${marker(1)}`,
+    new Date(Date.now() - LOCATION_FRESH_MS).toISOString(),
+  );
+  return rows.map((row) => ({
+    riderId: row.rider_id,
+    lat: Number(row.lat),
+    lng: Number(row.lng),
+    locatedAt: row.located_at,
+  }));
+}
+
 async function freshLocations(riderIds: string[]) {
   if (riderIds.length === 0) return new Map<string, { lat: number; lng: number }>();
   await ensureRiderOfferTables();

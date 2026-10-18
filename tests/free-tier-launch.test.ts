@@ -91,11 +91,13 @@ test("geo uses a free OpenStreetMap geocoder fallback that can be disabled for t
   assert.match(geo, /"User-Agent":\s*`Lethela/);
 });
 
-test("order tracking map renders without a Google Maps key via the keyless embed", () => {
+test("order tracking map renders without a Google Maps key on OpenStreetMap", () => {
   const map = source("src/components/OrderMap.tsx");
-  assert.match(map, /return "embed";/);
-  assert.match(map, /output:\s*"embed"/);
-  assert.match(map, /NEXT_PUBLIC_GOOGLE_MAPS_JS_MODE === "true" && shouldRenderGoogleMap/);
+  assert.match(map, /import LiveMap/);
+  assert.doesNotMatch(map, /GOOGLE_MAPS/);
+  const liveMap = source("src/components/LiveMap.tsx");
+  assert.match(liveMap, /tile\.openstreetmap\.org/);
+  assert.match(liveMap, /OpenStreetMap contributors/);
 });
 
 test("email channel stays on Resend with no third-party SDK dependency", () => {

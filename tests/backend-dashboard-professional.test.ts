@@ -18,6 +18,7 @@ test("admin navigation has one professional destination per dashboard view", asy
   assert.deepEqual(ids, [
     "overview",
     "operations",
+    "tracking",
     "orders",
     "vendors",
     "products",

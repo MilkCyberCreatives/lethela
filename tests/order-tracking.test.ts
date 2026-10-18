@@ -9,6 +9,9 @@ test("normalizeTrackingStatus maps legacy values into tracking states", () => {
   assert.equal(normalizeTrackingStatus("on_the_way"), "ON_THE_WAY");
   assert.equal(normalizeTrackingStatus("canceled"), "CANCELLED");
   assert.equal(normalizeTrackingStatus("unknown"), "PENDING");
+  assert.equal(normalizeTrackingStatus("VENDOR_ACCEPTED"), "ACCEPTED");
+  assert.equal(normalizeTrackingStatus("READY_FOR_PICKUP"), "PREPARING");
+  assert.equal(normalizeTrackingStatus("RIDER_ASSIGNED"), "PREPARING");
 });
 
 test("tracking never invents a rider position when no live coordinates exist", () => {
