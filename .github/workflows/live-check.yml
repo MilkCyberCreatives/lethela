@@ -1,0 +1,43 @@
+name: Live site check
+
+# Confirms the live site answers on www.lethela.co.za and lethela.co.za, serves the commit
+# just merged and shows its public pages. It only opens public, signed-out pages with GET,
+# so it never places orders, sends messages or changes data.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/live-check.yml
+      - scripts/live-check.mjs
+  schedule:
+    - cron: "15 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live:
+    name: Check the live site
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Check the live site
+        env:
+          # After a merge to main, wait up to 12 minutes for Vercel to serve the new commit.
+          LIVE_CHECK_WAIT_MS: ${{ github.event_name == 'push' && '720000' || '0' }}
+        run: node scripts/live-check.mjs ${{ github.event_name == 'push' && github.sha || '' }}
