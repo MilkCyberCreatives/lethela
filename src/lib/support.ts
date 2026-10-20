@@ -13,7 +13,12 @@ export function buildWhatsAppSupportLink(message?: string) {
 }
 
 export function buildLaunchNotificationLink(area = "Klipfontein View") {
+  return buildWhatsAppSupportLink(`Hello Lethela, I would like to place an order in ${area}.`);
+}
+
+/** WhatsApp order link for a store that is still putting its menu on Lethela. */
+export function buildStoreOrderWhatsAppLink(storeName: string, area = "Klipfontein View") {
   return buildWhatsAppSupportLink(
-    `Hello Lethela, please notify me when ordering is available in ${area}.`,
+    `Hello Lethela, I would like to order from ${storeName.trim()} in ${area}.`,
   );
 }

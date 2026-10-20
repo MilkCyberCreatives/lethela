@@ -22,7 +22,8 @@ test("support link uses a clean WhatsApp number and encoded message", () => {
 test("launch notification link contains the selected area without an order total", () => {
   const link = buildLaunchNotificationLink("Klipfontein View");
   const text = decodeURIComponent(new URL(link).searchParams.get("text") || "");
-  assert.match(text, /notify me/i);
+  assert.match(text, /place an order/i);
+  assert.doesNotMatch(text, /notify me/i);
   assert.match(text, /Klipfontein View/i);
   assert.doesNotMatch(text, /R\s?0\.00|order reference|subtotal/i);
 });

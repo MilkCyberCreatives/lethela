@@ -8,9 +8,11 @@ import {
 } from "@/lib/catalog-runtime";
 import { inferProductCategory } from "@/lib/categories";
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
+import { isBroadcastableEmail } from "@/lib/approval-broadcast";
 import {
   buildPublicVendorCard,
   isPublicCatalogProduct,
+  isPublicCatalogVendor,
   isPublicMarketplaceVendor,
 } from "@/lib/public-catalog";
 import {
@@ -19,6 +21,7 @@ import {
   getSqliteCatalogVendors,
 } from "@/lib/sqlite-catalog";
 import type { StoreHour } from "@/lib/store-availability";
+import { hasRealStoreName } from "@/lib/vendor-readiness";
 import type { Vendor } from "@/types";
 
 type VendorWithAlcohol = {
@@ -354,4 +357,68 @@ export async function getHomeVendors(suburb: string | null, take = 18): Promise<
 
   merged.sort((a, b) => (orderById.get(a.id) ?? 999) - (orderById.get(b.id) ?? 999));
   return merged;
+}
+
+export type JoiningStore = {
+  id: string;
+  name: string;
+  area: string | null;
+  storeType: string | null;
+};
+
+/**
+ * Registered stores that are still putting their menu on Lethela (Gauta, 20 Oct 2026: list the
+ * vendors). They are shown by name only, with a WhatsApp order button, until their profile is
+ * complete and they are listed with the orderable stores. Suspended stores, demo and test
+ * accounts and stores still called "New vendor" stay off the list.
+ */
+export async function getJoiningStores(excludeIds: string[], take = 12): Promise<JoiningStore[]> {
+  if (shouldPreferCatalogFallback()) return [];
+
+  const rows = await withTimeout(
+    () =>
+      prisma.vendor.findMany({
+        where: {
+          status: { notIn: ["SUSPENDED"] },
+          ...(excludeIds.length ? { id: { notIn: excludeIds } } : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          email: true,
+          storeType: true,
+          suburb: true,
+          township: true,
+          owner: { select: { email: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 60,
+      }),
+    [],
+  );
+
+  return rows
+    .filter(
+      (vendor) =>
+        hasRealStoreName(vendor.name) &&
+        isPublicCatalogVendor(vendor) &&
+        !isTestStoreName(vendor.name) &&
+        [vendor.email, vendor.owner?.email]
+          .filter(Boolean)
+          .every((email) => isBroadcastableEmail(email)),
+    )
+    .slice(0, take)
+    .map((vendor) => ({
+      id: vendor.id,
+      name: vendor.name.trim(),
+      area: vendor.township?.trim() || vendor.suburb?.trim() || null,
+      storeType: vendor.storeType?.trim() || null,
+    }));
+}
+
+// Lethela's own owner and pilot stores ("Lethela", "Lethela Owner Store", "Lethela Pilot Kitchen")
+// are internal accounts, not stores customers can order from.
+function isTestStoreName(name: string) {
+  return /^(test|testing|asdf|qwerty|sample|example|lethela)\b/i.test(name.trim());
 }
