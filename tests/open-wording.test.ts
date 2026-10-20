@@ -7,7 +7,7 @@ async function source(path: string) {
 }
 
 // Gauta, 13 Oct 2026: Lethela is open and operating, so fixed wording must not call it launching.
-// The homepage's "Launching shortly" line only shows while no store is listed.
+// Gauta, 20 Oct 2026: no "launching" wording anywhere, even before a store is listed.
 test("fixed public wording says Lethela is open in Klipfontein View", async () => {
   const [authShell, home, faq] = await Promise.all([
     source("src/components/auth/AuthShell.tsx"),
@@ -20,4 +20,18 @@ test("fixed public wording says Lethela is open in Klipfontein View", async () =
   assert.doesNotMatch(home, /launching from Klipfontein View/);
   assert.match(faq, /Lethela is open in Klipfontein View, Midrand\./);
   assert.doesNotMatch(faq, /pre-launch/);
+});
+
+test("the homepage never says launching and lists registered stores with a WhatsApp order", async () => {
+  const [home, hero, readiness] = await Promise.all([
+    source("src/app/page.tsx"),
+    source("src/components/Hero.tsx"),
+    source("src/lib/launch-readiness.ts"),
+  ]);
+  for (const text of [home, hero, readiness]) {
+    assert.doesNotMatch(text, /launching shortly|notify me when ordering/i);
+  }
+  assert.match(home, /getJoiningStores/);
+  assert.match(home, /Stores on Lethela/);
+  assert.match(home, /Order on WhatsApp/);
 });

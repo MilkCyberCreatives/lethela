@@ -12,11 +12,13 @@ test.afterEach(() => {
   }
 });
 
-test("empty marketplace remains in pre-launch mode", () => {
+// Gauta, 20 Oct 2026: remove "launching soon". Lethela takes orders even before a store is listed.
+test("empty marketplace still says Lethela is open", () => {
   process.env.NEXT_PUBLIC_MARKETPLACE_LAUNCH_MODE = "public";
   const status = getMarketplaceLaunchStatus({ approvedVendorCount: 0, publicProductCount: 0 });
   assert.equal(status.phase, "PRE_LAUNCH");
-  assert.match(status.eyebrow, /Launching shortly/i);
+  assert.match(status.eyebrow, /Now open in Klipfontein View/i);
+  assert.doesNotMatch(status.eyebrow, /launching/i);
 });
 
 test("small live catalogue is labelled as pilot", () => {

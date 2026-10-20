@@ -26,7 +26,7 @@ export function getMarketplaceLaunchStatus({
   if (vendors === 0) {
     return {
       phase: "PRE_LAUNCH",
-      eyebrow: "Launching shortly in Klipfontein View. Vendors and riders are joining now.",
+      eyebrow: "Now open in Klipfontein View. New stores and riders are joining every day.",
       headline: "Township favourites, delivered fast.",
       description:
         "Order KoTa, chicken and everyday essentials from local stores, delivered by community riders.",

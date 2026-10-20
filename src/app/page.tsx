@@ -1,4 +1,12 @@
-import { BellRing, CheckCircle2, Megaphone, MapPin, ShoppingBag, Store, Truck } from "lucide-react";
+import {
+  CheckCircle2,
+  Megaphone,
+  MapPin,
+  MessageCircle,
+  ShoppingBag,
+  Store,
+  Truck,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,11 +18,16 @@ import MainHeader from "@/components/MainHeader";
 import type { ProductLite } from "@/components/ProductCard";
 import StructuredData from "@/components/StructuredData";
 import VendorCard from "@/components/VendorCard";
-import { getHomeProducts, getHomeVendors } from "@/lib/home-data";
+import {
+  getHomeProducts,
+  getHomeVendors,
+  getJoiningStores,
+  type JoiningStore,
+} from "@/lib/home-data";
 import { getMarketplaceLaunchStatus } from "@/lib/launch-readiness";
 import { buildPageMetadata } from "@/lib/seo";
 import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
-import { buildLaunchNotificationLink } from "@/lib/support";
+import { buildLaunchNotificationLink, buildStoreOrderWhatsAppLink } from "@/lib/support";
 import type { Vendor } from "@/types";
 
 const homeDescription =
@@ -69,6 +82,7 @@ export default async function HomePage() {
     getHomeVendors(null, 6),
     getHomeProducts(null, 36),
   ]);
+  const joiningStores = await getJoiningStores(vendors.map((vendor) => vendor.id));
 
   const groceryProducts = products
     .filter((product) => groceryCategories.has(String(product.category)))
@@ -125,8 +139,10 @@ export default async function HomePage() {
           <ProductRail title="More local favourites" products={recentProducts} />
         </>
       ) : (
-        <MarketplaceEmptyState area={address || "Klipfontein View"} />
+        <MarketplaceEmptyState area="Klipfontein View" />
       )}
+
+      <JoiningStoresRail stores={joiningStores} />
 
       <HowItWorksStrip />
       <PromoteYourBusiness />
@@ -195,12 +211,14 @@ function MarketplaceEmptyState({ area }: { area: string }) {
     <section className="container py-10">
       <div className="rounded-xl border border-white/10 bg-white/[0.045] p-6 text-center">
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-lethela-primary/15 text-lethela-primary">
-          <BellRing className="h-6 w-6" />
+          <MessageCircle className="h-6 w-6" />
         </div>
-        <h2 className="mt-4 text-xl font-semibold">Ordering is launching shortly in this area.</h2>
+        <h2 className="mt-4 text-xl font-semibold">
+          Order on WhatsApp while stores add their menus.
+        </h2>
         <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-white/64">
-          We are approving the first stores, products and riders before accepting public orders.
-          This protects customers and makes sure the first deliveries run smoothly.
+          Lethela is taking orders in {area}. Send us what you want and from which store, and a
+          Lethela rider brings it to your door. You can pay cash on delivery.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-3">
           <a
@@ -209,7 +227,7 @@ function MarketplaceEmptyState({ area }: { area: string }) {
             rel="noreferrer"
             className="inline-flex rounded-md bg-lethela-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-lethela-primary/90"
           >
-            Notify me when ordering opens
+            Order on WhatsApp
           </a>
           <Link
             href="/vendors/register"
@@ -224,6 +242,48 @@ function MarketplaceEmptyState({ area }: { area: string }) {
             Join as a rider
           </Link>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function JoiningStoresRail({ stores }: { stores: JoiningStore[] }) {
+  if (stores.length === 0) return null;
+
+  return (
+    <section id="stores-on-lethela" className="container py-8">
+      <h2 className="text-xl font-semibold leading-tight sm:text-2xl">Stores on Lethela</h2>
+      <p className="mb-5 mt-2 text-sm text-white/62">
+        These stores are putting their menus online. Order from them on WhatsApp in the meantime.
+      </p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {stores.map((store) => (
+          <div
+            key={store.id}
+            className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-4"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
+                <Store className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-semibold">{store.name}</h3>
+                <p className="truncate text-sm text-white/62">
+                  {[store.storeType || "Local store", store.area].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+            </div>
+            <a
+              href={buildStoreOrderWhatsAppLink(store.name, store.area || "Klipfontein View")}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Order from ${store.name} on WhatsApp`}
+              className="inline-flex min-h-11 shrink-0 items-center rounded-md border border-white/15 px-3 py-2 text-sm font-semibold text-white/85 transition hover:border-lethela-primary hover:text-lethela-primary"
+            >
+              Order
+            </a>
+          </div>
+        ))}
       </div>
     </section>
   );
