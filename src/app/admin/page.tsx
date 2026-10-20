@@ -44,6 +44,7 @@ import {
 } from "@/components/dashboard/kit/ui";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import AdminLiveMap from "@/components/admin/AdminLiveMap";
+import AdminPublicRequests from "@/components/admin/AdminPublicRequests";
 
 type DashboardView =
   | "overview"
@@ -500,7 +501,8 @@ const VIEW_COPY: Record<DashboardView, { title: string; description: string }> =
   },
   messages: {
     title: "Messages",
-    description: "Send updates to vendors and riders, and see what was sent.",
+    description:
+      "Support requests and kasi requests from the website, and updates you send to vendors and riders.",
   },
   finance: {
     title: "Finance",
@@ -3244,6 +3246,8 @@ export default function AdminPage() {
           </Panel>
         </section>
       ) : null}
+
+      {view === "messages" ? <AdminPublicRequests /> : null}
 
       {view === "messages" ? (
         <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">

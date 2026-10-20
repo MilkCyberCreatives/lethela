@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { notifyStaff } from "@/lib/notifications";
 import { escapeHtml, sendResendEmail, settleWithin, splitCsv } from "@/lib/notification-channels";
 
 const BodySchema = z.object({
@@ -62,6 +63,18 @@ export async function POST(req: NextRequest) {
       createdBy: "PUBLIC_CONTACT_FORM",
     },
   });
+
+  // Admins see every support case in the bell and under Messages, even before an admin email
+  // address is set up.
+  await settleWithin(
+    notifyStaff({
+      type: "support_case",
+      title: `Support request ${caseId}`,
+      body: `${parsed.data.name} (${parsed.data.phone}): ${parsed.data.issueType.replaceAll("_", " ").toLowerCase()}`,
+      href: "/admin?view=messages",
+    }).catch(() => null),
+    3_000,
+  );
 
   const recipients = splitCsv(
     process.env.SUPPORT_EMAIL_TO ||

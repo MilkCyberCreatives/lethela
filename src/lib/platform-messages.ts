@@ -141,13 +141,27 @@ export async function createPlatformMessage(input: {
   } satisfies PlatformMessage;
 }
 
-export async function listRecentPlatformMessages(take = 50) {
+// Messages people send in from the public site (support cases, "Bring Lethela to my kasi").
+export const PUBLIC_REQUEST_TYPES = ["SUPPORT_CASE", "KASI_REQUEST"] as const;
+
+export async function listRecentPlatformMessages(
+  take = 50,
+  kind: "sent" | "public" | "all" = "all",
+) {
   await ensurePlatformMessagesTable();
   const limitPlaceholder = isPostgres() ? "$1" : "?";
+  const publicTypes = PUBLIC_REQUEST_TYPES.map((type) => `'${type}'`).join(", ");
+  const where =
+    kind === "public"
+      ? `WHERE "recipientType" IN (${publicTypes})`
+      : kind === "sent"
+        ? `WHERE "recipientType" NOT IN (${publicTypes})`
+        : "";
   const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `
       SELECT "id", "recipientType", "recipientId", "subject", "body", "channel", "status", "createdBy", "createdAt", "readAt"
       FROM "PlatformMessage"
+      ${where}
       ORDER BY "createdAt" DESC
       LIMIT ${limitPlaceholder}
     `,

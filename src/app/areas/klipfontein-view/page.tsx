@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import BringLethelaForm from "@/components/BringLethelaForm";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import StructuredData from "@/components/StructuredData";
@@ -131,6 +132,8 @@ export default function KlipfonteinViewAreaPage() {
           ))}
         </div>
       </section>
+
+      <BringLethelaForm />
 
       <Footer />
     </main>
