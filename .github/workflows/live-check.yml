@@ -40,4 +40,5 @@ jobs:
         env:
           # After a merge to main, wait up to 12 minutes for Vercel to serve the new commit.
           LIVE_CHECK_WAIT_MS: ${{ github.event_name == 'push' && '720000' || '0' }}
+          LIVE_CHECK_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
         run: node scripts/live-check.mjs ${{ github.event_name == 'push' && github.sha || '' }}
