@@ -23,7 +23,9 @@ export default function SupportCaseForm() {
     setError(null);
     setCaseId(null);
 
-    const form = new FormData(event.currentTarget);
+    // Keep the form element: React clears event.currentTarget once the handler awaits.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const payload = Object.fromEntries(form.entries());
 
     try {
@@ -38,7 +40,7 @@ export default function SupportCaseForm() {
         return;
       }
       setCaseId(String(json.caseId));
-      event.currentTarget.reset();
+      formElement.reset();
     } catch {
       setError("Support is temporarily unavailable. Please use WhatsApp or email instead.");
     } finally {

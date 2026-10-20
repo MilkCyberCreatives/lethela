@@ -10,6 +10,7 @@ import {
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import BringLethelaForm from "@/components/BringLethelaForm";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
@@ -145,6 +146,7 @@ export default async function HomePage() {
       <JoiningStoresRail stores={joiningStores} />
 
       <HowItWorksStrip />
+      <BringLethelaForm />
       <PromoteYourBusiness />
       <Footer />
     </main>

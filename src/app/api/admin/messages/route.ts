@@ -22,7 +22,9 @@ export async function GET(req: NextRequest) {
   }
 
   const take = Math.min(100, Math.max(1, Number(req.nextUrl.searchParams.get("take") || 50)));
-  const items = await listRecentPlatformMessages(take);
+  const kindParam = req.nextUrl.searchParams.get("kind");
+  const kind = kindParam === "public" || kindParam === "all" ? kindParam : "sent";
+  const items = await listRecentPlatformMessages(take, kind);
   return NextResponse.json({ ok: true, items });
 }
 

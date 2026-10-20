@@ -5,7 +5,10 @@ import { chromium } from "playwright";
 
 const baseUrl = process.env.E2E_BASE_URL || "http://localhost:3000";
 const executablePath =
-  process.env.E2E_CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+  process.env.E2E_CHROME_PATH ||
+  (process.platform === "win32"
+    ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+    : undefined);
 const outputDir = path.join(tmpdir(), "lethela-dashboard-inspection");
 const viewports = [
   { name: "phone-320", width: 320, height: 844 },
@@ -97,6 +100,14 @@ for (const dashboard of dashboards) {
 
   try {
     await signIn(page, dashboard);
+    if (dashboard.role === "admin") {
+      // Admin pages need owner verification once per session.
+      await gotoStable(page, dashboard.route);
+      if (page.url().includes("/owner-access")) {
+        await page.getByRole("button", { name: "Continue to admin" }).click();
+        await page.waitForURL((url) => url.pathname.startsWith("/admin"), { timeout: 30000 });
+      }
+    }
     for (const viewport of viewports) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await gotoStable(page, dashboard.route);
