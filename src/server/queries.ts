@@ -76,7 +76,7 @@ export async function getVendorBySlug(slug: string) {
 
   type VendorRecord = Awaited<typeof vendorQuery>;
   const vendor = await withQueryTimeout<VendorRecord | null>(vendorQuery, null);
-  if (!vendor) return fallback;
+  if (!vendor) return allowFallback ? fallback : null;
 
   const liveMenuItemCount = vendor.sections.reduce((sum, section) => sum + section.items.length, 0);
   if (

@@ -1,6 +1,7 @@
 import { prisma, prismaRuntimeInfo } from "@/lib/db";
 import { getFallbackSearchSources } from "@/lib/catalog-fallback";
 import {
+  shouldFallbackWhenCatalogEmpty,
   shouldPreferCatalogFallback,
   shouldUseCatalogFallbackBeforeQuery,
 } from "@/lib/catalog-runtime";
@@ -210,7 +211,10 @@ async function searchPostgres(
           AND v.province IS NOT NULL
           AND v.cuisine IS NOT NULL
           AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
-          AND EXISTS (SELECT 1 FROM "Product" vp WHERE vp."vendorId" = v.id AND vp."inStock" = true AND vp."isAlcohol" = false)
+          AND (
+            EXISTS (SELECT 1 FROM "Product" vp WHERE vp."vendorId" = v.id AND vp."inStock" = true AND vp."isAlcohol" = false AND vp.status = 'APPROVED')
+            OR EXISTS (SELECT 1 FROM "Item" vi WHERE vi."vendorId" = v.id AND vi.draft = false AND vi."isAlcohol" = false)
+          )
           AND to_tsvector('simple', coalesce(v.name, '') || ' ' || coalesce(v.suburb, '') || ' ' || coalesce(v.city, '') || ' ' || coalesce(v.cuisine, ''))
               @@ websearch_to_tsquery('simple', ${tsQuery})
         ORDER BY score DESC, v."updatedAt" DESC
@@ -235,6 +239,8 @@ async function searchPostgres(
         WHERE v."isActive" = true
           AND v.status IN ('ACTIVE', 'APPROVED')
           AND p."isAlcohol" = false
+          AND p.status = 'APPROVED'
+          AND p."inStock" = true
           AND v.phone IS NOT NULL
           AND v.address IS NOT NULL
           AND v.city IS NOT NULL
@@ -295,7 +301,9 @@ async function searchPostgres(
   if (ranked.length > 0) return ranked;
 
   const loose = await searchPostgresLoose(query, tokens, limit);
-  return loose.length > 0 ? loose : searchStaticFallback(tokens, limit);
+  // Production never shows the built-in demo catalog: those stores do not exist.
+  if (loose.length > 0 || !shouldFallbackWhenCatalogEmpty()) return loose;
+  return searchStaticFallback(tokens, limit);
 }
 
 async function searchPostgresLoose(query: string, tokens: string[], limit: number) {
@@ -340,7 +348,10 @@ async function searchPostgresLoose(query: string, tokens: string[], limit: numbe
           AND v.province IS NOT NULL
           AND v.cuisine IS NOT NULL
           AND EXISTS (SELECT 1 FROM "OperatingHour" oh WHERE oh."vendorId" = v.id AND oh.closed = false)
-          AND EXISTS (SELECT 1 FROM "Product" vp WHERE vp."vendorId" = v.id AND vp."inStock" = true AND vp."isAlcohol" = false)
+          AND (
+            EXISTS (SELECT 1 FROM "Product" vp WHERE vp."vendorId" = v.id AND vp."inStock" = true AND vp."isAlcohol" = false AND vp.status = 'APPROVED')
+            OR EXISTS (SELECT 1 FROM "Item" vi WHERE vi."vendorId" = v.id AND vi.draft = false AND vi."isAlcohol" = false)
+          )
           AND (
             v.name ILIKE ANY(${patterns})
             OR coalesce(v.suburb, '') ILIKE ANY(${patterns})
@@ -365,6 +376,8 @@ async function searchPostgresLoose(query: string, tokens: string[], limit: numbe
         WHERE v."isActive" = true
           AND v.status IN ('ACTIVE', 'APPROVED')
           AND p."isAlcohol" = false
+          AND p.status = 'APPROVED'
+          AND p."inStock" = true
           AND v.phone IS NOT NULL
           AND v.address IS NOT NULL
           AND v.city IS NOT NULL

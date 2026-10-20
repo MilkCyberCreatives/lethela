@@ -29,6 +29,8 @@ const pages = [
   { path: "/robots.txt" },
   { path: "/sitemap.xml", contains: ["<urlset"] },
   { path: "/manifest.webmanifest" },
+  // A built-in demo store must never open on the live site: it does not exist.
+  { path: "/vendors/kasie-market", status: 404 },
 ];
 
 const lines = [];
@@ -103,7 +105,14 @@ for (const page of pages) {
     continue;
   }
   const missing = (page.contains || []).filter((text) => !body.includes(text));
-  const ok = response.ok && missing.length === 0;
+  const ok = (page.status ? response.status === page.status : response.ok) && missing.length === 0;
+  // On a pull request the live site still runs the old code, so a check for behaviour the
+  // pull request adds is only reported.
+  if (!ok && page.status && process.env.LIVE_CHECK_PULL_REQUEST === "true") {
+    lines.push(`NOTE ${page.path} -> ${response.status} (expected ${page.status} once merged)`);
+    console.log(lines.at(-1));
+    continue;
+  }
   log(
     ok,
     `${page.path} -> ${response.status} in ${ms} ms${missing.length ? `, missing "${missing.join('", "')}"` : ""}`,

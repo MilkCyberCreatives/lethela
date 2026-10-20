@@ -25,7 +25,7 @@ const BodySchema = z
   .object({
     vendorId: z.string().min(1),
     checkoutKey: z.string().uuid(),
-    vendorSlug: z.string().min(1).optional().default(""),
+    vendorSlug: z.string().trim().max(140).optional().default(""),
     destinationSuburb: z.string().trim().min(2).max(140).optional(),
     destinationLat: z.number().min(-90).max(90).optional(),
     destinationLng: z.number().min(-180).max(180).optional(),
