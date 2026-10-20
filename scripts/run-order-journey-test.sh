@@ -13,7 +13,8 @@ cd "$W"
 [ -d node_modules ] || npm ci --engine-strict=false
 service postgresql start
 su postgres -c "psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='e2e'\" | grep -q 1 || psql -c \"CREATE ROLE e2e LOGIN PASSWORD 'e2e' CREATEDB\""
-su postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname='lethela_e2e'\" | grep -q 1 || psql -c 'CREATE DATABASE lethela_e2e OWNER e2e'"
+# The database is throwaway: start from an empty one each run.
+su postgres -c "psql -c 'DROP DATABASE IF EXISTS lethela_e2e' -c 'CREATE DATABASE lethela_e2e OWNER e2e'"
 set -a; . scripts/e2e.env; set +a
 node scripts/prisma-run.mjs generate
 npx prisma db push --schema prisma/schema.postgresql.prisma --skip-generate
