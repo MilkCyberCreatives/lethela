@@ -18,6 +18,8 @@ su postgres -c "psql -c 'DROP DATABASE IF EXISTS lethela_e2e' -c 'CREATE DATABAS
 set -a; . scripts/e2e.env; set +a
 node scripts/prisma-run.mjs generate
 npx prisma db push --schema prisma/schema.postgresql.prisma --skip-generate
+# Seed before building: the homepage is prerendered at build time and kept for 3 minutes.
+node scripts/seed-e2e-postgres.mjs
 [ "${1:-}" = "--no-build" ] || npx next build --webpack
 mkdir -p "$DATA/uploads" "$DATA/private"; : > "$DATA/outbound.jsonl"
 E2E_CATCHER_LOG="$DATA/outbound.jsonl" node scripts/e2e-catcher.mjs > "$DATA/catcher.log" 2>&1 & CATCHER=$!
