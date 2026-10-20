@@ -91,7 +91,7 @@ const getProduct = cache(async (id: string) => {
     }),
   ).catch(() => null);
 
-  if (!product) return fallback;
+  if (!product) return shouldUseCatalogFallbackBeforeQuery() ? fallback : null;
   const publicProduct = {
     ...product,
     inStock: true,
@@ -104,7 +104,8 @@ const getProduct = cache(async (id: string) => {
       _count: { ...product.vendor._count, products: 1 },
     },
   };
-  return isPublicMarketplaceProduct(publicProduct) ? product : fallback;
+  if (isPublicMarketplaceProduct(publicProduct)) return product;
+  return shouldUseCatalogFallbackBeforeQuery() ? fallback : null;
 });
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
