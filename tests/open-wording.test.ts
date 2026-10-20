@@ -35,3 +35,8 @@ test("the homepage never says launching and lists registered stores with a Whats
   assert.match(home, /Stores on Lethela/);
   assert.match(home, /Order on WhatsApp/);
 });
+
+test("Lethela's own owner and pilot stores stay off the public store list", async () => {
+  const homeData = await source("src/lib/home-data.ts");
+  assert.match(homeData, /\(test\|testing\|asdf\|qwerty\|sample\|example\|lethela\)/);
+});
