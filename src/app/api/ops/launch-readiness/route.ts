@@ -164,7 +164,7 @@ export async function GET(req: NextRequest) {
     item(
       "Ozow live checkout",
       configured("OZOW_SITE_CODE") && configured("OZOW_PRIVATE_KEY"),
-      "Site code and private key configured. Until then customers pay cash on delivery.",
+      "Site code and private key configured. Orders are paid online only, so checkout needs this.",
       "recommended",
     ),
     item(

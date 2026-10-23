@@ -51,7 +51,7 @@ const faq = [
   },
   {
     q: "Can I pay cash on delivery?",
-    a: "Yes. Choose Cash on delivery at checkout, then pay the rider in cash when your order arrives. You do not need an account or a bank card to order. Very large orders are paid online.",
+    a: "No. Every order is placed and paid online at checkout with Ozow instant EFT, so there is no cash to handle at the door. You do not need an account to order.",
   },
   {
     q: "How do I track my order?",

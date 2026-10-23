@@ -107,7 +107,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       answer:
-        "Ask me about coverage, ordering, Ozow checkout, WhatsApp orders, tracking, refunds, vendor onboarding, rider onboarding, or the vendor dashboard.",
+        "Ask me about coverage, ordering, Ozow checkout, tracking, refunds, vendor onboarding, rider onboarding, or the vendor dashboard.",
       sources: [],
     });
   }
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
   const top = await rankSupport(query, faq);
 
   const defaultAnswer =
-    "I can help with ordering, Ozow checkout, WhatsApp orders, tracking, refunds, vendor onboarding, rider onboarding, and vendor dashboard questions. Use WhatsApp support for urgent help.";
+    "I can help with ordering, Ozow checkout, tracking, refunds, vendor onboarding, rider onboarding, and vendor dashboard questions. Use WhatsApp support for urgent help.";
   const composed = composeAnswer(top);
 
   return NextResponse.json({

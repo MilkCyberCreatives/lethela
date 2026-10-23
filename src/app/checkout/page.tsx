@@ -9,7 +9,6 @@ import {
   INCLUDED_DELIVERY_RADIUS_KM,
   PUBLIC_DELIVERY_WORDING,
 } from "@/lib/pricing";
-import { buildWhatsAppOrderLink } from "@/lib/whatsapp-order";
 import { buildWhatsAppSupportLink } from "@/lib/support";
 import Link from "next/link";
 import Footer from "@/components/Footer";
@@ -17,7 +16,7 @@ import MainHeader from "@/components/MainHeader";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { persistPreferredLocation, readPreferredLocation } from "@/lib/location-preference";
-import { pushEcommerceEvent, trackWhatsAppClick } from "@/lib/visitor";
+import { pushEcommerceEvent } from "@/lib/visitor";
 import { Navigation } from "lucide-react";
 import { useSession } from "next-auth/react";
 import {
@@ -29,8 +28,7 @@ import {
 const isOzowSandbox = process.env.NEXT_PUBLIC_OZOW_IS_TEST === "true";
 
 type DistanceSource = "ROAD" | "ESTIMATED" | null;
-type PaymentMethod = "CASH" | "OZOW";
-type PaymentOptions = { online: boolean; cash: boolean; cashMaxCents: number };
+type PaymentOptions = { online: boolean };
 
 export default function CheckoutPage() {
   const items = useCart((s) => s.items);
@@ -72,22 +70,16 @@ export default function CheckoutPage() {
   });
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [paymentOptions, setPaymentOptions] = useState<PaymentOptions | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
 
-  // Ask which ways to pay are open, so the customer never presses a button that fails.
+  // Orders are paid online only; check Ozow is set up so the customer never presses a button
+  // that fails.
   useEffect(() => {
     let cancelled = false;
     fetch("/api/checkout/payment-options", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
       .then((json) => {
         if (cancelled || !json?.ok) return;
-        const options: PaymentOptions = {
-          online: Boolean(json.online),
-          cash: Boolean(json.cash),
-          cashMaxCents: Number(json.cashMaxCents) || 0,
-        };
-        setPaymentOptions(options);
-        setPaymentMethod((current) => current ?? (options.online ? "OZOW" : "CASH"));
+        setPaymentOptions({ online: Boolean(json.online) });
       })
       .catch(() => undefined);
     return () => {
@@ -242,49 +234,6 @@ export default function CheckoutPage() {
       ),
     [],
   );
-  const whatsappLink = useMemo(() => {
-    const deliveryAddress = [
-      standNumber ? `Stand/house: ${standNumber}` : null,
-      streetSection ? `Street/section: ${streetSection}` : null,
-      destinationSuburb ? `Area: ${destinationSuburb}` : null,
-      landmark ? `Landmark: ${landmark}` : null,
-      deliveryNotes ? `Notes: ${deliveryNotes}` : null,
-    ]
-      .filter(Boolean)
-      .join("; ");
-
-    return buildWhatsAppOrderLink({
-      items: items.map((item) => ({
-        name: item.name,
-        qty: item.qty,
-        priceCents: item.priceCents,
-      })),
-      subtotalCents: subtotal,
-      deliveryCents: deliveryFee,
-      riderTipCents: tipCents,
-      totalCents: total,
-      destinationSuburb,
-      deliveryAddress,
-      customerName,
-      customerPhone: whatsappNumber || customerPhone,
-      vendorSlug: items[0]?.vendorSlug || null,
-    });
-  }, [
-    customerName,
-    customerPhone,
-    deliveryFee,
-    deliveryNotes,
-    destinationSuburb,
-    items,
-    landmark,
-    standNumber,
-    streetSection,
-    subtotal,
-    tipCents,
-    total,
-    whatsappNumber,
-  ]);
-
   useEffect(() => {
     if (items.length === 0 || deliveryQuote.manualQuoteRequired) return;
     const signature = JSON.stringify(
@@ -311,16 +260,12 @@ export default function CheckoutPage() {
     });
   }, [deliveryQuote.manualQuoteRequired, items, total]);
 
-  const cashAllowed = Boolean(
-    paymentOptions?.cash && (!paymentOptions.cashMaxCents || total <= paymentOptions.cashMaxCents),
-  );
-  const payingCash = paymentMethod === "CASH" && cashAllowed;
-  const canPlaceOrder = payingCash || (paymentMethod !== "CASH" && onlineCheckoutAvailable);
+  const canPlaceOrder = onlineCheckoutAvailable;
 
   async function placeOrder() {
     if (items.length === 0) return;
     if (!canPlaceOrder) {
-      setError("Choose how you will pay, or use WhatsApp ordering.");
+      setError("Online payment is not available right now. Please try again shortly.");
       return;
     }
     if (hasAlcohol && !ageConfirmed) {
@@ -380,7 +325,7 @@ export default function CheckoutPage() {
           deliveryCents: deliveryFee,
           riderTipCents: tipCents,
           totalCents: total,
-          paymentMethod: payingCash ? "CASH" : "OZOW",
+          paymentMethod: "OZOW",
         }),
       });
       const json = await res.json();
@@ -396,7 +341,7 @@ export default function CheckoutPage() {
       }
       window.location.href = json.redirectUrl;
     } catch {
-      setError("Online checkout is not ready right now. Please use the WhatsApp order option.");
+      setError("Online checkout is not ready right now. Please try again shortly.");
     } finally {
       setLoading(false);
     }
@@ -691,7 +636,7 @@ export default function CheckoutPage() {
                   : quoteError
                     ? quoteError
                     : deliveryQuote.manualQuoteRequired
-                      ? "This address is outside the current delivery zone. Use WhatsApp for a manual quote."
+                      ? "Lethela does not deliver to this address yet."
                       : PUBLIC_DELIVERY_WORDING}
               </p>
               <div className="flex justify-between text-base font-semibold">
@@ -700,51 +645,11 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {paymentOptions && (paymentOptions.cash || paymentOptions.online) ? (
-              <fieldset className="mt-4 rounded-lg border border-white/15 p-3 text-sm">
-                <legend className="px-1 text-sm font-semibold">How will you pay?</legend>
-                <div className="mt-1 flex flex-wrap gap-2">
-                  {paymentOptions.cash ? (
-                    <button
-                      type="button"
-                      aria-pressed={paymentMethod === "CASH"}
-                      disabled={!cashAllowed}
-                      onClick={() => setPaymentMethod("CASH")}
-                      className={`rounded-full border px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${
-                        paymentMethod === "CASH" && cashAllowed
-                          ? "border-lethela-primary bg-lethela-primary text-white"
-                          : "border-white/20 text-white/80 hover:border-lethela-primary"
-                      }`}
-                    >
-                      Cash on delivery
-                    </button>
-                  ) : null}
-                  {paymentOptions.online ? (
-                    <button
-                      type="button"
-                      aria-pressed={paymentMethod === "OZOW"}
-                      onClick={() => setPaymentMethod("OZOW")}
-                      className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                        paymentMethod === "OZOW" || (paymentMethod === "CASH" && !cashAllowed)
-                          ? "border-lethela-primary bg-lethela-primary text-white"
-                          : "border-white/20 text-white/80 hover:border-lethela-primary"
-                      }`}
-                    >
-                      Pay online now
-                    </button>
-                  ) : null}
-                </div>
-                <p className="mt-2 text-xs text-white/60">
-                  {paymentOptions.cash && !cashAllowed
-                    ? `Cash on delivery is for orders up to ${formatZAR(paymentOptions.cashMaxCents)}.${
-                        paymentOptions.online ? " Please pay online for this order." : ""
-                      }`
-                    : payingCash
-                      ? "Pay the rider in cash when your order arrives. Please have the exact amount ready."
-                      : "Pay securely online with Ozow instant EFT."}
-                </p>
-              </fieldset>
-            ) : null}
+            <p className="mt-4 rounded-lg border border-white/15 p-3 text-xs text-white/70">
+              {onlineCheckoutAvailable
+                ? "Pay securely online with Ozow instant EFT. All Lethela orders are paid online."
+                : "Online payment is being set up. Please check back shortly."}
+            </p>
 
             {hasAlcohol ? (
               <div className="mt-4 rounded-lg border border-amber-200/25 bg-amber-300/10 p-4 text-sm text-amber-50">
@@ -778,50 +683,15 @@ export default function CheckoutPage() {
                 onClick={placeOrder}
               >
                 {loading
-                  ? payingCash
-                    ? "Placing order..."
-                    : "Redirecting..."
+                  ? "Redirecting..."
                   : deliveryQuote.manualQuoteRequired
-                    ? "Manual quote required"
-                    : payingCash
-                      ? `Place order, pay ${formatZAR(total)} cash`
-                      : !onlineCheckoutAvailable
-                        ? "Online checkout unavailable"
-                        : isOzowSandbox
-                          ? "Pay with Ozow (sandbox)"
-                          : "Pay with Ozow"}
+                    ? "Outside delivery area"
+                    : !onlineCheckoutAvailable
+                      ? "Online checkout unavailable"
+                      : isOzowSandbox
+                        ? "Pay with Ozow (sandbox)"
+                        : "Pay with Ozow"}
               </Button>
-              {contactDetailsComplete ? (
-                <Button
-                  asChild
-                  variant="outline"
-                  className="border-white/30 text-white hover:border-white/60"
-                >
-                  <a
-                    href={whatsappLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => {
-                      rememberCheckoutDetails();
-                      trackWhatsAppClick("checkout", {
-                        item_count: items.length,
-                        total_cents: total,
-                      });
-                    }}
-                  >
-                    Order via WhatsApp
-                  </a>
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="border-white/20 text-white/55"
-                  disabled
-                  title="Enter your name and phone number first"
-                >
-                  Complete contact details first
-                </Button>
-              )}
               <Button variant="outline" asChild>
                 <Link href="/">Continue shopping</Link>
               </Button>
@@ -829,8 +699,11 @@ export default function CheckoutPage() {
 
             {error ? <p className="mt-3 text-sm text-red-200">{error}</p> : null}
             <p className="mt-2 text-xs text-white/70">
-              Need help with your order? Complete your contact details, then use{" "}
-              <span className="font-semibold">Order via WhatsApp</span> to talk to us.
+              All orders are placed and paid online. Need help?{" "}
+              <a href={supportLink} target="_blank" rel="noreferrer" className="underline">
+                Message Lethela support
+              </a>
+              .
             </p>
 
             {isOzowSandbox ? (

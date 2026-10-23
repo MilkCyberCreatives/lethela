@@ -80,7 +80,7 @@ function mockChat(messages: AIMessage[]) {
     return "I can help track your order. Share your order reference (for example LET-12345).";
   }
   if (/whatsapp|cash|offline payment|no card|manual order|pay later/i.test(last)) {
-    return `Yes, you can place an order via WhatsApp without paying online. Use: ${WHATSAPP_SUPPORT}`;
+    return "Lethela orders are placed and paid online only. Add items to your cart, check out and pay securely with Ozow instant EFT. Cash on delivery and WhatsApp orders are not available.";
   }
   if (/vendor|become a vendor|sell/i.test(last)) {
     return "You can apply from the Become a Vendor page. Admin approval is required before your store goes live.";
@@ -103,7 +103,7 @@ function mockChat(messages: AIMessage[]) {
   if (/support|contact|help/i.test(last)) {
     return `For direct support, message Lethela on WhatsApp: ${WHATSAPP_SUPPORT}`;
   }
-  return "Tell me what you want to do: place an order, order via WhatsApp, track an order, ask about payments, become a vendor, become a rider, or get support.";
+  return "Tell me what you want to do: place an order, track an order, ask about payments, become a vendor, become a rider, or get support.";
 }
 
 export async function aiChat(messages: AIMessage[]) {

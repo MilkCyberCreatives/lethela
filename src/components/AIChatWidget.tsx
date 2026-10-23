@@ -49,7 +49,7 @@ const QUICK_PROMPTS = [
   "Popular tonight",
   "Track order LET-12345",
   "How do vendors join?",
-  "Order via WhatsApp",
+  "How do I pay?",
 ] as const;
 
 const STORAGE_KEY = "lethela-assistant-thread-v2";
@@ -63,10 +63,10 @@ const INITIAL_THREAD: Msg[] = [
   {
     role: "assistant",
     content:
-      "Hi! I am your Lethela assistant. I can help with live order tracking, recommendations, WhatsApp orders, vendor onboarding, rider applications, and support.",
+      "Hi! I am your Lethela assistant. I can help with live order tracking, recommendations, payments, vendor onboarding, rider applications, and support.",
     meta: {
       mode: "general",
-      followUps: ["Popular tonight", "Track order LET-12345", "Order via WhatsApp"],
+      followUps: ["Popular tonight", "Track order LET-12345", "How do I pay?"],
     },
   },
 ];

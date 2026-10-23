@@ -106,10 +106,10 @@ function buildFollowUps(mode: AssistantMode, latestUserMessage: string, hasResul
   if (mode === "recommendations") {
     return hasResults
       ? ["Show vegetarian options", "What is popular tonight?", "Track my order LET-12345"]
-      : ["Try burgers near me", "Show grocery options", "Order via WhatsApp"];
+      : ["Try burgers near me", "Show grocery options", "How do I pay?"];
   }
   if (mode === "support") {
-    return ["How do vendors join?", "How do riders apply?", "Order via WhatsApp"];
+    return ["How do vendors join?", "How do riders apply?", "How do I pay?"];
   }
   if (/vendor|dashboard|store|menu/i.test(latestUserMessage)) {
     return [
@@ -118,7 +118,7 @@ function buildFollowUps(mode: AssistantMode, latestUserMessage: string, hasResul
       "Need WhatsApp support",
     ];
   }
-  return ["Popular tonight", "Track order LET-12345", "Order via WhatsApp"];
+  return ["Popular tonight", "Track order LET-12345", "How do I pay?"];
 }
 
 async function getTrackedOrderSummary(id: string, userId: string | null) {
@@ -332,7 +332,7 @@ export async function POST(req: Request) {
     const ranked = rankSupportSources(latestUserMessage);
     const answer =
       supportReplyFromSources(ranked) ||
-      "I can help with ordering, Ozow checkout, WhatsApp orders, tracking, vendor onboarding, rider onboarding, and dashboard questions.";
+      "I can help with ordering, Ozow checkout, tracking, vendor onboarding, rider onboarding, and dashboard questions.";
 
     return NextResponse.json({
       ok: true,

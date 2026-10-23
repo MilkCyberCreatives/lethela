@@ -24,15 +24,13 @@ test("cash orders go ahead like paid orders but are not online payments", () => 
   assert.equal(isOnlinePaid("PAID"), true);
 });
 
-test("cash on delivery is on by default with a R600 limit, and can be turned off", () => {
+test("cash on delivery is off: orders are paid online only, whatever the settings say", () => {
   const before = { ...process.env };
   try {
+    process.env.CASH_ON_DELIVERY_ENABLED = "true";
+    assert.equal(cashOnDeliverySettings().enabled, false);
     delete process.env.CASH_ON_DELIVERY_ENABLED;
-    delete process.env.CASH_ON_DELIVERY_MAX_CENTS;
-    assert.deepEqual(cashOnDeliverySettings(), { enabled: true, maxCents: 60_000 });
-    process.env.CASH_ON_DELIVERY_ENABLED = "false";
-    process.env.CASH_ON_DELIVERY_MAX_CENTS = "40000";
-    assert.deepEqual(cashOnDeliverySettings(), { enabled: false, maxCents: 40_000 });
+    assert.equal(cashOnDeliverySettings().enabled, false);
   } finally {
     process.env = before;
   }

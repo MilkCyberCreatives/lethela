@@ -368,7 +368,7 @@ export type JoiningStore = {
 
 /**
  * Registered stores that are still putting their menu on Lethela (Gauta, 20 Oct 2026: list the
- * vendors). They are shown by name only, with a WhatsApp order button, until their profile is
+ * vendors). They are shown by name only ("Menu coming soon"), until their profile is
  * complete and they are listed with the orderable stores. Suspended stores, demo and test
  * accounts and stores still called "New vendor" stay off the list.
  */

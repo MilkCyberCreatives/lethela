@@ -10,7 +10,6 @@ import ProductCard from "@/components/ProductCard";
 import StructuredData from "@/components/StructuredData";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 import { buildPageMetadata } from "@/lib/seo";
-import { getOrderWhatsAppPhone } from "@/lib/whatsapp-order";
 import { PUBLIC_DELIVERY_WORDING } from "@/lib/pricing";
 import { getVendorTrustSnapshot } from "@/lib/customer-experience";
 import { getVendorBySlug as getVendorProfile } from "@/server/queries";
@@ -154,15 +153,6 @@ export default async function VendorProfilePage({ params }: PageProps) {
     "temporaryClosed" in vendor && Boolean(vendor.temporaryClosed),
   );
   const hasReviews = trust.reviewCount > 0 && trust.averageRating != null;
-  const whatsappText = [
-    `Hello Lethela, I would like to order from ${vendor.name}.`,
-    location ? `Area: ${location}` : null,
-    `Vendor: ${vendor.slug}`,
-    "Please help me place this order on WhatsApp.",
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const whatsappLink = `https://wa.me/${getOrderWhatsAppPhone()}?text=${encodeURIComponent(whatsappText)}`;
 
   const vendorSchema = {
     "@context": "https://schema.org",
@@ -277,14 +267,6 @@ export default async function VendorProfilePage({ params }: PageProps) {
             <p className="text-xs text-white/60">{PUBLIC_DELIVERY_WORDING}</p>
 
             <div className="flex flex-wrap gap-3">
-              <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center rounded-full bg-lethela-primary px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
-              >
-                Order via WhatsApp
-              </a>
               {vendor.phone ? (
                 <a
                   href={`tel:${vendor.phone.replace(/\s+/g, "")}`}

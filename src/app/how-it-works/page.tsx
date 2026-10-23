@@ -27,7 +27,7 @@ const steps = [
   },
   {
     title: "Checkout simply",
-    text: "Add your phone and delivery notes, then pay or use WhatsApp.",
+    text: "Add your phone and delivery notes, then pay securely online.",
     icon: PackageCheck,
   },
   {
