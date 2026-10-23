@@ -125,6 +125,24 @@ const lastmod = sitemap.body?.match(/<lastmod>([^<]+)<\/lastmod>/)?.[1];
 lines.push(`INFO sitemap lastmod ${lastmod || "unknown"}`);
 console.log(lines.at(-1));
 
+// 5. Online payment: orders are paid online only, so Ozow must be set up and cash must be off
+const payment = await get(`${primary}/api/checkout/payment-options?check=${Date.now()}`);
+let options = null;
+try {
+  options = JSON.parse(payment.body || "");
+} catch {}
+if (options?.ok) {
+  lines.push(
+    `INFO online payment ${options.online ? "set up" : "NOT set up (OZOW_SITE_CODE / OZOW_PRIVATE_KEY missing)"}` +
+      `${options.testMode === true ? ", Ozow in TEST mode" : options.testMode === false ? ", Ozow live mode" : ""}` +
+      `, cash on delivery ${options.cash ? "on" : "off"}`,
+  );
+  console.log(lines.at(-1));
+} else {
+  lines.push(`INFO payment options -> ${payment.response?.status ?? payment.error?.message}`);
+  console.log(lines.at(-1));
+}
+
 if (process.env.GITHUB_STEP_SUMMARY) {
   appendFileSync(
     process.env.GITHUB_STEP_SUMMARY,

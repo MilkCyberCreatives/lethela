@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
-import { cashOnDeliverySettings, onlinePaymentConfigured } from "@/lib/payment-status";
+import { onlinePaymentConfigured } from "@/lib/payment-status";
 
 export const dynamic = "force-dynamic";
 
-// Tells checkout which ways to pay are open, so customers never press a button that fails.
+// Tells checkout whether online payment (Ozow) is ready, so customers never press a button
+// that fails. Orders are paid online only, so cash is always false. testMode shows whether
+// Ozow is still in test mode (the live site check reads it; no keys are revealed).
 export async function GET() {
-  const cash = cashOnDeliverySettings();
   return NextResponse.json(
     {
       ok: true,
       online: onlinePaymentConfigured(),
-      cash: cash.enabled,
-      cashMaxCents: cash.maxCents,
+      testMode: process.env.OZOW_IS_TEST?.trim() === "true",
+      cash: false,
     },
     { headers: { "Cache-Control": "no-store" } },
   );
