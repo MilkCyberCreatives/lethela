@@ -13,15 +13,10 @@ export function isCashOnDelivery(paymentStatus: string | null | undefined) {
   return String(paymentStatus || "").toUpperCase() === CASH_PAYMENT_STATUS;
 }
 
-// Cash on delivery is on unless CASH_ON_DELIVERY_ENABLED=false. Orders above the limit must
-// be paid online, so a rider never carries a large amount (CASH_ON_DELIVERY_MAX_CENTS,
-// default R600).
+// Cash on delivery is switched off: since 23 Oct 2026 every order is placed and paid online
+// (Ozow). Older cash orders still show and complete as before through isCashOnDelivery.
 export function cashOnDeliverySettings() {
-  const enabled = process.env.CASH_ON_DELIVERY_ENABLED?.trim().toLowerCase() !== "false";
-  const configuredMax = Number(process.env.CASH_ON_DELIVERY_MAX_CENTS);
-  const maxCents =
-    Number.isFinite(configuredMax) && configuredMax > 0 ? Math.floor(configuredMax) : 60_000;
-  return { enabled, maxCents };
+  return { enabled: false, maxCents: 0 };
 }
 
 export function onlinePaymentConfigured() {

@@ -32,9 +32,8 @@ export function businessFacts() {
       "Local favourites",
     ],
     orderMethods: [
-      "Cash on delivery: pay the rider when the order arrives",
-      "Online checkout with Ozow",
-      "WhatsApp order confirmation",
+      "Online checkout only: every order is placed on the website and paid online with Ozow instant EFT",
+      "No cash on delivery and no WhatsApp orders",
     ],
     tracking:
       "Customers track orders with a reference such as LET-12345 on the Track Order page or through live order pages.",
@@ -85,7 +84,7 @@ export function buildBusinessSystemPrompt(relevantItems: SupportFaqItem[] = []) 
     `- Support WhatsApp: ${facts.supportWhatsApp}`,
     "",
     "Operating guidance:",
-    "- For order placement without online payment, explicitly mention WhatsApp ordering.",
+    "- Orders are placed and paid online only. Never offer cash on delivery or WhatsApp ordering.",
     "- For support, refunds, payment disputes, delayed orders, or missing items, provide the WhatsApp support link.",
     "- For tracking, ask for or use the order reference format LET-12345.",
     "- For vendor questions, explain the apply -> admin review -> approval -> dashboard flow clearly.",
@@ -117,12 +116,12 @@ export function supportFaq(): SupportFaqItem[] {
     },
     {
       q: "How do I place an order?",
-      a: "Add items to your cart and check out as a guest. Choose cash on delivery and pay the rider when your order arrives, or pay online with Ozow when it is offered. You can also order through WhatsApp.",
+      a: "Add items to your cart, check out as a guest or with your account, and pay securely online with Ozow instant EFT. All orders are placed and paid online.",
       tags: ["order", "checkout", "how to order", "buy", "basket", "cart", "ozow"],
     },
     {
       q: "Can I order without paying online?",
-      a: `Yes. Choose cash on delivery at checkout and pay the rider in cash when your order arrives. You can also order through WhatsApp here: ${supportLink}`,
+      a: "No. Every Lethela order is placed and paid online with Ozow instant EFT. Cash on delivery and WhatsApp orders are not available.",
       tags: ["whatsapp", "offline", "cash", "manual order", "no card", "pay later"],
     },
     {

@@ -79,7 +79,7 @@ export function approvalContent(input: ApprovalEmailInput): ApprovalContent {
           steps: [
             "Open your rider dashboard and tap Go online.",
             "Delivery requests arrive on WhatsApp and on your dashboard. The first rider to accept gets the delivery.",
-            "The delivery fee and any tip are yours. On cash orders, collect the amount shown, keep your fee and tip, and hand the rest to Lethela.",
+            "The delivery fee and any tip are yours.",
           ],
           buttonLabel: "Open my rider dashboard",
           buttonUrl: absoluteUrl("/rider/dashboard"),
@@ -104,7 +104,7 @@ export function approvalContent(input: ApprovalEmailInput): ApprovalContent {
     stepsTitle: "Ordering is simple",
     steps: [
       "Choose a store near you and add what you want.",
-      "Pay cash on delivery or pay online, whichever suits you.",
+      "Pay securely online when you order. No cash needed at the door.",
       "Follow your order until the rider is at your door.",
     ],
     buttonLabel: "Start ordering",

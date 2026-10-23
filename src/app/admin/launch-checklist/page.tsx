@@ -126,7 +126,7 @@ export default async function LaunchChecklistPage() {
         falseFlag("OZOW_IS_TEST") &&
         falseFlag("NEXT_PUBLIC_OZOW_IS_TEST"),
       detail:
-        "Ozow keys are configured and test flags are false. Until then customers can still order and pay cash on delivery.",
+        "Ozow keys are configured and test flags are false. Orders are paid online only, so customers cannot pay until this is done.",
     },
     {
       label: "Real paid order proof",

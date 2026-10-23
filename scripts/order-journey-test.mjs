@@ -54,7 +54,7 @@ const results = [];
 const problems = []; // page errors, console errors, 5xx responses
 let shotIndex = 0;
 const state = {};
-// HTTP codes a step provokes on purpose (tampered price, late accept, cash over the limit...),
+// HTTP codes a step provokes on purpose (tampered price, late accept, a cash order...),
 // so the browser's own "Failed to load resource" line for them is not reported as a problem.
 const expectedCodes = new Set();
 async function expecting(codes, fn) {
@@ -921,20 +921,26 @@ await check("Ordering from a non-existent (demo) store fails with a clear messag
   );
 });
 
-// ---------- guest checkout with cash on delivery
+// ---------- guest checkout: online payment only (no cash on delivery since 23 Oct 2026)
 const guestCtx = await newContext("guest", { viewport: { width: 390, height: 844 } });
 const guest = await guestCtx.newPage();
-await check("Cash on delivery is refused above R600 (UI and server)", () =>
+await check("Checkout offers online payment only; the server refuses cash", () =>
   expecting([409], async () => {
-    await addToCartAndCheckout(guest, [["E2E Party Platter", 1]]);
+    await addToCartAndCheckout(guest, [
+      ["E2E Loaded Kota", 1],
+      ["E2E Slap Chips", 1],
+    ]);
     await fillCheckoutContact(guest, {
       name: "Guest Buyer",
       phone: "0735556666",
       area: "Klipfontein View",
     });
-    const cash = guest.getByRole("button", { name: "Cash on delivery" });
-    await cash.waitFor({ timeout: 10000 });
-    assert(await cash.isDisabled(), "cash button enabled for R660+");
+    const text = await bodyText(guest);
+    assert(!/Cash on delivery|Order via WhatsApp/i.test(text), "cash or WhatsApp ordering shown");
+    assert(
+      (await guest.getByRole("button", { name: /Pay with Ozow/ }).count()) === 1,
+      "no Pay with Ozow button",
+    );
     const summary = await readCheckoutSummary(guest);
     const result = await guest.evaluate(
       async ({ store, total, fee }) => {
@@ -947,16 +953,11 @@ await check("Cash on delivery is refused above R600 (UI and server)", () =>
             checkoutKey: crypto.randomUUID(),
             destinationSuburb: "Klipfontein View",
             items: [
-              {
-                itemId: "product-e2e-platter",
-                name: "E2E Party Platter",
-                priceCents: 65000,
-                qty: 1,
-              },
+              { itemId: "product-e2e-kota", name: "E2E Loaded Kota", priceCents: 4500, qty: 1 },
             ],
             customerName: "Guest Buyer",
             customerPhone: "0735556666",
-            subtotalCents: 65000,
+            subtotalCents: 4500,
             deliveryCents: fee,
             riderTipCents: 0,
             totalCents: total,
@@ -968,71 +969,62 @@ await check("Cash on delivery is refused above R600 (UI and server)", () =>
       { store: E2E_STORE, total: summary.totalCents, fee: summary.deliveryCents },
     );
     assert(result.status === 409, `server status ${result.status}`);
-    // Empty the cart for the next order.
-    await guest.evaluate(() => localStorage.clear());
-    return `button disabled; server 409 "${result.json.error}"`;
+    return `only Pay with Ozow shown; cash -> 409 "${result.json.error}"`;
   }),
 );
 
-await check("Guest (no account) places a cash-on-delivery order", async () => {
-  await addToCartAndCheckout(guest, [
-    ["E2E Loaded Kota", 1],
-    ["E2E Slap Chips", 1],
-  ]);
-  await fillCheckoutContact(guest, {
-    name: "Guest Buyer",
-    phone: "0735556666",
-    area: "Klipfontein View",
-  });
+await check("Guest (no account) pays online with Ozow", async () => {
   const text = await bodyText(guest);
   assert(/guest/i.test(text), "no guest checkout wording");
-  await guest.getByRole("button", { name: "Cash on delivery" }).click();
   await guest.getByRole("button", { name: "R 5", exact: true }).first().click();
   await guest.waitForTimeout(400);
-  const place = guest.getByRole("button", { name: /Place order, pay R/ });
-  await place.click();
-  await guest.waitForURL(/\/checkout\/success/, { timeout: 30000 });
-  await guest.waitForTimeout(1200);
-  const ref = new URL(guest.url()).searchParams.get("ref");
+  await guest.getByRole("button", { name: /Pay with Ozow/ }).click();
+  await guest.waitForURL(/pay\.ozow\.com/, { timeout: 30000 });
+  const p = Object.fromEntries(new URL(guestCtx.ozowRedirects.at(-1)).searchParams);
+  const ref = p.TransactionReference;
+  const res = await postOzow(ozowCallbackBody({ ref, txnId: "TXN-E2E-GUEST", amount: p.Amount }));
+  assert(res.status === 200 && res.json.ok, `callback ${res.status}`);
   const order = await prisma.order.findUnique({
     where: { publicId: ref },
     include: { user: true },
   });
   assert(
-    order.paymentStatus === "CASH" && order.status === "NEW",
+    order.paymentStatus === "PAID" && order.status === "NEW",
     `${order.paymentStatus}/${order.status}`,
   );
   assert(order.user?.email?.endsWith("@guest.lethela.invalid"), `user ${order.user?.email}`);
-  state.cash = {
+  await guest.goto(p.SuccessUrl, { waitUntil: "load" });
+  await guest.waitForTimeout(1200);
+  state.guest = {
     ref,
     order,
     trackUrl: await guest.locator(`a[href*="/orders/${ref}"]`).first().getAttribute("href"),
   };
-  return `${ref} total ${money(order.totalCents)} (fee ${money(order.deliveryFeeCents)}, tip ${money(order.riderTipCents)})`;
+  return `${ref} paid ${money(order.totalCents)} (fee ${money(order.deliveryFeeCents)}, tip ${money(order.riderTipCents)})`;
 });
 
-await check("Cash order: store accepts, prepares, marks ready", async () => {
-  const status = await vendorAdvance(vendor, state.cash.ref);
+await check("Guest order: store accepts, prepares, marks ready", async () => {
+  const status = await vendorAdvance(vendor, state.guest.ref);
   return status;
 });
 
 await check(
-  "Cash order: rider sees request with cash to collect, accepts and delivers",
+  "Guest order: rider sees request (no cash to collect), accepts and delivers",
   async () => {
-    assert(await waitForOffer(rider, state.cash.ref), "no request");
+    assert(await waitForOffer(rider, state.guest.ref), "no request");
     const text = await bodyText(rider);
-    assert(/Cash on delivery: collect R/.test(text), "no cash-to-collect note");
-    await riderAccept(rider, state.cash.ref);
+    assert(!/Cash on delivery: collect R/.test(text), "cash-to-collect note on a paid order");
+    await riderAccept(rider, state.guest.ref);
     await go(rider, "/rider/dashboard");
-    const status = await riderDeliver(rider, state.cash.ref);
+    const status = await riderDeliver(rider, state.guest.ref);
     assert(status === "DELIVERED", status);
     return status;
   },
 );
 
 await check("Guest tracking page shows Delivered", async () => {
-  assert(state.cash.trackUrl, "no tracking link");
-  await go(guest, state.cash.trackUrl.replace(BASE, ""));
+  assert(state.guest.trackUrl, "no tracking link");
+  await go(guest, state.guest.trackUrl.replace(BASE, ""));
   assert(/Delivered/i.test(await bodyText(guest)), "no Delivered");
   return "ok";
 });

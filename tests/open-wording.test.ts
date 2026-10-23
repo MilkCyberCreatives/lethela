@@ -22,7 +22,7 @@ test("fixed public wording says Lethela is open in Klipfontein View", async () =
   assert.doesNotMatch(faq, /pre-launch/);
 });
 
-test("the homepage never says launching and lists registered stores with a WhatsApp order", async () => {
+test("the homepage never says launching and lists registered stores, with online ordering only", async () => {
   const [home, hero, readiness] = await Promise.all([
     source("src/app/page.tsx"),
     source("src/components/Hero.tsx"),
@@ -33,7 +33,18 @@ test("the homepage never says launching and lists registered stores with a Whats
   }
   assert.match(home, /getJoiningStores/);
   assert.match(home, /Stores on Lethela/);
-  assert.match(home, /Order on WhatsApp/);
+  assert.doesNotMatch(home, /Order on WhatsApp|buildStoreOrderWhatsAppLink|cash on delivery/i);
+});
+
+test("orders are online only: no cash or WhatsApp ordering at checkout or on store pages", async () => {
+  const [checkout, store] = await Promise.all([
+    source("src/app/checkout/page.tsx"),
+    source("src/app/vendors/[slug]/page.tsx"),
+  ]);
+  for (const text of [checkout, store]) {
+    assert.doesNotMatch(text, /Order via WhatsApp|Cash on delivery|buildWhatsAppOrderLink/);
+  }
+  assert.match(checkout, /paymentMethod: "OZOW"/);
 });
 
 test("Lethela's own owner and pilot stores stay off the public store list", async () => {

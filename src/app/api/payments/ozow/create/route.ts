@@ -115,7 +115,7 @@ export const POST = withSentryRoute(async (req: NextRequest) => {
   const cashSettings = cashOnDeliverySettings();
   if (payCash && !cashSettings.enabled) {
     return NextResponse.json(
-      { ok: false, error: "Cash on delivery is not available right now. Please pay online." },
+      { ok: false, error: "Lethela takes online payments only. Please pay online." },
       { status: 409 },
     );
   }
