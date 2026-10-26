@@ -143,6 +143,28 @@ if (options?.ok) {
   console.log(lines.at(-1));
 }
 
+// 6. How close Lethela is to real orders: counts only, no names or contact details
+const readiness = await get(`${primary}/api/ops/readiness?check=${Date.now()}`);
+let summary = null;
+try {
+  summary = JSON.parse(readiness.body || "");
+} catch {}
+if (summary?.ok) {
+  const missing = (counts) =>
+    Object.entries(counts || {})
+      .map(([label, count]) => `${label} ${count}`)
+      .join(", ") || "nothing";
+  lines.push(
+    `INFO stores: ${summary.stores.orderable} of ${summary.stores.registered} can take orders; unfinished ${summary.stores.unfinished} (missing: ${missing(summary.stores.missing)})`,
+    `INFO riders: ${summary.riders.ready} of ${summary.riders.registered} can deliver, ${summary.riders.online} online now; unfinished ${summary.riders.unfinished} (missing: ${missing(summary.riders.missing)})`,
+  );
+  console.log(lines.at(-2));
+  console.log(lines.at(-1));
+} else {
+  lines.push(`INFO readiness -> ${readiness.response?.status ?? readiness.error?.message}`);
+  console.log(lines.at(-1));
+}
+
 if (process.env.GITHUB_STEP_SUMMARY) {
   appendFileSync(
     process.env.GITHUB_STEP_SUMMARY,

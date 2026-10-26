@@ -49,5 +49,7 @@ test("orders are online only: no cash or WhatsApp ordering at checkout or on sto
 
 test("Lethela's own owner and pilot stores stay off the public store list", async () => {
   const homeData = await source("src/lib/home-data.ts");
-  assert.match(homeData, /\(test\|testing\|asdf\|qwerty\|sample\|example\|lethela\)/);
+  assert.match(homeData, /!isTestStoreName\(vendor\.name\)/);
+  const readiness = await source("src/lib/vendor-readiness.ts");
+  assert.match(readiness, /\(test\|testing\|asdf\|qwerty\|sample\|example\|lethela\)/);
 });

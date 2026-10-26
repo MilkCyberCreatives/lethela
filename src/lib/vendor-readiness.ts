@@ -84,6 +84,12 @@ export function hasRealStoreName(value: string | null | undefined) {
   );
 }
 
+// Lethela's own owner and pilot stores ("Lethela", "Lethela Owner Store", "Lethela Pilot Kitchen")
+// are internal accounts, not stores customers can order from.
+export function isTestStoreName(name: string) {
+  return /^(test|testing|asdf|qwerty|sample|example|lethela)\b/i.test(name.trim());
+}
+
 export function parseStoreCategories(value: unknown) {
   if (Array.isArray(value)) {
     return value.map((item) => String(item).trim()).filter(Boolean);
