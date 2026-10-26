@@ -21,7 +21,7 @@ import {
   getSqliteCatalogVendors,
 } from "@/lib/sqlite-catalog";
 import type { StoreHour } from "@/lib/store-availability";
-import { hasRealStoreName } from "@/lib/vendor-readiness";
+import { hasRealStoreName, isTestStoreName } from "@/lib/vendor-readiness";
 import type { Vendor } from "@/types";
 
 type VendorWithAlcohol = {
@@ -415,10 +415,4 @@ export async function getJoiningStores(excludeIds: string[], take = 12): Promise
       area: vendor.township?.trim() || vendor.suburb?.trim() || null,
       storeType: vendor.storeType?.trim() || null,
     }));
-}
-
-// Lethela's own owner and pilot stores ("Lethela", "Lethela Owner Store", "Lethela Pilot Kitchen")
-// are internal accounts, not stores customers can order from.
-function isTestStoreName(name: string) {
-  return /^(test|testing|asdf|qwerty|sample|example|lethela)\b/i.test(name.trim());
 }

@@ -16,9 +16,12 @@ export type ApprovalEmailInput = {
   storeName?: string | null;
   /** What is still missing before the store or rider can take orders. Empty means ready. */
   missing?: string[];
+  /** "reminder" nudges an unfinished store or rider instead of announcing an approval. */
+  kind?: "approved" | "reminder";
 };
 
 type ApprovalContent = {
+  badge: string;
   subject: string;
   preheader: string;
   heading: string;
@@ -40,9 +43,38 @@ export function approvalContent(input: ApprovalEmailInput): ApprovalContent {
   const store = String(input.storeName || "").trim();
   const storeLabel = store && store.toLowerCase() !== "new vendor" ? store : "Your store";
 
+  if (input.kind === "reminder" && !ready && input.audience !== "buyer") {
+    const left = missing.length === 1 ? "1 step" : `${missing.length} steps`;
+    const heading = missing.length === 1 ? "One step to go" : `${missing.length} steps to go`;
+    return input.audience === "vendor"
+      ? {
+          badge: "Almost there",
+          subject: `${storeLabel} is ${left} away from taking orders`,
+          preheader: "Finish these details and your store goes live on its own.",
+          heading,
+          intro: `${storeLabel} goes live on ${SITE_NAME} on its own as soon as the details below are in, and customers can then order and pay online. It takes a few minutes on your phone.`,
+          stepsTitle: "Still needed before customers can order",
+          steps: missing,
+          buttonLabel: "Finish my store",
+          buttonUrl: absoluteUrl("/vendors/dashboard"),
+        }
+      : {
+          badge: "Almost there",
+          subject: `You are ${left} away from delivering with ${SITE_NAME}`,
+          preheader: "Finish these details, go online and start getting delivery requests.",
+          heading,
+          intro: `Add the details below, then tap Go online and ${SITE_NAME} delivery requests come to your phone. The delivery fee and any tip are yours.`,
+          stepsTitle: "Still needed before you can deliver",
+          steps: missing,
+          buttonLabel: "Finish my profile",
+          buttonUrl: absoluteUrl("/rider/dashboard"),
+        };
+  }
+
   if (input.audience === "vendor") {
     return ready
       ? {
+          badge: "Approved",
           subject: `${storeLabel} is approved on ${SITE_NAME}`,
           preheader: "Your store is live. Customers nearby can order from you now.",
           heading: "Your store is approved",
@@ -57,6 +89,7 @@ export function approvalContent(input: ApprovalEmailInput): ApprovalContent {
           buttonUrl: absoluteUrl("/vendors/dashboard"),
         }
       : {
+          badge: "Approved",
           subject: `Your ${SITE_NAME} store account is approved`,
           preheader: "Add the last details and your store goes live straight away.",
           heading: "Your store account is approved",
@@ -71,6 +104,7 @@ export function approvalContent(input: ApprovalEmailInput): ApprovalContent {
   if (input.audience === "rider") {
     return ready
       ? {
+          badge: "Approved",
           subject: `You are approved to deliver with ${SITE_NAME}`,
           preheader: "Go online to start getting delivery requests near you.",
           heading: "You are approved to deliver",
@@ -85,6 +119,7 @@ export function approvalContent(input: ApprovalEmailInput): ApprovalContent {
           buttonUrl: absoluteUrl("/rider/dashboard"),
         }
       : {
+          badge: "Approved",
           subject: `Your ${SITE_NAME} rider account is approved`,
           preheader: "Add the last details, then go online to start delivering.",
           heading: "Your rider account is approved",
@@ -97,6 +132,7 @@ export function approvalContent(input: ApprovalEmailInput): ApprovalContent {
   }
 
   return {
+    badge: "Approved",
     subject: `Your ${SITE_NAME} account is approved`,
     preheader: "Order from local stores and spaza shops near you.",
     heading: "Your account is approved",
@@ -168,7 +204,7 @@ export function buildApprovalEmail(input: ApprovalEmailInput) {
           <tr><td style="height:6px;line-height:6px;font-size:0;background:${RED}">&nbsp;</td></tr>
           <tr>
             <td style="padding:32px 32px 8px 32px">
-              <div style="display:inline-block;padding:5px 12px;border-radius:999px;background:#FDECEE;color:${RED};font-size:12px;font-weight:bold;letter-spacing:0.6px;text-transform:uppercase">Approved</div>
+              <div style="display:inline-block;padding:5px 12px;border-radius:999px;background:#FDECEE;color:${RED};font-size:12px;font-weight:bold;letter-spacing:0.6px;text-transform:uppercase">${escapeHtml(content.badge)}</div>
               <h1 style="margin:16px 0 0 0;font-size:26px;line-height:32px;color:${NAVY};font-weight:bold">${escapeHtml(content.heading)}</h1>
             </td>
           </tr>
@@ -216,6 +252,7 @@ export function buildApprovalEmail(input: ApprovalEmailInput) {
     greeting,
     content.intro,
     "",
+    ...(input.kind === "reminder" ? content.steps.map((step) => `- ${step}`).concat("") : []),
     `${content.buttonLabel}: ${content.buttonUrl}`,
   ].join("\n");
 
