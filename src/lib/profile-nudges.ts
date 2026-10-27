@@ -168,7 +168,17 @@ export async function loadNudgeAccounts(): Promise<NudgeAccount[]> {
  * the public /api/ops/readiness endpoint and the live site check.
  */
 export async function getOperatingSummary() {
-  const [vendors, riders] = await Promise.all([loadVendors(), loadRiders()]);
+  const [vendors, riders, history] = await Promise.all([
+    loadVendors(),
+    loadRiders(),
+    loadNudgeHistory(),
+  ]);
+  const reminders = [...history.values()];
+  const lastSentAt = reminders.reduce<Date | null>(
+    (latest, entry) =>
+      entry.lastSentAt && (!latest || entry.lastSentAt > latest) ? entry.lastSentAt : latest,
+    null,
+  );
   const missingCounts = (rows: Array<{ missing: string[] }>) => {
     const counts: Record<string, number> = {};
     for (const row of rows)
@@ -191,6 +201,12 @@ export async function getOperatingSummary() {
       online: readyRiders.filter((row) => row.rider.availableNow).length,
       unfinished: unfinishedRiders.length,
       missing: missingCounts(unfinishedRiders),
+    },
+    reminders: {
+      emailsSent: reminders.reduce((total, entry) => total + entry.sent, 0),
+      people: reminders.length,
+      lastSentAt: lastSentAt ? new Date(lastSentAt).toISOString() : null,
+      emailSetUp: hasEmailChannel(),
     },
   };
 }
@@ -233,6 +249,7 @@ async function sendNudge(account: NudgeAccount, number: number) {
       subject: message.subject,
       text: message.text,
       html: message.html,
+      attachments: message.attachments,
     });
     if (!result.delivered) throw new Error("Email not sent.");
   } catch {
