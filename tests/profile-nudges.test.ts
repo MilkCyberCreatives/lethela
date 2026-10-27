@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildApprovalEmail } from "../src/lib/approval-email";
-import { dueNudgeNumber, isDaytimeInSouthAfrica } from "../src/lib/profile-nudges";
+import {
+  describeNudgeError,
+  dueNudgeNumber,
+  isDaytimeInSouthAfrica,
+} from "../src/lib/profile-nudges";
 import { isTestStoreName } from "../src/lib/vendor-readiness";
 
 const day = 24 * 60 * 60 * 1000;
@@ -62,4 +66,14 @@ test("Lethela's own and test stores are never reminded", () => {
   assert.equal(isTestStoreName("Lethela Pilot Kitchen"), true);
   assert.equal(isTestStoreName("Test shop"), true);
   assert.equal(isTestStoreName("Moshidi butchery"), false);
+});
+
+test("email errors are kept short and without addresses", () => {
+  assert.equal(
+    describeNudgeError(
+      new Error('{"message":"The lethela.co.za domain is not verified for hello@lethela.co.za"}'),
+    ),
+    '{"message":"The lethela.co.za domain is not verified for [address]"}',
+  );
+  assert.ok(describeNudgeError(new Error("x".repeat(500))).length <= 160);
 });
