@@ -158,8 +158,13 @@ if (summary?.ok) {
     `INFO stores: ${summary.stores.orderable} of ${summary.stores.registered} can take orders; unfinished ${summary.stores.unfinished} (missing: ${missing(summary.stores.missing)})`,
     `INFO riders: ${summary.riders.ready} of ${summary.riders.registered} can deliver, ${summary.riders.online} online now; unfinished ${summary.riders.unfinished} (missing: ${missing(summary.riders.missing)})`,
   );
-  console.log(lines.at(-2));
-  console.log(lines.at(-1));
+  const reminders = summary.reminders;
+  if (reminders) {
+    lines.push(
+      `INFO profile reminders: ${reminders.emailsSent} emails to ${reminders.people} people, last ${reminders.lastSentAt || "never"}${reminders.emailSetUp ? "" : " (email NOT set up: RESEND_API_KEY / ADMIN_NOTIFICATION_EMAIL_FROM)"}`,
+    );
+  }
+  console.log(lines.slice(reminders ? -3 : -2).join("\n"));
 } else {
   lines.push(`INFO readiness -> ${readiness.response?.status ?? readiness.error?.message}`);
   console.log(lines.at(-1));
