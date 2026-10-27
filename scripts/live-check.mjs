@@ -161,7 +161,8 @@ if (summary?.ok) {
   const reminders = summary.reminders;
   if (reminders) {
     lines.push(
-      `INFO profile reminders: ${reminders.emailsSent} emails to ${reminders.people} people, last ${reminders.lastSentAt || "never"}${reminders.emailSetUp ? "" : " (email NOT set up: RESEND_API_KEY / ADMIN_NOTIFICATION_EMAIL_FROM)"}`,
+      `INFO profile reminders: ${reminders.emailsSent} emails to ${reminders.people} people, last ${reminders.lastSentAt || "never"}${reminders.emailSetUp ? "" : " (email NOT set up: RESEND_API_KEY / ADMIN_NOTIFICATION_EMAIL_FROM)"}` +
+        `${reminders.lastError ? `; last email error ${reminders.lastError.at}: ${reminders.lastError.reason}` : ""}`,
     );
   }
   console.log(lines.slice(reminders ? -3 : -2).join("\n"));

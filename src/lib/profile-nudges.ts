@@ -168,10 +168,11 @@ export async function loadNudgeAccounts(): Promise<NudgeAccount[]> {
  * the public /api/ops/readiness endpoint and the live site check.
  */
 export async function getOperatingSummary() {
-  const [vendors, riders, history] = await Promise.all([
+  const [vendors, riders, history, lastError] = await Promise.all([
     loadVendors(),
     loadRiders(),
     loadNudgeHistory(),
+    loadLastNudgeError(),
   ]);
   const reminders = [...history.values()];
   const lastSentAt = reminders.reduce<Date | null>(
@@ -207,8 +208,38 @@ export async function getOperatingSummary() {
       people: reminders.length,
       lastSentAt: lastSentAt ? new Date(lastSentAt).toISOString() : null,
       emailSetUp: hasEmailChannel(),
+      lastError,
     },
   };
+}
+
+const NUDGE_ERROR_ID = "nudge:error";
+
+/** Why the email service refused a reminder, without addresses, for the live site check. */
+export function describeNudgeError(error: unknown) {
+  const raw = error instanceof Error ? error.message : String(error || "");
+  return raw
+    .replace(/[^\s@"'<>]+@[^\s@"'<>]+/g, "[address]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160);
+}
+
+// One row per distinct reason per hour, so a failing email setting shows up without flooding.
+async function recordNudgeError(error: unknown) {
+  const hour = new Date().toISOString().slice(0, 13);
+  await claimOrderNotification(NUDGE_ERROR_ID, describeNudgeError(error) || "unknown", hour);
+}
+
+async function loadLastNudgeError() {
+  const row = await prisma.appOrderNotificationLog
+    .findFirst({
+      where: { orderId: NUDGE_ERROR_ID },
+      orderBy: { createdAt: "desc" },
+      select: { event: true, createdAt: true },
+    })
+    .catch(() => null);
+  return row ? { reason: row.event, at: new Date(row.createdAt).toISOString() } : null;
 }
 
 type NudgeHistory = Map<string, { sent: number; lastSentAt: Date | null }>;
@@ -252,9 +283,10 @@ async function sendNudge(account: NudgeAccount, number: number) {
       attachments: message.attachments,
     });
     if (!result.delivered) throw new Error("Email not sent.");
-  } catch {
+  } catch (error) {
     // Nothing went out, so try again on a later run.
     await releaseOrderNotification(nudgeId, key, "email").catch(() => null);
+    await recordNudgeError(error).catch(() => null);
     return false;
   }
 
