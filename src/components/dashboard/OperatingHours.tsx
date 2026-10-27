@@ -47,6 +47,9 @@ export default function OperatingHours() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  // Customers can only order once at least one open day is saved; the times shown before that
+  // are suggestions.
+  const [savedOpenDays, setSavedOpenDays] = useState(0);
 
   async function load() {
     setLoading(true);
@@ -57,7 +60,9 @@ export default function OperatingHours() {
         throw new Error(json.error || "Failed to load hours.");
       }
 
-      setHours(buildHoursList(json.hours || []));
+      const saved: Hour[] = json.hours || [];
+      setHours(buildHoursList(saved));
+      setSavedOpenDays(saved.filter((hour) => !hour.closed).length);
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "Failed to load hours.");
     } finally {
@@ -89,6 +94,7 @@ export default function OperatingHours() {
         throw new Error(json.error || "Failed to save hours.");
       }
 
+      setSavedOpenDays(hours.filter((hour) => !hour.closed).length);
       setStatus(SAVED_MESSAGE);
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "Failed to save hours.");
@@ -153,6 +159,12 @@ export default function OperatingHours() {
         </button>
       }
     >
+      {savedOpenDays === 0 ? (
+        <Notice tone="info" className="mb-4">
+          Your hours are not saved yet, so customers cannot order. Check the times below and tap
+          Save hours.
+        </Notice>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={applyWeekdayTemplate} className={dashButton.secondary}>
           <Copy aria-hidden="true" />

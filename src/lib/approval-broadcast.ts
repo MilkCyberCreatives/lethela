@@ -143,6 +143,7 @@ async function sendOne(recipient: BroadcastRecipient) {
       subject: message.subject,
       text: message.text,
       html: message.html,
+      attachments: message.attachments,
     });
     if (!result.delivered) throw new Error("Email not sent.");
   } catch {

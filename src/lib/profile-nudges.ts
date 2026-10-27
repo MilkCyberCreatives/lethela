@@ -233,6 +233,7 @@ async function sendNudge(account: NudgeAccount, number: number) {
       subject: message.subject,
       text: message.text,
       html: message.html,
+      attachments: message.attachments,
     });
     if (!result.delivered) throw new Error("Email not sent.");
   } catch {

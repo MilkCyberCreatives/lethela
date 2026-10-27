@@ -175,6 +175,7 @@ export async function notifyApplicant(input: ApplicantNotification) {
           subject: approval?.subject || message.subject,
           text: approval?.text || message.text,
           html: approval?.html || applicantHtml(input, message.text),
+          attachments: approval?.attachments,
         }),
         3000,
       ),

@@ -4,6 +4,17 @@ export type EmailMessage = {
   text: string;
   html?: string;
   from?: string;
+  /** Files sent with the email. An image with a content_id shows inside the HTML as cid:<id>. */
+  attachments?: EmailAttachment[];
+};
+
+export type EmailAttachment = {
+  filename: string;
+  /** A public URL Resend downloads the file from. */
+  path?: string;
+  /** The file itself, Base64 encoded. */
+  content?: string;
+  content_id?: string;
 };
 
 export type WhatsAppMessage = {
@@ -99,6 +110,7 @@ export async function sendEmail(message: EmailMessage) {
       subject: message.subject,
       text: message.text,
       html: message.html,
+      ...(message.attachments?.length ? { attachments: message.attachments } : {}),
     }),
   });
 

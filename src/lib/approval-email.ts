@@ -1,5 +1,6 @@
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
-import { escapeHtml } from "@/lib/notification-channels";
+import { EMAIL_LOGO_PNG_BASE64 } from "@/lib/email-logo";
+import { escapeHtml, type EmailAttachment } from "@/lib/notification-channels";
 import { buildWhatsAppSupportLink } from "@/lib/support";
 
 // Lethela's branded "you're approved" email for stores, riders and buyers. Built with tables
@@ -7,6 +8,17 @@ import { buildWhatsAppSupportLink } from "@/lib/support";
 const RED = "#B5001B";
 const NAVY = "#080B27";
 const INK = "#1F2937";
+
+const LOGO_CONTENT_ID = "lethela-logo";
+
+/** Lethela's approved logo (public/email/lethela-logo.png) as an inline email image. */
+export function approvalEmailLogo(): EmailAttachment {
+  return {
+    filename: "lethela-logo.png",
+    content: EMAIL_LOGO_PNG_BASE64,
+    content_id: LOGO_CONTENT_ID,
+  };
+}
 
 export type ApprovalAudience = "vendor" | "rider" | "buyer";
 
@@ -152,7 +164,9 @@ export function buildApprovalEmail(input: ApprovalEmailInput) {
   const content = approvalContent(input);
   const greeting = `Hi ${firstName(input.name)},`;
   const supportUrl = buildWhatsAppSupportLink(`Hello ${SITE_NAME}, I need help with my account.`);
-  const logoUrl = absoluteUrl("/email/lethela-logo.png");
+  // The approved logo travels inside the email (an inline image), so it shows even where the
+  // mail app blocks pictures from websites.
+  const logoUrl = `cid:${LOGO_CONTENT_ID}`;
   const siteUrl = absoluteUrl("/");
 
   const text = [
@@ -256,5 +270,5 @@ export function buildApprovalEmail(input: ApprovalEmailInput) {
     `${content.buttonLabel}: ${content.buttonUrl}`,
   ].join("\n");
 
-  return { subject: content.subject, text, html, whatsapp };
+  return { subject: content.subject, text, html, whatsapp, attachments: [approvalEmailLogo()] };
 }
