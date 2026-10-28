@@ -953,6 +953,20 @@ export default function AdminPage() {
     );
   }, []);
 
+  // These run before the URL sync below, so a deep-linked filter is not overwritten by the
+  // default before the first load reads it.
+  useEffect(() => {
+    vendorStatusRef.current = vendorStatus;
+  }, [vendorStatus]);
+
+  useEffect(() => {
+    riderStatusRef.current = riderStatus;
+  }, [riderStatus]);
+
+  useEffect(() => {
+    productStatusRef.current = productStatus;
+  }, [productStatus]);
+
   useEffect(() => {
     const syncViewFromUrl = () => {
       const params = new URL(window.location.href).searchParams;
@@ -1045,18 +1059,6 @@ export default function AdminPage() {
   useEffect(() => {
     adminKeyRef.current = adminKey.trim();
   }, [adminKey]);
-
-  useEffect(() => {
-    vendorStatusRef.current = vendorStatus;
-  }, [vendorStatus]);
-
-  useEffect(() => {
-    riderStatusRef.current = riderStatus;
-  }, [riderStatus]);
-
-  useEffect(() => {
-    productStatusRef.current = productStatus;
-  }, [productStatus]);
 
   const syncAdminAccess = useCallback(async () => {
     const normalizedKey = adminKeyRef.current;
