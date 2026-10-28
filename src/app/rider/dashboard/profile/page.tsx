@@ -39,7 +39,8 @@ export default async function RiderProfilePage({
       <div className="space-y-4">
         {resolved.welcome === "1" ? (
           <Notice tone="success" title="Your rider account is ready">
-            Add your phone number, area and vehicle, then send your profile to Lethela.
+            Add how you deliver and your area, then accept the rider agreement. You are approved
+            automatically once those are saved.
           </Notice>
         ) : null}
         <RiderProfileForm />

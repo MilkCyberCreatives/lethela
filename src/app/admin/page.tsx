@@ -45,6 +45,7 @@ import {
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import AdminLiveMap from "@/components/admin/AdminLiveMap";
 import AdminPublicRequests from "@/components/admin/AdminPublicRequests";
+import FollowUpLinks from "@/components/admin/FollowUpLinks";
 
 type DashboardView =
   | "overview"
@@ -952,6 +953,20 @@ export default function AdminPage() {
     );
   }, []);
 
+  // These run before the URL sync below, so a deep-linked filter is not overwritten by the
+  // default before the first load reads it.
+  useEffect(() => {
+    vendorStatusRef.current = vendorStatus;
+  }, [vendorStatus]);
+
+  useEffect(() => {
+    riderStatusRef.current = riderStatus;
+  }, [riderStatus]);
+
+  useEffect(() => {
+    productStatusRef.current = productStatus;
+  }, [productStatus]);
+
   useEffect(() => {
     const syncViewFromUrl = () => {
       const params = new URL(window.location.href).searchParams;
@@ -961,22 +976,27 @@ export default function AdminPage() {
 
       // Restore the deep-link filter (e.g. /admin?view=vendors&status=SUBMITTED)
       // so a card click lands on the right list with the right filter applied.
+      // The refs are set at once too: the first load runs before the state updates reach them,
+      // and would otherwise fetch the default list under the deep-linked tab.
       const status = params.get("status")?.toUpperCase();
       if (status) {
         if (
           nextView === "vendors" &&
           VENDOR_STATUS_OPTIONS.includes(status as VendorStatusOption)
         ) {
+          vendorStatusRef.current = status as VendorStatusOption;
           setVendorStatus(status as VendorStatusOption);
         } else if (
           nextView === "riders" &&
           RIDER_STATUS_OPTIONS.includes(status as RiderStatusFilter)
         ) {
+          riderStatusRef.current = status as RiderStatusFilter;
           setRiderStatus(status as RiderStatusFilter);
         } else if (
           nextView === "products" &&
           PRODUCT_STATUS_OPTIONS.includes(status as ProductStatusFilter)
         ) {
+          productStatusRef.current = status as ProductStatusFilter;
           setProductStatus(status as ProductStatusFilter);
         } else if (nextView === "orders") {
           setOrderStatusFilter(status);
@@ -1039,18 +1059,6 @@ export default function AdminPage() {
   useEffect(() => {
     adminKeyRef.current = adminKey.trim();
   }, [adminKey]);
-
-  useEffect(() => {
-    vendorStatusRef.current = vendorStatus;
-  }, [vendorStatus]);
-
-  useEffect(() => {
-    riderStatusRef.current = riderStatus;
-  }, [riderStatus]);
-
-  useEffect(() => {
-    productStatusRef.current = productStatus;
-  }, [productStatus]);
 
   const syncAdminAccess = useCallback(async () => {
     const normalizedKey = adminKeyRef.current;
@@ -2259,6 +2267,15 @@ export default function AdminPage() {
                     Still needs: {readiness.missing.join(", ").toLowerCase()}.
                   </p>
                 ) : null}
+                {readiness && !approved && readiness.missing.length > 0 ? (
+                  <FollowUpLinks
+                    kind="store"
+                    name={vendor.name}
+                    phone={vendor.phone}
+                    email={vendor.email}
+                    missing={readiness.missing}
+                  />
+                ) : null}
 
                 <dl className="mt-3 grid gap-x-6 px-4 text-sm sm:grid-cols-2 sm:px-5 lg:grid-cols-3">
                   <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
@@ -2705,6 +2722,16 @@ export default function AdminPage() {
                   <p className="mx-4 mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:mx-5">
                     Still needs: {readiness.missing.join(", ").toLowerCase()}.
                   </p>
+                ) : null}
+
+                {readiness && !approved && readiness.missing.length > 0 ? (
+                  <FollowUpLinks
+                    kind="rider"
+                    name={rider.fullName}
+                    phone={rider.phone}
+                    email={rider.email}
+                    missing={readiness.missing}
+                  />
                 ) : null}
 
                 {rider.reviewReason && !approved ? (

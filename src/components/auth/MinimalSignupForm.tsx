@@ -76,6 +76,8 @@ function responseError(data: RegistrationResponse) {
   const nestedErrors = typeof data.error === "object" ? data.error.fieldErrors : undefined;
   const fieldErrors = data.fieldErrors || nestedErrors;
   return (
+    fieldErrors?.name?.[0] ||
+    fieldErrors?.phone?.[0] ||
     fieldErrors?.email?.[0] ||
     fieldErrors?.password?.[0] ||
     (typeof data.error === "string" ? data.error : "We could not create your account.")
@@ -90,6 +92,11 @@ export default function MinimalSignupForm({
   googleEnabled?: boolean;
 }) {
   const config = ACCOUNT_CONFIG[accountType];
+  // Stores and riders also give a name and WhatsApp number, so Lethela can reach them while they
+  // finish their profile. Customers only need an email and password.
+  const asksContact = accountType !== "customer";
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -118,7 +125,12 @@ export default function MinimalSignupForm({
       const response = await fetch(config.endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password, acceptTerms: true }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          acceptTerms: true,
+          ...(asksContact ? { name: name.trim(), phone: phone.trim() } : {}),
+        }),
       });
       const data = (await response.json().catch(() => ({}))) as RegistrationResponse;
       if (!response.ok || !data.ok) throw new Error(responseError(data));
@@ -264,6 +276,56 @@ export default function MinimalSignupForm({
       {/* POST keeps the email and password out of the address bar and server logs if someone
           taps the button before the page has finished loading. */}
       <form className="grid gap-4" method="post" onSubmit={submit}>
+        {asksContact ? (
+          <>
+            <AuthField
+              label={accountType === "vendor" ? "Store name" : "Your full name"}
+              htmlFor="signup-name"
+            >
+              <Input
+                id="signup-name"
+                name="name"
+                autoComplete={accountType === "vendor" ? "organization" : "name"}
+                placeholder={
+                  accountType === "vendor" ? "For example Mama's Kota" : "Name and surname"
+                }
+                className={authInputClass}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                minLength={2}
+                maxLength={120}
+                required
+              />
+            </AuthField>
+            <AuthField
+              label="WhatsApp number"
+              htmlFor="signup-phone"
+              hint={
+                <p className="text-xs text-slate-500">
+                  {accountType === "vendor"
+                    ? "Lethela uses it to reach you about orders."
+                    : "Lethela uses it to reach you about deliveries."}
+                </p>
+              }
+            >
+              <Input
+                id="signup-phone"
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="For example 072 123 4567"
+                className={authInputClass}
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                pattern="[0-9+ ()-]{9,30}"
+                title="Use digits only, for example 072 123 4567."
+                required
+              />
+            </AuthField>
+          </>
+        ) : null}
+
         <AuthField label="Email address" htmlFor="signup-email">
           <Input
             id="signup-email"

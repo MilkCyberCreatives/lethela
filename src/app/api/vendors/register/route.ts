@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { VENDOR_STATUS } from "@/lib/vendor-readiness";
 import { auth } from "@/auth";
-import { isUniqueConstraintError, MinimalRegistrationSchema } from "@/lib/registration-schema";
+import { ContactRegistrationSchema, isUniqueConstraintError } from "@/lib/registration-schema";
 import { isEmailVerificationRequired, sendEmailVerification } from "@/lib/email-verification";
 import { settleWithin } from "@/lib/notification-channels";
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   }
 
   const raw = await req.json().catch(() => ({}));
-  const parsed = MinimalRegistrationSchema.safeParse(raw);
+  const parsed = ContactRegistrationSchema.safeParse(raw);
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -77,14 +77,16 @@ export async function POST(req: Request) {
           email: payload.email,
           passwordHash,
           role: "VENDOR",
+          phone: payload.phone || null,
         },
         select: { id: true, email: true },
       });
       const vendor = await tx.vendor.create({
         data: {
-          name: "New vendor",
+          name: payload.name.length > 1 ? payload.name : "New vendor",
           slug,
           email: payload.email,
+          phone: payload.phone || null,
           ownerId: user.id,
           status: VENDOR_STATUS.DRAFT,
           isActive: false,
