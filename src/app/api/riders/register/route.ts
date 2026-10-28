@@ -3,7 +3,7 @@ import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { isUniqueConstraintError, MinimalRegistrationSchema } from "@/lib/registration-schema";
+import { ContactRegistrationSchema, isUniqueConstraintError } from "@/lib/registration-schema";
 import { isEmailVerificationRequired, sendEmailVerification } from "@/lib/email-verification";
 import { settleWithin } from "@/lib/notification-channels";
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const parsed = MinimalRegistrationSchema.safeParse(body);
+  const parsed = ContactRegistrationSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       {
@@ -53,6 +53,8 @@ export async function POST(req: Request) {
           email: parsed.data.email,
           passwordHash,
           role: "RIDER",
+          name: parsed.data.name || null,
+          phone: parsed.data.phone || null,
         },
         select: { id: true, email: true, name: true, role: true },
       });
@@ -60,9 +62,9 @@ export async function POST(req: Request) {
         data: {
           id: randomUUID(),
           userId: user.id,
-          fullName: "",
+          fullName: parsed.data.name,
           email: parsed.data.email,
-          phone: "",
+          phone: parsed.data.phone,
           status: "DRAFT",
         },
         select: { id: true, status: true },

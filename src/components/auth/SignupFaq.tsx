@@ -13,7 +13,7 @@ export const SIGNUP_FAQ = {
     items: [
       {
         q: "How do I become a delivery rider with Lethela?",
-        a: "Sign up with your email and a password. Then add your personal, vehicle, availability, identity, licence and banking details in your rider dashboard. Lethela checks your details, and delivery access opens once you are approved.",
+        a: "Sign up with your name, WhatsApp number, email and a password. Then add how you deliver and your area, and accept the rider agreement in your rider dashboard. You are approved automatically once those are in. ID, vehicle papers and banking can be added later.",
       },
       {
         q: "How do Lethela riders get paid?",
@@ -34,7 +34,7 @@ export const SIGNUP_FAQ = {
     items: [
       {
         q: "How do I sell on Lethela?",
-        a: "Sign up with your email and a password. Then add your store details, location, opening hours, banking details, documents and products in your dashboard, and submit your store for approval. Your store goes live once Lethela approves it.",
+        a: "Sign up with your store name, WhatsApp number, email and a password. Then add your address, opening hours and at least one item with a price in your dashboard. Your store is approved automatically and goes live once those are in. Banking and documents can be added later.",
       },
       {
         q: "What can I sell on Lethela?",

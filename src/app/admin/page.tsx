@@ -45,6 +45,7 @@ import {
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import AdminLiveMap from "@/components/admin/AdminLiveMap";
 import AdminPublicRequests from "@/components/admin/AdminPublicRequests";
+import FollowUpLinks from "@/components/admin/FollowUpLinks";
 
 type DashboardView =
   | "overview"
@@ -2259,6 +2260,15 @@ export default function AdminPage() {
                     Still needs: {readiness.missing.join(", ").toLowerCase()}.
                   </p>
                 ) : null}
+                {readiness && !approved && readiness.missing.length > 0 ? (
+                  <FollowUpLinks
+                    kind="store"
+                    name={vendor.name}
+                    phone={vendor.phone}
+                    email={vendor.email}
+                    missing={readiness.missing}
+                  />
+                ) : null}
 
                 <dl className="mt-3 grid gap-x-6 px-4 text-sm sm:grid-cols-2 sm:px-5 lg:grid-cols-3">
                   <div className="flex justify-between gap-3 border-t border-slate-100 py-2">
@@ -2705,6 +2715,16 @@ export default function AdminPage() {
                   <p className="mx-4 mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:mx-5">
                     Still needs: {readiness.missing.join(", ").toLowerCase()}.
                   </p>
+                ) : null}
+
+                {readiness && !approved && readiness.missing.length > 0 ? (
+                  <FollowUpLinks
+                    kind="rider"
+                    name={rider.fullName}
+                    phone={rider.phone}
+                    email={rider.email}
+                    missing={readiness.missing}
+                  />
                 ) : null}
 
                 {rider.reviewReason && !approved ? (

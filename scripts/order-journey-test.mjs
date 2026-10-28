@@ -1110,8 +1110,10 @@ await check("Reset password, then sign in with the new password", async () => {
 const newVendorCtx = await newContext("new-vendor");
 const newVendor = await newVendorCtx.newPage();
 const newVendorEmail = `e2e.store.${Date.now()}@lethela.test`;
-await check("New store signs up with only email and password", async () => {
+await check("New store signs up with store name, WhatsApp number, email and password", async () => {
   await go(newVendor, "/vendors/register");
+  await newVendor.getByLabel("Store name").fill("E2E Signup Spaza");
+  await newVendor.getByLabel("WhatsApp number").fill("072 999 7777");
   await newVendor.getByLabel("Email address").fill(newVendorEmail);
   await newVendor
     .getByLabel(/password/i)
@@ -1122,8 +1124,23 @@ await check("New store signs up with only email and password", async () => {
   await newVendor.waitForLoadState("load");
   const v = await prisma.vendor.findFirst({ where: { owner: { email: newVendorEmail } } });
   assert(v, "no vendor row");
+  assert(v.name === "E2E Signup Spaza", `store name not kept: ${v.name}`);
+  assert(v.phone === "072 999 7777", `store phone not kept: ${v.phone}`);
   state.newVendorId = v.id;
-  return `vendor ${v.slug} status ${v.status}`;
+  return `vendor ${v.slug} status ${v.status}, name and phone kept`;
+});
+
+await check("Admin can remind the unfinished store on WhatsApp or email", async () => {
+  await go(admin, "/admin?view=vendors&status=ALL");
+  const card = admin.locator("article").filter({ hasText: "E2E Signup Spaza" });
+  const whatsapp = card.getByRole("link", { name: "WhatsApp reminder" });
+  await whatsapp.waitFor({ timeout: 30000 });
+  const href = decodeURIComponent((await whatsapp.getAttribute("href")) || "");
+  assert(href.startsWith("https://wa.me/27729997777?text="), `whatsapp link ${href.slice(0, 60)}`);
+  assert(/Still needed: .*opening hours/.test(href), "reminder does not list opening hours");
+  const email = await card.getByRole("link", { name: "Email reminder" }).getAttribute("href");
+  assert(email?.startsWith(`mailto:${newVendorEmail}?`), `email link ${email?.slice(0, 60)}`);
+  return "WhatsApp and email reminders list what is missing";
 });
 
 await check("New store completes profile, hours and a product in the dashboard", async () => {
@@ -1214,8 +1231,10 @@ await check("New store with only menu items can be found by search", async () =>
 const newRiderCtx = await newContext("new-rider", { viewport: { width: 390, height: 844 } });
 const newRider = await newRiderCtx.newPage();
 const newRiderEmail = `e2e.rider.${Date.now()}@lethela.test`;
-await check("New rider signs up with only email and password", async () => {
+await check("New rider signs up with name, WhatsApp number, email and password", async () => {
   await go(newRider, "/rider");
+  await newRider.getByLabel("Your full name").fill("E2E Signup Rider");
+  await newRider.getByLabel("WhatsApp number").fill("0724443333");
   await newRider.getByLabel("Email address").fill(newRiderEmail);
   await newRider
     .getByLabel(/password/i)
@@ -1224,6 +1243,13 @@ await check("New rider signs up with only email and password", async () => {
   await newRider.getByRole("button", { name: "Create rider account" }).click();
   await newRider.waitForURL(/\/rider\/dashboard/, { timeout: 30000 });
   await newRider.waitForLoadState("load");
+  const application = await prisma.riderApplication.findFirst({
+    where: { email: newRiderEmail },
+  });
+  assert(
+    application?.fullName === "E2E Signup Rider" && application?.phone === "0724443333",
+    `rider name/phone not kept: ${application?.fullName} ${application?.phone}`,
+  );
   return newRider.url().replace(BASE, "");
 });
 
