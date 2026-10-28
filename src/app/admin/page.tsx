@@ -962,22 +962,27 @@ export default function AdminPage() {
 
       // Restore the deep-link filter (e.g. /admin?view=vendors&status=SUBMITTED)
       // so a card click lands on the right list with the right filter applied.
+      // The refs are set at once too: the first load runs before the state updates reach them,
+      // and would otherwise fetch the default list under the deep-linked tab.
       const status = params.get("status")?.toUpperCase();
       if (status) {
         if (
           nextView === "vendors" &&
           VENDOR_STATUS_OPTIONS.includes(status as VendorStatusOption)
         ) {
+          vendorStatusRef.current = status as VendorStatusOption;
           setVendorStatus(status as VendorStatusOption);
         } else if (
           nextView === "riders" &&
           RIDER_STATUS_OPTIONS.includes(status as RiderStatusFilter)
         ) {
+          riderStatusRef.current = status as RiderStatusFilter;
           setRiderStatus(status as RiderStatusFilter);
         } else if (
           nextView === "products" &&
           PRODUCT_STATUS_OPTIONS.includes(status as ProductStatusFilter)
         ) {
+          productStatusRef.current = status as ProductStatusFilter;
           setProductStatus(status as ProductStatusFilter);
         } else if (nextView === "orders") {
           setOrderStatusFilter(status);
