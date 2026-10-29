@@ -117,14 +117,25 @@ export default function FaqPage() {
       <section className="container py-10 md:py-14">
         <h1 className="text-3xl font-bold md:text-4xl">Frequently Asked Questions</h1>
         <p className="mt-3 max-w-2xl text-sm text-white/75 md:text-base">
-          Quick answers for customers, vendors and riders.
+          Good questions, short answers. For customers, vendors and riders.
         </p>
 
         <div className="mt-8 grid gap-4">
-          {faq.map((item) => (
-            <article key={item.q} className="rounded-xl border border-white/15 bg-white/5 p-4">
-              <h2 className="text-base font-semibold">{item.q}</h2>
-              <p className="mt-2 text-sm text-white/80">{item.a}</p>
+          {faq.map((item, index) => (
+            <article
+              key={item.q}
+              className="flex gap-4 rounded-xl border border-white/15 bg-white/5 p-4"
+            >
+              <span
+                aria-hidden="true"
+                className="w-7 shrink-0 pt-0.5 text-sm font-bold tabular-nums text-lethela-primary-bright"
+              >
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold">{item.q}</h2>
+                <p className="mt-2 text-sm text-white/80">{item.a}</p>
+              </div>
             </article>
           ))}
         </div>

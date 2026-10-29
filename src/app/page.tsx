@@ -111,24 +111,27 @@ export default async function HomePage() {
       {hasMarketplaceItems ? (
         <>
           <ProductRail
+            eyebrow="KoTa"
             title="KoTa favourites"
             subtitle="Loaded, local and made the way the kasi loves it."
             products={kotaProducts}
             href="/categories/kota"
           />
           <ProductRail
+            eyebrow="Chicken"
             title="Chicken that brings everyone together"
             subtitle="Grilled, crispy, saucy and ready for sharing."
             products={chickenProducts}
             href="/categories/chicken"
           />
           <ProductRail
+            eyebrow="Groceries"
             title="Groceries near you"
             subtitle="Bread, milk, eggs, snacks and daily basics."
             products={groceryProducts}
           />
           <VendorRail title="Vendors near you" vendors={vendors} />
-          <ProductRail title="More local favourites" products={recentProducts} />
+          <ProductRail eyebrow="More" title="More local favourites" products={recentProducts} />
         </>
       ) : (
         <MarketplaceEmptyState area="Klipfontein View" />
@@ -145,11 +148,13 @@ export default async function HomePage() {
 }
 
 function ProductRail({
+  eyebrow,
   title,
   subtitle,
   products,
   href = "/search",
 }: {
+  eyebrow?: string;
   title: string;
   subtitle?: string;
   products: ProductLite[];
@@ -159,7 +164,7 @@ function ProductRail({
 
   return (
     <section className="container py-8">
-      <SectionHeader title={title} href={href} />
+      <SectionHeader eyebrow={eyebrow} title={title} href={href} />
       {subtitle ? <p className="-mt-3 mb-5 text-sm text-white/62">{subtitle}</p> : null}
       <div className="no-scrollbar -mx-4 grid snap-x snap-mandatory grid-flow-col auto-cols-[82%] gap-3 overflow-x-auto scroll-px-4 px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
         {products.map((product) => (
@@ -175,7 +180,7 @@ function VendorRail({ title, vendors }: { title: string; vendors: Vendor[] }) {
 
   return (
     <section id="vendors-near-you" className="container py-8">
-      <SectionHeader title={title} href="/search" />
+      <SectionHeader eyebrow="Order now" title={title} href="/search" />
       <div className="no-scrollbar -mx-4 grid snap-x snap-mandatory grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto scroll-px-4 px-4 pb-2 md:mx-0 md:scroll-px-0 md:grid-flow-row md:auto-cols-auto md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-3">
         {vendors.map((vendor) => (
           <VendorCard key={vendor.id} v={vendor} />
@@ -185,10 +190,29 @@ function VendorRail({ title, vendors }: { title: string; vendors: Vendor[] }) {
   );
 }
 
-function SectionHeader({ title, href }: { title: string; href: string }) {
+function SectionEyebrow({ children }: { children: string }) {
   return (
-    <div className="mb-5 flex items-start justify-between gap-3 sm:items-center sm:gap-4">
-      <h2 className="min-w-0 text-xl font-semibold leading-tight sm:text-2xl">{title}</h2>
+    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-lethela-primary-bright">
+      {children}
+    </p>
+  );
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  href,
+}: {
+  eyebrow?: string;
+  title: string;
+  href: string;
+}) {
+  return (
+    <div className="mb-5 flex items-start justify-between gap-3 sm:items-end sm:gap-4">
+      <div className="min-w-0">
+        {eyebrow ? <SectionEyebrow>{eyebrow}</SectionEyebrow> : null}
+        <h2 className="text-xl font-semibold leading-tight sm:text-2xl">{title}</h2>
+      </div>
       <Link
         href={href}
         className="inline-flex min-h-11 shrink-0 items-center rounded-md border border-white/15 px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-lethela-primary hover:text-lethela-primary"
@@ -235,6 +259,7 @@ function JoiningStoresRail({ stores }: { stores: JoiningStore[] }) {
 
   return (
     <section id="stores-on-lethela" className="container py-8">
+      <SectionEyebrow>Joining now</SectionEyebrow>
       <h2 className="text-xl font-semibold leading-tight sm:text-2xl">Stores on Lethela</h2>
       <p className="mb-5 mt-2 text-sm text-white/62">
         These stores are putting their menus online. You can order and pay online as soon as their
@@ -277,15 +302,24 @@ function HowItWorksStrip() {
 
   return (
     <section className="container pb-12 pt-8">
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-semibold">How Lethela works</h2>
+      <div className="mb-5 flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <SectionEyebrow>Find it. Order it. Track it.</SectionEyebrow>
+          <h2 className="text-2xl font-semibold">How Lethela works</h2>
+        </div>
         <Link href="/how-it-works" className="text-sm font-semibold text-white/70 hover:text-white">
           See every step
         </Link>
       </div>
       <div className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-4 sm:grid-cols-2 lg:grid-cols-4">
-        {steps.map(([label, Icon]) => (
+        {steps.map(([label, Icon], index) => (
           <div key={label} className="flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="w-6 shrink-0 text-sm font-bold tabular-nums text-white/45"
+            >
+              {String(index + 1).padStart(2, "0")}
+            </span>
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-lethela-primary/12 text-lethela-primary">
               {label === "Place your order" ? (
                 <CheckCircle2 className="h-5 w-5" />

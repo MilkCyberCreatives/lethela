@@ -205,7 +205,10 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
         </div>
 
         <div className="mt-7 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs text-white/55 md:flex-row md:items-center md:justify-between">
-          <p>&copy; {new Date().getFullYear()} Lethela. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} Lethela. All rights reserved. Made in South Africa,
+            for the kasi.
+          </p>
           <button
             type="button"
             onClick={reopenCookieConsent}
