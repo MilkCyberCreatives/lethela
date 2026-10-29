@@ -345,8 +345,12 @@ export default function Hero({
 
       <div className="relative z-10 container py-12 md:py-20">
         <div className="flex max-w-3xl flex-col items-start text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary-bright">
-            {launchStatus.eyebrow}
+          <p className="flex items-start gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-lethela-primary-bright">
+            <span aria-hidden="true" className="relative mt-1 flex h-2 w-2 shrink-0">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-lethela-primary-bright opacity-60 motion-safe:animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-lethela-primary-bright" />
+            </span>
+            <span>{launchStatus.eyebrow}</span>
           </p>
           <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">
             {launchStatus.headline}

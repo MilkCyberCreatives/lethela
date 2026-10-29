@@ -1,0 +1,29 @@
+name: Daily agents
+
+# Lethela's daily helpers. They only read data and report to the admins: they never place
+# orders, take payments, change stores or riders, or message customers.
+# - Morning brief: yesterday in numbers, what is stuck and a to-do list (with an AI note when
+#   ANTHROPIC_API_KEY or OPENAI_API_KEY is set on Vercel), sent to the admins by email or
+#   WhatsApp around 07:00 South African time. Later runs are retries: the site sends it once a day.
+# The live site itself is checked every morning by live-check.yml.
+on:
+  schedule:
+    - cron: "5 5 * * *"
+    - cron: "50 5 * * *"
+    - cron: "35 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: daily-agents
+  cancel-in-progress: false
+
+jobs:
+  morning-brief:
+    name: Send the admins' morning brief
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call the live site
+        run: curl --fail --silent --show-error --max-time 120 https://www.lethela.co.za/api/cron/daily-brief

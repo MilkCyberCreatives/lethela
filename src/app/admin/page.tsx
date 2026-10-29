@@ -14,6 +14,7 @@ import {
   ImageOff,
   LayoutDashboard,
   LineChart,
+  Sparkles,
   MapPinned,
   Mail,
   MessageSquare,
@@ -2102,6 +2103,24 @@ export default function AdminPage() {
             </div>
           </section>
 
+          <Link
+            href="/admin/ai"
+            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 transition-colors hover:border-lethela-primary/40 sm:px-5"
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-lethela-primary/10 text-lethela-primary">
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-900">AI desk</span>
+                <span className="block text-sm text-slate-500">
+                  Today&apos;s to-do list, plus drafts for reminders, menu items and posts.
+                </span>
+              </span>
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+          </Link>
+
           <section>
             <AdminSectionHeader
               title="Today"
@@ -3965,6 +3984,10 @@ export default function AdminPage() {
                 <Link href="/admin/visitors" className={dashButton.secondary}>
                   <LineChart aria-hidden="true" />
                   Website visitors
+                </Link>
+                <Link href="/admin/ai" className={dashButton.secondary}>
+                  <Sparkles aria-hidden="true" />
+                  AI desk
                 </Link>
               </div>
               <details className="group mt-4 rounded-lg border border-slate-200">
