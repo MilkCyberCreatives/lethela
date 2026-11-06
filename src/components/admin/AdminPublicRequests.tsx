@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { MessageCircle, Phone, RefreshCw } from "lucide-react";
 import { dashButton, EmptyState, Notice, Panel, StatusBadge } from "@/components/dashboard/kit/ui";
 import { KASI_REQUEST_ROLE_LABELS, type KasiRequestRole } from "@/lib/kasi-requests";
+import { LOW_RATING, parseOrderFeedback } from "@/lib/order-feedback-core";
 
 type PublicMessage = {
   id: string;
@@ -78,6 +79,14 @@ export default function AdminPublicRequests() {
   );
   const kasi = useMemo(
     () => (items ?? []).filter((item) => item.recipientType === "KASI_REQUEST"),
+    [items],
+  );
+  const ratings = useMemo(
+    () =>
+      (items ?? [])
+        .filter((item) => item.recipientType === "ORDER_FEEDBACK")
+        .map((item) => ({ item, feedback: parseOrderFeedback(item.body) }))
+        .filter((row) => row.feedback),
     [items],
   );
   const townships = useMemo(() => {
@@ -210,6 +219,51 @@ export default function AdminPublicRequests() {
           </>
         )}
       </Panel>
+
+      <div className="xl:col-span-2">
+        <Panel
+          title="Customer ratings"
+          description="Customers rate the store and rider once an order is delivered. Low ratings also ring the bell."
+          padded={false}
+        >
+          {ratings.length === 0 ? (
+            <EmptyState
+              compact
+              title={items ? "No ratings yet" : "Loading…"}
+              text="Ratings from the order tracking page show here."
+            />
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {ratings.map(({ item, feedback }) => {
+                const low =
+                  feedback!.storeRating <= LOW_RATING ||
+                  (feedback!.riderRating != null && feedback!.riderRating <= LOW_RATING);
+                return (
+                  <li key={item.id} className="px-4 py-3.5 sm:px-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-900">
+                        Order {feedback!.orderRef} · Store {feedback!.storeRating}/5
+                        {feedback!.riderRating != null ? ` · Rider ${feedback!.riderRating}/5` : ""}
+                      </p>
+                      {low ? (
+                        <StatusBadge tone="danger" dot={false}>
+                          Follow up
+                        </StatusBadge>
+                      ) : null}
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {feedback!.customerName} · {new Date(item.createdAt).toLocaleString()}
+                    </p>
+                    {feedback!.comment ? (
+                      <p className="mt-1.5 text-sm leading-6 text-slate-600">{feedback!.comment}</p>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+      </div>
     </section>
   );
 }

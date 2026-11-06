@@ -318,7 +318,7 @@ export default function MinimalSignupForm({
                 className={authInputClass}
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
-                pattern="[0-9+ ()-]{9,30}"
+                pattern="[0-9+ \(\)\-]{9,30}"
                 title="Use digits only, for example 072 123 4567."
                 required
               />

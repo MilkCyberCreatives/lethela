@@ -13,8 +13,19 @@ import {
 import { EmptyState, Notice, Panel, StatTile, dashButton } from "@/components/dashboard/kit/ui";
 import { cn } from "@/lib/utils";
 
+type RecentRating = {
+  orderRef: string;
+  storeRating: number;
+  riderRating: number | null;
+  comment: string;
+  customerName: string;
+  createdAt: string;
+};
+
 type ExperiencePayload = {
   rating: number;
+  ratingCount?: number;
+  recentRatings?: RecentRating[];
   orderCount30: number;
   onTimeRate: number;
   paymentSuccessRate: number;
@@ -80,8 +91,12 @@ export default function FeedbackPanel() {
           >
             <StatTile
               label="Rating"
-              value={show(experience?.rating.toFixed(1) ?? "0.0")}
-              hint="Out of 5 stars"
+              value={show(experience?.ratingCount ? experience.rating.toFixed(1) : "–")}
+              hint={
+                experience?.ratingCount
+                  ? `Out of 5, from ${experience.ratingCount} ${experience.ratingCount === 1 ? "rating" : "ratings"}`
+                  : "No ratings yet"
+              }
               icon={<Star />}
             />
             <StatTile
@@ -106,6 +121,40 @@ export default function FeedbackPanel() {
             />
           </div>
         </>
+      ) : null}
+
+      {experience ? (
+        <Panel
+          title="What customers say"
+          description="Customers rate an order once it has been delivered."
+          padded={(experience.recentRatings ?? []).length === 0}
+        >
+          {(experience.recentRatings ?? []).length === 0 ? (
+            <EmptyState
+              compact
+              title="No ratings yet"
+              text="After a delivery, customers can rate your store from their order page."
+            />
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {(experience.recentRatings ?? []).map((item) => (
+                <li key={item.orderRef} className="px-4 py-3 text-sm sm:px-5">
+                  <p className="font-semibold text-slate-900">
+                    {"★".repeat(item.storeRating)}
+                    <span className="text-slate-300">{"★".repeat(5 - item.storeRating)}</span>{" "}
+                    <span className="font-normal text-slate-500">
+                      {item.customerName} · Order {item.orderRef} ·{" "}
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </span>
+                  </p>
+                  {item.comment ? (
+                    <p className="mt-1 leading-6 text-slate-700">{item.comment}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       ) : null}
 
       {experience || loading ? (

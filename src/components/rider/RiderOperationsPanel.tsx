@@ -30,6 +30,7 @@ type EarningsResponse = {
   today?: EarningsPeriod;
   week?: EarningsPeriod;
   month?: EarningsPeriod;
+  rating?: { average: number | null; count: number };
   settlementNote?: string;
 };
 
@@ -256,6 +257,14 @@ export default function RiderOperationsPanel() {
             </div>
           ))}
         </div>
+        <p className="border-t border-slate-100 px-4 py-3 text-sm text-slate-700 sm:px-5">
+          Customer rating:{" "}
+          <span className="font-semibold text-slate-900">
+            {earnings?.rating?.count
+              ? `${earnings.rating.average?.toFixed(1)} out of 5 from ${earnings.rating.count} ${earnings.rating.count === 1 ? "delivery" : "deliveries"}`
+              : "no ratings yet"}
+          </span>
+        </p>
         <p className="border-t border-slate-100 px-4 py-3 text-xs leading-5 text-slate-500 sm:px-5">
           {earnings?.settlementNote ||
             "Earnings show here once a delivered order has been paid and checked."}

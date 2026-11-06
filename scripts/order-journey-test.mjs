@@ -823,6 +823,82 @@ await check("Customer tracking page shows Delivered", async () => {
   return "Delivered shown";
 });
 
+// ---------- after delivery: rate the order, order again, help (5 Nov 2026)
+await check(
+  "Customer rates the delivered order (store 5, rider 4) on the tracking page",
+  async () => {
+    await customer.getByText("How was your order?").waitFor({ timeout: 15000 });
+    assert(
+      await customer.getByRole("button", { name: /Order again/ }).isVisible(),
+      "no Order again",
+    );
+    assert(
+      await customer.getByRole("link", { name: /Get help with this order/ }).isVisible(),
+      "no help link",
+    );
+    await customer
+      .getByRole("radiogroup", { name: /^Rate (?!your rider)/ })
+      .getByRole("radio", { name: "5 stars" })
+      .click();
+    await customer
+      .getByRole("radiogroup", { name: "Rate your rider" })
+      .getByRole("radio", { name: "4 stars" })
+      .click();
+    await customer.getByLabel(/Anything to add/).fill("E2E: hot food, friendly rider");
+    await customer.getByRole("button", { name: "Send rating" }).click();
+    await customer.getByText("Thank you for rating this order").waitFor({ timeout: 15000 });
+    const row = await prisma.platformMessage.findFirst({
+      where: { recipientType: "ORDER_FEEDBACK", body: { contains: state.ozow.ref } },
+    });
+    assert(row, "rating not saved");
+    const body = JSON.parse(row.body);
+    assert(body.storeRating === 5 && body.riderRating === 4, row.body);
+    return "saved store 5, rider 4";
+  },
+);
+
+await check("The same order cannot be rated twice", () =>
+  expecting([409], async () => {
+    const result = await customer.evaluate(async (ref) => {
+      const response = await fetch(`/api/orders/${encodeURIComponent(ref)}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeRating: 1 }),
+      });
+      return response.status;
+    }, state.ozow.ref);
+    assert(result === 409, `status ${result}`);
+    return "409";
+  }),
+);
+
+await check("Store and rider see the real rating on their dashboards", async () => {
+  const ops = await vendor.evaluate(() => fetch("/api/vendors/operations").then((r) => r.json()));
+  assert(ops?.experience?.ratingCount >= 1, `store ratingCount ${ops?.experience?.ratingCount}`);
+  await go(vendor, "/vendors/dashboard?tab=experience");
+  await vendor.getByText("E2E: hot food, friendly rider").waitFor({ timeout: 15000 });
+  const earnings = await rider.evaluate(() =>
+    fetch("/api/riders/me/earnings").then((r) => r.json()),
+  );
+  assert(earnings?.rating?.count >= 1, `rider rating ${JSON.stringify(earnings?.rating)}`);
+  return `store ${ops.experience.rating}/5, rider ${earnings.rating.average}/5`;
+});
+
+await check("Order again refills the cart from the delivered order", async () => {
+  await go(customer, state.ozow.trackUrl.replace(BASE, ""));
+  await customer.getByRole("button", { name: /Order again/ }).click();
+  await customer.waitForURL(/\/vendors\//, { timeout: 20000 });
+  const count = await customer.evaluate(() => {
+    try {
+      return JSON.parse(localStorage.getItem("lethela_cart") || "{}")?.state?.items?.length ?? -1;
+    } catch {
+      return -1;
+    }
+  });
+  assert(count > 0, `cart items ${count}`);
+  return `cart items: ${count}`;
+});
+
 await check("Admin sees the order in Operations", async () => {
   await go(admin, "/admin");
   await admin
