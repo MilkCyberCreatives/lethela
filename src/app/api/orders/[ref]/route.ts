@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDemoOrderDetails, isDemoOrderRef } from "@/lib/demo-order";
-import { getOrderRealtimeChannel, verifyOrderTrackingToken } from "@/lib/order-tracking-access";
+import {
+  createOrderTrackingToken,
+  getOrderRealtimeChannel,
+  verifyOrderTrackingToken,
+} from "@/lib/order-tracking-access";
+import { canRateOrderStatus, getOrderFeedback } from "@/lib/order-feedback";
 import { buildTrackingSnapshot } from "@/lib/order-tracking";
 import { runBoundedDbQuery } from "@/lib/query-timeout";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -89,9 +94,12 @@ export async function GET(req: NextRequest, { params }: Params) {
         riderLocatedAt: true,
         totalCents: true,
         itemsJson: true,
+        vendorId: true,
+        assignedRiderId: true,
         vendor: {
           select: {
             name: true,
+            slug: true,
             latitude: true,
             longitude: true,
             suburb: true,
@@ -166,6 +174,14 @@ export async function GET(req: NextRequest, { params }: Params) {
     rider: riderPoint,
   });
 
+  const resolvedRef = order.ozowReference || order.publicId;
+  const feedback = canRateOrderStatus(order.status)
+    ? await getOrderFeedback(order.publicId).catch(() => null)
+    : null;
+  // A link the customer can send to family so they can follow the delivery too.
+  const shareToken = createOrderTrackingToken(resolvedRef, 2 * 24 * 60 * 60);
+  const sharePath = `/orders/${encodeURIComponent(resolvedRef)}?t=${encodeURIComponent(shareToken)}`;
+
   return NextResponse.json(
     {
       ok: true,
@@ -179,8 +195,20 @@ export async function GET(req: NextRequest, { params }: Params) {
         totalCents: order.totalCents,
         items,
         deliveryDetails: publicDeliveryDetails(deliveryDetails),
+        vendorId: order.vendorId,
+        hasRider: Boolean(order.assignedRiderId),
+        canRate: canRateOrderStatus(order.status) && !feedback,
+        feedback: feedback
+          ? {
+              storeRating: feedback.storeRating,
+              riderRating: feedback.riderRating,
+              comment: feedback.comment,
+            }
+          : null,
+        sharePath,
         vendor: {
           name: order.vendor?.name,
+          slug: order.vendor?.slug,
           suburb: order.vendor?.suburb,
           city: order.vendor?.city,
           latitude: order.vendor?.latitude,
@@ -196,7 +224,7 @@ export async function GET(req: NextRequest, { params }: Params) {
               simulated: false,
             }
           : null,
-        channel: getOrderRealtimeChannel(order.ozowReference || order.publicId),
+        channel: getOrderRealtimeChannel(resolvedRef),
         tracking,
       },
     },

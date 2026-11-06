@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { CONFIRMED_PAYMENT_STATUSES } from "@/lib/payment-status";
+import { getRiderRatingSummary } from "@/lib/order-feedback";
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -84,6 +85,8 @@ export async function GET() {
     },
   });
 
+  // Stars customers gave this rider's deliveries.
+  const rating = await getRiderRatingSummary(application.id);
   const todayStart = startOfDay(now);
   const weekStart = startOfWeek(now);
   const todayOrders = orders.filter((order) => order.updatedAt >= todayStart);
@@ -95,6 +98,7 @@ export async function GET() {
     today: sumOrders(todayOrders),
     week: sumOrders(weekOrders),
     month: sumOrders(orders),
+    rating,
     recent: orders.slice(0, 8).map((order) => ({
       ref: order.ozowReference || order.publicId,
       vendor: order.vendor?.name || "Vendor",

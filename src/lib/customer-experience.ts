@@ -2,6 +2,7 @@ import { prisma } from "@/server/db";
 import { shouldUseCatalogFallbackBeforeQuery } from "@/lib/catalog-runtime";
 import { withQueryTimeout } from "@/lib/query-timeout";
 import { CONFIRMED_PAYMENT_STATUSES, isConfirmedPayment } from "@/lib/payment-status";
+import { combineAverages, listStoreFeedback, summarizeRatings } from "@/lib/order-feedback";
 
 export type ProductFeedbackMap = {
   favorites: string[];
@@ -310,16 +311,41 @@ export async function getVendorTrustSnapshot(vendorId: string) {
     ],
   );
 
-  return {
-    averageRating: reviewAgg._avg.rating != null ? Number(reviewAgg._avg.rating.toFixed(1)) : null,
-    reviewCount,
-    orderCount,
-    recentReviews: recentReviews.map((item) => ({
+  // Ratings customers give a delivered order count alongside product reviews.
+  const orderFeedback = await withQueryTimeout(listStoreFeedback(vendorId), []);
+  const combined = combineAverages(
+    {
+      average: reviewAgg._avg.rating != null ? Number(reviewAgg._avg.rating) : null,
+      count: reviewCount,
+    },
+    summarizeRatings(orderFeedback.map((item) => item.storeRating)),
+  );
+  const reviewItems = [
+    ...recentReviews.map((item) => ({
       rating: item.rating,
       comment: String(item.comment || "").trim(),
       updatedAt: item.updatedAt,
       userName: item.user.name || "Customer",
       productName: item.product.name,
     })),
+    ...orderFeedback
+      .filter((item) => item.comment)
+      .slice(0, 4)
+      .map((item) => ({
+        rating: item.storeRating,
+        comment: item.comment,
+        updatedAt: new Date(item.createdAt),
+        userName: item.customerName,
+        productName: "Delivered order",
+      })),
+  ]
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+    .slice(0, 4);
+
+  return {
+    averageRating: combined.average,
+    reviewCount: combined.count,
+    orderCount,
+    recentReviews: reviewItems,
   };
 }

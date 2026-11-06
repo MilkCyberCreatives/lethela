@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import Footer from "@/components/Footer";
 import MainHeader from "@/components/MainHeader";
 import OrderMap from "@/components/OrderMap";
+import { OrderActions, OrderRatingCard } from "@/components/OrderAfterCare";
 import { formatZAR } from "@/lib/format";
 import { getPusherClient } from "@/lib/pusher-client";
 import { pushDataLayerEvent } from "@/lib/visitor";
@@ -22,6 +23,7 @@ type OrderItem = {
   name?: string;
   qty?: number;
   priceCents?: number;
+  isAlcohol?: boolean;
 };
 
 type TrackingPayload = {
@@ -43,8 +45,14 @@ type OrderPayload = {
   updatedAt?: string;
   totalCents: number | null;
   items?: OrderItem[];
+  vendorId?: string | null;
+  hasRider?: boolean;
+  canRate?: boolean;
+  feedback?: { storeRating: number; riderRating: number | null; comment: string } | null;
+  sharePath?: string | null;
   vendor?: {
     name?: string;
+    slug?: string | null;
     latitude?: number | null;
     longitude?: number | null;
     suburb?: string | null;
@@ -304,6 +312,16 @@ export default function OrderTrackingPage() {
               </div>
             </div>
 
+            <OrderActions
+              reference={ref}
+              sharePath={order.sharePath}
+              isFinished={isTerminalTrackingStatus(order.status)}
+              vendorId={order.vendorId}
+              vendorSlug={order.vendor?.slug}
+              vendorName={order.vendor?.name}
+              items={items}
+            />
+
             <div className="mt-8 grid gap-6 lg:grid-cols-[0.85fr,1.15fr]">
               <div>
                 <div className="rounded-xl border border-white/15 bg-white/5 p-4">
@@ -428,6 +446,15 @@ export default function OrderTrackingPage() {
                 </div>
               </div>
             </div>
+
+            <OrderRatingCard
+              reference={ref}
+              trackingToken={searchParams?.get("t")?.trim() || ""}
+              vendorName={order.vendor?.name}
+              hasRider={Boolean(order.hasRider)}
+              canRate={Boolean(order.canRate)}
+              feedback={order.feedback ?? null}
+            />
 
             <div className="mt-6">
               <Link href="/track" className="underline">

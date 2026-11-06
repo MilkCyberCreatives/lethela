@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireVendor } from "@/lib/authz";
 import { isConfirmedPayment } from "@/lib/payment-status";
+import { getStoreRatingSummary } from "@/lib/order-feedback";
 
 function isPaid(paymentStatus: string) {
   return isConfirmedPayment(paymentStatus);
@@ -329,8 +330,19 @@ export async function GET() {
       (menuReadinessChecks.filter(Boolean).length / menuReadinessChecks.length) * 100,
     );
 
+    // Real customer ratings from delivered orders (not the placeholder on the store record).
+    const ratings = await getStoreRatingSummary(vendor.id);
     const experience = {
-      rating: vendor.rating,
+      rating: ratings.average ?? 0,
+      ratingCount: ratings.count,
+      recentRatings: ratings.recent.map((item) => ({
+        orderRef: item.orderRef,
+        storeRating: item.storeRating,
+        riderRating: item.riderRating,
+        comment: item.comment,
+        customerName: item.customerName,
+        createdAt: item.createdAt,
+      })),
       orderCount30: completedOrders.length,
       onTimeRate,
       paymentSuccessRate,

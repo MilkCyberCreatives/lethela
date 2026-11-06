@@ -36,7 +36,10 @@ test("admins see support and kasi requests under Messages, apart from sent messa
   assert.match(admin, /view === "messages" \? <AdminPublicRequests \/>/);
   assert.match(panel, /\/api\/admin\/messages\?kind=public/);
   assert.match(messagesRoute, /: "sent"/);
-  assert.match(store, /PUBLIC_REQUEST_TYPES = \["SUPPORT_CASE", "KASI_REQUEST"\]/);
+  assert.match(
+    store,
+    /PUBLIC_REQUEST_TYPES = \["SUPPORT_CASE", "KASI_REQUEST", "ORDER_FEEDBACK"\]/,
+  );
   assert.match(support, /notifyStaff/);
 });
 

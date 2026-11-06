@@ -141,8 +141,9 @@ export async function createPlatformMessage(input: {
   } satisfies PlatformMessage;
 }
 
-// Messages people send in from the public site (support cases, "Bring Lethela to my kasi").
-export const PUBLIC_REQUEST_TYPES = ["SUPPORT_CASE", "KASI_REQUEST"] as const;
+// Messages people send in from the public site (support cases, "Bring Lethela to my kasi",
+// ratings customers give a delivered order).
+export const PUBLIC_REQUEST_TYPES = ["SUPPORT_CASE", "KASI_REQUEST", "ORDER_FEEDBACK"] as const;
 
 export async function listRecentPlatformMessages(
   take = 50,
